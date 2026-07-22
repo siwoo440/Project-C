@@ -4,6 +4,7 @@ using System.Collections; // 코루틴 열거자 기능
 [DefaultExecutionOrder(-900)] // GameManager 다음 실행 순서
 public sealed class SceneFlowManager : MonoBehaviour // 씬 흐름 관리자
 {
+
     public const string BootSceneName = "00_Boot"; // 부트 씬 이름
     public const string MainMenuSceneName = "01_MainMenu"; // 메인 메뉴 씬 이름
     public const string LobbySceneName = "02_Lobby"; // 로비 씬 이름
@@ -15,6 +16,12 @@ public sealed class SceneFlowManager : MonoBehaviour // 씬 흐름 관리자
 
     public string CurrentSceneName => SceneManager.GetActiveScene().name; // 현재 씬 이름
     public bool IsLoading { get; private set; } // 씬 로딩 진행 상태
+
+    [Header("씬 전환 UI")] // 씬 전환 UI 구분
+    [SerializeField] private SceneTransitionUI transitionUI; // 공용 씬 전환 화면
+    [SerializeField, Min(0f)] private float minimumLoadingDuration = 0.35f; // 최소 로딩 표시 시간
+
+
     private void Awake() // 오브젝트 생성 초기화
     {
         if (Instance != null && Instance != this) // 기존 관리자 존재 확인
@@ -76,16 +83,66 @@ public sealed class SceneFlowManager : MonoBehaviour // 씬 흐름 관리자
         IsLoading = true; // 로딩 진행 상태 설정
         Debug.Log($"씬 로딩 시작: {sceneName}", this); // 로딩 시작 출력
 
+        if (transitionUI != null) // 전환 화면 연결 확인
+        {
+            transitionUI.SetProgress(0f); // 진행률 초기화
+            yield return transitionUI.FadeIn(); // 로딩 화면 표시 대기
+        }
+        else // 전환 화면 누락 처리
+        {
+            Debug.LogWarning("SceneTransitionUI가 연결되지 않았습니다.", this); // 참조 누락 경고
+        }
+
         AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single); // 비동기 씬 로딩 생성
 
         if (loadOperation == null) // 로딩 작업 생성 확인
         {
+            if (transitionUI != null) // 전환 화면 연결 확인
+            {
+                transitionUI.HideImmediate(); // 로딩 화면 즉시 숨김
+            }
+
             IsLoading = false; // 로딩 상태 해제
             Debug.LogError($"씬 로딩 작업 생성 실패: {sceneName}", this); // 생성 실패 출력
             yield break; // 코루틴 종료
         }
 
-        yield return loadOperation; // 씬 로딩 완료 대기
+        loadOperation.allowSceneActivation = false; // 자동 씬 활성화 보류
+        float loadingElapsedTime = 0f; // 로딩 경과 시간 초기화
+
+        while (loadOperation.progress < 0.9f) // 씬 활성화 준비 상태 대기
+        {
+            loadingElapsedTime += Time.unscaledDeltaTime; // 실제 로딩 시간 누적
+            float normalizedProgress = Mathf.Clamp01(loadOperation.progress / 0.9f); // 표시용 진행률 계산
+
+            if (transitionUI != null) // 전환 화면 연결 확인
+            {
+                transitionUI.SetProgress(normalizedProgress); // 로딩 진행률 표시
+            }
+
+            yield return null; // 다음 프레임 대기
+        }
+
+        float remainingDuration = Mathf.Max(0f, minimumLoadingDuration - loadingElapsedTime); // 남은 최소 표시 시간 계산
+
+        if (remainingDuration > 0f) // 추가 표시 시간 확인
+        {
+            yield return new WaitForSecondsRealtime(remainingDuration); // 최소 표시 시간 대기
+        }
+
+        if (transitionUI != null) // 전환 화면 연결 확인
+        {
+            transitionUI.SetProgress(1f); // 진행률 완료 표시
+        }
+
+        loadOperation.allowSceneActivation = true; // 대상 씬 활성화 허용
+        yield return loadOperation; // 대상 씬 활성화 완료 대기
+        yield return null; // 새 씬 첫 프레임 대기
+
+        if (transitionUI != null) // 전환 화면 연결 확인
+        {
+            yield return transitionUI.FadeOut(); // 로딩 화면 숨김 대기
+        }
 
         IsLoading = false; // 로딩 진행 상태 해제
         Debug.Log($"씬 로딩 완료: {CurrentSceneName}", this); // 로딩 완료 출력

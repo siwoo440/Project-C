@@ -2,6 +2,11 @@ using UnityEngine; // Unity 기본 기능
 
 public sealed class MainMenuUI : MonoBehaviour // 메인 메뉴 버튼 관리자
 {
+    [SerializeField] private GameObject quitConfirmPanel; // 종료 확인 창
+    private void Awake() // 메인 메뉴 UI 초기화
+    {
+        quitConfirmPanel.SetActive(false); // 종료 확인 창 숨김
+    }
     public void OnStartButtonClicked() // 게임 시작 버튼 처리
     {
         if (!TryGetSceneFlowManager(out SceneFlowManager sceneFlowManager)) // 씬 관리자 확인
@@ -24,9 +29,19 @@ public sealed class MainMenuUI : MonoBehaviour // 메인 메뉴 버튼 관리자
 
     public void OnQuitButtonClicked() // 종료 버튼 처리
     {
-        Debug.Log("게임 종료 요청", this); // 종료 요청 출력
+        quitConfirmPanel.SetActive(true); // 종료 확인 창 표시
+    }
+    public void OnQuitConfirmButtonClicked() // 종료 확인 버튼 처리
+    {
+        Debug.Log("게임 종료 확인", this); // 종료 확인 출력
         Application.Quit(); // 실행 중인 게임 종료
     }
+
+    public void OnQuitCancelButtonClicked() // 종료 취소 버튼 처리
+    {
+        quitConfirmPanel.SetActive(false); // 종료 확인 창 숨김
+    }
+
 
     private bool TryGetSceneFlowManager(out SceneFlowManager sceneFlowManager) // 씬 관리자 참조 확인
     {
