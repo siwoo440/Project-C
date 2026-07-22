@@ -1,0 +1,70 @@
+# Unity 자동 생성 폴더
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# 빌드 결과 폴더
+[Bb]uild/
+[Bb]uilds/
+
+# Visual Studio 자동 생성 파일
+.vs/
+.gradle/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# JetBrains Rider 자동 생성 파일
+.idea/
+*.sln.iml
+
+# 운영체제 자동 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Unity 패키지 압축 파일
+*.unitypackage
+
+# Unity 충돌 보고서
+sysinfo.txt
+
+# Unity 에셋 스토어 도구
+/[Aa]ssets/AssetStoreTools*
+
+# 자동 생성된 디버그 파일
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Addressables 자동 생성 빌드 파일
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# 임시 백업 파일
+*.bak
+*.swp
+*.tmp
