@@ -27,7 +27,7 @@ public sealed class SceneFlowManager : MonoBehaviour // 씬 흐름 관리자
         if (Instance != null && Instance != this) // 기존 관리자 존재 확인
         {
             Debug.LogWarning("중복된 SceneFlowManager를 제거합니다.", this); // 중복 경고 출력
-            Destroy(gameObject); // 중복 관리자 제거
+            Destroy(this); // 중복 관리자 컴포넌트만 제거
             return; // 중복 초기화 중단
         }
 
@@ -53,6 +53,25 @@ public sealed class SceneFlowManager : MonoBehaviour // 씬 흐름 관리자
     public void LoadSettings() // 설정 화면 이동 요청
     {
         LoadScene(SettingsSceneName); // 설정 화면 로딩 실행
+    }
+
+    public void ReloadCurrentScene() // 현재 씬 다시 불러오기
+    {
+        if (IsLoading) // 기존 로딩 진행 확인
+        {
+            Debug.LogWarning("현재 씬 다시 불러오기 요청을 무시합니다.", this); // 중복 요청 경고
+            return; // 중복 로딩 중단
+        }
+
+        string currentSceneName = CurrentSceneName; // 현재 씬 이름 저장
+
+        if (IsSceneRegistered(currentSceneName) == false) // 현재 씬 등록 확인
+        {
+            Debug.LogError($"Build Profiles에 등록되지 않은 씬: {currentSceneName}", this); // 미등록 씬 오류
+            return; // 다시 불러오기 중단
+        }
+
+        StartCoroutine(LoadSceneRoutine(currentSceneName)); // 현재 씬 비동기 로딩
     }
 
     public void LoadScene(string sceneName) // 지정 씬 이동 요청

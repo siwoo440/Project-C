@@ -12,12 +12,11 @@ public sealed class GameManager : MonoBehaviour // 게임 공용 관리자
         if (Instance != null && Instance != this) // 기존 관리자 존재 확인
         {
             Debug.LogWarning("중복된 GameManager를 제거합니다.", this); // 중복 경고 출력
-            Destroy(transform.root.gameObject); // 중복 공용 루트 제거
+            Destroy(this); // 중복 관리자 컴포넌트만 제거
             return; // 중복 초기화 중단
         }
 
         Instance = this; // 현재 관리자 등록
-        DontDestroyOnLoad(transform.root.gameObject); // 공용 루트 영구 유지
         Initialize(); // 공용 초기화 실행
     }
 
