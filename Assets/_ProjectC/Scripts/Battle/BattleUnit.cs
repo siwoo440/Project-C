@@ -9,7 +9,7 @@ public sealed class BattleUnit : MonoBehaviour // 전투 유닛 체력 관리자
     [SerializeField, Min(1)] private int maxHealth = 100; // 최대 체력
 
     public event Action<int, int> HealthChanged; // 체력 변경 알림
-
+    public event Action<BattleUnit> Defeated; // 전투 불능 알림
     public string UnitName => unitName; // 유닛 이름 반환
     public BattleUnitTeam UnitTeam => unitTeam; // 전투 유닛 진영 반환
     public int CurrentHealth { get; private set; } // 현재 체력
@@ -43,9 +43,10 @@ public sealed class BattleUnit : MonoBehaviour // 전투 유닛 체력 관리자
         NotifyHealthChanged(); // 변경 체력 UI 전달
         Debug.Log($"Damage applied: {unitName} / {previousHealth} → {CurrentHealth}", this); // 체력 감소 결과 출력
 
-        if (IsDefeated) // 전투 불능 상태 확인
+        if (previousHealth > 0 && IsDefeated) // 최초 전투 불능 전환 확인
         {
             Debug.Log($"Unit defeated: {unitName}", this); // 전투 불능 결과 출력
+            Defeated?.Invoke(this); // 전투 불능 이벤트 전달
         }
     }
 

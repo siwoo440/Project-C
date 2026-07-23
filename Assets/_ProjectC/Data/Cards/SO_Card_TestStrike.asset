@@ -21,6 +21,6 @@ MonoBehaviour:
   cardType: 0
   targetType: 1
   effectType: 1
-  baseEffectValue: 8
+  baseEffectValue: 120
   upgradeable: 1
   maxUpgradeLevel: 2
