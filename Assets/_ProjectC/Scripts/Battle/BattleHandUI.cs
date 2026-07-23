@@ -9,6 +9,7 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
     [SerializeField] private BattleDeckRuntime deckRuntime; // 전투 덱 관리자
     [SerializeField] private BattleActionPointRuntime actionPointRuntime; // 전투 AP 관리자
     [SerializeField] private BattleTargetSelectionRuntime targetSelectionRuntime; // 카드 대상 선택 관리자
+    [SerializeField] private BattleTurnRuntime turnRuntime; // 전투 턴 관리자
 
     [Header("손패 UI 연결")] // 손패 UI 연결 구분
     [SerializeField] private BattleCardView cardPrefab; // 카드 UI 프리팹
@@ -47,6 +48,11 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         {
             targetSelectionRuntime.TargetSelectionChanged += HandleTargetSelectionChanged; // 대상 선택 이벤트 연결
         }
+
+        if (turnRuntime != null) // 턴 관리자 연결 확인
+        {
+            turnRuntime.TurnStateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 연결
+        }
     }
 
     private void Start() // 첫 UI 표시
@@ -70,6 +76,11 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         {
             targetSelectionRuntime.TargetSelectionChanged -= HandleTargetSelectionChanged; // 대상 선택 이벤트 해제
         }
+
+        if (turnRuntime != null) // 턴 관리자 연결 확인
+        {
+            turnRuntime.TurnStateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+        }
     }
 
     private void OnDestroy() // UI 제거
@@ -82,6 +93,10 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
 
     public void SelectCard(BattleCardView targetView) // 손패 카드 선택
     {
+        if (turnRuntime != null && turnRuntime.IsPlayerTurn == false) // 플레이어 턴 여부 확인
+        {
+            return; // 적 턴 카드 선택 중단
+        }
         if (targetView == null) // 카드 UI 누락 확인
         {
             return; // 선택 처리 중단
@@ -103,6 +118,11 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
 
     private void TryUseSelectedCard() // 선택 카드 사용 시도
     {
+        if (turnRuntime != null && turnRuntime.IsPlayerTurn == false) // 플레이어 턴 여부 확인
+        {
+            Debug.LogWarning("Cards cannot be used outside the player turn.", this); // 적 턴 카드 사용 경고
+            return; // 카드 사용 중단
+        }
         if (selectedCardView == null) // 선택 카드 확인
         {
             Debug.LogWarning("No card is selected.", this); // 선택 카드 없음 경고
@@ -196,6 +216,8 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
 
     private void RefreshStatusUI() // AP와 카드 상태 갱신
     {
+        bool isPlayerTurn = turnRuntime == null || turnRuntime.IsPlayerTurn; // 플레이어 입력 가능 여부 계산
+
         if (actionPointRuntime != null && actionPointText != null) // AP 표시 가능 여부 확인
         {
             actionPointText.text = $"AP {actionPointRuntime.CurrentActionPoints} / {actionPointRuntime.MaxActionPoints}"; // 현재 AP 표시
@@ -209,13 +231,14 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         for (int index = 0; index < cardViews.Count; index++) // 생성된 카드 UI 순회
         {
             CardInstance card = cardViews[index].Card; // 카드 인스턴스 가져오기
-            bool isAffordable = actionPointRuntime != null && actionPointRuntime.CanSpend(card.CurrentCost); // AP 지불 가능 여부 확인
+            bool isAffordable = isPlayerTurn && actionPointRuntime != null && actionPointRuntime.CanSpend(card.CurrentCost); // 카드 사용 가능 여부 확인
             cardViews[index].SetAffordable(isAffordable); // 비용 색상 적용
+            cardViews[index].SetInteractable(isPlayerTurn); // 카드 선택 가능 상태 적용
         }
 
         bool hasSelection = selectedCardView != null; // 카드 선택 여부 확인
         bool selectingTarget = targetSelectionRuntime != null && targetSelectionRuntime.IsSelectingTarget; // 대상 선택 진행 여부 확인
-        bool canUseSelection = hasSelection && deckRuntime != null && deckRuntime.CanUseCard(selectedCardView.Card); // 선택 카드 사용 가능 여부 확인
+        bool canUseSelection = isPlayerTurn && hasSelection && deckRuntime != null && deckRuntime.CanUseCard(selectedCardView.Card); // 선택 카드 사용 가능 여부 확인
 
         if (selectedCardText != null) // 선택 카드 텍스트 연결 확인
         {
@@ -234,7 +257,10 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
             useSelectedCardButton.interactable = canUseSelection && selectingTarget == false; // 대상 선택 중 사용 버튼 비활성화
         }
     }
-
+    private void HandleTurnStateChanged(BattleTurnPhase phase, int round) // 턴 상태 변경 처리
+    {
+        RefreshStatusUI(); // 카드 입력과 상태 UI 갱신
+    }
     private void HandleCardPilesChanged() // 카드 더미 변경 처리
     {
         RefreshAll(); // 손패와 상태 UI 갱신

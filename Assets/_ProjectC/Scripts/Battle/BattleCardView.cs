@@ -88,7 +88,13 @@ public sealed class BattleCardView : MonoBehaviour // 전투 카드 UI
 
         costText.color = isAffordable ? affordableColor : unaffordableColor; // 비용 색상 적용
     }
-
+    public void SetInteractable(bool isInteractable) // 카드 선택 가능 상태 설정
+    {
+        if (selectButton != null) // 카드 선택 버튼 연결 확인
+        {
+            selectButton.interactable = isInteractable; // 카드 클릭 가능 상태 적용
+        }
+    }
     private void HandleSelectRequested() // 카드 선택 요청
     {
         if (handUI == null) // 손패 UI 관리자 연결 확인
