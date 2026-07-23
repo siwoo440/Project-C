@@ -38,8 +38,15 @@ public sealed class BattleUnit : MonoBehaviour // 전투 유닛 체력 관리자
             return; // 추가 피해 처리 중단
         }
 
+        int previousHealth = CurrentHealth; // 피해 전 체력 저장
         CurrentHealth = Mathf.Clamp(CurrentHealth - amount, 0, maxHealth); // 현재 체력 감소
         NotifyHealthChanged(); // 변경 체력 UI 전달
+        Debug.Log($"Damage applied: {unitName} / {previousHealth} → {CurrentHealth}", this); // 체력 감소 결과 출력
+
+        if (IsDefeated) // 전투 불능 상태 확인
+        {
+            Debug.Log($"Unit defeated: {unitName}", this); // 전투 불능 결과 출력
+        }
     }
 
     public void Heal(int amount) // 체력 회복

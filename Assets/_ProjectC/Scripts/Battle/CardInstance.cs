@@ -8,7 +8,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     [SerializeField] private string instanceId; // 전투 카드 고유 ID
     [SerializeField] private int currentCost; // 현재 AP 비용
     [SerializeField] private int upgradeLevel; // 현재 강화 단계
-
+    [SerializeField] private int currentEffectValue; // 현재 효과 수치
     public CardData OriginalCard => originalCard; // 원본 카드 반환
     public string InstanceId => instanceId; // 인스턴스 ID 반환
     public string CardId => originalCard == null ? "MISSING_CARD" : originalCard.CardId; // 원본 카드 ID 반환
@@ -18,6 +18,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardRank CardRank => originalCard == null ? CardRank.Common : originalCard.CardRank; // 카드 등급 반환
     public CardType CardType => originalCard == null ? CardType.Sword : originalCard.CardType; // 카드 종류 반환
     public CardTargetType TargetType => originalCard == null ? CardTargetType.None : originalCard.TargetType; // 카드 대상 종류 반환
+    public CardEffectType EffectType => originalCard == null ? CardEffectType.None : originalCard.EffectType; // 카드 효과 종류 반환
+    public int CurrentEffectValue => currentEffectValue; // 현재 효과 수치 반
     public int CurrentCost => currentCost; // 현재 비용 반환
     public int UpgradeLevel => upgradeLevel; // 강화 단계 반환
 
@@ -31,6 +33,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
         originalCard = sourceCard; // 원본 카드 저장
         instanceId = Guid.NewGuid().ToString("N"); // 고유 인스턴스 ID 생성
         currentCost = sourceCard.BaseCost; // 원본 비용 복사
+        currentEffectValue = sourceCard.BaseEffectValue; // 원본 효과 수치 복사
         upgradeLevel = 0; // 초기 강화 단계 설정
     }
 
@@ -47,5 +50,6 @@ public sealed class CardInstance // 전투용 카드 인스턴스
         }
 
         currentCost = originalCard.BaseCost; // 원본 비용으로 복구
+        currentEffectValue = originalCard.BaseEffectValue; // 원본 효과 수치로 복구
     }
 }
