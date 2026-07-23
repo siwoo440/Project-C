@@ -5,11 +5,13 @@ public sealed class BattleUnit : MonoBehaviour // 전투 유닛 체력 관리자
 {
     [Header("기본 정보")] // 기본 정보 구분
     [SerializeField] private string unitName = "UNIT"; // 유닛 표시 이름
+    [SerializeField] private BattleUnitTeam unitTeam = BattleUnitTeam.Ally; // 전투 유닛 진영
     [SerializeField, Min(1)] private int maxHealth = 100; // 최대 체력
 
     public event Action<int, int> HealthChanged; // 체력 변경 알림
 
     public string UnitName => unitName; // 유닛 이름 반환
+    public BattleUnitTeam UnitTeam => unitTeam; // 전투 유닛 진영 반환
     public int CurrentHealth { get; private set; } // 현재 체력
     public int MaxHealth => maxHealth; // 최대 체력 반환
     public bool IsDefeated => CurrentHealth <= 0; // 전투 불능 여부

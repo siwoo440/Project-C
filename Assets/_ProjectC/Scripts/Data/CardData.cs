@@ -13,6 +13,7 @@ public sealed class CardData : ScriptableObject // 원본 카드 데이터
     [SerializeField, Min(0)] private int baseCost = 1; // 기본 AP 비용
     [SerializeField] private CardRank cardRank = CardRank.Common; // 카드 희귀도
     [SerializeField] private CardType cardType = CardType.Sword; // 카드 계열
+    [SerializeField] private CardTargetType targetType = CardTargetType.None; // 카드 대상 종류
 
     [Header("강화 정보")] // 강화 정보 구분
     [SerializeField] private bool upgradeable = true; // 강화 가능 여부
@@ -25,6 +26,7 @@ public sealed class CardData : ScriptableObject // 원본 카드 데이터
     public int BaseCost => baseCost; // 기본 비용 반환
     public CardRank CardRank => cardRank; // 카드 등급 반환
     public CardType CardType => cardType; // 카드 종류 반환
+    public CardTargetType TargetType => targetType; // 카드 대상 종류 반환
     public bool Upgradeable => upgradeable; // 강화 가능 여부 반환
     public int MaxUpgradeLevel => maxUpgradeLevel; // 최대 강화 단계 반환
 

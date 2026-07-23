@@ -8,6 +8,7 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
     [Header("전투 시스템 연결")] // 전투 시스템 연결 구분
     [SerializeField] private BattleDeckRuntime deckRuntime; // 전투 덱 관리자
     [SerializeField] private BattleActionPointRuntime actionPointRuntime; // 전투 AP 관리자
+    [SerializeField] private BattleTargetSelectionRuntime targetSelectionRuntime; // 카드 대상 선택 관리자
 
     [Header("손패 UI 연결")] // 손패 UI 연결 구분
     [SerializeField] private BattleCardView cardPrefab; // 카드 UI 프리팹
@@ -41,6 +42,11 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         {
             actionPointRuntime.ActionPointsChanged += HandleActionPointsChanged; // AP 변경 이벤트 연결
         }
+
+        if (targetSelectionRuntime != null) // 대상 선택 관리자 연결 확인
+        {
+            targetSelectionRuntime.TargetSelectionChanged += HandleTargetSelectionChanged; // 대상 선택 이벤트 연결
+        }
     }
 
     private void Start() // 첫 UI 표시
@@ -59,6 +65,11 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         {
             actionPointRuntime.ActionPointsChanged -= HandleActionPointsChanged; // AP 변경 이벤트 해제
         }
+
+        if (targetSelectionRuntime != null) // 대상 선택 관리자 연결 확인
+        {
+            targetSelectionRuntime.TargetSelectionChanged -= HandleTargetSelectionChanged; // 대상 선택 이벤트 해제
+        }
     }
 
     private void OnDestroy() // UI 제거
@@ -74,6 +85,10 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         if (targetView == null) // 카드 UI 누락 확인
         {
             return; // 선택 처리 중단
+        }
+        if (targetSelectionRuntime != null) // 대상 선택 관리자 연결 확인
+        {
+            targetSelectionRuntime.CancelTargetSelection(); // 기존 대상 선택 모드 취소
         }
 
         for (int index = 0; index < cardViews.Count; index++) // 전체 카드 UI 순회
@@ -96,12 +111,31 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
 
         if (deckRuntime == null) // 덱 관리자 연결 확인
         {
-            Debug.LogError("Battle deck runtime is missing.", this); // 연결 누락 오류
+            Debug.LogError("Battle deck runtime is missing.", this); // 덱 관리자 누락 오류
             return; // 카드 사용 중단
         }
 
         CardInstance selectedCard = selectedCardView.Card; // 선택 카드 인스턴스 가져오기
-        bool used = deckRuntime.TryUseCard(selectedCard); // 선택 카드 사용 시도
+
+        if (selectedCard.TargetType == CardTargetType.SingleEnemy) // 적 단일 대상 카드 확인
+        {
+            if (targetSelectionRuntime == null) // 대상 선택 관리자 연결 확인
+            {
+                Debug.LogError("Target selection runtime is missing.", this); // 대상 선택 관리자 누락 오류
+                return; // 카드 사용 중단
+            }
+
+            bool started = targetSelectionRuntime.BeginTargetSelection(selectedCard); // 적 대상 선택 시작
+
+            if (started == false) // 대상 선택 시작 결과 확인
+            {
+                RefreshStatusUI(); // 카드 사용 상태 다시 표시
+            }
+
+            return; // 즉시 카드 소비 방지
+        }
+
+        bool used = deckRuntime.TryUseCard(selectedCard); // 대상 없는 카드 즉시 사용
 
         if (used == false) // 카드 사용 실패 확인
         {
@@ -180,16 +214,24 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
         }
 
         bool hasSelection = selectedCardView != null; // 카드 선택 여부 확인
+        bool selectingTarget = targetSelectionRuntime != null && targetSelectionRuntime.IsSelectingTarget; // 대상 선택 진행 여부 확인
         bool canUseSelection = hasSelection && deckRuntime != null && deckRuntime.CanUseCard(selectedCardView.Card); // 선택 카드 사용 가능 여부 확인
 
         if (selectedCardText != null) // 선택 카드 텍스트 연결 확인
         {
-            selectedCardText.text = hasSelection ? $"SELECTED: {selectedCardView.Card.CardName}" : "SELECT A CARD"; // 선택 카드 이름 표시
+            if (selectingTarget) // 대상 선택 진행 여부 확인
+            {
+                selectedCardText.text = "SELECT AN ENEMY"; // 적 선택 안내 표시
+            }
+            else // 일반 카드 선택 상태
+            {
+                selectedCardText.text = hasSelection ? $"SELECTED: {selectedCardView.Card.CardName}" : "SELECT A CARD"; // 선택 카드 이름 표시
+            }
         }
 
         if (useSelectedCardButton != null) // 카드 사용 버튼 연결 확인
         {
-            useSelectedCardButton.interactable = canUseSelection; // 사용 가능 상태 적용
+            useSelectedCardButton.interactable = canUseSelection && selectingTarget == false; // 대상 선택 중 사용 버튼 비활성화
         }
     }
 
@@ -201,5 +243,9 @@ public sealed class BattleHandUI : MonoBehaviour // 전투 손패 UI 관리자
     private void HandleActionPointsChanged(int currentPoints, int maxPoints) // AP 변경 처리
     {
         RefreshStatusUI(); // AP와 카드 사용 상태 갱신
+    }
+    private void HandleTargetSelectionChanged() // 대상 선택 상태 변경 처리
+    {
+        RefreshStatusUI(); // 대상 선택 안내 UI 갱신
     }
 }

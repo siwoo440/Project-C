@@ -17,6 +17,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public Sprite CardImage => originalCard == null ? null : originalCard.CardImage; // 카드 이미지 반환
     public CardRank CardRank => originalCard == null ? CardRank.Common : originalCard.CardRank; // 카드 등급 반환
     public CardType CardType => originalCard == null ? CardType.Sword : originalCard.CardType; // 카드 종류 반환
+    public CardTargetType TargetType => originalCard == null ? CardTargetType.None : originalCard.TargetType; // 카드 대상 종류 반환
     public int CurrentCost => currentCost; // 현재 비용 반환
     public int UpgradeLevel => upgradeLevel; // 강화 단계 반환
 

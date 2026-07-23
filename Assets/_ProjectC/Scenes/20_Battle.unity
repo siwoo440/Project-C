@@ -1949,6 +1949,7 @@ Transform:
   - {fileID: 1716364133}
   - {fileID: 1514246534}
   - {fileID: 1830783191}
+  - {fileID: 1041585082}
   m_Father: {fileID: 1996865837}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &836721223
@@ -2668,6 +2669,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 993410307}
   m_CullTransparentMesh: 1
+--- !u!1 &1041585081
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1041585082}
+  - component: {fileID: 1041585083}
+  m_Layer: 0
+  m_Name: BattleTargetSelectionRuntime
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1041585082
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1041585081}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 836721222}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1041585083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1041585081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68577983d1a981c4d9368e37a58caaed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleTargetSelectionRuntime
+  deckRuntime: {fileID: 1716364134}
 --- !u!1 &1051642673
 GameObject:
   m_ObjectHideFlags: 0
@@ -3822,6 +3868,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BattleHandUI
   deckRuntime: {fileID: 1716364134}
   actionPointRuntime: {fileID: 1514246535}
+  targetSelectionRuntime: {fileID: 1041585083}
   cardPrefab: {fileID: 1832436611755458378, guid: 6c65c92abdcd7044db812cef1a62c1aa, type: 3}
   cardContainer: {fileID: 599818167}
   useSelectedCardButton: {fileID: 2104482984}
@@ -4230,6 +4277,7 @@ GameObject:
   - component: {fileID: 2091933732}
   - component: {fileID: 2091933731}
   - component: {fileID: 2091933734}
+  - component: {fileID: 2091933735}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -4284,7 +4332,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -4355,6 +4403,22 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &2091933735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2091933730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56666c5a40171f54783dd416a44f42bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.Physics2DRaycaster
+  m_EventMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_MaxRayIntersections: 0
 --- !u!1 &2104482980
 GameObject:
   m_ObjectHideFlags: 0
@@ -4735,6 +4799,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 31788819}
     m_Modifications:
+    - target: {fileID: 203442086315328259, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3486100192492160875, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4
@@ -4775,9 +4843,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4166356266245590774, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ebb3b7cf2972dde498881591b5f5f44b, type: 2}
     - target: {fileID: 4720792481779203167, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
       propertyPath: m_Name
       value: EnemyUnit_Test
+      objectReference: {fileID: 0}
+    - target: {fileID: 4720792481779203167, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6724747941785399666, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
+      propertyPath: targetSelectionRuntime
+      value: 
+      objectReference: {fileID: 1041585083}
+    - target: {fileID: 8290362383721639538, guid: 9326180c2d5999c468cac619eb65f649, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

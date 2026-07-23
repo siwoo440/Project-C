@@ -19,5 +19,6 @@ MonoBehaviour:
   baseCost: 1
   cardRank: 0
   cardType: 4
+  targetType: 0
   upgradeable: 1
   maxUpgradeLevel: 2
