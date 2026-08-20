@@ -7,6 +7,7 @@ public sealed class SceneFlowManager : MonoBehaviour
 
     public string CurrentSceneName => SceneManager.GetActiveScene().name;
     public int CurrentSceneBuildIndex => SceneManager.GetActiveScene().buildIndex;
+    public string PreviousSceneName { get; private set; }
     public bool IsLoadingScene { get; private set; }
 
     private void Awake()
@@ -49,6 +50,7 @@ public sealed class SceneFlowManager : MonoBehaviour
             return; // 미등록 씬 전환 중단
         }
 
+        PreviousSceneName = CurrentSceneName; // 이전 씬 이름 저장
         IsLoadingScene = true; // 씬 전환 상태 시작
         SceneManager.LoadScene(sceneName); // 이름 기준 씬 로드
     }
@@ -66,8 +68,21 @@ public sealed class SceneFlowManager : MonoBehaviour
             return; // 잘못된 씬 전환 중단
         }
 
+        PreviousSceneName = CurrentSceneName; // 이전 씬 이름 저장
         IsLoadingScene = true; // 씬 전환 상태 시작
         SceneManager.LoadScene(buildIndex); // 인덱스 기준 씬 로드
+    }
+
+    public void LoadPreviousScene()
+    {
+        if (string.IsNullOrWhiteSpace(PreviousSceneName)) // 이전 씬 존재 여부 확인
+        {
+            Debug.LogWarning("[SceneFlowManager] 돌아갈 이전 씬이 없습니다."); // 이전 씬 없음 출력
+            return; // 이전 씬 이동 중단
+        }
+
+        string targetSceneName = PreviousSceneName; // 복귀 대상 씬 저장
+        LoadScene(targetSceneName); // 이전 씬 로드
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
