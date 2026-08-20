@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30de188696f71d741ba772a5d5331623, type: 3}
+  m_Name: Character_Test
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  characterId: CHR_TEST
+  displayName: Test Character
+  description: "4\uC77C\uCC28 \uB370\uC774\uD130 \uD14C\uC2A4\uD2B8 \uCE90\uB9AD\uD130"
+  role: 0
+  portrait: {fileID: 0}
+  maxHealth: 100
+  initialMental: 50
