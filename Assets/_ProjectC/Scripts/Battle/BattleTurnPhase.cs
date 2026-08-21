@@ -4,5 +4,6 @@ public enum BattleTurnPhase // 전투 턴 단계 종류
     PlayerTurn, // 플레이어 턴
     EnemyTurn, // 적 턴
     Victory, // 전투 승리
-    Defeat // 전투 패배
+    Defeat, // 전투 패배
+    Escaped // 전투 도주
 } // 열거형 종료
