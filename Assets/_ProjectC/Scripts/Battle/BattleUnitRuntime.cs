@@ -35,6 +35,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
     public event Action<BattleUnitRuntime, BattleMentalChangeResult> MentalChanged; // 정신력 변화 이벤트
+    public event Action<BattleUnitRuntime, BattleUnitRuntime, BattleDamageResult> DamageResolved; // 발생자 포함 피해 완료 이벤트
+    public event Action<BattleUnitRuntime, BattleUnitRuntime, int> HealingResolved; // 발생자 포함 회복 완료 이벤트
+    public event Action<BattleUnitRuntime, BattleUnitRuntime, BattleStatusEffectType, BattleStatusEffectApplyResult> StatusEffectResolved; // 발생자 포함 상태 적용 이벤트
+    public event Action<BattleUnitRuntime, BattleUnitRuntime> Defeated; // 발생자 포함 처치 완료 이벤트
     private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, int initialMental, int awakeningDamageRate, int awakeningHealingRate, int collapseDamageRate, int collapseHealingRate, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
     { // 생성자 시작
         UnitId = unitId; // 유닛 ID 저장
@@ -138,11 +142,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 신규 상태 처리 시작
             statusEffects.Add(new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 신규 상태 이상 추가
             StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
+            StatusEffectResolved?.Invoke(sourceUnit, this, effectType, BattleStatusEffectApplyResult.Applied); // 신규 상태 적용 상세 알림
             ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
             return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
         } // 신규 상태 처리 종료
         existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
+        StatusEffectResolved?.Invoke(sourceUnit, this, effectType, BattleStatusEffectApplyResult.Stacked); // 중첩 상태 적용 상세 알림
         ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
         return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
@@ -260,12 +266,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 처리 시작
             IsDead = true; // 사망 상태 저장
         } // 사망 처리 종료
-        ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
         DamageTaken?.Invoke(this, damageResult); // 피해 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
+        DamageResolved?.Invoke(sourceUnit, this, damageResult); // 발생자 포함 피해 완료 알림
+        ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
         if (diedNow) // 신규 사망 확인
         { // 사망 알림 시작
             ClearStatusEffects(); // 사망 유닛 상태 이상 제거
+            Defeated?.Invoke(sourceUnit, this); // 발생자 포함 처치 완료 알림
             Died?.Invoke(this); // 사망 이벤트 알림
         } // 사망 알림 종료
         return damageResult; // 피해 계산 결과 반환
@@ -279,9 +287,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
         CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + healAmount); // 현재 체력 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
-        ChangeMental(1, BattleMentalChangeReason.HealingReceived); // 회복 정신력 증가 적용
         HealthRestored?.Invoke(this, appliedHealing); // 회복 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
+        HealingResolved?.Invoke(sourceUnit, this, appliedHealing); // 발생자 포함 회복 완료 알림
+        ChangeMental(1, BattleMentalChangeReason.HealingReceived); // 회복 정신력 증가 적용
         return appliedHealing; // 실제 회복량 반환
     } // 체력 회복 종료
     private void ApplyDamageMental(int appliedDamage, bool diedNow, BattleUnitRuntime sourceUnit) // 피해 정신력 변화 적용

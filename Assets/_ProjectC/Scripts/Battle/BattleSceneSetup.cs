@@ -43,6 +43,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleStatusEffectProcessor statusEffectProcessor; // 상태 발동과 정화 공통 처리기
     private BattleStatusEffectController statusEffectController; // 상태 이상 발동 관리자
     private BattleMentalController mentalController; // 정신력 흐름 관리자
+    private BattleEventDispatcher battleEvents; // 전투 공용 이벤트 발행기
+    private BattleEventController battleEventController; // 전투 공용 이벤트 중계기
+    private BattleEventDebugLogger battleEventLogger; // 전투 공용 이벤트 순서 기록기
+    private BattleMentalStateCutInView mentalStateCutInView; // 각성·붕괴 전체 화면 컷인
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
@@ -55,6 +59,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 공용 행동력 조회
     public BattleTurnRuntime BattleTurn => battleTurn; // 전투 턴 관리자 조회
     public BattleEnemyActionRuntime EnemyActionRuntime => enemyActionRuntime; // 적 행동 관리자 조회
+    public BattleEventDispatcher BattleEvents => battleEvents; // 전투 공용 이벤트 발행기 조회
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
@@ -95,6 +100,18 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
         cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        battleEvents = new BattleEventDispatcher(); // 전투 단위 공용 이벤트 발행기 생성
+        battleEventController = new BattleEventController(battleEvents, battleTurn, cardActionController, allyUnits, enemyUnits); // 기존 전투 신호 공용 이벤트 연결
+        battleEventLogger = new BattleEventDebugLogger(battleEvents); // 공용 이벤트 발행 순서 로그 연결
+        Canvas battleCanvas = handView.GetComponentInParent<Canvas>(); // 전투 UI Canvas 조회
+        if (battleCanvas != null) // 전투 Canvas 존재 확인
+        { // 컷인 생성 시작
+            mentalStateCutInView = BattleMentalStateCutInView.Create(battleCanvas.transform, battleEvents); // 각성·붕괴 전체 화면 컷인 코드 생성
+        } // 컷인 생성 종료
+        else // 전투 Canvas 누락 처리
+        { // 컷인 생성 불가 시작
+            Debug.LogError("[BattleSceneSetup] 각성·붕괴 컷인을 배치할 Canvas가 없습니다.", this); // Canvas 누락 오류 출력
+        } // 컷인 생성 불가 종료
         mentalController = new BattleMentalController(battleTurn, allyUnits, enemyUnits); // 정신력 흐름 관리자 생성
         statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits, statusEffectProcessor); // 상태 이상 발동 관리자 생성
         statusEffectController.StatusEffectsProcessed += HandleStatusEffectsProcessed; // 상태 처리 결과 화면 연결
@@ -244,7 +261,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         bool turnRegistered = battleTurn.RegisterSummonedEnemy(summonedEnemy); // 승패 판정에 소환 적 등록
         bool actionRegistered = enemyActionRuntime.RegisterSummonedEnemy(summonedEnemy); // 적 행동 흐름에 소환 적 등록
         bool mentalRegistered = mentalController != null && mentalController.RegisterSummonedEnemy(summonedEnemy); // 정신력 흐름에 소환 적 등록
-        if (!turnRegistered || !actionRegistered || !mentalRegistered) // 소환 연결 결과 확인
+        bool eventRegistered = battleEventController != null && battleEventController.RegisterSummonedEnemy(summonedEnemy); // 공용 이벤트 흐름에 소환 적 등록
+        if (!turnRegistered || !actionRegistered || !mentalRegistered || !eventRegistered) // 소환 연결 결과 확인
         { // 연결 실패 복구 시작
             RemoveEnemyUnit(summonedEnemy); // 불완전 소환 적 제거
             Debug.LogError("[BattleSceneSetup] 소환 적의 전투 연결에 실패했습니다.", this); // 소환 연결 오류 출력
@@ -291,6 +309,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         battleTurn?.UnregisterEnemy(enemyUnit); // 승패 판정 사망 연결 해제
         enemyActionRuntime?.UnregisterEnemy(enemyUnit); // 행동 흐름 사망 연결 해제
         mentalController?.UnregisterEnemy(enemyUnit); // 정신력 흐름 사망 연결 해제
+        battleEventController?.UnregisterEnemy(enemyUnit); // 공용 이벤트 흐름 상세 신호 해제
         enemyUnit.MentalChanged -= HandleMentalIntentChanged; // 적 정신 상태 예고 갱신 해제
         enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
         BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
@@ -727,6 +746,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         statusEffectProcessor = null; // 공통 상태 처리기 참조 제거
         mentalController?.Dispose(); // 정신력 관리자 연결 해제
         mentalController = null; // 정신력 관리자 참조 제거
+        mentalStateCutInView?.Dispose(); // 각성·붕괴 컷인 이벤트 연결 해제
+        mentalStateCutInView = null; // 각성·붕괴 컷인 참조 제거
+        battleEventLogger?.Dispose(); // 공용 이벤트 순서 기록 연결 해제
+        battleEventLogger = null; // 공용 이벤트 기록기 참조 제거
+        battleEventController?.Dispose(); // 전투 신호 공용 이벤트 연결 해제
+        battleEventController = null; // 공용 이벤트 중계기 참조 제거
+        battleEvents?.Dispose(); // 전투 공용 이벤트 발행기 종료
+        battleEvents = null; // 전투 공용 이벤트 발행기 참조 제거
         UnregisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 해제
         UnregisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 해제
         if (actionSequenceRunner != null) // 행동 연출 실행기 확인

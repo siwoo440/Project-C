@@ -20,6 +20,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
+    public event Action<BattleResult> BattleCompleted; // 전투 종료 처리 완료 이벤트
     public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType) // 턴 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
@@ -130,6 +131,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         Result = battleResult; // 최종 전투 결과 저장
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
         StateChanged?.Invoke(); // 전투 종료 알림
+        BattleCompleted?.Invoke(Result); // 후속 상태 정리 이후 전투 종료 완료 알림
     } // 결과 확정 종료
     private static bool HasLivingUnit(IReadOnlyList<BattleUnitRuntime> units) // 생존 유닛 존재 확인
     { // 생존 유닛 검사 시작
