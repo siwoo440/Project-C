@@ -15,6 +15,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public bool IsDead { get; private set; } // 사망 여부
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
     public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
+    public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
+    public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
     public CharacterData CharacterSource { get; } // 아군 원본 데이터
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
@@ -62,23 +64,26 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
         return true; // 저장 체력 적용 성공 반환
     } // 저장 체력 적용 종료
-    public bool ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 적용
+    public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 적용
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || value <= 0 || duration <= 0 || maximumStacks <= 0) // 적용 조건 확인
         { // 적용 불가 처리 시작
-            return false; // 상태 이상 적용 실패 반환
+            return BattleStatusEffectApplyResult.Invalid; // 잘못된 적용 결과 반환
         } // 적용 불가 처리 종료
+        if (BattleStatusEffectInstance.IsDebuffType(effectType) && HasStatusImmunity) // 디버프 면역 확인
+        { // 면역 차단 처리 시작
+            return BattleStatusEffectApplyResult.BlockedByImmunity; // 면역 차단 결과 반환
+        } // 면역 차단 처리 종료
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 동일 상태 이상 조회
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
             statusEffects.Add(new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 신규 상태 이상 추가
+            StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
+            return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
         } // 신규 상태 처리 종료
-        else // 기존 상태 재적용
-        { // 재적용 처리 시작
-            existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
-        } // 재적용 처리 종료
+        existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
-        return true; // 상태 이상 적용 성공 반환
+        return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
     public bool RemoveStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 제거
     { // 상태 이상 제거 시작
@@ -91,6 +96,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
         return true; // 상태 이상 제거 성공 반환
     } // 상태 이상 제거 종료
+    public int RemoveAllDebuffs() // 모든 디버프 제거
+    { // 디버프 전체 제거 시작
+        if (IsDead || statusEffects.Count < 1) // 제거 가능 상태 확인
+        { // 제거 불가 처리 시작
+            return 0; // 제거된 디버프 없음 반환
+        } // 제거 불가 처리 종료
+        int removedCount = statusEffects.RemoveAll(statusEffect => statusEffect.IsDebuff); // 디버프 전체 제거
+        if (removedCount > 0) // 실제 제거 여부 확인
+        { // 제거 알림 처리 시작
+            StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
+        } // 제거 알림 처리 종료
+        return removedCount; // 제거된 디버프 수 반환
+    } // 디버프 전체 제거 종료
+    public BattleStatusEffectInstance GetStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 공개 조회
+    { // 공개 상태 조회 시작
+        return FindStatusEffect(effectType); // 지정 상태 이상 반환
+    } // 공개 상태 조회 종료
     public void ProcessStatusEffectsAtPhaseStart(int round) // 진영 턴 시작 상태 이상 발동
     { // 상태 이상 발동 시작
         if (IsDead || statusEffects.Count < 1) // 발동 가능 상태 확인
@@ -133,6 +155,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 상태 이상 비교 종료
         return null; // 일치 상태 없음 반환
     } // 상태 이상 조회 종료
+    private bool ContainsDebuff() // 현재 디버프 존재 확인
+    { // 디버프 존재 확인 시작
+        foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
+        { // 디버프 확인 시작
+            if (statusEffect.IsDebuff) // 디버프 여부 확인
+            { // 디버프 존재 처리 시작
+                return true; // 디버프 존재 반환
+            } // 디버프 존재 처리 종료
+        } // 디버프 확인 종료
+        return false; // 디버프 없음 반환
+    } // 디버프 존재 확인 종료
     private int CalculateAttackPowerBonus() // 공격력 증가 합계 계산
     { // 공격력 증가 계산 시작
         int totalBonus = 0; // 전체 공격력 증가 초기화
