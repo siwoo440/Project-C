@@ -509,6 +509,10 @@ MonoBehaviour:
   unitViewPrefab: {fileID: 4072380188688632060, guid: fc991930e4d14a44b9a29d15f776d075, type: 3}
   allyUnitRoot: {fileID: 675924956}
   enemyUnitRoot: {fileID: 37766817}
+  maximumHandSize: 5
+  initialHandSize: 3
+  useFixedShuffleSeed: 0
+  fixedShuffleSeed: 12345
   testDamage: 10
 --- !u!4 &1917448888
 Transform:
