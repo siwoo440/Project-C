@@ -18,6 +18,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
     [SerializeField] private Color enemyColor = new Color(1f, 0.25f, 0.25f, 1f); // 적 표시 색상
     private GameObject enemyIntentRoot; // 적 행동 예고 오브젝트
     private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
+    private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -30,7 +31,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         Unbind(); // 기존 연결 해제
         RuntimeUnit = runtimeUnit; // 새 런타임 유닛 저장
         RuntimeUnit.HealthChanged += HandleHealthChanged; // 체력 변경 이벤트 등록
+        RuntimeUnit.DamageTaken += HandleDamageTaken; // 피해 적용 이벤트 등록
+        RuntimeUnit.HealthRestored += HandleHealthRestored; // 회복 적용 이벤트 등록
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
+        EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
@@ -42,6 +46,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
             return; // 연결 해제 중단
         } // 미연결 처리 종료
         RuntimeUnit.HealthChanged -= HandleHealthChanged; // 체력 변경 이벤트 해제
+        RuntimeUnit.DamageTaken -= HandleDamageTaken; // 피해 적용 이벤트 해제
+        RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
         RuntimeUnit = null; // 런타임 참조 제거
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
@@ -128,6 +134,22 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         } // 다른 유닛 처리 종료
         RefreshHealth(); // 체력 표시 갱신
     } // 체력 이벤트 처리 종료
+    private void HandleDamageTaken(BattleUnitRuntime runtimeUnit, BattleDamageResult damageResult) // 피해 적용 이벤트 처리
+    { // 피해 이벤트 처리 시작
+        if (runtimeUnit != RuntimeUnit || combatFeedbackView == null) // 연결 유닛과 피드백 화면 확인
+        { // 다른 유닛 처리 시작
+            return; // 피해 이벤트 무시
+        } // 다른 유닛 처리 종료
+        combatFeedbackView.ShowDamage(damageResult); // 피해 숫자와 강조 표시
+    } // 피해 이벤트 처리 종료
+    private void HandleHealthRestored(BattleUnitRuntime runtimeUnit, int appliedHealing) // 회복 적용 이벤트 처리
+    { // 회복 이벤트 처리 시작
+        if (runtimeUnit != RuntimeUnit || combatFeedbackView == null) // 연결 유닛과 피드백 화면 확인
+        { // 다른 유닛 처리 시작
+            return; // 회복 이벤트 무시
+        } // 다른 유닛 처리 종료
+        combatFeedbackView.ShowHealing(appliedHealing); // 회복 숫자와 강조 표시
+    } // 회복 이벤트 처리 종료
     private void HandleDied(BattleUnitRuntime runtimeUnit) // 사망 이벤트 처리
     { // 사망 이벤트 처리 시작
         if (runtimeUnit != RuntimeUnit) // 다른 유닛 이벤트 확인
@@ -173,6 +195,18 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         enemyIntentText.raycastTarget = false; // 행동 예고 글자 클릭 차단 해제
         enemyIntentRoot.SetActive(false); // 행동 예고 기본 숨김
     } // 예고 화면 준비 종료
+    private void EnsureCombatFeedbackView() // 전투 결과 피드백 준비
+    { // 피드백 준비 시작
+        if (combatFeedbackView != null) // 기존 피드백 화면 확인
+        { // 기존 피드백 처리 시작
+            return; // 중복 준비 중단
+        } // 기존 피드백 처리 종료
+        combatFeedbackView = GetComponent<BattleCombatFeedbackView>(); // 기존 피드백 컴포넌트 조회
+        if (combatFeedbackView == null) // 피드백 컴포넌트 누락 확인
+        { // 피드백 컴포넌트 생성 시작
+            combatFeedbackView = gameObject.AddComponent<BattleCombatFeedbackView>(); // 런타임 피드백 컴포넌트 추가
+        } // 피드백 컴포넌트 생성 종료
+    } // 피드백 준비 종료
     private void OnDestroy() // 오브젝트 제거 처리
     { // 제거 처리 시작
         Unbind(); // 이벤트 연결 해제
