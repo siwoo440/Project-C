@@ -85,6 +85,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 상태 이상 처리 시작
             return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
         } // 상태 이상 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        { // 디버프 해제 처리 시작
+            return "디버프 해제"; // 디버프 해제 문구 반환
+        } // 디버프 해제 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ChangeMental) // 정신력 효과 확인
+        { // 정신력 효과 처리 시작
+            return "정신력 변화"; // 정신력 효과 문구 반환
+        } // 정신력 효과 처리 종료
         if (cardInstance.DamageType == BattleDamageType.Magical) // 마법 피해 확인
         { // 마법 피해 처리 시작
             return "마법 피해"; // 마법 피해 문구 반환
@@ -103,6 +111,11 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             string valueLabel = cardInstance.StatusEffectType == BattleStatusEffectType.StatusImmunity ? string.Empty : $" {cardInstance.EffectValue}"; // 면역 외 효과 수치 생성
             return $"{effectName}{valueLabel}  |  지속 {cardInstance.StatusDuration}T  |  최대 {cardInstance.StatusMaximumStacks}중첩"; // 상태 이상 상세 반환
         } // 상태 이상 상세 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ChangeMental) // 정신력 효과 확인
+        { // 정신력 상세 처리 시작
+            string sign = cardInstance.MentalChangeValue > 0 ? "+" : string.Empty; // 양수 부호 문구 계산
+            return $"정신력 {sign}{cardInstance.MentalChangeValue}"; // 정신력 상세 반환
+        } // 정신력 상세 처리 종료
         return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue}"; // 피해와 회복 상세 반환
     } // 효과 상세 조회 종료
     private static TMP_Text CreateText(string objectName, Transform parent, float fontSize, Color textColor, TextAlignmentOptions alignment) // 공용 텍스트 생성

@@ -16,6 +16,17 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [SerializeField] private int physicalDefense; // 물리 방어력
     [Min(0)] // 마법 저항력 최소값
     [SerializeField] private int magicalResistance; // 마법 저항력
+    [Range(0, 100)] // 정신력 입력 범위
+    [SerializeField] private int initialMental = 50; // 초기 정신력
+    [Header("정신 특수 상태 효과")] // 정신 특수 상태 효과 구역
+    [Range(-100, 100)] // 각성 피해 변화율 범위
+    [SerializeField] private int awakeningDamagePercent = 10; // 각성 피해 변화율
+    [Range(-100, 100)] // 각성 회복 변화율 범위
+    [SerializeField] private int awakeningHealingPercent = 10; // 각성 회복 변화율
+    [Range(-100, 100)] // 붕괴 피해 변화율 범위
+    [SerializeField] private int collapseDamagePercent = -10; // 붕괴 피해 변화율
+    [Range(-100, 100)] // 붕괴 회복 변화율 범위
+    [SerializeField] private int collapseHealingPercent = -10; // 붕괴 회복 변화율
     [Header("기본 행동")] // 기본 행동 구역
     [SerializeField] private EnemyActionType actionType = EnemyActionType.Attack; // 기본 행동 종류
     [Min(0)] // 공격력 최소값
@@ -42,6 +53,11 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public int MaxHealth => maxHealth; // 최대 체력 조회
     public int PhysicalDefense => physicalDefense; // 물리 방어력 조회
     public int MagicalResistance => magicalResistance; // 마법 저항력 조회
+    public int InitialMental => initialMental; // 초기 정신력 조회
+    public int AwakeningDamagePercent => awakeningDamagePercent; // 각성 피해 변화율 조회
+    public int AwakeningHealingPercent => awakeningHealingPercent; // 각성 회복 변화율 조회
+    public int CollapseDamagePercent => collapseDamagePercent; // 붕괴 피해 변화율 조회
+    public int CollapseHealingPercent => collapseHealingPercent; // 붕괴 회복 변화율 조회
     public EnemyActionType ActionType => actionType; // 기본 행동 종류 조회
     public int BasicAttackPower => basicAttackPower; // 기본 공격력 조회
     public BattleDamageType DamageType => damageType; // 기본 피해 유형 조회

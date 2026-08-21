@@ -22,6 +22,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
+    private BattleMentalView mentalView; // 정신력 표시 화면
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -37,10 +38,13 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.DamageTaken += HandleDamageTaken; // 피해 적용 이벤트 등록
         RuntimeUnit.HealthRestored += HandleHealthRestored; // 회복 적용 이벤트 등록
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
+        RuntimeUnit.MentalChanged += HandleMentalChanged; // 정신력 변화 이벤트 등록
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
         EnsureMotionView(); // 유닛 움직임 화면 준비
         EnsureStatusEffectView(); // 상태 이상 화면 준비
+        EnsureMentalView(); // 정신력 화면 준비
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
+        mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
@@ -55,7 +59,9 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.DamageTaken -= HandleDamageTaken; // 피해 적용 이벤트 해제
         RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
+        RuntimeUnit.MentalChanged -= HandleMentalChanged; // 정신력 변화 이벤트 해제
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
+        mentalView?.Unbind(); // 정신력 화면 연결 해제
         RuntimeUnit = null; // 런타임 참조 제거
         ResetMotion(); // 유닛 움직임 복구
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
@@ -148,8 +154,9 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         else // 공격 행동 처리
         { // 공격 예고 처리 시작
             string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
+            int modifiedAmount = action.Actor.ModifyOutgoingDamage(action.Amount); // 정신 상태 포함 원본 피해 계산
             BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
-            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
+            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {modifiedAmount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
         } // 공격 예고 처리 종료
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
@@ -256,6 +263,29 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             enemyIntentRoot.SetActive(false); // 사망 유닛 예고 숨김
         } // 행동 예고 숨김 종료
     } // 사망 이벤트 처리 종료
+    private void HandleMentalChanged(BattleUnitRuntime runtimeUnit, BattleMentalChangeResult changeResult) // 정신력 변화 피드백 처리
+    { // 정신력 피드백 시작
+        if (runtimeUnit != RuntimeUnit || !changeResult.WasApplied) // 연결 유닛과 변화 여부 확인
+        { // 변화 없음 처리 시작
+            return; // 피드백 처리 중단
+        } // 변화 없음 처리 종료
+        if (changeResult.StateStarted) // 특수 상태 시작 확인
+        { // 특수 상태 피드백 시작
+            bool isCollapse = changeResult.CurrentState == BattleMentalState.Collapse; // 붕괴 여부 계산
+            ShowStatusFeedback(isCollapse ? "붕괴 발동" : "각성 발동", isCollapse); // 특수 상태 발동 문구 표시
+            return; // 피드백 처리 종료
+        } // 특수 상태 피드백 종료
+        if (changeResult.StateEnded) // 특수 상태 종료 확인
+        { // 특수 상태 종료 피드백 시작
+            ShowStatusFeedback("정신력 50 복귀", false); // 정신력 복귀 문구 표시
+            return; // 피드백 처리 종료
+        } // 특수 상태 종료 피드백 종료
+        if (changeResult.AppliedDelta != 0) // 정신력 수치 변화 확인
+        { // 정신력 수치 피드백 시작
+            string deltaLabel = changeResult.AppliedDelta > 0 ? $"+{changeResult.AppliedDelta}" : changeResult.AppliedDelta.ToString(); // 부호 포함 변화량 문구 계산
+            ShowStatusFeedback($"정신력 {deltaLabel}", changeResult.AppliedDelta < 0); // 정신력 변화 문구 표시
+        } // 정신력 수치 피드백 종료
+    } // 정신력 피드백 종료
     private void EnsureEnemyIntentView() // 적 행동 예고 화면 준비
     { // 예고 화면 준비 시작
         if (enemyIntentRoot != null) // 기존 예고 화면 확인
@@ -326,6 +356,18 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             statusEffectView = gameObject.AddComponent<BattleStatusEffectView>(); // 런타임 상태 화면 컴포넌트 추가
         } // 상태 화면 추가 종료
     } // 상태 화면 준비 종료
+    private void EnsureMentalView() // 정신력 화면 준비
+    { // 정신력 화면 준비 시작
+        if (mentalView != null) // 기존 정신력 화면 확인
+        { // 기존 화면 처리 시작
+            return; // 중복 준비 중단
+        } // 기존 화면 처리 종료
+        mentalView = GetComponent<BattleMentalView>(); // 기존 정신력 화면 컴포넌트 조회
+        if (mentalView == null) // 정신력 화면 컴포넌트 누락 확인
+        { // 컴포넌트 추가 시작
+            mentalView = gameObject.AddComponent<BattleMentalView>(); // 런타임 정신력 화면 컴포넌트 추가
+        } // 컴포넌트 추가 종료
+    } // 정신력 화면 준비 종료
     private void OnDestroy() // 오브젝트 제거 처리
     { // 제거 처리 시작
         Unbind(); // 이벤트 연결 해제

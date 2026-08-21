@@ -208,6 +208,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 상태 설정 오류 처리 시작
             return false; // 상태 이상 대상 불가 반환
         } // 상태 설정 오류 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ChangeMental && !targetUnit.CanChangeMental(cardInstance.MentalChangeValue)) // 정신력 변경 가능 여부 확인
+        { // 정신력 변경 불가 처리 시작
+            return false; // 정신력 대상 불가 반환
+        } // 정신력 변경 불가 처리 종료
         switch (cardInstance.TargetType) // 카드 대상 종류 분기
         { // 대상 분기 시작
             case CardTargetType.Self: // 자신 대상 종류
@@ -252,7 +256,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -287,11 +291,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 단일 효과 적용 시작
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
-            return targetUnit.RestoreHealth(cardInstance.EffectValue); // 실제 회복량 반환
+            int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(cardInstance.EffectValue); // 정신 상태 포함 회복량 계산
+            return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
         } // 회복 효과 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 처리 시작
-            BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks); // 대상 상태 이상 적용
+            BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 상태 이상 적용
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
             targetView?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, applyResult); // 상태 이상 적용 결과 표시
             return applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
@@ -305,8 +310,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             LogCleanseResults(targetUnit, cleanseResults); // 정화 상세 결과 출력
             return removedCount; // 제거된 디버프 수 반환
         } // 디버프 해제 처리 종료
-        int modifiedDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
-        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType); // 카드 피해 계산과 적용
+        if (cardInstance.EffectType == CardEffectType.ChangeMental) // 정신력 직접 효과 확인
+        { // 정신력 효과 처리 시작
+            BattleMentalChangeResult mentalResult = targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 대상 정신력 직접 변경
+            return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
+        } // 정신력 효과 처리 종료
+        int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
+        int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
+        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
@@ -333,6 +344,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 디버프 해제 문구 처리 시작
             return "디버프 해제"; // 디버프 해제 문구 반환
         } // 디버프 해제 문구 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ChangeMental) // 정신력 효과 확인
+        { // 정신력 문구 처리 시작
+            return "정신력"; // 정신력 문구 반환
+        } // 정신력 문구 처리 종료
         return cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 피해 종류 문구 반환
     } // 효과 문구 조회 종료
     private static List<BattleUnitRuntime> CreateSingleTargetList(BattleUnitRuntime targetUnit) // 단일 대상 목록 생성

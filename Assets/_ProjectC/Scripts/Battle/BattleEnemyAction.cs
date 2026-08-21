@@ -53,7 +53,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         { // 대상 없음 처리 시작
             return BattleDamageResult.Empty(DamageType); // 피해 없음 결과 반환
         } // 대상 없음 처리 종료
-        return Target.PreviewDamage(Amount, DamageType); // 대상 방어력 포함 예상 피해 반환
+        int modifiedAmount = Actor.ModifyOutgoingDamage(Amount); // 정신 상태 포함 적 피해량 계산
+        return Target.PreviewDamage(modifiedAmount, DamageType); // 대상 방어력 포함 예상 피해 반환
     } // 예정 피해 계산 종료
     public BattleEnemyActionResult Execute() // 예정 행동 실행
     { // 행동 실행 시작
@@ -63,10 +64,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         } // 실행 불가 처리 종료
         if (ActionType == EnemyActionType.ApplyStatusEffect) // 상태 적용 행동 확인
         { // 상태 적용 처리 시작
-            BattleStatusEffectApplyResult applyResult = Target.ApplyStatusEffect(StatusEffectType, Amount, StatusDuration, StatusMaximumStacks); // 대상 상태 이상 적용
+            BattleStatusEffectApplyResult applyResult = Target.ApplyStatusEffect(StatusEffectType, Amount, StatusDuration, StatusMaximumStacks, Actor); // 대상 상태 이상 적용
             return BattleEnemyActionResult.FromStatus(applyResult); // 상태 적용 결과 반환
         } // 상태 적용 처리 종료
-        BattleDamageResult damageResult = Target.TakeDamage(Amount, DamageType); // 대상 피해 적용
+        int modifiedAmount = Actor.ModifyOutgoingDamage(Amount); // 정신 상태 포함 적 피해량 계산
+        BattleDamageResult damageResult = Target.TakeDamage(modifiedAmount, DamageType, Actor); // 대상 피해 적용
         return BattleEnemyActionResult.FromDamage(damageResult); // 피해 행동 결과 반환
     } // 행동 실행 종료
     private bool IsActionConfigurationValid() // 행동 설정 유효성 확인

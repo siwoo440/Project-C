@@ -3,6 +3,7 @@ using UnityEngine; // 유니티 기본 기능 사용
 public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결과와 아군 상태 보관
 { // 클래스 시작
     private readonly Dictionary<string, int> savedAllyHealth = new Dictionary<string, int>(); // 아군별 저장 체력 목록
+    private readonly Dictionary<string, int> savedAllyMental = new Dictionary<string, int>(); // 아군별 저장 정신력 목록
     private BattleResultData pendingResult; // 탐사 전달 대기 결과
     public static BattleResultManager Instance { get; private set; } // 전역 결과 관리자 조회
     public bool HasPendingResult => pendingResult != null; // 전달 대기 결과 존재 여부 조회
@@ -44,6 +45,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                 continue; // 다음 아군 상태 이동
             } // 잘못된 상태 처리 종료
             savedAllyHealth[allyState.UnitId] = allyState.CurrentHealth; // 아군 현재 체력 영구 상태 저장
+            savedAllyMental[allyState.UnitId] = allyState.CurrentMental; // 아군 현재 정신력 영구 상태 저장
         } // 아군 체력 저장 종료
         return true; // 결과 저장 성공 반환
     } // 결과 저장 종료
@@ -63,19 +65,26 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
     } // 대기 결과 제거 종료
     public bool ApplySavedAllyState(BattleUnitRuntime allyUnit) // 저장된 아군 체력 적용
     { // 아군 상태 적용 시작
-        if (allyUnit == null || allyUnit.Team != BattleTeam.Ally || !savedAllyHealth.TryGetValue(allyUnit.UnitId, out int currentHealth)) // 저장 체력 존재 확인
+        if (allyUnit == null || allyUnit.Team != BattleTeam.Ally) // 아군 유닛 유효성 확인
         { // 저장 체력 없음 처리 시작
             return false; // 아군 상태 적용 실패 반환
         } // 저장 체력 없음 처리 종료
-        return allyUnit.ApplyPersistentHealth(currentHealth); // 저장 체력 적용 결과 반환
+        bool healthApplied = savedAllyHealth.TryGetValue(allyUnit.UnitId, out int currentHealth) && allyUnit.ApplyPersistentHealth(currentHealth); // 저장 체력 적용 여부 계산
+        bool mentalApplied = savedAllyMental.TryGetValue(allyUnit.UnitId, out int currentMental) && allyUnit.ApplyPersistentMental(currentMental); // 저장 정신력 적용 여부 계산
+        return healthApplied || mentalApplied; // 저장 상태 적용 결과 반환
     } // 아군 상태 적용 종료
     public bool TryGetSavedAllyHealth(string unitId, out int currentHealth) // 저장 아군 체력 조회
     { // 저장 체력 조회 시작
         return savedAllyHealth.TryGetValue(unitId, out currentHealth); // 저장 체력 조회 결과 반환
     } // 저장 체력 조회 종료
+    public bool TryGetSavedAllyMental(string unitId, out int currentMental) // 저장 아군 정신력 조회
+    { // 저장 정신력 조회 시작
+        return savedAllyMental.TryGetValue(unitId, out currentMental); // 저장 정신력 조회 결과 반환
+    } // 저장 정신력 조회 종료
     public void ResetSavedPartyState() // 저장 아군 상태 전체 초기화
     { // 파티 상태 초기화 시작
         savedAllyHealth.Clear(); // 저장 아군 체력 비우기
+        savedAllyMental.Clear(); // 저장 아군 정신력 비우기
     } // 파티 상태 초기화 종료
     private void OnDestroy() // 결과 관리자 제거 처리
     { // 제거 처리 시작

@@ -21,3 +21,7 @@ MonoBehaviour:
   physicalDefense: 2
   magicalResistance: 1
   initialMental: 50
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10

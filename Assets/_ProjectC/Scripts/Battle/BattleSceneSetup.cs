@@ -42,6 +42,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleCardActionController cardActionController; // 카드 행동 관리자
     private BattleStatusEffectProcessor statusEffectProcessor; // 상태 발동과 정화 공통 처리기
     private BattleStatusEffectController statusEffectController; // 상태 이상 발동 관리자
+    private BattleMentalController mentalController; // 정신력 흐름 관리자
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
@@ -94,11 +95,13 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
         cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        mentalController = new BattleMentalController(battleTurn, allyUnits, enemyUnits); // 정신력 흐름 관리자 생성
         statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits, statusEffectProcessor); // 상태 이상 발동 관리자 생성
         statusEffectController.StatusEffectsProcessed += HandleStatusEffectsProcessed; // 상태 처리 결과 화면 연결
         enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
         RegisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 등록
+        RegisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 등록
         battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         IsInitialized = true; // 초기화 완료 저장
         if (!battleTurn.StartBattle(initialHandSize)) // 전투 시작 처리 확인
@@ -240,12 +243,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         BattleUnitRuntime summonedEnemy = CreateEnemyUnit(enemyData); // 소환 적 런타임과 화면 생성
         bool turnRegistered = battleTurn.RegisterSummonedEnemy(summonedEnemy); // 승패 판정에 소환 적 등록
         bool actionRegistered = enemyActionRuntime.RegisterSummonedEnemy(summonedEnemy); // 적 행동 흐름에 소환 적 등록
-        if (!turnRegistered || !actionRegistered) // 소환 연결 결과 확인
+        bool mentalRegistered = mentalController != null && mentalController.RegisterSummonedEnemy(summonedEnemy); // 정신력 흐름에 소환 적 등록
+        if (!turnRegistered || !actionRegistered || !mentalRegistered) // 소환 연결 결과 확인
         { // 연결 실패 복구 시작
             RemoveEnemyUnit(summonedEnemy); // 불완전 소환 적 제거
             Debug.LogError("[BattleSceneSetup] 소환 적의 전투 연결에 실패했습니다.", this); // 소환 연결 오류 출력
             return false; // 적 소환 실패 반환
         } // 연결 실패 복구 종료
+        summonedEnemy.MentalChanged += HandleMentalIntentChanged; // 소환 적 정신 상태 예고 갱신 등록
         Debug.Log($"[BattleSceneSetup] 적 소환 - {summonedEnemy.DisplayName} / 현재 생존 적 {CountLivingEnemies()}명 / 다음 행동 준비부터 참여", this); // 적 소환 결과 출력
         return true; // 적 소환 성공 반환
     } // 적 소환 종료
@@ -285,6 +290,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 없음 처리 종료
         battleTurn?.UnregisterEnemy(enemyUnit); // 승패 판정 사망 연결 해제
         enemyActionRuntime?.UnregisterEnemy(enemyUnit); // 행동 흐름 사망 연결 해제
+        mentalController?.UnregisterEnemy(enemyUnit); // 정신력 흐름 사망 연결 해제
+        enemyUnit.MentalChanged -= HandleMentalIntentChanged; // 적 정신 상태 예고 갱신 해제
         enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
         BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
         if (enemyView != null) // 제거 적 화면 존재 확인
@@ -491,7 +498,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 패배 처리 종료
         else if (battleTurn.CurrentPhase == BattleTurnPhase.Escaped) // 도주 상태 확인
         { // 도주 처리 시작
-            Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP 유지", this); // 도주 결과 출력
+            Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP와 정신력 유지", this); // 도주 결과 출력
         } // 도주 처리 종료
     } // 턴 상태 처리 종료
     private void StoreAndShowBattleResult() // 전투 결과 저장과 화면 표시
@@ -552,6 +559,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     { // 아군 상태 변경 시작
         HandleEnemyActionStateChanged(); // 방어력과 면역 포함 적 예고 갱신
     } // 아군 상태 변경 종료
+    private void HandleMentalIntentChanged(BattleUnitRuntime runtimeUnit, BattleMentalChangeResult changeResult) // 정신 상태 변경 예고 처리
+    { // 정신 상태 예고 처리 시작
+        HandleEnemyActionStateChanged(); // 정신 상태 포함 적 예고 갱신
+    } // 정신 상태 예고 처리 종료
     private void HandleStatusEffectsProcessed(BattleUnitRuntime runtimeUnit, IReadOnlyList<BattleStatusEffectProcessResult> processResults) // 상태 일괄 처리 결과 표시
     { // 상태 결과 표시 시작
         IReadOnlyList<BattleUnitView> unitViews = runtimeUnit.Team == BattleTeam.Ally ? allyUnitViews : enemyUnitViews; // 진영별 유닛 화면 목록 선택
@@ -587,6 +598,36 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 유효 아군 처리 종료
         } // 개별 이벤트 해제 종료
     } // 상태 이벤트 해제 종료
+    private void RegisterMentalIntentEvents() // 정신 상태 예고 이벤트 등록
+    { // 정신 상태 이벤트 등록 시작
+        RegisterMentalIntentEvents(allyUnits); // 아군 정신 상태 이벤트 등록
+        RegisterMentalIntentEvents(enemyUnits); // 적 정신 상태 이벤트 등록
+    } // 정신 상태 이벤트 등록 종료
+    private void RegisterMentalIntentEvents(IReadOnlyList<BattleUnitRuntime> units) // 지정 유닛 정신 상태 이벤트 등록
+    { // 지정 이벤트 등록 시작
+        foreach (BattleUnitRuntime runtimeUnit in units) // 유닛 목록 순회
+        { // 개별 등록 시작
+            if (runtimeUnit != null) // 유닛 존재 확인
+            { // 유효 유닛 처리 시작
+                runtimeUnit.MentalChanged += HandleMentalIntentChanged; // 정신 상태 예고 갱신 연결
+            } // 유효 유닛 처리 종료
+        } // 개별 등록 종료
+    } // 지정 이벤트 등록 종료
+    private void UnregisterMentalIntentEvents() // 정신 상태 예고 이벤트 해제
+    { // 정신 상태 이벤트 해제 시작
+        UnregisterMentalIntentEvents(allyUnits); // 아군 정신 상태 이벤트 해제
+        UnregisterMentalIntentEvents(enemyUnits); // 적 정신 상태 이벤트 해제
+    } // 정신 상태 이벤트 해제 종료
+    private void UnregisterMentalIntentEvents(IReadOnlyList<BattleUnitRuntime> units) // 지정 유닛 정신 상태 이벤트 해제
+    { // 지정 이벤트 해제 시작
+        foreach (BattleUnitRuntime runtimeUnit in units) // 유닛 목록 순회
+        { // 개별 해제 시작
+            if (runtimeUnit != null) // 유닛 존재 확인
+            { // 유효 유닛 처리 시작
+                runtimeUnit.MentalChanged -= HandleMentalIntentChanged; // 정신 상태 예고 갱신 해제
+            } // 유효 유닛 처리 종료
+        } // 개별 해제 종료
+    } // 지정 이벤트 해제 종료
     private IEnumerator ExecuteEnemyTurn() // 적 턴 행동 실행
     { // 적 턴 실행 시작
         if (enemyActionRuntime == null) // 적 행동 관리자 확인
@@ -684,7 +725,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 상태 관리자 해제 종료
         statusEffectController = null; // 상태 이상 관리자 참조 제거
         statusEffectProcessor = null; // 공통 상태 처리기 참조 제거
+        mentalController?.Dispose(); // 정신력 관리자 연결 해제
+        mentalController = null; // 정신력 관리자 참조 제거
         UnregisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 해제
+        UnregisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 해제
         if (actionSequenceRunner != null) // 행동 연출 실행기 확인
         { // 행동 연출 연결 해제 시작
             actionSequenceRunner.BusyStateChanged -= handView.SetInteractionLocked; // 손패 입력 잠금 연결 해제

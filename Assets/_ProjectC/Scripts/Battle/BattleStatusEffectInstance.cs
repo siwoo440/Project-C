@@ -55,13 +55,15 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 저항 증가"; // 마법 저항 증가 이름 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마법 저항 약화"; // 마법 저항 감소 이름 반환
+            case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
+                return "교란"; // 정신력 교란 이름 반환
             default: // 알 수 없는 종류
                 return "없음"; // 기본 이름 반환
         } // 종류 분기 종료
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown; // 감소 상태 포함 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt; // 감소 상태 포함 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -83,6 +85,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마+"; // 마법 저항 증가 아이콘 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마-"; // 마법 저항 감소 아이콘 반환
+            case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
+                return "란"; // 정신력 교란 아이콘 반환
             default: // 알 수 없는 종류
                 return "?"; // 기본 아이콘 반환
         } // 종류 분기 종료
@@ -107,6 +111,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"마법 저항력 증가 {effectiveValue}"; // 마법 저항 증가 설명 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
+            case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
+                return "적용 시 정신력 4 감소"; // 정신력 교란 설명 반환
             default: // 알 수 없는 종류
                 return "효과 없음"; // 기본 설명 반환
         } // 종류 분기 종료
