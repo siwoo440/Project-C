@@ -1,4 +1,5 @@
 using System; // 기본 이벤트 기능 사용
+using System.Collections; // 코루틴 자료형 사용
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
@@ -19,6 +20,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
     private GameObject enemyIntentRoot; // 적 행동 예고 오브젝트
     private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
+    private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -35,6 +37,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.HealthRestored += HandleHealthRestored; // 회복 적용 이벤트 등록
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
+        EnsureMotionView(); // 유닛 움직임 화면 준비
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
@@ -50,11 +53,48 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
         RuntimeUnit = null; // 런타임 참조 제거
+        ResetMotion(); // 유닛 움직임 복구
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
         { // 행동 예고 숨김 시작
             enemyIntentRoot.SetActive(false); // 행동 예고 숨김
         } // 행동 예고 숨김 종료
     } // 연결 해제 종료
+    public IEnumerator PlayAttackAdvance() // 공격 전진 연출 실행
+    { // 공격 전진 시작
+        if (motionView == null || RuntimeUnit == null) // 움직임 화면과 유닛 확인
+        { // 연출 불가 처리 시작
+            yield break; // 공격 전진 종료
+        } // 연출 불가 처리 종료
+        yield return motionView.PlayAttackAdvance(RuntimeUnit.Team); // 진영별 공격 전진 실행
+    } // 공격 전진 종료
+    public IEnumerator PlayAttackReturn() // 공격 복귀 연출 실행
+    { // 공격 복귀 시작
+        if (motionView == null) // 움직임 화면 확인
+        { // 연출 불가 처리 시작
+            yield break; // 공격 복귀 종료
+        } // 연출 불가 처리 종료
+        yield return motionView.PlayAttackReturn(); // 초상화 원위치 복귀
+    } // 공격 복귀 종료
+    public IEnumerator PlayCastAnticipation() // 회복 행동 준비 연출 실행
+    { // 회복 준비 시작
+        if (motionView == null) // 움직임 화면 확인
+        { // 연출 불가 처리 시작
+            yield break; // 회복 준비 종료
+        } // 연출 불가 처리 종료
+        yield return motionView.PlayCastAnticipation(); // 초상화 준비 확대 실행
+    } // 회복 준비 종료
+    public void PlayHitReaction() // 피격 흔들림 실행
+    { // 피격 흔들림 시작
+        motionView?.PlayHitReaction(); // 초상화 피격 흔들림 시작
+    } // 피격 흔들림 종료
+    public void PlayHealReaction() // 회복 확대 실행
+    { // 회복 확대 시작
+        motionView?.PlayHealReaction(); // 초상화 회복 확대 시작
+    } // 회복 확대 종료
+    public void ResetMotion() // 유닛 움직임 초기화
+    { // 움직임 초기화 시작
+        motionView?.ResetMotion(); // 초상화 위치와 크기 복구
+    } // 움직임 초기화 종료
     public void SetEnemyIntent(BattleEnemyAction action) // 적 행동 예고 표시
     { // 행동 예고 표시 시작
         if (action == null || RuntimeUnit == null || RuntimeUnit.Team != BattleTeam.Enemy || action.Actor != RuntimeUnit) // 표시 행동 유효성 확인
@@ -98,7 +138,9 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         if (portraitImage != null) // 초상화 이미지 존재 확인
         { // 초상화 적용 시작
             portraitImage.sprite = RuntimeUnit.Portrait; // 초상화 스프라이트 적용
-            portraitImage.enabled = RuntimeUnit.Portrait != null; // 초상화 표시 여부 적용
+            portraitImage.enabled = true; // 초상화 또는 임시 표시 활성화
+            Color placeholderColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 진영별 임시 초상화 색상 계산
+            portraitImage.color = RuntimeUnit.Portrait != null ? Color.white : new Color(placeholderColor.r, placeholderColor.g, placeholderColor.b, 0.45f); // 원본 또는 임시 초상화 색상 적용
         } // 초상화 적용 종료
         if (teamFrameImage != null) // 진영 테두리 존재 확인
         { // 진영 색상 적용 시작
@@ -141,6 +183,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
             return; // 피해 이벤트 무시
         } // 다른 유닛 처리 종료
         combatFeedbackView.ShowDamage(damageResult); // 피해 숫자와 강조 표시
+        PlayHitReaction(); // 피해 대상 초상화 흔들림 시작
     } // 피해 이벤트 처리 종료
     private void HandleHealthRestored(BattleUnitRuntime runtimeUnit, int appliedHealing) // 회복 적용 이벤트 처리
     { // 회복 이벤트 처리 시작
@@ -149,6 +192,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
             return; // 회복 이벤트 무시
         } // 다른 유닛 처리 종료
         combatFeedbackView.ShowHealing(appliedHealing); // 회복 숫자와 강조 표시
+        PlayHealReaction(); // 회복 대상 초상화 확대 시작
     } // 회복 이벤트 처리 종료
     private void HandleDied(BattleUnitRuntime runtimeUnit) // 사망 이벤트 처리
     { // 사망 이벤트 처리 시작
@@ -207,6 +251,19 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
             combatFeedbackView = gameObject.AddComponent<BattleCombatFeedbackView>(); // 런타임 피드백 컴포넌트 추가
         } // 피드백 컴포넌트 생성 종료
     } // 피드백 준비 종료
+    private void EnsureMotionView() // 유닛 움직임 화면 준비
+    { // 움직임 준비 시작
+        if (motionView == null) // 기존 움직임 컴포넌트 확인
+        { // 움직임 컴포넌트 생성 시작
+            motionView = GetComponent<BattleUnitMotionView>(); // 기존 움직임 컴포넌트 조회
+            if (motionView == null) // 움직임 컴포넌트 누락 확인
+            { // 움직임 컴포넌트 추가 시작
+                motionView = gameObject.AddComponent<BattleUnitMotionView>(); // 런타임 움직임 컴포넌트 추가
+            } // 움직임 컴포넌트 추가 종료
+        } // 움직임 컴포넌트 생성 종료
+        RectTransform portraitRect = portraitImage == null ? null : portraitImage.rectTransform; // 초상화 사각형 조회
+        motionView.Initialize(portraitRect); // 움직임 대상 초상화 연결
+    } // 움직임 준비 종료
     private void OnDestroy() // 오브젝트 제거 처리
     { // 제거 처리 시작
         Unbind(); // 이벤트 연결 해제

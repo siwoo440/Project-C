@@ -7,17 +7,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private readonly BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private readonly BattleHandView handView; // 연결된 손패 화면
+    private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
+    private bool actionPending; // 카드 행동 연출 진행 여부
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
         turnRuntime = battleTurn ?? throw new ArgumentNullException(nameof(battleTurn)); // 전투 턴 관리자 저장
         handView = battleHandView ?? throw new ArgumentNullException(nameof(battleHandView)); // 손패 화면 저장
+        actionSequenceRunner = sequenceRunner ?? throw new ArgumentNullException(nameof(sequenceRunner)); // 행동 연출 실행기 저장
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
         handView.CardClicked += HandleCardClicked; // 카드 클릭 이벤트 등록
@@ -29,7 +32,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 생성자 종료
     private void HandleCardClicked(CardInstance cardInstance) // 카드 클릭 처리
     { // 카드 클릭 처리 시작
-        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 행동 연출 여부 확인
         { // 플레이어 턴 아님 처리 시작
             return; // 카드 클릭 처리 중단
         } // 플레이어 턴 아님 처리 종료
@@ -81,7 +84,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 클릭 처리 종료
     private void HandleUnitClicked(BattleUnitRuntime runtimeUnit) // 유닛 클릭 처리
     { // 유닛 클릭 처리 시작
-        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 행동 연출 여부 확인
         { // 플레이어 턴 아님 처리 시작
             return; // 유닛 클릭 처리 중단
         } // 플레이어 턴 아님 처리 종료
@@ -121,7 +124,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유닛 사망 처리 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
-        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 연출 상태 확인
         { // 실행 불가 처리 시작
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
@@ -137,12 +140,36 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 미지원 효과 처리 종료
+        BattleUnitView actorView = FindUnitView(cardInstance.OwnerUnit); // 카드 행동자 화면 조회
+        List<BattleUnitView> targetViews = CollectUnitViews(targetUnits); // 카드 대상 화면 목록 생성
+        if (!actionSequenceRunner.CanStartAction(actorView, targetViews)) // 행동 연출 시작 가능 확인
+        { // 연출 시작 불가 처리 시작
+            Debug.LogWarning($"[BattleCardActionController] 카드 행동 연출을 시작할 수 없습니다: {cardInstance.DisplayName}"); // 연출 시작 실패 출력
+            CancelSelection(); // 선택 상태 초기화
+            return; // 카드 실행 중단
+        } // 연출 시작 불가 처리 종료
         if (!sharedActionPoints.Spend(cardInstance.ApCost)) // 카드 비용 차감 확인
         { // 비용 차감 실패 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 카드 비용 차감에 실패했습니다: {cardInstance.DisplayName}"); // 비용 차감 실패 출력
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        List<BattleUnitRuntime> targetSnapshot = new List<BattleUnitRuntime>(targetUnits); // 연출 중 유지할 대상 목록 복사
+        actionPending = true; // 카드 행동 진행 상태 저장
+        CancelSelection(); // 카드 선택과 대상 강조 해제
+        Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot); // 충돌 시 카드 효과 처리 생성
+        bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
+        if (started) // 연출 시작 결과 확인
+        { // 연출 시작 성공 처리 시작
+            return; // 충돌 시점까지 카드 실행 대기
+        } // 연출 시작 성공 처리 종료
+        actionPending = false; // 카드 행동 진행 상태 해제
+        Debug.LogWarning($"[BattleCardActionController] 카드 행동 연출 시작 실패로 효과를 즉시 적용합니다: {cardInstance.DisplayName}"); // 즉시 적용 안내 출력
+        impactAction.Invoke(); // 카드 효과 즉시 적용
+        handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+    } // 카드 실행 종료
+    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
+    { // 카드 충돌 처리 시작
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
         { // 효과 적용 시작
@@ -155,8 +182,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 이동 실패 처리 종료
         string effectLabel = cardInstance.EffectType == CardEffectType.Heal ? "회복" : cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
-        CancelSelection(); // 카드 선택 상태 초기화
-    } // 카드 실행 종료
+    } // 카드 충돌 처리 종료
+    private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
+    { // 연출 완료 처리 시작
+        actionPending = false; // 카드 행동 진행 상태 해제
+        handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+    } // 연출 완료 처리 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
     { // 대상 검사 시작
         if (cardInstance == null || targetUnit == null || targetUnit.IsDead) // 카드와 대상 상태 확인
@@ -213,6 +244,35 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 지원 효과 검사 시작
         return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal; // 피해와 회복 지원 결과 반환
     } // 지원 효과 검사 종료
+    private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
+    { // 유닛 화면 조회 시작
+        BattleUnitView allyView = FindUnitView(runtimeUnit, allyUnitViews); // 아군 화면에서 조회
+        return allyView != null ? allyView : FindUnitView(runtimeUnit, enemyUnitViews); // 아군 또는 적 화면 반환
+    } // 유닛 화면 조회 종료
+    private static BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit, IReadOnlyList<BattleUnitView> unitViews) // 지정 목록 유닛 화면 조회
+    { // 지정 목록 조회 시작
+        foreach (BattleUnitView unitView in unitViews) // 유닛 화면 목록 순회
+        { // 유닛 화면 비교 시작
+            if (unitView != null && unitView.RuntimeUnit == runtimeUnit) // 런타임 유닛 일치 확인
+            { // 일치 화면 처리 시작
+                return unitView; // 일치 유닛 화면 반환
+            } // 일치 화면 처리 종료
+        } // 유닛 화면 비교 종료
+        return null; // 일치 유닛 화면 없음 반환
+    } // 지정 목록 조회 종료
+    private List<BattleUnitView> CollectUnitViews(IReadOnlyList<BattleUnitRuntime> runtimeUnits) // 대상 런타임 화면 목록 생성
+    { // 대상 화면 생성 시작
+        List<BattleUnitView> unitViews = new List<BattleUnitView>(); // 빈 유닛 화면 목록 생성
+        foreach (BattleUnitRuntime runtimeUnit in runtimeUnits) // 대상 런타임 목록 순회
+        { // 대상 화면 조회 시작
+            BattleUnitView unitView = FindUnitView(runtimeUnit); // 런타임 대응 화면 조회
+            if (unitView != null) // 대응 화면 확인
+            { // 대응 화면 처리 시작
+                unitViews.Add(unitView); // 대상 화면 목록 추가
+            } // 대응 화면 처리 종료
+        } // 대상 화면 조회 종료
+        return unitViews; // 대상 화면 목록 반환
+    } // 대상 화면 생성 종료
     private static int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
@@ -300,6 +360,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         UnregisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 해제
         UnregisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 해제
         selectedCard = null; // 선택 카드 참조 제거
+        actionPending = false; // 카드 행동 진행 상태 해제
         ClearTargetHighlights(allyUnitViews); // 아군 대상 강조 해제
         ClearTargetHighlights(enemyUnitViews); // 적 대상 강조 해제
     } // 연결 해제 종료

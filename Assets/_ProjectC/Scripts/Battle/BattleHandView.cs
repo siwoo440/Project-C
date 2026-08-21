@@ -18,6 +18,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private CardInstance selectedCard; // 현재 선택 카드
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
+    private bool interactionLocked; // 행동 연출 중 입력 잠금 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
     public BattleTurnRuntime TurnRuntime => turnRuntime; // 연결된 전투 턴 관리자 조회
@@ -201,8 +202,26 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             } // 카드 사용 가능 적용 종료
         } // 사용 가능 상태 적용 종료
     } // 사용 가능 상태 갱신 종료
+    public void SetInteractionLocked(bool locked) // 손패와 턴 종료 입력 잠금 설정
+    { // 입력 잠금 설정 시작
+        if (interactionLocked == locked) // 동일 잠금 상태 확인
+        { // 동일 상태 처리 시작
+            return; // 입력 잠금 갱신 중단
+        } // 동일 상태 처리 종료
+        interactionLocked = locked; // 입력 잠금 상태 저장
+        if (interactionLocked) // 입력 잠금 확인
+        { // 잠금 처리 시작
+            HideTooltip(); // 카드 상세 툴팁 숨김
+        } // 잠금 처리 종료
+        RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+        RefreshTurnStatus(); // 턴 종료 버튼 상태 갱신
+    } // 입력 잠금 설정 종료
     private bool IsCardUsable(CardInstance cardInstance) // 카드 사용 가능 여부 확인
     { // 카드 사용 가능 검사 시작
+        if (interactionLocked) // 행동 연출 입력 잠금 확인
+        { // 입력 잠금 처리 시작
+            return false; // 카드 사용 불가 반환
+        } // 입력 잠금 처리 종료
         if (cardInstance == null || cardInstance.OwnerUnit == null) // 카드와 소유자 확인
         { // 카드 연결 오류 처리 시작
             return false; // 카드 사용 불가 반환
@@ -232,7 +251,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 카드 화면 제거 종료
     private void HandleCardViewClicked(BattleCardView cardView) // 카드 화면 클릭 처리
     { // 카드 클릭 처리 시작
-        if (cardView == null || cardView.RuntimeCard == null) // 카드 화면 연결 확인
+        if (interactionLocked || cardView == null || cardView.RuntimeCard == null) // 입력 잠금과 카드 화면 연결 확인
         { // 잘못된 화면 처리 시작
             return; // 카드 클릭 처리 중단
         } // 잘못된 화면 처리 종료
@@ -240,7 +259,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 카드 클릭 처리 종료
     private void HandleCardHoverEntered(BattleCardView cardView) // 카드 마우스 진입 처리
     { // 마우스 진입 처리 시작
-        if (cardView == null || cardView.RuntimeCard == null || tooltipView == null) // 카드와 툴팁 연결 확인
+        if (interactionLocked || cardView == null || cardView.RuntimeCard == null || tooltipView == null) // 입력 잠금과 카드 연결 확인
         { // 마우스 진입 불가 처리 시작
             return; // 마우스 진입 처리 중단
         } // 마우스 진입 불가 처리 종료
@@ -283,7 +302,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 턴 변경 처리 종료
     private void HandleEndTurnClicked() // 턴 종료 버튼 클릭 처리
     { // 턴 종료 클릭 처리 시작
-        if (turnRuntime == null) // 턴 관리자 연결 확인
+        if (interactionLocked || turnRuntime == null) // 입력 잠금과 턴 관리자 연결 확인
         { // 미연결 처리 시작
             return; // 턴 종료 처리 중단
         } // 미연결 처리 종료
@@ -319,7 +338,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
                 turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
                 break; // 기본 분기 종료
         } // 턴 단계 분기 종료
-        endTurnButton.interactable = turnRuntime.IsPlayerTurn; // 플레이어 턴 버튼 활성화
+        endTurnButton.interactable = turnRuntime.IsPlayerTurn && !interactionLocked; // 플레이어 턴과 입력 잠금 버튼 상태 적용
     } // 턴 상태 갱신 종료
     private void RefreshActionPointStatus() // 공용 행동력 수량 갱신
     { // 행동력 수량 갱신 시작
