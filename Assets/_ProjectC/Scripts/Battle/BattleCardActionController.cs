@@ -8,19 +8,21 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
+    private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
     private bool actionPending; // 카드 행동 연출 진행 여부
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
         turnRuntime = battleTurn ?? throw new ArgumentNullException(nameof(battleTurn)); // 전투 턴 관리자 저장
         handView = battleHandView ?? throw new ArgumentNullException(nameof(battleHandView)); // 손패 화면 저장
         actionSequenceRunner = sequenceRunner ?? throw new ArgumentNullException(nameof(sequenceRunner)); // 행동 연출 실행기 저장
+        statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
         handView.CardClicked += HandleCardClicked; // 카드 클릭 이벤트 등록
@@ -296,9 +298,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 상태 이상 처리 종료
         if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
         { // 디버프 해제 처리 시작
-            int removedCount = targetUnit.RemoveAllDebuffs(); // 대상 디버프 전체 제거
+            IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults = statusEffectProcessor.CleanseDebuffs(targetUnit); // 대상 디버프 통합 정화
+            int removedCount = cleanseResults.Count; // 제거된 디버프 수 계산
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
             targetView?.ShowStatusFeedback(removedCount > 0 ? $"정화 {removedCount}" : "정화 실패", false); // 정화 결과 플로팅 문구 표시
+            LogCleanseResults(targetUnit, cleanseResults); // 정화 상세 결과 출력
             return removedCount; // 제거된 디버프 수 반환
         } // 디버프 해제 처리 종료
         int modifiedDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
@@ -307,6 +311,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 단일 효과 적용 종료
+    private static void LogCleanseResults(BattleUnitRuntime targetUnit, IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults) // 정화 상세 결과 출력
+    { // 정화 로그 시작
+        foreach (BattleStatusEffectProcessResult cleanseResult in cleanseResults) // 정화 결과 목록 순회
+        { // 개별 정화 로그 시작
+            string effectName = BattleStatusEffectInstance.GetDisplayName(cleanseResult.EffectType); // 정화 상태 이름 조회
+            Debug.Log($"[BattleStatus] 정화 / 대상 {targetUnit.DisplayName} / {effectName} / 중첩 {cleanseResult.StackCount} / 남은 횟수 {cleanseResult.PreviousRemainingTurns}"); // 정화 결과 출력
+        } // 개별 정화 로그 종료
+    } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인

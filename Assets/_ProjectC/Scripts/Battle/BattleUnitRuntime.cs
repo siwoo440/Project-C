@@ -100,52 +100,30 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 상태 이상 제거 종료
     public int RemoveAllDebuffs() // 모든 디버프 제거
     { // 디버프 전체 제거 시작
-        if (IsDead || statusEffects.Count < 1) // 제거 가능 상태 확인
-        { // 제거 불가 처리 시작
-            return 0; // 제거된 디버프 없음 반환
-        } // 제거 불가 처리 종료
-        int removedCount = statusEffects.RemoveAll(statusEffect => statusEffect.IsDebuff); // 디버프 전체 제거
-        if (removedCount > 0) // 실제 제거 여부 확인
-        { // 제거 알림 처리 시작
-            StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
-        } // 제거 알림 처리 종료
-        return removedCount; // 제거된 디버프 수 반환
+        BattleStatusEffectProcessor statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
+        IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults = statusEffectProcessor.CleanseDebuffs(this); // 통합 정화 처리 실행
+        return cleanseResults.Count; // 제거된 디버프 수 반환
     } // 디버프 전체 제거 종료
     public BattleStatusEffectInstance GetStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 공개 조회
     { // 공개 상태 조회 시작
         return FindStatusEffect(effectType); // 지정 상태 이상 반환
     } // 공개 상태 조회 종료
-    public void ProcessStatusEffectsAtPhaseStart(int round) // 진영 턴 시작 상태 이상 발동
-    { // 상태 이상 발동 시작
-        if (IsDead || statusEffects.Count < 1) // 발동 가능 상태 확인
-        { // 발동 불가 처리 시작
-            return; // 상태 이상 발동 중단
-        } // 발동 불가 처리 종료
-        List<BattleStatusEffectInstance> effectSnapshot = new List<BattleStatusEffectInstance>(statusEffects); // 처리 중 변경 대비 목록 복사
-        foreach (BattleStatusEffectInstance statusEffect in effectSnapshot) // 상태 이상 목록 순회
-        { // 개별 상태 발동 시작
-            if (IsDead) // 처리 중 사망 확인
-            { // 사망 처리 시작
-                break; // 남은 상태 발동 중단
-            } // 사망 처리 종료
-            if (statusEffect.EffectType == BattleStatusEffectType.Poison) // 중독 상태 확인
-            { // 중독 발동 시작
-                BattleDamageResult damageResult = TakeDamage(statusEffect.EffectiveValue, BattleDamageType.None); // 방어 무시 중독 피해 적용
-                Debug.Log($"[BattleStatus] {DisplayName} / 라운드 {round} / 중독 피해 {damageResult.AppliedDamage}"); // 중독 발동 결과 출력
-            } // 중독 발동 종료
-            else if (statusEffect.EffectType == BattleStatusEffectType.Regeneration) // 재생 상태 확인
-            { // 재생 발동 시작
-                int restoredHealth = RestoreHealth(statusEffect.EffectiveValue); // 재생 회복 적용
-                Debug.Log($"[BattleStatus] {DisplayName} / 라운드 {round} / 재생 회복 {restoredHealth}"); // 재생 발동 결과 출력
-            } // 재생 발동 종료
-            statusEffect.AdvanceDuration(); // 상태 이상 지속 횟수 감소
-            if (statusEffect.IsExpired) // 상태 이상 종료 확인
-            { // 상태 이상 종료 처리 시작
-                statusEffects.Remove(statusEffect); // 만료 상태 이상 제거
-            } // 상태 이상 종료 처리 종료
-        } // 개별 상태 발동 종료
-        StatusEffectsChanged?.Invoke(this); // 상태 이상 발동 결과 알림
-    } // 상태 이상 발동 종료
+    internal List<BattleStatusEffectInstance> CreateStatusEffectSnapshot() // 상태 목록 안전 복사
+    { // 상태 복사 시작
+        return new List<BattleStatusEffectInstance>(statusEffects); // 현재 상태 목록 복사 반환
+    } // 상태 복사 종료
+    internal bool ContainsStatusEffectInstance(BattleStatusEffectInstance statusEffect) // 상태 인스턴스 존재 확인
+    { // 상태 존재 확인 시작
+        return statusEffect != null && statusEffects.Contains(statusEffect); // 유효 상태 포함 여부 반환
+    } // 상태 존재 확인 종료
+    internal bool RemoveStatusEffectInstance(BattleStatusEffectInstance statusEffect) // 상태 인스턴스 조용히 제거
+    { // 상태 제거 시작
+        return statusEffect != null && statusEffects.Remove(statusEffect); // 상태 목록 제거 결과 반환
+    } // 상태 제거 종료
+    internal void NotifyStatusEffectsChanged() // 상태 일괄 변경 알림
+    { // 상태 알림 시작
+        StatusEffectsChanged?.Invoke(this); // 상태 UI와 예고 갱신 알림
+    } // 상태 알림 종료
     private BattleStatusEffectInstance FindStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 조회
     { // 상태 이상 조회 시작
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회

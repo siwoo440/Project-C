@@ -40,6 +40,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleActionPointRuntime sharedActionPoints; // 생성된 공용 행동력
     private BattleTurnRuntime battleTurn; // 생성된 전투 턴 관리자
     private BattleCardActionController cardActionController; // 카드 행동 관리자
+    private BattleStatusEffectProcessor statusEffectProcessor; // 상태 발동과 정화 공통 처리기
     private BattleStatusEffectController statusEffectController; // 상태 이상 발동 관리자
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
@@ -91,8 +92,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             actionSequenceRunner = gameObject.AddComponent<BattleActionSequenceRunner>(); // 런타임 행동 연출 실행기 추가
         } // 행동 연출 실행기 생성 종료
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
-        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
-        statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits); // 상태 이상 발동 관리자 생성
+        statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
+        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits, statusEffectProcessor); // 상태 이상 발동 관리자 생성
+        statusEffectController.StatusEffectsProcessed += HandleStatusEffectsProcessed; // 상태 처리 결과 화면 연결
         enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
         RegisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 등록
@@ -549,6 +552,21 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     { // 아군 상태 변경 시작
         HandleEnemyActionStateChanged(); // 방어력과 면역 포함 적 예고 갱신
     } // 아군 상태 변경 종료
+    private void HandleStatusEffectsProcessed(BattleUnitRuntime runtimeUnit, IReadOnlyList<BattleStatusEffectProcessResult> processResults) // 상태 일괄 처리 결과 표시
+    { // 상태 결과 표시 시작
+        IReadOnlyList<BattleUnitView> unitViews = runtimeUnit.Team == BattleTeam.Ally ? allyUnitViews : enemyUnitViews; // 진영별 유닛 화면 목록 선택
+        BattleUnitView unitView = FindUnitView(runtimeUnit, unitViews); // 처리 유닛 화면 조회
+        foreach (BattleStatusEffectProcessResult processResult in processResults) // 상태 처리 결과 순회
+        { // 개별 결과 표시 시작
+            string effectName = BattleStatusEffectInstance.GetDisplayName(processResult.EffectType); // 상태 표시 이름 조회
+            if (processResult.WasExpired) // 자연 만료 결과 확인
+            { // 만료 피드백 시작
+                unitView?.ShowStatusFeedback($"{effectName} 만료", BattleStatusEffectInstance.IsDebuffType(processResult.EffectType)); // 상태 만료 문구 표시
+            } // 만료 피드백 종료
+            string triggerLabel = processResult.WasTriggered ? $"적용 {processResult.AppliedAmount}" : "지속"; // 발동 또는 유지 문구 계산
+            Debug.Log($"[BattleStatus] 턴 시작 / 라운드 {processResult.Round} / 대상 {runtimeUnit.DisplayName} / {effectName} / {triggerLabel} / 지속 {processResult.PreviousRemainingTurns}→{processResult.RemainingTurns} / 제거 {processResult.RemovalReason}", this); // 통합 상태 처리 결과 출력
+        } // 개별 결과 표시 종료
+    } // 상태 결과 표시 종료
     private void RegisterAllyStatusIntentEvents() // 아군 상태 변경 이벤트 등록
     { // 상태 이벤트 등록 시작
         foreach (BattleUnitRuntime allyUnit in allyUnits) // 아군 런타임 목록 순회
@@ -659,8 +677,13 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             StopCoroutine(enemyTurnCoroutine); // 적 턴 코루틴 중단
             enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
         } // 적 턴 중단 종료
-        statusEffectController?.Dispose(); // 상태 이상 관리자 연결 해제
+        if (statusEffectController != null) // 상태 이상 관리자 존재 확인
+        { // 상태 관리자 해제 시작
+            statusEffectController.StatusEffectsProcessed -= HandleStatusEffectsProcessed; // 상태 처리 결과 화면 연결 해제
+            statusEffectController.Dispose(); // 상태 이상 관리자 연결 해제
+        } // 상태 관리자 해제 종료
         statusEffectController = null; // 상태 이상 관리자 참조 제거
+        statusEffectProcessor = null; // 공통 상태 처리기 참조 제거
         UnregisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 해제
         if (actionSequenceRunner != null) // 행동 연출 실행기 확인
         { // 행동 연출 연결 해제 시작
