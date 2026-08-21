@@ -15,7 +15,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour // 전투 행동 
     { // 시작 가능 검사 시작
         return !IsBusy && actorView != null && actorView.RuntimeUnit != null && !actorView.RuntimeUnit.IsDead && HasValidTarget(targetViews); // 행동자와 대상 유효성 반환
     } // 시작 가능 검사 종료
-    public bool TryStartPlayerAction(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, Action impactAction, Action completionAction) // 플레이어 행동 연출 시작
+    public bool TryStartPlayerAction(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, BattleStatusEffectType statusEffectType, Action impactAction, Action completionAction) // 플레이어 행동 연출 시작
     { // 플레이어 행동 시작
         if (!CanStartAction(actorView, targetViews) || impactAction == null) // 시작 조건 확인
         { // 시작 불가 처리 시작
@@ -23,7 +23,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour // 전투 행동 
         } // 시작 불가 처리 종료
         SetBusy(true); // 행동 입력 잠금
         playerCompletion = completionAction; // 완료 처리 저장
-        playerSequenceCoroutine = StartCoroutine(RunPlayerSequence(actorView, targetViews, effectType, impactAction)); // 플레이어 행동 코루틴 시작
+        playerSequenceCoroutine = StartCoroutine(RunPlayerSequence(actorView, targetViews, effectType, statusEffectType, impactAction)); // 플레이어 행동 코루틴 시작
         return true; // 플레이어 행동 시작 성공 반환
     } // 플레이어 행동 시작 종료
     public IEnumerator RunEnemyAction(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, Action impactAction) // 적 행동 연출 실행
@@ -38,7 +38,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour // 전투 행동 
             yield break; // 적 행동 연출 종료
         } // 적 행동 불가 처리 종료
         SetBusy(true); // 적 행동 연출 상태 적용
-        yield return RunSequence(actorView, targetViews, CardEffectType.Damage, impactAction); // 적 공격 순서 실행
+        yield return RunSequence(actorView, targetViews, CardEffectType.Damage, BattleStatusEffectType.None, impactAction); // 적 공격 순서 실행
     } // 적 행동 연출 종료
     public void CancelCurrentAction() // 현재 행동 연출 취소
     { // 행동 취소 시작
@@ -53,20 +53,21 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour // 전투 행동 
         SetBusy(false); // 행동 입력 잠금 해제
         cancelledCompletion?.Invoke(); // 취소 완료 처리 실행
     } // 행동 취소 종료
-    private IEnumerator RunPlayerSequence(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, Action impactAction) // 플레이어 행동 순서 실행
+    private IEnumerator RunPlayerSequence(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, BattleStatusEffectType statusEffectType, Action impactAction) // 플레이어 행동 순서 실행
     { // 플레이어 순서 시작
-        yield return RunSequence(actorView, targetViews, effectType, impactAction); // 공통 행동 순서 실행
+        yield return RunSequence(actorView, targetViews, effectType, statusEffectType, impactAction); // 공통 행동 순서 실행
         playerSequenceCoroutine = null; // 플레이어 코루틴 참조 제거
         Action completedAction = playerCompletion; // 완료 처리 저장
         playerCompletion = null; // 저장 완료 처리 제거
         completedAction?.Invoke(); // 플레이어 행동 완료 알림
     } // 플레이어 순서 종료
-    private IEnumerator RunSequence(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, Action impactAction) // 공통 행동 순서 실행
+    private IEnumerator RunSequence(BattleUnitView actorView, IReadOnlyList<BattleUnitView> targetViews, CardEffectType effectType, BattleStatusEffectType statusEffectType, Action impactAction) // 공통 행동 순서 실행
     { // 공통 순서 시작
         StoreActiveViews(actorView, targetViews); // 현재 연출 유닛 저장
         try // 연출 복구 보장 시작
         { // 연출 실행 시작
-            if (effectType == CardEffectType.Heal) // 회복 행동 확인
+            bool isSupportAction = effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect && !BattleStatusEffectInstance.IsDebuffType(statusEffectType); // 회복과 버프 행동 확인
+            if (isSupportAction) // 지원 행동 확인
             { // 회복 순서 시작
                 yield return actorView.PlayCastAnticipation(); // 행동자 회복 준비 연출
                 impactAction.Invoke(); // 회복 효과 적용

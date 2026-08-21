@@ -13,6 +13,9 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
     public int EffectValue => SourceData.EffectValue; // 카드 효과 수치 조회
+    public BattleStatusEffectType StatusEffectType => SourceData.StatusEffectType; // 상태 이상 종류 조회
+    public int StatusDuration => SourceData.StatusDuration; // 상태 이상 지속 횟수 조회
+    public int StatusMaximumStacks => SourceData.StatusMaximumStacks; // 상태 이상 최대 중첩 조회
     private CardInstance(string instanceId, CardData sourceData, BattleUnitRuntime ownerUnit) // 카드 인스턴스 생성자
     { // 생성자 시작
         InstanceId = instanceId; // 인스턴스 ID 저장

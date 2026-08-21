@@ -18,6 +18,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     public bool CanEscape => !disposed && BattleType == BattleType.Normal && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 현재 도주 가능 여부
     public event Action StateChanged; // 턴 상태 변경 이벤트
+    public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType) // 턴 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
@@ -43,6 +44,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
         LastDrawnCardCount = runtimeDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
+        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 첫 플레이어 턴 시작 알림
         StateChanged?.Invoke(); // 턴 상태 변경 알림
         return true; // 전투 시작 성공 반환
     } // 전투 시작 처리 종료
@@ -53,7 +55,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 턴 종료 실패 반환
         } // 종료 불가 처리 종료
         CurrentPhase = BattleTurnPhase.EnemyTurn; // 적 턴 설정
-        StateChanged?.Invoke(); // 턴 상태 변경 알림
+        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 턴 시작 알림
+        if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
+        { // 전투 지속 처리 시작
+            StateChanged?.Invoke(); // 턴 상태 변경 알림
+        } // 전투 지속 처리 종료
         return true; // 턴 종료 성공 반환
     } // 플레이어 턴 종료 처리 종료
     public bool CompleteEnemyTurn() // 적 턴 완료
@@ -63,10 +69,14 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
         CurrentRound++; // 다음 라운드 증가
-        sharedActionPoints.Restore(); // 공용 행동력 최대 회복
-        LastDrawnCardCount = runtimeDeck.DrawCards(cardsPerPlayerTurn); // 턴 시작 카드 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
-        StateChanged?.Invoke(); // 턴 상태 변경 알림
+        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 시작 알림
+        if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
+        { // 전투 지속 처리 시작
+            sharedActionPoints.Restore(); // 공용 행동력 최대 회복
+            LastDrawnCardCount = runtimeDeck.DrawCards(cardsPerPlayerTurn); // 턴 시작 카드 드로우
+            StateChanged?.Invoke(); // 턴 상태 변경 알림
+        } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
     public bool TryEscape() // 플레이어 도주 요청
