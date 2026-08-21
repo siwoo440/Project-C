@@ -20,6 +20,13 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [Min(0)] // 공격력 최소값
     [SerializeField] private int basicAttackPower = 8; // 기본 공격력
     [SerializeField] private BattleDamageType damageType = BattleDamageType.Physical; // 기본 피해 유형
+    [SerializeField] private BattleStatusEffectType statusEffectType = BattleStatusEffectType.None; // 적용 상태 이상 종류
+    [Min(1)] // 상태 효과 수치 최소값
+    [SerializeField] private int statusEffectValue = 1; // 상태 효과 수치
+    [Min(1)] // 상태 지속 횟수 최소값
+    [SerializeField] private int statusEffectDuration = 1; // 상태 지속 횟수
+    [Min(1)] // 상태 최대 중첩 최소값
+    [SerializeField] private int statusEffectMaximumStacks = 1; // 상태 최대 중첩 수
     [SerializeField] private EnemyTargetRule targetRule = EnemyTargetRule.FirstLiving; // 대상 선택 규칙
     [Min(1)] // 최소 행동 속도 제한
     [SerializeField] private int minimumActionSpeed = 1; // 최소 행동 속도
@@ -35,6 +42,10 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public EnemyActionType ActionType => actionType; // 기본 행동 종류 조회
     public int BasicAttackPower => basicAttackPower; // 기본 공격력 조회
     public BattleDamageType DamageType => damageType; // 기본 피해 유형 조회
+    public BattleStatusEffectType StatusEffectType => statusEffectType; // 적용 상태 이상 종류 조회
+    public int StatusEffectValue => Mathf.Max(1, statusEffectValue); // 보정된 상태 효과 수치 조회
+    public int StatusEffectDuration => Mathf.Max(1, statusEffectDuration); // 보정된 상태 지속 횟수 조회
+    public int StatusEffectMaximumStacks => Mathf.Max(1, statusEffectMaximumStacks); // 보정된 상태 최대 중첩 조회
     public EnemyTargetRule TargetRule => targetRule; // 대상 선택 규칙 조회
     public int MinimumActionSpeed => Mathf.Max(1, minimumActionSpeed); // 보정된 최소 행동 속도 조회
     public int MaximumActionSpeed => Mathf.Max(MinimumActionSpeed, maximumActionSpeed); // 보정된 최대 행동 속도 조회
