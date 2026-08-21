@@ -1,3 +1,4 @@
+using System.Collections.Generic; // 목록 자료형 사용
 using UnityEngine; // 유니티 기본 기능 사용
 [CreateAssetMenu(fileName = "Enemy_New", menuName = "Project C/Data/Enemy")] // 적 데이터 생성 메뉴
 public sealed class EnemyData : ScriptableObject // 적 원본 데이터
@@ -32,6 +33,8 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [SerializeField] private int minimumActionSpeed = 1; // 최소 행동 속도
     [Min(1)] // 최대 행동 속도 제한
     [SerializeField] private int maximumActionSpeed = 10; // 최대 행동 속도
+    [Header("순차 행동 패턴")] // 순차 행동 패턴 구역
+    [SerializeField] private List<EnemyActionPatternData> actionPatterns = new List<EnemyActionPatternData>(); // 순서대로 반복할 행동 목록
     public string EnemyId => enemyId; // 적 ID 조회
     public string DisplayName => displayName; // 적 이름 조회
     public string Description => description; // 적 설명 조회
@@ -49,4 +52,13 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public EnemyTargetRule TargetRule => targetRule; // 대상 선택 규칙 조회
     public int MinimumActionSpeed => Mathf.Max(1, minimumActionSpeed); // 보정된 최소 행동 속도 조회
     public int MaximumActionSpeed => Mathf.Max(MinimumActionSpeed, maximumActionSpeed); // 보정된 최대 행동 속도 조회
+    public int ActionPatternCount => actionPatterns == null ? 0 : actionPatterns.Count; // 전체 행동 패턴 수 조회
+    public EnemyActionPatternData GetActionPattern(int patternIndex) // 지정 순번 행동 패턴 조회
+    { // 패턴 조회 시작
+        if (actionPatterns == null || patternIndex < 0 || patternIndex >= actionPatterns.Count) // 패턴 범위 확인
+        { // 잘못된 순번 처리 시작
+            return null; // 행동 패턴 없음 반환
+        } // 잘못된 순번 처리 종료
+        return actionPatterns[patternIndex]; // 지정 행동 패턴 반환
+    } // 패턴 조회 종료
 } // 클래스 종료

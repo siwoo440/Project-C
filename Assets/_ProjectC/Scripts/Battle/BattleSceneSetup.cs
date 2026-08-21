@@ -608,13 +608,13 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 상태 결과 처리 시작
                 targetView?.ShowStatusApplyFeedback(enemyAction.StatusEffectType, actionResult.StatusApplyResult); // 상태 적용 결과 화면 표시
                 string effectName = BattleStatusEffectInstance.GetDisplayName(enemyAction.StatusEffectType); // 상태 이상 이름 조회
-                Debug.Log($"[BattleStatus] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {effectName} / 수치 {enemyAction.Amount} / 지속 {enemyAction.StatusDuration} / 결과 {actionResult.StatusApplyResult}", this); // 적 상태 적용 상세 출력
+                Debug.Log($"[BattleStatus] 적 / {enemyAction.Actor.DisplayName} / 패턴 {enemyAction.PatternIndex}/{enemyAction.PatternCount} {enemyAction.PatternDisplayName} / 대상 {enemyAction.Target.DisplayName} / {effectName} / 수치 {enemyAction.Amount} / 지속 {enemyAction.StatusDuration} / 결과 {actionResult.StatusApplyResult}", this); // 적 상태 적용 상세 출력
             } // 상태 결과 처리 종료
             else // 공격 행동 결과 처리
             { // 피해 결과 처리 시작
                 BattleDamageResult damageResult = actionResult.DamageResult; // 적 피해 결과 조회
                 string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-                Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
+                Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 패턴 {enemyAction.PatternIndex}/{enemyAction.PatternCount} {enemyAction.PatternDisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
             } // 피해 결과 처리 종료
         } // 개별 적 행동 종료
         enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
