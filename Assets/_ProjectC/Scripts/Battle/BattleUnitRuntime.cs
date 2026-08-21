@@ -47,6 +47,16 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 누락 처리 종료
         return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, null, enemyData); // 적 상태 반환
     } // 적 생성 종료
+    public bool ApplyPersistentHealth(int currentHealth) // Scene 간 저장 체력 적용
+    { // 저장 체력 적용 시작
+        if (Team != BattleTeam.Ally) // 아군 여부 확인
+        { // 적용 불가 처리 시작
+            return false; // 저장 체력 적용 실패 반환
+        } // 적용 불가 처리 종료
+        CurrentHealth = Mathf.Clamp(currentHealth, 0, MaxHealth); // 저장 현재 체력 범위 적용
+        IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
+        return true; // 저장 체력 적용 성공 반환
+    } // 저장 체력 적용 종료
     public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType) // 예상 피해 계산
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인
