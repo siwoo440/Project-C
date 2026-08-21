@@ -16,6 +16,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
     [Header("진영 색상")] // 진영 색상 구역
     [SerializeField] private Color allyColor = new Color(0.2f, 0.55f, 1f, 1f); // 아군 표시 색상
     [SerializeField] private Color enemyColor = new Color(1f, 0.25f, 0.25f, 1f); // 적 표시 색상
+    private GameObject enemyIntentRoot; // 적 행동 예고 오브젝트
+    private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -31,6 +33,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
+        SetEnemyIntent(null); // 행동 예고 초기화
     } // 연결 종료
     public void Unbind() // 런타임 유닛 연결 해제
     { // 연결 해제 시작
@@ -41,7 +44,27 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.HealthChanged -= HandleHealthChanged; // 체력 변경 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
         RuntimeUnit = null; // 런타임 참조 제거
+        if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
+        { // 행동 예고 숨김 시작
+            enemyIntentRoot.SetActive(false); // 행동 예고 숨김
+        } // 행동 예고 숨김 종료
     } // 연결 해제 종료
+    public void SetEnemyIntent(BattleEnemyAction action) // 적 행동 예고 표시
+    { // 행동 예고 표시 시작
+        if (action == null || RuntimeUnit == null || RuntimeUnit.Team != BattleTeam.Enemy || action.Actor != RuntimeUnit) // 표시 행동 유효성 확인
+        { // 행동 예고 숨김 시작
+            if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
+            { // 기존 예고 처리 시작
+                enemyIntentRoot.SetActive(false); // 행동 예고 숨김
+            } // 기존 예고 처리 종료
+            return; // 행동 예고 표시 중단
+        } // 행동 예고 숨김 종료
+        EnsureEnemyIntentView(); // 행동 예고 화면 준비
+        string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
+        enemyIntentText.text = $"예고: {damageLabel} {action.Amount}\n→ {action.Target.DisplayName}"; // 행동 예고 내용 적용
+        enemyIntentRoot.SetActive(true); // 행동 예고 표시
+        enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
+    } // 행동 예고 표시 종료
     public void SetTargetable(bool targetable) // 대상 선택 가능 표시
     { // 대상 표시 시작
         if (teamFrameImage == null || RuntimeUnit == null) // 화면 연결 상태 확인
@@ -111,7 +134,44 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
             return; // 사망 이벤트 무시
         } // 다른 유닛 처리 종료
         RefreshHealth(); // 사망 표시 갱신
+        if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
+        { // 행동 예고 숨김 시작
+            enemyIntentRoot.SetActive(false); // 사망 유닛 예고 숨김
+        } // 행동 예고 숨김 종료
     } // 사망 이벤트 처리 종료
+    private void EnsureEnemyIntentView() // 적 행동 예고 화면 준비
+    { // 예고 화면 준비 시작
+        if (enemyIntentRoot != null) // 기존 예고 화면 확인
+        { // 기존 화면 처리 시작
+            return; // 중복 생성 중단
+        } // 기존 화면 처리 종료
+        enemyIntentRoot = new GameObject("EnemyIntent", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 행동 예고 배경 생성
+        enemyIntentRoot.transform.SetParent(transform, false); // 유닛 화면 자식 배치
+        RectTransform intentRect = enemyIntentRoot.GetComponent<RectTransform>(); // 행동 예고 사각형 조회
+        intentRect.anchorMin = new Vector2(0.5f, 1f); // 상단 중앙 최소 앵커
+        intentRect.anchorMax = new Vector2(0.5f, 1f); // 상단 중앙 최대 앵커
+        intentRect.pivot = new Vector2(0.5f, 1f); // 상단 중앙 기준점
+        intentRect.anchoredPosition = new Vector2(0f, -6f); // 유닛 내부 상단 위치
+        intentRect.sizeDelta = new Vector2(165f, 40f); // 행동 예고 크기
+        Image intentBackground = enemyIntentRoot.GetComponent<Image>(); // 행동 예고 배경 조회
+        intentBackground.color = new Color(0.18f, 0.06f, 0.06f, 0.94f); // 행동 예고 배경색 적용
+        intentBackground.raycastTarget = false; // 행동 예고 클릭 차단 해제
+        GameObject textObject = new GameObject("IntentText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 행동 예고 글자 생성
+        textObject.transform.SetParent(enemyIntentRoot.transform, false); // 글자 배경 자식 배치
+        RectTransform textRect = textObject.GetComponent<RectTransform>(); // 글자 사각형 조회
+        textRect.anchorMin = Vector2.zero; // 글자 최소 앵커 적용
+        textRect.anchorMax = Vector2.one; // 글자 최대 앵커 적용
+        textRect.offsetMin = new Vector2(5f, 3f); // 글자 왼쪽 아래 여백
+        textRect.offsetMax = new Vector2(-5f, -3f); // 글자 오른쪽 위 여백
+        enemyIntentText = textObject.GetComponent<TextMeshProUGUI>(); // 행동 예고 텍스트 조회
+        enemyIntentText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
+        enemyIntentText.fontSize = 13f; // 행동 예고 글자 크기
+        enemyIntentText.color = new Color(1f, 0.78f, 0.42f, 1f); // 행동 예고 글자색 적용
+        enemyIntentText.alignment = TextAlignmentOptions.Center; // 행동 예고 가운데 정렬
+        enemyIntentText.textWrappingMode = TextWrappingModes.NoWrap; // 행동 예고 자동 줄바꿈 해제
+        enemyIntentText.raycastTarget = false; // 행동 예고 글자 클릭 차단 해제
+        enemyIntentRoot.SetActive(false); // 행동 예고 기본 숨김
+    } // 예고 화면 준비 종료
     private void OnDestroy() // 오브젝트 제거 처리
     { // 제거 처리 시작
         Unbind(); // 이벤트 연결 해제
