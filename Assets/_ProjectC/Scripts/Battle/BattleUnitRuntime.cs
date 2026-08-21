@@ -7,19 +7,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public BattleTeam Team { get; } // 유닛 진영
     public Sprite Portrait { get; } // 유닛 초상화
     public int MaxHealth { get; } // 최대 체력
+    public int PhysicalDefense { get; } // 물리 방어력
+    public int MagicalResistance { get; } // 마법 저항력
     public int CurrentHealth { get; private set; } // 현재 체력
     public bool IsDead { get; private set; } // 사망 여부
     public CharacterData CharacterSource { get; } // 아군 원본 데이터
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
-    private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
+    private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
     { // 생성자 시작
         UnitId = unitId; // 유닛 ID 저장
         DisplayName = displayName; // 표시 이름 저장
         Team = team; // 진영 저장
         Portrait = portrait; // 초상화 저장
         MaxHealth = Mathf.Max(1, maxHealth); // 최소 최대 체력 보정
+        PhysicalDefense = Mathf.Max(0, physicalDefense); // 물리 방어력 보정
+        MagicalResistance = Mathf.Max(0, magicalResistance); // 마법 저항력 보정
         CurrentHealth = MaxHealth; // 현재 체력 초기화
         IsDead = false; // 생존 상태 초기화
         CharacterSource = characterSource; // 아군 원본 저장
@@ -31,7 +35,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 누락 처리 시작
             throw new ArgumentNullException(nameof(characterData)); // 잘못된 인수 예외
         } // 누락 처리 종료
-        return new BattleUnitRuntime(characterData.CharacterId, characterData.DisplayName, BattleTeam.Ally, characterData.Portrait, characterData.MaxHealth, characterData, null); // 아군 상태 반환
+        return new BattleUnitRuntime(characterData.CharacterId, characterData.DisplayName, BattleTeam.Ally, characterData.Portrait, characterData.MaxHealth, characterData.PhysicalDefense, characterData.MagicalResistance, characterData, null); // 아군 상태 반환
     } // 아군 생성 종료
     public static BattleUnitRuntime CreateEnemy(EnemyData enemyData) // 적 런타임 생성
     { // 적 생성 시작
@@ -39,17 +43,26 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 누락 처리 시작
             throw new ArgumentNullException(nameof(enemyData)); // 잘못된 인수 예외
         } // 누락 처리 종료
-        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, null, enemyData); // 적 상태 반환
+        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, null, enemyData); // 적 상태 반환
     } // 적 생성 종료
-    public int TakeDamage(int damageAmount) // 피해 처리
+    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType) // 예상 피해 계산
+    { // 예상 피해 계산 시작
+        if (IsDead) // 사망 상태 확인
+        { // 사망 유닛 처리 시작
+            return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
+        } // 사망 유닛 처리 종료
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력 포함 피해 계산
+        int expectedAppliedDamage = Mathf.Min(CurrentHealth, damageResult.FinalDamage); // 남은 체력 기준 실제 피해 계산
+        return damageResult.WithAppliedDamage(expectedAppliedDamage); // 예상 체력 피해 포함 결과 반환
+    } // 예상 피해 계산 종료
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType) // 피해 처리
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
-            return 0; // 적용 피해 없음
+            return BattleDamageResult.Empty(damageType); // 적용 피해 없음
         } // 무효 처리 종료
-        int previousHealth = CurrentHealth; // 변경 전 체력 저장
-        CurrentHealth = Mathf.Max(0, CurrentHealth - damageAmount); // 현재 체력 감소
-        int appliedDamage = previousHealth - CurrentHealth; // 실제 피해 계산
+        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType); // 최종 피해 계산
+        CurrentHealth = Mathf.Max(0, CurrentHealth - damageResult.AppliedDamage); // 현재 체력 감소
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
         { // 사망 처리 시작
@@ -60,7 +73,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 알림 시작
             Died?.Invoke(this); // 사망 이벤트 알림
         } // 사망 알림 종료
-        return appliedDamage; // 실제 피해 반환
+        return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
     public int RestoreHealth(int healAmount) // 체력 회복 처리
     { // 체력 회복 시작

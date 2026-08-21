@@ -17,6 +17,8 @@ MonoBehaviour:
   description: "4\uC77C\uCC28 \uB370\uC774\uD130 \uD14C\uC2A4\uD2B8 \uC801"
   portrait: {fileID: 0}
   maxHealth: 50
+  physicalDefense: 3
+  magicalResistance: 2
   actionType: 1
   basicAttackPower: 8
   damageType: 1

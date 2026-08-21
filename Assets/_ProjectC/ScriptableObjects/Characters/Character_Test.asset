@@ -18,4 +18,6 @@ MonoBehaviour:
   role: 0
   portrait: {fileID: 0}
   maxHealth: 100
+  physicalDefense: 2
+  magicalResistance: 1
   initialMental: 50

@@ -24,12 +24,20 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         Target = target; // 새 대상 저장
         return true; // 대상 변경 성공 반환
     } // 대상 변경 종료
-    public int Execute() // 예정 행동 실행
+    public BattleDamageResult PreviewDamage() // 예정 피해 계산
+    { // 예정 피해 계산 시작
+        if (Target == null || Target.IsDead) // 대상 유효성 확인
+        { // 대상 없음 처리 시작
+            return BattleDamageResult.Empty(DamageType); // 피해 없음 결과 반환
+        } // 대상 없음 처리 종료
+        return Target.PreviewDamage(Amount, DamageType); // 대상 방어력 포함 예상 피해 반환
+    } // 예정 피해 계산 종료
+    public BattleDamageResult Execute() // 예정 행동 실행
     { // 행동 실행 시작
         if (!IsExecutable) // 실행 가능 여부 확인
         { // 실행 불가 처리 시작
-            return 0; // 적용 수치 없음 반환
+            return BattleDamageResult.Empty(DamageType); // 적용 수치 없음 반환
         } // 실행 불가 처리 종료
-        return Target.TakeDamage(Amount); // 대상 피해 적용 결과 반환
+        return Target.TakeDamage(Amount, DamageType); // 대상 피해 적용 결과 반환
     } // 행동 실행 종료
 } // 클래스 종료

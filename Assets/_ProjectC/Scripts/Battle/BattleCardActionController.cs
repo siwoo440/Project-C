@@ -219,7 +219,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 효과 처리 시작
             return targetUnit.RestoreHealth(cardInstance.EffectValue); // 실제 회복량 반환
         } // 회복 효과 처리 종료
-        return targetUnit.TakeDamage(cardInstance.EffectValue); // 실제 피해량 반환
+        BattleDamageResult damageResult = targetUnit.TakeDamage(cardInstance.EffectValue, cardInstance.DamageType); // 카드 피해 계산과 적용
+        string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
+        Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
+        return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 단일 효과 적용 종료
     private static List<BattleUnitRuntime> CreateSingleTargetList(BattleUnitRuntime targetUnit) // 단일 대상 목록 생성
     { // 단일 대상 생성 시작

@@ -222,7 +222,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogWarning("[BattleSceneSetup] 피해를 받을 아군이 없습니다.", this); // 아군 없음 출력
             return; // 피해 테스트 중단
         } // 아군 없음 처리 종료
-        allyUnits[0].TakeDamage(testDamage); // 첫 번째 아군 피해 적용
+        allyUnits[0].TakeDamage(testDamage, BattleDamageType.Physical); // 첫 번째 아군 물리 피해 적용
     } // 아군 피해 종료
     [ContextMenu("테스트/첫 번째 적 피해")] // 적 피해 메뉴
     private void DamageFirstEnemy() // 첫 번째 적 피해 테스트
@@ -237,7 +237,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogWarning("[BattleSceneSetup] 피해를 받을 적이 없습니다.", this); // 적 없음 출력
             return; // 피해 테스트 중단
         } // 적 없음 처리 종료
-        enemyUnits[0].TakeDamage(testDamage); // 첫 번째 적 피해 적용
+        enemyUnits[0].TakeDamage(testDamage, BattleDamageType.Physical); // 첫 번째 적 물리 피해 적용
     } // 적 피해 종료
     [ContextMenu("테스트/카드 인스턴스 출력")] // 카드 출력 메뉴
     private void LogCardInstances() // 카드 인스턴스 출력
@@ -371,9 +371,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 적 행동 대기 시작
                 yield return new WaitForSeconds(enemyTurnDelay); // 설정 시간만큼 대기
             } // 적 행동 대기 종료
-            int appliedDamage = enemyActionRuntime.ExecuteAction(enemyAction); // 적 행동 피해 적용
+            BattleDamageResult damageResult = enemyActionRuntime.ExecuteAction(enemyAction); // 적 행동 피해 적용
             string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-            Debug.Log($"[BattleSceneSetup] 적 행동 실행 - {enemyAction.Actor.DisplayName} / {damageLabel} 공격 / 대상 {enemyAction.Target.DisplayName} / 피해 {appliedDamage}", this); // 적 행동 결과 출력
+            Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
         } // 개별 적 행동 종료
         enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
         if (battleTurn == null || battleTurn.IsBattleEnded) // 전투 종료 여부 확인
