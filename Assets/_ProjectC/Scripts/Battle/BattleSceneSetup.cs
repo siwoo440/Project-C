@@ -1,3 +1,4 @@
+using System.Collections; // 코루틴 자료형 사용
 using System.Collections.Generic; // 목록 자료형 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 이벤트 시스템 사용
@@ -19,6 +20,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private int maximumHandSize = 5; // 최대 손패 수
     [Min(0)] // 시작 손패 최소값
     [SerializeField] private int initialHandSize = 3; // 시작 손패 수
+    [Min(0)] // 턴 드로우 최소값
+    [SerializeField] private int cardsPerPlayerTurn = 1; // 플레이어 턴당 드로우 수
+    [Min(0f)] // 적 턴 대기 최소값
+    [SerializeField] private float enemyTurnDelay = 0.75f; // 임시 적 턴 대기 시간
     [SerializeField] private bool useFixedShuffleSeed; // 고정 셔플 시드 사용 여부
     [SerializeField] private int fixedShuffleSeed = 12345; // 테스트용 고정 셔플 시드
     [Header("테스트")] // 테스트 구역
@@ -30,11 +35,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private readonly List<BattleUnitView> enemyUnitViews = new List<BattleUnitView>(); // 생성된 적 화면 목록
     private BattleDeckRuntime battleDeck; // 생성된 런타임 덱
     private BattleActionPointRuntime sharedActionPoints; // 생성된 공용 행동력
+    private BattleTurnRuntime battleTurn; // 생성된 전투 턴 관리자
     private BattleCardActionController cardActionController; // 카드 행동 관리자
+    private Coroutine enemyTurnCoroutine; // 실행 중인 적 턴 코루틴
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
     public BattleDeckRuntime BattleDeck => battleDeck; // 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 공용 행동력 조회
+    public BattleTurnRuntime BattleTurn => battleTurn; // 전투 턴 관리자 조회
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
@@ -56,14 +64,24 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits, maximumHandSize, shuffleSeed); // 전투용 카드 더미 생성
         sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
-        if (!handView.Bind(battleDeck, sharedActionPoints)) // 손패 화면 연결 확인
+        battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn); // 전투 턴 관리자 생성
+        if (!handView.Bind(battleDeck, sharedActionPoints, battleTurn)) // 손패 화면 연결 확인
         { // 손패 화면 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
+            battleTurn.Dispose(); // 턴 관리자 이벤트 연결 해제
+            battleTurn = null; // 턴 관리자 참조 제거
             return; // 초기화 중단
         } // 손패 화면 오류 처리 종료
-        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, handView, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
-        int drawnCardCount = battleDeck.DrawCards(initialHandSize); // 시작 손패 드로우
+        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         IsInitialized = true; // 초기화 완료 저장
+        if (!battleTurn.StartBattle(initialHandSize)) // 전투 시작 처리 확인
+        { // 전투 시작 실패 처리 시작
+            Debug.LogError("[BattleSceneSetup] 전투 턴 시작에 실패했습니다.", this); // 전투 시작 오류 출력
+            IsInitialized = false; // 초기화 실패 저장
+            return; // 초기화 중단
+        } // 전투 시작 실패 처리 종료
+        int drawnCardCount = battleTurn.LastDrawnCardCount; // 실제 시작 손패 수 조회
         Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}", this); // 생성 완료 출력
         LogDeckState(); // 시작 카드 상태 출력
     } // 초기화 종료
@@ -109,6 +127,16 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 시작 손패 수는 0 이상이며 최대 손패 수 이하여야 합니다.", this); // 시작 손패 오류 출력
             return false; // 검사 실패 반환
         } // 시작 손패 오류 처리 종료
+        if (cardsPerPlayerTurn < 0) // 턴당 드로우 범위 확인
+        { // 턴 드로우 오류 처리 시작
+            Debug.LogError("[BattleSceneSetup] 플레이어 턴당 드로우 수는 0 이상이어야 합니다.", this); // 턴 드로우 오류 출력
+            return false; // 검사 실패 반환
+        } // 턴 드로우 오류 처리 종료
+        if (enemyTurnDelay < 0f) // 적 턴 대기 범위 확인
+        { // 적 턴 대기 오류 처리 시작
+            Debug.LogError("[BattleSceneSetup] 적 턴 대기 시간은 0 이상이어야 합니다.", this); // 적 턴 대기 오류 출력
+            return false; // 검사 실패 반환
+        } // 적 턴 대기 오류 처리 종료
         if (enemies.Count < 1) // 적 목록 비어 있음 확인
         { // 빈 적 목록 처리 시작
             Debug.LogError("[BattleSceneSetup] 출전할 적이 없습니다.", this); // 적 누락 출력
@@ -279,9 +307,61 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         bool restored = sharedActionPoints.Restore(); // 공용 행동력 최대 회복
         Debug.Log($"[BattleSceneSetup] 공용 AP 회복 결과 - {restored} / 현재 {sharedActionPoints.CurrentActionPoints}", this); // 행동력 회복 결과 출력
     } // 행동력 회복 테스트 종료
+    private void HandleTurnStateChanged() // 전투 턴 상태 변경 처리
+    { // 턴 상태 처리 시작
+        if (battleTurn == null) // 턴 관리자 존재 확인
+        { // 턴 관리자 없음 처리 시작
+            return; // 턴 상태 처리 중단
+        } // 턴 관리자 없음 처리 종료
+        if (battleTurn.CurrentPhase == BattleTurnPhase.EnemyTurn) // 적 턴 진입 확인
+        { // 적 턴 처리 시작
+            if (enemyTurnCoroutine == null) // 기존 적 턴 실행 여부 확인
+            { // 적 턴 시작 처리 시작
+                enemyTurnCoroutine = StartCoroutine(CompleteEnemyTurnAfterDelay()); // 임시 적 턴 처리 시작
+            } // 적 턴 시작 처리 종료
+            return; // 턴 상태 처리 종료
+        } // 적 턴 처리 종료
+        if (battleTurn.IsBattleEnded && enemyTurnCoroutine != null) // 전투 종료와 적 턴 실행 확인
+        { // 적 턴 중단 처리 시작
+            StopCoroutine(enemyTurnCoroutine); // 실행 중인 적 턴 중단
+            enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
+        } // 적 턴 중단 처리 종료
+        if (battleTurn.CurrentPhase == BattleTurnPhase.Victory) // 승리 상태 확인
+        { // 승리 처리 시작
+            Debug.Log("[BattleSceneSetup] 전투 승리", this); // 승리 결과 출력
+        } // 승리 처리 종료
+        else if (battleTurn.CurrentPhase == BattleTurnPhase.Defeat) // 패배 상태 확인
+        { // 패배 처리 시작
+            Debug.Log("[BattleSceneSetup] 전투 패배", this); // 패배 결과 출력
+        } // 패배 처리 종료
+    } // 턴 상태 처리 종료
+    private IEnumerator CompleteEnemyTurnAfterDelay() // 임시 적 턴 완료 대기
+    { // 적 턴 대기 시작
+        if (enemyTurnDelay > 0f) // 적 턴 대기 시간 확인
+        { // 대기 처리 시작
+            yield return new WaitForSeconds(enemyTurnDelay); // 설정 시간만큼 대기
+        } // 대기 처리 종료
+        enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
+        if (battleTurn == null || !battleTurn.CompleteEnemyTurn()) // 적 턴 완료 처리 확인
+        { // 적 턴 완료 실패 처리 시작
+            yield break; // 코루틴 종료
+        } // 적 턴 완료 실패 처리 종료
+        Debug.Log($"[BattleSceneSetup] 플레이어 턴 시작 - 라운드 {battleTurn.CurrentRound}, 드로우 {battleTurn.LastDrawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}", this); // 플레이어 턴 시작 출력
+    } // 적 턴 대기 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        if (enemyTurnCoroutine != null) // 실행 중인 적 턴 확인
+        { // 적 턴 중단 시작
+            StopCoroutine(enemyTurnCoroutine); // 적 턴 코루틴 중단
+            enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
+        } // 적 턴 중단 종료
         cardActionController?.Dispose(); // 카드 행동 이벤트 연결 해제
         cardActionController = null; // 카드 행동 관리자 참조 제거
+        if (battleTurn != null) // 전투 턴 관리자 확인
+        { // 턴 관리자 해제 시작
+            battleTurn.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+            battleTurn.Dispose(); // 유닛 사망 이벤트 연결 해제
+            battleTurn = null; // 턴 관리자 참조 제거
+        } // 턴 관리자 해제 종료
     } // 씬 제거 처리 종료
 } // 클래스 종료

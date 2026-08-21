@@ -57,7 +57,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
     } // 사용 가능 표시 종료
     public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
-        if (RuntimeCard == null) // 카드 연결 여부 확인
+        if (RuntimeCard == null || !interactable) // 카드 연결과 사용 가능 상태 확인
         { // 카드 미연결 처리 시작
             return; // 클릭 처리 중단
         } // 카드 미연결 처리 종료
