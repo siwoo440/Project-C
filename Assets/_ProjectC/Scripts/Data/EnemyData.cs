@@ -21,6 +21,10 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [SerializeField] private int basicAttackPower = 8; // 기본 공격력
     [SerializeField] private BattleDamageType damageType = BattleDamageType.Physical; // 기본 피해 유형
     [SerializeField] private EnemyTargetRule targetRule = EnemyTargetRule.FirstLiving; // 대상 선택 규칙
+    [Min(1)] // 최소 행동 속도 제한
+    [SerializeField] private int minimumActionSpeed = 1; // 최소 행동 속도
+    [Min(1)] // 최대 행동 속도 제한
+    [SerializeField] private int maximumActionSpeed = 10; // 최대 행동 속도
     public string EnemyId => enemyId; // 적 ID 조회
     public string DisplayName => displayName; // 적 이름 조회
     public string Description => description; // 적 설명 조회
@@ -32,4 +36,6 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public int BasicAttackPower => basicAttackPower; // 기본 공격력 조회
     public BattleDamageType DamageType => damageType; // 기본 피해 유형 조회
     public EnemyTargetRule TargetRule => targetRule; // 대상 선택 규칙 조회
+    public int MinimumActionSpeed => Mathf.Max(1, minimumActionSpeed); // 보정된 최소 행동 속도 조회
+    public int MaximumActionSpeed => Mathf.Max(MinimumActionSpeed, maximumActionSpeed); // 보정된 최대 행동 속도 조회
 } // 클래스 종료

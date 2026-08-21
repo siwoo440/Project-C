@@ -24,14 +24,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return 0; // 준비 행동 없음 반환
         } // 준비 불가 처리 종료
         plannedActions.Clear(); // 기존 예정 행동 제거
-        foreach (BattleUnitRuntime enemyUnit in enemyUnits) // 적 목록 순회
+        for (int enemyIndex = 0; enemyIndex < enemyUnits.Count; enemyIndex++) // 적 배치 목록 순회
         { // 적 행동 생성 시작
-            BattleEnemyAction action = CreateAction(enemyUnit); // 적 예정 행동 생성
+            BattleUnitRuntime enemyUnit = enemyUnits[enemyIndex]; // 현재 배치 적 조회
+            BattleEnemyAction action = CreateAction(enemyUnit, enemyIndex); // 적 예정 행동 생성
             if (action != null) // 생성 행동 확인
             { // 유효 행동 처리 시작
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
+        plannedActions.Sort(CompareActionOrder); // 속도와 배치 순서 기준 정렬
+        ApplyActionOrderNumbers(); // 최종 행동 순번 지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
@@ -44,6 +47,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         if (action.Actor.IsDead) // 행동 적 사망 확인
         { // 사망 적 처리 시작
             plannedActions.Remove(action); // 예정 행동 제거
+            ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
             StateChanged?.Invoke(); // 예정 행동 변경 알림
             return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
         } // 사망 적 처리 종료
@@ -53,6 +57,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             if (!action.ChangeTarget(replacementTarget)) // 대상 변경 결과 확인
             { // 대상 없음 처리 시작
                 plannedActions.Remove(action); // 실행 불가 행동 제거
+                ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
                 StateChanged?.Invoke(); // 예정 행동 변경 알림
                 return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
             } // 대상 없음 처리 종료
@@ -61,6 +66,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         BattleDamageResult damageResult = action.Execute(); // 적 공격 피해 적용
         executingAction = null; // 현재 실행 행동 제거
         plannedActions.Remove(action); // 실행 완료 행동 제거
+        ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return damageResult; // 피해 계산 결과 반환
     } // 행동 실행 종료
@@ -84,7 +90,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         plannedActions.Clear(); // 예정 행동 목록 비우기
         StateChanged?.Invoke(); // 예정 행동 변경 알림
     } // 행동 제거 종료
-    private BattleEnemyAction CreateAction(BattleUnitRuntime enemyUnit) // 적 예정 행동 생성
+    private BattleEnemyAction CreateAction(BattleUnitRuntime enemyUnit, int creationOrder) // 적 예정 행동 생성
     { // 행동 생성 시작
         if (enemyUnit == null || enemyUnit.IsDead || enemyUnit.EnemySource == null) // 적 데이터 유효성 확인
         { // 잘못된 적 처리 시작
@@ -100,8 +106,31 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         { // 대상 없음 처리 시작
             return null; // 행동 생성 실패 반환
         } // 대상 없음 처리 종료
-        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, enemyData.BasicAttackPower); // 예정 공격 반환
+        int actionSpeed = RollActionSpeed(enemyData); // 이번 턴 행동 속도 결정
+        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, enemyData.BasicAttackPower, actionSpeed, creationOrder); // 예정 공격 반환
     } // 행동 생성 종료
+    private int RollActionSpeed(EnemyData enemyData) // 적 행동 속도 결정
+    { // 속도 결정 시작
+        int minimumSpeed = enemyData.MinimumActionSpeed; // 최소 행동 속도 조회
+        int maximumSpeed = enemyData.MaximumActionSpeed; // 최대 행동 속도 조회
+        return random.Next(minimumSpeed, maximumSpeed + 1); // 양끝 포함 무작위 속도 반환
+    } // 속도 결정 종료
+    private static int CompareActionOrder(BattleEnemyAction leftAction, BattleEnemyAction rightAction) // 적 행동 순서 비교
+    { // 행동 비교 시작
+        int speedComparison = rightAction.ActionSpeed.CompareTo(leftAction.ActionSpeed); // 높은 속도 우선 비교
+        if (speedComparison != 0) // 속도 차이 확인
+        { // 속도 우선 처리 시작
+            return speedComparison; // 속도 비교 결과 반환
+        } // 속도 우선 처리 종료
+        return leftAction.CreationOrder.CompareTo(rightAction.CreationOrder); // 동속도 배치 순서 비교 결과 반환
+    } // 행동 비교 종료
+    private void ApplyActionOrderNumbers() // 최종 행동 순번 적용
+    { // 순번 적용 시작
+        for (int actionIndex = 0; actionIndex < plannedActions.Count; actionIndex++) // 정렬 행동 목록 순회
+        { // 개별 순번 적용 시작
+            plannedActions[actionIndex].SetActionOrder(actionIndex + 1); // 일부터 시작하는 순번 지정
+        } // 개별 순번 적용 종료
+    } // 순번 적용 종료
     private BattleUnitRuntime SelectTarget(EnemyTargetRule targetRule) // 규칙별 아군 대상 선택
     { // 대상 선택 시작
         List<BattleUnitRuntime> livingAllies = CollectLivingAllies(); // 생존 아군 목록 생성
@@ -144,6 +173,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         int removedCount = plannedActions.RemoveAll(action => action.Actor == enemyUnit); // 사망 적 행동 제거
         if (removedCount > 0) // 제거 행동 확인
         { // 변경 알림 시작
+            ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
             StateChanged?.Invoke(); // 예정 행동 변경 알림
         } // 변경 알림 종료
     } // 적 사망 처리 종료

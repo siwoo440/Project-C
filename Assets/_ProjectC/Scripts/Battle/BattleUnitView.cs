@@ -108,7 +108,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         EnsureEnemyIntentView(); // 행동 예고 화면 준비
         string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
-        enemyIntentText.text = $"예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 행동 예고 내용 적용
+        enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 행동 순서 포함 예고 내용 적용
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
     } // 행동 예고 표시 종료
@@ -219,7 +219,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         intentRect.anchorMax = new Vector2(0.5f, 1f); // 상단 중앙 최대 앵커
         intentRect.pivot = new Vector2(0.5f, 1f); // 상단 중앙 기준점
         intentRect.anchoredPosition = new Vector2(0f, -6f); // 유닛 내부 상단 위치
-        intentRect.sizeDelta = new Vector2(165f, 40f); // 행동 예고 크기
+        intentRect.sizeDelta = new Vector2(165f, 56f); // 세 줄 행동 예고 크기
         Image intentBackground = enemyIntentRoot.GetComponent<Image>(); // 행동 예고 배경 조회
         intentBackground.color = new Color(0.18f, 0.06f, 0.06f, 0.94f); // 행동 예고 배경색 적용
         intentBackground.raycastTarget = false; // 행동 예고 클릭 차단 해제

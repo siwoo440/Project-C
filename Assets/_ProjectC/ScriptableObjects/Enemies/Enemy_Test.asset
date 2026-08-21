@@ -23,3 +23,5 @@ MonoBehaviour:
   basicAttackPower: 8
   damageType: 1
   targetRule: 0
+  minimumActionSpeed: 1
+  maximumActionSpeed: 10
