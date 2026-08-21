@@ -10,6 +10,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private Transform allyUnitRoot; // 아군 유닛 부모
     [SerializeField] private Transform enemyUnitRoot; // 적 유닛 부모
     [Header("카드 시스템")] // 카드 시스템 구역
+    [SerializeField] private BattleHandView handView; // 전투 손패 화면
     [Min(1)] // 최대 손패 최소값
     [SerializeField] private int maximumHandSize = 5; // 최대 손패 수
     [Min(0)] // 시작 손패 최소값
@@ -44,6 +45,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         CreateEnemyUnits(); // 적 유닛 생성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits, maximumHandSize, shuffleSeed); // 전투용 카드 더미 생성
+        if (!handView.Bind(battleDeck)) // 손패 화면 연결 확인
+        { // 손패 화면 오류 처리 시작
+            Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
+            return; // 초기화 중단
+        } // 손패 화면 오류 처리 종료
         int drawnCardCount = battleDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         IsInitialized = true; // 초기화 완료 저장
         Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장", this); // 생성 완료 출력
@@ -71,6 +77,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 아군 또는 적 유닛 부모가 연결되지 않았습니다.", this); // 부모 누락 출력
             return false; // 검사 실패 반환
         } // 부모 누락 처리 종료
+        if (handView == null) // 손패 화면 누락 확인
+        { // 손패 화면 누락 처리 시작
+            Debug.LogError("[BattleSceneSetup] BattleHandView가 연결되지 않았습니다.", this); // 손패 화면 누락 출력
+            return false; // 검사 실패 반환
+        } // 손패 화면 누락 처리 종료
         if (maximumHandSize < 1) // 최대 손패 범위 확인
         { // 최대 손패 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 최대 손패 수는 1 이상이어야 합니다.", this); // 최대 손패 오류 출력
