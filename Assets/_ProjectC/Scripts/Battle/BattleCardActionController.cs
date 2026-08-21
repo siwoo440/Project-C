@@ -69,12 +69,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 자신 대상 처리 종료
         if (selectedCard.TargetType == CardTargetType.AllAllies) // 전체 아군 대상 확인
         { // 전체 아군 처리 시작
-            ExecuteCard(selectedCard, CollectLivingTargets(allyUnitViews)); // 전체 생존 아군에게 카드 사용
+            ExecuteCard(selectedCard, CollectValidTargets(selectedCard, allyUnitViews)); // 전체 유효 아군에게 카드 사용
             return; // 카드 클릭 처리 종료
         } // 전체 아군 처리 종료
         if (selectedCard.TargetType == CardTargetType.AllEnemies) // 전체 적 대상 확인
         { // 전체 적 처리 시작
-            ExecuteCard(selectedCard, CollectLivingTargets(enemyUnitViews)); // 전체 생존 적에게 카드 사용
+            ExecuteCard(selectedCard, CollectValidTargets(selectedCard, enemyUnitViews)); // 전체 유효 적에게 카드 사용
             return; // 카드 클릭 처리 종료
         } // 전체 적 처리 종료
         UpdateTargetHighlights(); // 단일 대상 후보 강조
@@ -131,7 +131,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 실행 불가 처리 종료
-        if (cardInstance.EffectType != CardEffectType.Damage) // 지원 효과 확인
+        if (!IsSupportedEffect(cardInstance.EffectType)) // 지원 효과 확인
         { // 미지원 효과 처리 시작
             Debug.LogError($"[BattleCardActionController] 지원하지 않는 카드 효과입니다: {cardInstance.EffectType}"); // 미지원 효과 출력
             CancelSelection(); // 선택 상태 초기화
@@ -143,16 +143,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
         { // 효과 적용 시작
-            targetUnit.TakeDamage(cardInstance.EffectValue); // 카드 피해 적용
+            totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
         } // 효과 적용 종료
         bool discarded = runtimeDeck.DiscardCard(cardInstance); // 사용 카드를 버린 카드 더미로 이동
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
         } // 카드 이동 실패 처리 종료
-        Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / 피해 {cardInstance.EffectValue} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
+        string effectLabel = cardInstance.EffectType == CardEffectType.Heal ? "회복" : cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 카드 효과 로그 문구 생성
+        Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
         CancelSelection(); // 카드 선택 상태 초기화
     } // 카드 실행 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
@@ -161,6 +163,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth) // 회복 대상 체력 확인
+        { // 회복 불필요 처리 시작
+            return false; // 회복 대상 불가 반환
+        } // 회복 불필요 처리 종료
         switch (cardInstance.TargetType) // 카드 대상 종류 분기
         { // 대상 분기 시작
             case CardTargetType.Self: // 자신 대상 종류
@@ -191,18 +197,30 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 대상 강조 적용 종료
         } // 유닛 강조 종료
     } // 목록 강조 종료
-    private static List<BattleUnitRuntime> CollectLivingTargets(IReadOnlyList<BattleUnitView> unitViews) // 생존 대상 목록 생성
-    { // 생존 대상 생성 시작
+    private List<BattleUnitRuntime> CollectValidTargets(CardInstance cardInstance, IReadOnlyList<BattleUnitView> unitViews) // 유효 대상 목록 생성
+    { // 유효 대상 생성 시작
         List<BattleUnitRuntime> targetUnits = new List<BattleUnitRuntime>(); // 빈 대상 목록 생성
         foreach (BattleUnitView unitView in unitViews) // 유닛 화면 순회
-        { // 생존 대상 검사 시작
-            if (unitView != null && unitView.RuntimeUnit != null && !unitView.RuntimeUnit.IsDead) // 생존 유닛 확인
-            { // 생존 유닛 등록 시작
-                targetUnits.Add(unitView.RuntimeUnit); // 생존 대상 목록 등록
-            } // 생존 유닛 등록 종료
-        } // 생존 대상 검사 종료
-        return targetUnits; // 생존 대상 목록 반환
-    } // 생존 대상 생성 종료
+        { // 유효 대상 검사 시작
+            if (unitView != null && IsValidTarget(cardInstance, unitView.RuntimeUnit)) // 유효 유닛 확인
+            { // 유효 유닛 등록 시작
+                targetUnits.Add(unitView.RuntimeUnit); // 유효 대상 목록 등록
+            } // 유효 유닛 등록 종료
+        } // 유효 대상 검사 종료
+        return targetUnits; // 유효 대상 목록 반환
+    } // 유효 대상 생성 종료
+    private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
+    { // 지원 효과 검사 시작
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal; // 피해와 회복 지원 결과 반환
+    } // 지원 효과 검사 종료
+    private static int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
+    { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
+        { // 회복 효과 처리 시작
+            return targetUnit.RestoreHealth(cardInstance.EffectValue); // 실제 회복량 반환
+        } // 회복 효과 처리 종료
+        return targetUnit.TakeDamage(cardInstance.EffectValue); // 실제 피해량 반환
+    } // 단일 효과 적용 종료
     private static List<BattleUnitRuntime> CreateSingleTargetList(BattleUnitRuntime targetUnit) // 단일 대상 목록 생성
     { // 단일 대상 생성 시작
         return new List<BattleUnitRuntime> { targetUnit }; // 단일 대상 목록 반환

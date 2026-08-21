@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
-  m_Name: Card_TestAttack
+  m_Name: Card_TestMagicAttack
   m_EditorClassIdentifier: Assembly-CSharp::CardData
-  cardId: CRD_TEST_ATTACK
-  displayName: Test Attack
-  description: "4\uC77C\uCC28 \uD14C\uC2A4\uD2B8 \uACF5\uACA9 \uCE74\uB4DC"
+  cardId: CRD_TEST_MAGIC_ATTACK
+  displayName: Test Magic Attack
+  description: "단일 적에게 마법 피해를 준다."
   artwork: {fileID: 0}
-  cardType: 0
+  cardType: 1
   targetType: 3
   apCost: 1
   effectType: 0
-  damageType: 1
-  effectValue: 10
+  damageType: 2
+  effectValue: 8

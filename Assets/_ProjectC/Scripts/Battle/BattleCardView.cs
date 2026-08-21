@@ -3,10 +3,11 @@ using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
-public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전투 카드 화면 표시
+public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler // 전투 카드 화면 표시
 { // 클래스 시작
     private const float CardWidth = 160f; // 카드 기본 너비
     private const float CardHeight = 220f; // 카드 기본 높이
+    private const float HoverScale = 1.08f; // 카드 마우스 확대 배율
     private static readonly Color DefaultBackgroundColor = new Color(0.08f, 0.09f, 0.13f, 0.98f); // 카드 기본 배경 색상
     private static readonly Color SelectedBackgroundColor = new Color(0.72f, 0.45f, 0.08f, 1f); // 카드 선택 배경 색상
     private Image backgroundImage; // 카드 배경 이미지
@@ -19,9 +20,12 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
     private TMP_Text costText; // 카드 비용 텍스트
     private bool selected; // 카드 선택 여부
     private bool interactable = true; // 카드 사용 가능 여부
+    private bool hovered; // 카드 마우스 진입 여부
     private bool visualStructureCreated; // 화면 구조 생성 여부
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
     public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
+    public event Action<BattleCardView> HoverEntered; // 카드 마우스 진입 이벤트
+    public event Action<BattleCardView> HoverExited; // 카드 마우스 이탈 이벤트
     private void Awake() // 카드 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 카드 내부 UI 자동 생성
@@ -34,6 +38,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
             return; // 카드 연결 중단
         } // 카드 누락 처리 종료
         EnsureVisualStructure(); // 카드 내부 UI 확인
+        SetHovered(false); // 카드 확대 상태 초기화
         RuntimeCard = cardInstance; // 카드 인스턴스 저장
         nameText.text = RuntimeCard.DisplayName; // 카드 이름 적용
         descriptionText.text = RuntimeCard.SourceData.Description; // 카드 설명 적용
@@ -53,6 +58,11 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
     { // 사용 가능 표시 시작
         EnsureVisualStructure(); // 카드 내부 UI 확인
         this.interactable = interactable; // 카드 사용 가능 상태 저장
+        if (!interactable && hovered) // 비활성 카드 확대 여부 확인
+        { // 확대 해제 처리 시작
+            SetHovered(false); // 카드 확대 상태 해제
+            HoverExited?.Invoke(this); // 카드 마우스 이탈 알림
+        } // 확대 해제 처리 종료
         RefreshVisualState(); // 카드 상태 화면 갱신
     } // 사용 가능 표시 종료
     public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
@@ -63,6 +73,29 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
         } // 카드 미연결 처리 종료
         Clicked?.Invoke(this); // 카드 클릭 이벤트 알림
     } // 포인터 클릭 처리 종료
+    public void OnPointerEnter(PointerEventData eventData) // 카드 포인터 진입 처리
+    { // 포인터 진입 처리 시작
+        if (RuntimeCard == null || !interactable) // 카드 연결과 사용 가능 상태 확인
+        { // 포인터 진입 불가 처리 시작
+            return; // 포인터 진입 처리 중단
+        } // 포인터 진입 불가 처리 종료
+        SetHovered(true); // 카드 확대 상태 적용
+        HoverEntered?.Invoke(this); // 카드 마우스 진입 알림
+    } // 포인터 진입 처리 종료
+    public void OnPointerExit(PointerEventData eventData) // 카드 포인터 이탈 처리
+    { // 포인터 이탈 처리 시작
+        if (!hovered) // 카드 확대 상태 확인
+        { // 확대 없음 처리 시작
+            return; // 포인터 이탈 처리 중단
+        } // 확대 없음 처리 종료
+        SetHovered(false); // 카드 확대 상태 해제
+        HoverExited?.Invoke(this); // 카드 마우스 이탈 알림
+    } // 포인터 이탈 처리 종료
+    private void SetHovered(bool hovered) // 카드 확대 상태 설정
+    { // 확대 상태 설정 시작
+        this.hovered = hovered; // 카드 확대 상태 저장
+        transform.localScale = hovered ? Vector3.one * HoverScale : Vector3.one; // 카드 화면 배율 적용
+    } // 확대 상태 설정 종료
     private void EnsureVisualStructure() // 카드 내부 UI 준비
     { // 화면 구조 준비 시작
         if (visualStructureCreated) // 기존 화면 구조 확인

@@ -16,6 +16,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [Min(0)] // 카드 AP 최소값
     [SerializeField] private int apCost = 1; // 카드 AP 비용
     [SerializeField] private CardEffectType effectType; // 카드 효과 종류
+    [SerializeField] private BattleDamageType damageType = BattleDamageType.Physical; // 카드 피해 종류
     [Min(0)] // 카드 효과값 최소값
     [SerializeField] private int effectValue = 10; // 카드 효과 수치
 
@@ -27,5 +28,6 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardTargetType TargetType => targetType; // 카드 대상 조회
     public int ApCost => apCost; // 카드 AP 비용 조회
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
+    public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
     public int EffectValue => effectValue; // 카드 효과 수치 조회
 } // 클래스 종료

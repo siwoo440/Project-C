@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
-  m_Name: Card_TestAttack
+  m_Name: Card_TestSelfHeal
   m_EditorClassIdentifier: Assembly-CSharp::CardData
-  cardId: CRD_TEST_ATTACK
-  displayName: Test Attack
-  description: "4\uC77C\uCC28 \uD14C\uC2A4\uD2B8 \uACF5\uACA9 \uCE74\uB4DC"
+  cardId: CRD_TEST_SELF_HEAL
+  displayName: Test Self Heal
+  description: "카드 소유자의 체력을 회복한다."
   artwork: {fileID: 0}
-  cardType: 0
-  targetType: 3
+  cardType: 2
+  targetType: 0
   apCost: 1
-  effectType: 0
-  damageType: 1
-  effectValue: 10
+  effectType: 1
+  damageType: 0
+  effectValue: 12

@@ -62,4 +62,16 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 사망 알림 종료
         return appliedDamage; // 실제 피해 반환
     } // 피해 처리 종료
+    public int RestoreHealth(int healAmount) // 체력 회복 처리
+    { // 체력 회복 시작
+        if (healAmount <= 0 || IsDead || CurrentHealth >= MaxHealth) // 무효 회복 확인
+        { // 무효 회복 처리 시작
+            return 0; // 적용 회복 없음
+        } // 무효 회복 처리 종료
+        int previousHealth = CurrentHealth; // 변경 전 체력 저장
+        CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + healAmount); // 현재 체력 회복
+        int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
+        HealthChanged?.Invoke(this); // 체력 변경 알림
+        return appliedHealing; // 실제 회복량 반환
+    } // 체력 회복 종료
 } // 클래스 종료
