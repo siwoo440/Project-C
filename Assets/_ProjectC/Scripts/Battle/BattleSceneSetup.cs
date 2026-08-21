@@ -13,6 +13,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private Transform enemyUnitRoot; // 적 유닛 부모
     [Header("카드 시스템")] // 카드 시스템 구역
     [SerializeField] private BattleHandView handView; // 전투 손패 화면
+    [Min(1)] // 공용 행동력 최소값
+    [SerializeField] private int sharedMaximumActionPoints = 3; // 최대 공용 행동력
     [Min(1)] // 최대 손패 최소값
     [SerializeField] private int maximumHandSize = 5; // 최대 손패 수
     [Min(0)] // 시작 손패 최소값
@@ -27,10 +29,12 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private readonly List<BattleUnitView> allyUnitViews = new List<BattleUnitView>(); // 생성된 아군 화면 목록
     private readonly List<BattleUnitView> enemyUnitViews = new List<BattleUnitView>(); // 생성된 적 화면 목록
     private BattleDeckRuntime battleDeck; // 생성된 런타임 덱
+    private BattleActionPointRuntime sharedActionPoints; // 생성된 공용 행동력
     private BattleCardActionController cardActionController; // 카드 행동 관리자
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
     public BattleDeckRuntime BattleDeck => battleDeck; // 런타임 덱 조회
+    public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 공용 행동력 조회
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
@@ -51,15 +55,16 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         CreateEnemyUnits(); // 적 유닛 생성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits, maximumHandSize, shuffleSeed); // 전투용 카드 더미 생성
-        if (!handView.Bind(battleDeck)) // 손패 화면 연결 확인
+        sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
+        if (!handView.Bind(battleDeck, sharedActionPoints)) // 손패 화면 연결 확인
         { // 손패 화면 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
             return; // 초기화 중단
         } // 손패 화면 오류 처리 종료
-        cardActionController = new BattleCardActionController(battleDeck, handView, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, handView, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
         int drawnCardCount = battleDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         IsInitialized = true; // 초기화 완료 저장
-        Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장", this); // 생성 완료 출력
+        Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}", this); // 생성 완료 출력
         LogDeckState(); // 시작 카드 상태 출력
     } // 초기화 종료
     private bool ValidateSetup() // 설정 유효성 검사
@@ -94,6 +99,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 최대 손패 수는 1 이상이어야 합니다.", this); // 최대 손패 오류 출력
             return false; // 검사 실패 반환
         } // 최대 손패 오류 처리 종료
+        if (sharedMaximumActionPoints < 1) // 공용 행동력 범위 확인
+        { // 공용 행동력 오류 처리 시작
+            Debug.LogError("[BattleSceneSetup] 최대 공용 AP는 1 이상이어야 합니다.", this); // 공용 행동력 오류 출력
+            return false; // 검사 실패 반환
+        } // 공용 행동력 오류 처리 종료
         if (initialHandSize < 0 || initialHandSize > maximumHandSize) // 시작 손패 범위 확인
         { // 시작 손패 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 시작 손패 수는 0 이상이며 최대 손패 수 이하여야 합니다.", this); // 시작 손패 오류 출력
@@ -259,6 +269,16 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         Debug.Log("[BattleSceneSetup] 뽑을 카드 더미를 다시 섞었습니다.", this); // 셔플 완료 출력
         LogDeckState(); // 카드 영역 수량 출력
     } // 카드 셔플 테스트 종료
+    [ContextMenu("테스트/공용 AP 회복")] // 공용 행동력 회복 메뉴
+    private void RestoreSharedActionPoints() // 공용 행동력 회복 테스트
+    { // 행동력 회복 테스트 시작
+        if (!CanUseBattleDeckTest()) // 전투 테스트 가능 여부 확인
+        { // 테스트 불가 처리 시작
+            return; // 행동력 회복 중단
+        } // 테스트 불가 처리 종료
+        bool restored = sharedActionPoints.Restore(); // 공용 행동력 최대 회복
+        Debug.Log($"[BattleSceneSetup] 공용 AP 회복 결과 - {restored} / 현재 {sharedActionPoints.CurrentActionPoints}", this); // 행동력 회복 결과 출력
+    } // 행동력 회복 테스트 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
         cardActionController?.Dispose(); // 카드 행동 이벤트 연결 해제

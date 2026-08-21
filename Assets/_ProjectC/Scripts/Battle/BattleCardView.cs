@@ -10,12 +10,15 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
     private static readonly Color DefaultBackgroundColor = new Color(0.08f, 0.09f, 0.13f, 0.98f); // 카드 기본 배경 색상
     private static readonly Color SelectedBackgroundColor = new Color(0.72f, 0.45f, 0.08f, 1f); // 카드 선택 배경 색상
     private Image backgroundImage; // 카드 배경 이미지
+    private CanvasGroup canvasGroup; // 카드 전체 투명도 제어
     private Image artworkImage; // 카드 일러스트 이미지
     private TMP_Text nameText; // 카드 이름 텍스트
     private TMP_Text descriptionText; // 카드 설명 텍스트
     private TMP_Text typeText; // 카드 종류 텍스트
     private TMP_Text ownerText; // 카드 소유자 텍스트
     private TMP_Text costText; // 카드 비용 텍스트
+    private bool selected; // 카드 선택 여부
+    private bool interactable = true; // 카드 사용 가능 여부
     private bool visualStructureCreated; // 화면 구조 생성 여부
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
     public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
@@ -43,8 +46,15 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
     public void SetSelected(bool selected) // 카드 선택 표시 설정
     { // 선택 표시 시작
         EnsureVisualStructure(); // 카드 내부 UI 확인
-        backgroundImage.color = selected ? SelectedBackgroundColor : DefaultBackgroundColor; // 선택 상태 배경색 적용
+        this.selected = selected; // 카드 선택 상태 저장
+        RefreshVisualState(); // 카드 상태 화면 갱신
     } // 선택 표시 종료
+    public void SetInteractable(bool interactable) // 카드 사용 가능 표시 설정
+    { // 사용 가능 표시 시작
+        EnsureVisualStructure(); // 카드 내부 UI 확인
+        this.interactable = interactable; // 카드 사용 가능 상태 저장
+        RefreshVisualState(); // 카드 상태 화면 갱신
+    } // 사용 가능 표시 종료
     public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
         if (RuntimeCard == null) // 카드 연결 여부 확인
@@ -68,6 +78,12 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
         } // 카드 배경 추가 종료
         backgroundImage.color = DefaultBackgroundColor; // 카드 배경 색상 설정
         backgroundImage.raycastTarget = true; // 카드 클릭 입력 허용
+        canvasGroup = GetComponent<CanvasGroup>(); // 카드 투명도 컴포넌트 조회
+        if (canvasGroup == null) // 카드 투명도 컴포넌트 누락 확인
+        { // 투명도 컴포넌트 추가 시작
+            canvasGroup = gameObject.AddComponent<CanvasGroup>(); // 카드 투명도 컴포넌트 추가
+        } // 투명도 컴포넌트 추가 종료
+        canvasGroup.blocksRaycasts = true; // 비활성 카드 클릭 안내 허용
         LayoutElement layoutElement = GetComponent<LayoutElement>(); // 카드 레이아웃 크기 조회
         if (layoutElement == null) // 레이아웃 크기 누락 확인
         { // 레이아웃 크기 추가 시작
@@ -93,6 +109,11 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전�
         SetStretchRect(costText.rectTransform, 0f, 0f, 0f, 0f); // 카드 비용 숫자 영역 설정
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
     } // 화면 구조 준비 종료
+    private void RefreshVisualState() // 카드 상태 화면 갱신
+    { // 화면 상태 갱신 시작
+        backgroundImage.color = selected ? SelectedBackgroundColor : DefaultBackgroundColor; // 선택 상태 배경색 적용
+        canvasGroup.alpha = interactable ? 1f : 0.45f; // 사용 가능 상태 투명도 적용
+    } // 화면 상태 갱신 종료
     private static Image CreateImage(string objectName, Transform parent, Color imageColor) // 이미지 생성
     { // 이미지 생성 시작
         GameObject imageObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 이미지 오브젝트 생성
