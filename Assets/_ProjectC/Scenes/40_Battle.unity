@@ -450,6 +450,7 @@ GameObject:
   - component: {fileID: 1917448888}
   - component: {fileID: 1917448887}
   - component: {fileID: 1917448889}
+  - component: {fileID: 1917448890}
   m_Layer: 0
   m_Name: BattleSystems
   m_TagString: Untagged
@@ -517,6 +518,24 @@ MonoBehaviour:
   debugCanvas: {fileID: 0}
   showDebugWindowAtStart: 1
   debugStartingRelics: []
+--- !u!114 &1917448890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917448886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: effc47895bc1469bac3e8bca14bbe35a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleConsumableBootstrap
+  battleSceneSetup: {fileID: 0}
+  targetCanvas: {fileID: 0}
+  debugStartingItems:
+  - {fileID: 11400000, guid: 45f2df39a8eb4ba1950ca04e30ca71cc, type: 2}
+  - {fileID: 11400000, guid: 2516d23cf829422d92957bc7f2aabdd9, type: 2}
+  - {fileID: 11400000, guid: c0384ec08d434caa9a332a19dcd744db, type: 2}
 --- !u!1 &2051001000
 GameObject:
   m_ObjectHideFlags: 0

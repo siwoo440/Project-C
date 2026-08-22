@@ -14,5 +14,6 @@ public enum BattleMentalChangeReason // 정신력 변화 원인 종류
     CardEffect, // 카드 직접 효과
     StateDurationEnded, // 특수 상태 종료
     BattleEnded, // 전투 종료
-    PersistentState // 저장 상태 적용
+    PersistentState, // 저장 상태 적용
+    ConsumableEffect // 소모품 직접 효과
 } // 열거형 종료
