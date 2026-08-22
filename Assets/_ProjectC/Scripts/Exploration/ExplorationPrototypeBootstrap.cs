@@ -4,11 +4,13 @@ using UnityEngine.InputSystem; // 디버그 입력 사용
 using UnityEngine.UI; // Canvas UI 사용
 
 [DefaultExecutionOrder(-400)]
-public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프로토타입 기본 오브젝트 생성
+public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 탐사 성공 HUD 및 테스트 연결
 {
     private static Sprite runtimeSquareSprite; // 플레이어 런타임 스프라이트
     private TMP_Text progressText; // 영구 진행 HUD 텍스트
+    private TMP_Text explorationSuccessText; // 탐사 성공 결과 HUD 텍스트
     private int lastDisplayedFloor = -1; // 마지막 HUD 표시 층
+    private bool lastDisplayedCompleted; // 마지막 HUD 탐사 완료 상태
 
     private void Start() // 탐사 프로토타입 시작
     {
@@ -29,9 +31,11 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 현재 탐사 층 조회
 
-        if (lastDisplayedFloor != sessionManager.CurrentFloor)
+        if (lastDisplayedFloor != sessionManager.CurrentFloor ||
+            lastDisplayedCompleted != sessionManager.IsExplorationCompleted)
         {
-            RefreshProgressText(); // 층 변경 시 진행 HUD 갱신
+            RefreshProgressText(); // 층·완료 상태 변경 시 진행 HUD 갱신
+            RefreshExplorationSuccessText(); // 탐사 성공 결과 HUD 갱신
         }
 
         Keyboard keyboard =
@@ -43,14 +47,16 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             return;
         }
 
-        CharacterAffinityManager affinityManager =
-            CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비
+        bool completed =
+            sessionManager.CompleteExplorationSuccess(); // 실제 탐사 성공 처리 흐름 강제 실행
 
-        affinityManager.GrantExplorationSuccessAffinity(1); // 탐사 성공 호감도 테스트 적용
         RefreshProgressText(); // 진행 HUD 갱신
+        RefreshExplorationSuccessText(); // 성공 결과 HUD 갱신
 
         Debug.Log(
-            "[Exploration][DEBUG] 탐사 성공을 가정해 호감도 +1을 적용했습니다."); // 호감도 테스트 로그
+            completed
+                ? "[Exploration][Day44][DEBUG] F8로 탐사 성공 처리 흐름을 실행했습니다."
+                : "[Exploration][Day44][DEBUG] 이미 탐사가 완료되어 F8 성공 처리를 무시했습니다."); // 성공 처리 테스트 로그
     }
 
     private static void CreatePlayer(
@@ -134,6 +140,9 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
         CreateLastRewardText(
             canvasObject.transform,
             sessionManager); // 마지막 보상 HUD 생성
+
+        CreateExplorationSuccessText(
+            canvasObject.transform); // 탐사 성공 결과 HUD 생성
     }
 
     private static void CreateInstructionText(
@@ -166,12 +175,12 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             new Vector2(24f, -24f); // 안내 위치 설정
 
         instructionText.text =
-            "43일차 일반·엘리트·보스 조우 테스트\n" +
-            "N 일반 · E 엘리트 · B 보스 · P 플레이어\n" +
-            "Elite: HP x1.50 / ATK x1.20 / Reward x1.50\n" +
-            "Boss: HP x2.50 / ATK x1.35 / Reward x2.50\n" +
-            "보스층 테스트 규칙: 5F 간격 · F9는 같은 층 새 Seed\n" +
-            "F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
+            "44일차 탐사 성공·호감도 연동 테스트\n" +
+            "Normal / Elite 승리: 조우 보상 후 탐사 계속\n" +
+            "Boss 승리: 탐사 성공 확정 · 호감도 +1\n" +
+            "탐사 성공 후 새 조우와 다음 층 이동 차단\n" +
+            "F9: 진행 중일 때만 같은 층 새 Seed\n" +
+            "F8: 실제 탐사 성공 처리 흐름 강제 테스트"; // 탐사 안내 문구 지정
     }
 
     private void CreateProgressText(
@@ -224,8 +233,13 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
+        string explorationState =
+            sessionManager.IsExplorationCompleted
+                ? "성공 완료"
+                : "진행 중"; // 탐사 상태 문구 결정
+
         progressText.text =
-            $"탐사 {sessionManager.CurrentFloor}F\n" +
+            $"탐사 {sessionManager.CurrentFloor}F · {explorationState}\n" +
             $"캐릭터 Lv.{progressionManager.Level}  " +
             $"EXP {progressionManager.CurrentExperience}" +
             $"/{progressionManager.RequiredExperience}\n" +
@@ -238,6 +252,65 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
 
         lastDisplayedFloor =
             sessionManager.CurrentFloor; // 현재 HUD 표시 층 저장
+
+        lastDisplayedCompleted =
+            sessionManager.IsExplorationCompleted; // 현재 HUD 완료 상태 저장
+    }
+
+    private void CreateExplorationSuccessText(
+        Transform parent) // 탐사 성공 결과 HUD 생성
+    {
+        explorationSuccessText =
+            CreateText(
+                "ExplorationSuccess",
+                parent,
+                36f,
+                TextAlignmentOptions.Center); // 탐사 성공 결과 텍스트 생성
+
+        RectTransform successRect =
+            explorationSuccessText.rectTransform; // 성공 결과 RectTransform 조회
+
+        successRect.anchorMin =
+            new Vector2(0.5f, 0.5f); // 화면 중앙 최소 앵커 설정
+
+        successRect.anchorMax =
+            new Vector2(0.5f, 0.5f); // 화면 중앙 최대 앵커 설정
+
+        successRect.pivot =
+            new Vector2(0.5f, 0.5f); // 화면 중앙 Pivot 설정
+
+        successRect.sizeDelta =
+            new Vector2(1000f, 300f); // 성공 결과 영역 크기 설정
+
+        successRect.anchoredPosition =
+            Vector2.zero; // 화면 중앙 위치 설정
+
+        RefreshExplorationSuccessText(); // 성공 결과 최초 갱신
+    }
+
+    private void RefreshExplorationSuccessText() // 탐사 성공 결과 HUD 갱신
+    {
+        if (explorationSuccessText == null)
+        {
+            return;
+        }
+
+        ExplorationSessionManager sessionManager =
+            ExplorationSessionManager.EnsureInstance(); // 탐사 성공 상태 조회
+
+        if (!sessionManager.IsExplorationCompleted ||
+            !sessionManager.IsExplorationSuccess)
+        {
+            explorationSuccessText.text = string.Empty; // 진행 중에는 성공 결과 숨김
+            return;
+        }
+
+        explorationSuccessText.text =
+            "탐사 성공\n\n" +
+            $"완료 층 {sessionManager.CompletedFloor}F\n" +
+            $"클리어 조우 {sessionManager.CompletedEncounterCount}개\n" +
+            $"호감도 +{sessionManager.LastExplorationSuccessAffinity}\n\n" +
+            "추가 조우와 다음 층 이동이 종료되었습니다."; // 탐사 성공 결과 표시
     }
 
     private static void CreateLastRewardText(

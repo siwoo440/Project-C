@@ -4,7 +4,7 @@ using UnityEngine; // 런타임 오브젝트 기능 사용
 using UnityEngine.InputSystem; // 디버그 재생성 입력 사용
 using UnityEngine.SceneManagement; // 탐사 Scene 감지 기능 사용
 
-public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등급 절차 배치 런타임
+public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성공 상태 연동 런타임
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
@@ -57,6 +57,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등
             Keyboard.current; // 현재 키보드 조회
 
         if (keyboard != null &&
+            !sessionManager.IsExplorationCompleted &&
             keyboard.f9Key.wasPressedThisFrame)
         {
             RegenerateCurrentFloorForDebug(); // 현재 층 Seed·맵·조우 새로 생성
@@ -91,6 +92,11 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등
 
     private void RegenerateCurrentFloorForDebug() // F9 현재 층 강제 재생성
     {
+        if (sessionManager.IsExplorationCompleted)
+        {
+            return;
+        }
+
         int newSeed =
             CreateSeed(); // 디버그용 새 Seed 생성
 
@@ -148,6 +154,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등
         ExplorationPlayerController player) // 계단을 통한 다음 층 이동 시도
     {
         if (player == null ||
+            sessionManager == null ||
+            sessionManager.IsExplorationCompleted ||
             Time.time < nextFloorChangeAllowedTime)
         {
             return false;
@@ -161,7 +169,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등
         MovePlayerToStart(player); // 새 층 시작 셀로 이동
 
         Debug.Log(
-            $"[Exploration][Day43] 계단 이동 완료 - " +
+            $"[Exploration][Day44] 계단 이동 완료 - " +
             $"{CurrentFloor}F / " +
             $"조우 {CurrentEncounterCount}개"); // 계단 이동 완료 로그
 
