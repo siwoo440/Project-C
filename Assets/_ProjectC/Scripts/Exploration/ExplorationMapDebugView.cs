@@ -1,10 +1,10 @@
 using UnityEngine; // IMGUI 디버그 표시 기능 사용
 
-public sealed class ExplorationMapDebugView : MonoBehaviour // 39일차 탐사 상태 보존 디버그 화면
+public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 변환 디버그 화면
 {
     private const float CellSize = 28f; // 셀 표시 크기
     private const float CellStep = 36f; // 셀 간 표시 간격
-    private const float HeaderHeight = 122f; // 패널 상단 정보 높이
+    private const float HeaderHeight = 146f; // 패널 상단 정보 높이
     private const float PanelPadding = 18f; // 패널 내부 여백
 
     private ExplorationMapRuntime mapRuntime; // 절차 맵 런타임 참조
@@ -78,11 +78,14 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 39일차 탐사 �
                 panelY,
                 panelWidth,
                 panelHeight),
-            $"39일차 상태 보존  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
+            $"40일차 Tilemap 변환  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
             $"Seed {mapData.Seed}\n" +
             $"S 시작 / E 조우 / ▼ 계단\n" +
-            $"현재 조우 {mapRuntime.CurrentEncounterCount}개\n" +
-            $"F9 새 Seed로 현재 층 재생성"); // 디버그 패널 표시
+            $"조우 {mapRuntime.CurrentEncounterCount}개 · " +
+            $"Floor {mapRuntime.CurrentFloorTileCount} · " +
+            $"Wall Preview {mapRuntime.CurrentWallPreviewTileCount}\n" +
+            $"방 {ExplorationTilemapView.RoomSize}x{ExplorationTilemapView.RoomSize} · " +
+            $"간격 {ExplorationTilemapView.RoomSpacing} · F9 재생성"); // Tilemap 디버그 패널 표시
 
         foreach (ExplorationMapCell cell in mapData.Cells)
         {
