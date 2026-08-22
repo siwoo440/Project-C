@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(-400)]
@@ -13,6 +14,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
         new List<ExplorationEncounterView>();
 
     private ExplorationPlayerController playerController;
+    private TMP_Text progressText;
 
     private void Start()
     {
@@ -20,12 +22,33 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
             ExplorationSessionManager.EnsureInstance();
 
         CharacterProgressionManager.EnsureInstance();
+        CharacterAffinityManager.EnsureInstance();
         PlayerResourceManager.EnsureInstance();
 
         EnsureRuntimeSquareSprite();
         CreatePlayer(sessionManager);
         CreateEncounters(sessionManager);
         CreateHud(sessionManager);
+    }
+
+    private void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+
+        if (keyboard == null ||
+            !keyboard.f8Key.wasPressedThisFrame)
+        {
+            return;
+        }
+
+        CharacterAffinityManager affinityManager =
+            CharacterAffinityManager.EnsureInstance();
+
+        affinityManager.GrantExplorationSuccessAffinity(1);
+        RefreshProgressText();
+
+        Debug.Log(
+            "[Exploration][DEBUG] 탐사 성공을 가정해 호감도 +1을 적용했습니다.");
     }
 
     private void CreatePlayer(
@@ -166,7 +189,8 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         CreateInstructionText(
-            canvasObject.transform);
+            canvasObject.transform,
+            sessionManager);
 
         CreateProgressText(
             canvasObject.transform,
@@ -178,7 +202,8 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
     }
 
     private static void CreateInstructionText(
-        Transform parent)
+        Transform parent,
+        ExplorationSessionManager sessionManager)
     {
         TMP_Text instructionText = CreateText(
             "Instructions",
@@ -199,28 +224,24 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
             new Vector2(0f, 1f);
 
         instructionRect.sizeDelta =
-            new Vector2(850f, 150f);
+            new Vector2(900f, 190f);
 
         instructionRect.anchoredPosition =
             new Vector2(24f, -24f);
 
         instructionText.text =
-            "33일차 탐사 테스트\n" +
+            "34일차 탐사·호감도 테스트\n" +
             "WASD / 방향키 이동 · 색상 사각형에 닿으면 전투\n" +
-            "승리: 영구 캐릭터 EXP + 자원 획득 · 도주/패배: 보상 없음";
+            "승리: 영구 캐릭터 EXP + 자원 획득 · 도주/패배: 보상 없음\n" +
+            "F8: 탐사 성공 가정 → 호감도 +1\n" +
+            $"클리어 조우 {sessionManager.ClearedEncounterIds.Count}";
     }
 
-    private static void CreateProgressText(
+    private void CreateProgressText(
         Transform parent,
         ExplorationSessionManager sessionManager)
     {
-        CharacterProgressionManager progressionManager =
-            CharacterProgressionManager.EnsureInstance();
-
-        PlayerResourceManager resourceManager =
-            PlayerResourceManager.EnsureInstance();
-
-        TMP_Text progressText = CreateText(
+        progressText = CreateText(
             "PersistentProgress",
             parent,
             24f,
@@ -239,19 +260,42 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour
             new Vector2(1f, 1f);
 
         progressRect.sizeDelta =
-            new Vector2(650f, 180f);
+            new Vector2(700f, 220f);
 
         progressRect.anchoredPosition =
             new Vector2(-24f, -24f);
+
+        RefreshProgressText();
+    }
+
+    private void RefreshProgressText()
+    {
+        if (progressText == null)
+        {
+            return;
+        }
+
+        CharacterProgressionManager progressionManager =
+            CharacterProgressionManager.EnsureInstance();
+
+        CharacterAffinityManager affinityManager =
+            CharacterAffinityManager.EnsureInstance();
+
+        PlayerResourceManager resourceManager =
+            PlayerResourceManager.EnsureInstance();
 
         int totalCount =
             Resources.LoadAll<EncounterData>(
                 "Encounters").Length;
 
+        ExplorationSessionManager sessionManager =
+            ExplorationSessionManager.EnsureInstance();
+
         progressText.text =
             $"캐릭터 Lv.{progressionManager.Level}  " +
             $"EXP {progressionManager.CurrentExperience}" +
             $"/{progressionManager.RequiredExperience}\n" +
+            $"호감도 {affinityManager.Affinity}\n" +
             $"Gold {resourceManager.Gold}\n" +
             $"나사 {resourceManager.Screw}  " +
             $"철판 {resourceManager.IronPlate}  " +
