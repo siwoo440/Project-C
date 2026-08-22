@@ -18,6 +18,7 @@ public sealed class BattleMinorCardBootstrap : MonoBehaviour
     private BattleMinorCardController minorCardController;
     private MinorCardSelectionView selectionView;
     private PlayerLevelHudView levelHudView;
+    private MinorCardBuffWindowView buffWindowView;
     private Coroutine initializeCoroutine;
 
     private void Start()
@@ -77,7 +78,11 @@ public sealed class BattleMinorCardBootstrap : MonoBehaviour
             yield break;
         }
 
+        BattleMinorCardEffectRegistry.BeginBattle();
+
         PlayerLevelRunManager levelManager = PlayerLevelRunManager.EnsureInstance(levelConfig);
+        levelManager.BeginBattle();
+
         minorCardController = new BattleMinorCardController(
             battleSceneSetup,
             levelManager,
@@ -86,12 +91,13 @@ public sealed class BattleMinorCardBootstrap : MonoBehaviour
 
         selectionView = MinorCardSelectionView.Create(canvas, minorCardController, levelManager);
         levelHudView = PlayerLevelHudView.Create(canvas, levelManager);
+        buffWindowView = MinorCardBuffWindowView.Create(canvas, minorCardController);
 
         minorCardController.ProcessCurrentTurn();
         initializeCoroutine = null;
 
         Debug.Log(
-            $"[BattleMinorCardBootstrap] 마이너 카드 시스템 준비 완료 / " +
+            $"[BattleMinorCardBootstrap] 전투 단위 마이너 카드 시스템 준비 완료 / " +
             $"Lv.{levelManager.Level} / 카드 풀 {minorCardPool.Count}장",
             this);
     }
@@ -108,6 +114,13 @@ public sealed class BattleMinorCardBootstrap : MonoBehaviour
         {
             StopCoroutine(initializeCoroutine);
             initializeCoroutine = null;
+        }
+
+        if (buffWindowView != null)
+        {
+            buffWindowView.Dispose();
+            Destroy(buffWindowView.gameObject);
+            buffWindowView = null;
         }
 
         if (selectionView != null)
