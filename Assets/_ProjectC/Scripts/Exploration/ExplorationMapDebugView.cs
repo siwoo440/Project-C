@@ -1,10 +1,10 @@
 using UnityEngine; // IMGUI 디버그 표시 기능 사용
 
-public sealed class ExplorationMapDebugView : MonoBehaviour // 38일차 논리 맵·층·조우 디버그 화면
+public sealed class ExplorationMapDebugView : MonoBehaviour // 39일차 탐사 상태 보존 디버그 화면
 {
     private const float CellSize = 28f; // 셀 표시 크기
     private const float CellStep = 36f; // 셀 간 표시 간격
-    private const float HeaderHeight = 102f; // 패널 상단 정보 높이
+    private const float HeaderHeight = 122f; // 패널 상단 정보 높이
     private const float PanelPadding = 18f; // 패널 내부 여백
 
     private ExplorationMapRuntime mapRuntime; // 절차 맵 런타임 참조
@@ -67,16 +67,22 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 38일차 논리 �
                 panelHeight -
                 18f); // 화면 아래쪽 기준 Y 계산
 
+        string stateText =
+            mapRuntime.RestoredFromSession
+                ? "복원"
+                : "신규"; // 현재 층 상태 표시 문구 결정
+
         GUI.Box(
             new Rect(
                 panelX,
                 panelY,
                 panelWidth,
                 panelHeight),
-            $"38일차 절차 맵  |  {mapRuntime.CurrentFloor}F  |  Seed {mapData.Seed}\n" +
+            $"39일차 상태 보존  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
+            $"Seed {mapData.Seed}\n" +
             $"S 시작 / E 조우 / ▼ 계단\n" +
             $"현재 조우 {mapRuntime.CurrentEncounterCount}개\n" +
-            $"F9 맵·조우 재생성"); // 디버그 패널 표시
+            $"F9 새 Seed로 현재 층 재생성"); // 디버그 패널 표시
 
         foreach (ExplorationMapCell cell in mapData.Cells)
         {

@@ -4,7 +4,7 @@ using UnityEngine; // 런타임 오브젝트 기능 사용
 using UnityEngine.InputSystem; // 디버그 재생성 입력 사용
 using UnityEngine.SceneManagement; // 탐사 Scene 감지 기능 사용
 
-public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵·층·조우 런타임
+public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐사 상태 보존 런타임
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
@@ -28,6 +28,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
     public ExplorationMapData CurrentMap { get; private set; } // 현재 생성된 논리 맵
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
     public int CurrentEncounterCount => encounterCoordinates.Count; // 현재 층 조우 개수 조회
+    public bool RestoredFromSession { get; private set; } // 저장된 층 상태 복원 여부
 
     private void Awake() // 탐사 맵 런타임 초기화
     {
@@ -35,7 +36,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
         EnsureRuntimeSquareSprite(); // 런타임 사각형 스프라이트 준비
-        GenerateNewMap(); // 최초 절차 맵과 조우 생성
+        RestoreOrCreateCurrentFloor(); // 현재 층 Seed 복원 또는 신규 생성
         EnsureDebugView(); // 절차 맵 디버그 화면 준비
     }
 
@@ -54,7 +55,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
         if (keyboard != null &&
             keyboard.f9Key.wasPressedThisFrame)
         {
-            GenerateNewMap(); // 현재 층 맵·조우 재생성
+            RegenerateCurrentFloorForDebug(); // 현재 층 Seed·맵·조우 새로 생성
 
             ExplorationPlayerController player =
                 FindFirstObjectByType<ExplorationPlayerController>(); // 현재 플레이어 조회
@@ -63,29 +64,77 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
         }
     }
 
-    public void GenerateNewMap() // 새 탐사 논리 맵과 조우 생성
+    private void RestoreOrCreateCurrentFloor() // 현재 층 상태 복원 또는 신규 생성
+    {
+        if (sessionManager.TryGetCurrentFloorSeed(out int savedSeed))
+        {
+            BuildCurrentFloor(
+                savedSeed,
+                true); // 저장된 Seed로 동일 층 복원
+
+            return;
+        }
+
+        int newSeed =
+            CreateSeed(); // 신규 층 Seed 생성
+
+        sessionManager.SetCurrentFloorSeed(newSeed); // 신규 층 Seed 세션 저장
+
+        BuildCurrentFloor(
+            newSeed,
+            false); // 신규 Seed로 현재 층 생성
+    }
+
+    private void RegenerateCurrentFloorForDebug() // F9 현재 층 강제 재생성
+    {
+        int newSeed =
+            CreateSeed(); // 디버그용 새 Seed 생성
+
+        sessionManager.SetCurrentFloorSeed(newSeed); // 새 Seed를 현재 층 상태로 교체
+        sessionManager.ClearReturnPosition(); // 이전 맵 복귀 위치 제거
+
+        BuildCurrentFloor(
+            newSeed,
+            false); // 새 Seed로 현재 층 재생성
+    }
+
+    private void BuildCurrentFloor(
+        int seed,
+        bool restoredFromSession) // 지정 Seed로 현재 층 구축
     {
         ClearEncounterObjects(); // 이전 조우 오브젝트 정리
-
-        int seed =
-            unchecked((int)DateTime.UtcNow.Ticks ^ Time.frameCount); // 현재 시점 기반 임시 시드 생성
 
         CurrentMap =
             ExplorationMapGenerator.Generate(
                 DefaultCellCount,
-                seed); // 기본 셀 수 절차 맵 생성
+                seed); // 지정 Seed로 동일 논리 맵 생성
 
-        RefreshStairs(); // 새 계단 위치 갱신
-        GenerateEncounters(); // 일반 셀 절차 조우 배치
+        RestoredFromSession =
+            restoredFromSession; // 현재 생성이 복원인지 기록
+
+        RefreshStairs(); // 계단 위치 복원 또는 생성
+        GenerateEncounters(); // 동일 Seed 기반 조우 배치 복원 또는 생성
+
+        string stateText =
+            RestoredFromSession
+                ? "복원"
+                : "신규"; // 현재 층 생성 상태 문구 결정
 
         Debug.Log(
-            $"[Exploration][Day38] 절차 층 생성 완료 - " +
+            $"[Exploration][Day39] 절차 층 {stateText} 완료 - " +
             $"Floor {CurrentFloor}F / " +
             $"Seed {CurrentMap.Seed} / " +
             $"Cells {CurrentMap.Cells.Count} / " +
             $"Encounters {CurrentEncounterCount} / " +
             $"Start {CurrentMap.StartCoordinate} / " +
-            $"Stairs {CurrentMap.StairsCoordinate}"); // 생성 결과 로그
+            $"Stairs {CurrentMap.StairsCoordinate}"); // 생성·복원 결과 로그
+    }
+
+    private static int CreateSeed() // 신규 절차 맵 Seed 생성
+    {
+        return unchecked(
+            (int)DateTime.UtcNow.Ticks ^
+            Time.frameCount); // 현재 시점 기반 Seed 반환
     }
 
     public bool TryDescendFloor(
@@ -100,12 +149,12 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
         nextFloorChangeAllowedTime =
             Time.time + FloorChangeCooldown; // 다음 실행 대기 시간 설정
 
-        sessionManager.AdvanceFloor(); // 현재 탐사 층 증가
-        GenerateNewMap(); // 다음 층 맵과 조우 생성
+        sessionManager.AdvanceFloor(); // 현재 탐사 층 증가와 이전 Seed 해제
+        RestoreOrCreateCurrentFloor(); // 다음 층 신규 Seed 생성
         MovePlayerToStart(player); // 새 층 시작 셀로 이동
 
         Debug.Log(
-            $"[Exploration][Day38] 계단 이동 완료 - " +
+            $"[Exploration][Day39] 계단 이동 완료 - " +
             $"{CurrentFloor}F / " +
             $"조우 {CurrentEncounterCount}개"); // 계단 이동 완료 로그
 
@@ -185,10 +234,16 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 38일차 절차 맵
         if (validData.Count == 0)
         {
             Debug.LogWarning(
-                "[Exploration][Day38] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
+                "[Exploration][Day39] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
 
             return;
         }
+
+        validData.Sort(
+            (left, right) =>
+                string.CompareOrdinal(
+                    left.EncounterId,
+                    right.EncounterId)); // 동일 Seed 재현을 위한 조우 데이터 순서 고정
 
         List<ExplorationMapCell> availableCells =
             new List<ExplorationMapCell>(); // 조우 배치 가능 일반 셀 목록

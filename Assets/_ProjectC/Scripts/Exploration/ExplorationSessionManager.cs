@@ -13,12 +13,16 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
     private Vector3 returnPosition; // 전투 후 탐사 복귀 위치
     private bool hasReturnPosition; // 복귀 위치 존재 여부
     private int currentFloor = 1; // 현재 탐사 층
+    private int currentFloorSeed; // 현재 층 절차 생성 Seed
+    private bool hasCurrentFloorSeed; // 현재 층 Seed 존재 여부
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
     public int CurrentFloor => currentFloor; // 현재 층 조회
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
+    public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
+    public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds; // 클리어 조우 목록 조회
@@ -102,7 +106,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         hasReturnPosition = true; // 복귀 위치 활성화
 
         Debug.Log(
-            $"[Exploration][Day38] 조우 시작 - " +
+            $"[Exploration][Day39] 조우 시작 - " +
             $"{runtimeEncounterId} / " +
             $"{encounterData.DisplayName} / " +
             $"적 {encounterData.Enemies.Count}명"); // 절차 조우 시작 로그
@@ -150,7 +154,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             }
 
             Debug.Log(
-                $"[Exploration][Day38] 조우 클리어 - " +
+                $"[Exploration][Day39] 조우 클리어 - " +
                 $"{runtimeEncounterId} / {encounterName}"); // 조우 클리어 로그
         }
         else
@@ -158,7 +162,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             LastClearReward = null; // 비승리 보상 제거
 
             Debug.Log(
-                $"[Exploration][Day38] 조우 유지 - " +
+                $"[Exploration][Day39] 조우 유지 - " +
                 $"{runtimeEncounterId} / " +
                 $"{encounterName} / " +
                 $"결과 {resultData.Result}"); // 조우 유지 로그
@@ -182,6 +186,32 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             : defaultPosition; // 전투 복귀 위치 우선 반환
     }
 
+    public bool TryGetCurrentFloorSeed(
+        out int seed) // 현재 층 Seed 조회 시도
+    {
+        seed = currentFloorSeed; // 현재 Seed 반환값 지정
+        return hasCurrentFloorSeed; // Seed 존재 여부 반환
+    }
+
+    public void SetCurrentFloorSeed(
+        int seed) // 현재 층 Seed 저장
+    {
+        currentFloorSeed = seed; // 현재 층 Seed 저장
+        hasCurrentFloorSeed = true; // Seed 존재 상태 활성화
+    }
+
+    public void ClearReturnPosition() // 전투 복귀 위치 초기화
+    {
+        returnPosition = Vector3.zero; // 복귀 위치 초기화
+        hasReturnPosition = false; // 복귀 위치 사용 해제
+    }
+
+    private void ClearCurrentFloorSeed() // 현재 층 Seed 초기화
+    {
+        currentFloorSeed = 0; // Seed 값 초기화
+        hasCurrentFloorSeed = false; // Seed 존재 상태 해제
+    }
+
     public int AdvanceFloor() // 다음 층 진행
     {
         currentFloor += 1; // 현재 층 증가
@@ -190,9 +220,10 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         returnPosition = Vector3.zero; // 이전 층 복귀 위치 초기화
         hasReturnPosition = false; // 이전 층 복귀 위치 해제
         LastClearReward = null; // 이전 보상 표시 초기화
+        ClearCurrentFloorSeed(); // 다음 층용 Seed 생성 준비
 
         Debug.Log(
-            $"[Exploration][Day38] 다음 층 진입 - {currentFloor}F"); // 층 진행 로그
+            $"[Exploration][Day39] 다음 층 진입 - {currentFloor}F"); // 층 진행 로그
 
         return currentFloor; // 변경된 층 반환
     }
@@ -206,6 +237,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         hasReturnPosition = false; // 복귀 위치 해제
         LastClearReward = null; // 마지막 보상 초기화
         currentFloor = 1; // 탐사 층 초기화
+        ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
     }
 
     private void GrantVictoryRewards(

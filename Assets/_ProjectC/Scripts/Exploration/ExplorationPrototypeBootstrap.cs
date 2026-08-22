@@ -166,10 +166,11 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             new Vector2(24f, -24f); // 안내 위치 설정
 
         instructionText.text =
-            "38일차 절차 조우 테스트\n" +
+            "39일차 탐사 상태 보존 테스트\n" +
             "WASD / 방향키 이동 · 색상 사각형에 닿으면 전투\n" +
-            "일반 셀에 조우 3개 랜덤 배치 · 노란 사각형은 다음 층 계단\n" +
-            "F9: 현재 층 맵·조우 재생성 · F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
+            "전투 복귀 시 같은 Seed·맵·조우 배치 복원\n" +
+            "승리한 조우만 제거 · 노란 사각형은 다음 층 계단\n" +
+            "F9: 새 Seed로 현재 층 재생성 · F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
     }
 
     private void CreateProgressText(
