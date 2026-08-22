@@ -166,12 +166,12 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             new Vector2(24f, -24f); // 안내 위치 설정
 
         instructionText.text =
-            "41일차 Tilemap 충돌·미니맵 테스트\n" +
-            "WASD / 방향키 이동 · 카메라가 플레이어를 자동 추적\n" +
-            "실제 Wall Collider로 방과 통로 외부 이동 차단\n" +
-            "미니맵 P가 플레이어의 현재 방·통로 위치를 추적\n" +
-            "색상 사각형은 조우 · 노란 사각형은 다음 층 계단\n" +
-            "F9: 새 Seed로 현재 층 재생성 · F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
+            "42일차 층 난이도 상승 테스트\n" +
+            "1F 기준 · 층마다 적 HP +12% · 공격 +8% · 보상 +5%\n" +
+            "계단으로 다음 층 진입 시 난이도 자동 상승\n" +
+            "F9는 Seed만 변경하며 현재 층 난이도는 유지\n" +
+            "미니맵 P는 현재 플레이어 위치를 계속 추적\n" +
+            "F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
     }
 
     private void CreateProgressText(

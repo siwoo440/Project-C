@@ -1,10 +1,10 @@
 using UnityEngine; // IMGUI 디버그 표시 기능 사용
 
-public sealed class ExplorationMapDebugView : MonoBehaviour // 41일차 충돌 Tilemap 및 플레이어 미니맵 표시
+public sealed class ExplorationMapDebugView : MonoBehaviour // 42일차 층 난이도 및 탐사 미니맵 표시
 {
     private const float CellSize = 28f; // 셀 표시 크기
     private const float CellStep = 36f; // 셀 간 표시 간격
-    private const float HeaderHeight = 166f; // 패널 상단 정보 높이
+    private const float HeaderHeight = 188f; // 패널 상단 정보 높이
     private const float PanelPadding = 18f; // 패널 내부 여백
     private const float PlayerMarkerSize = 18f; // 플레이어 미니맵 표시 크기
 
@@ -80,15 +80,17 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 41일차 충돌 T
                 panelY,
                 panelWidth,
                 panelHeight),
-            $"41일차 Tilemap 완성  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
+            $"42일차 층 난이도  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
             $"Seed {mapData.Seed}\n" +
             $"S 시작 / E 조우 / ▼ 계단 / P 플레이어\n" +
+            $"난이도 HP x{ExplorationDifficultyCalculator.GetHealthMultiplier(mapRuntime.CurrentFloor):0.00} · " +
+            $"ATK x{ExplorationDifficultyCalculator.GetAttackMultiplier(mapRuntime.CurrentFloor):0.00} · " +
+            $"보상 x{ExplorationDifficultyCalculator.GetRewardMultiplier(mapRuntime.CurrentFloor):0.00}\n" +
             $"조우 {mapRuntime.CurrentEncounterCount}개 · " +
             $"Floor {mapRuntime.CurrentFloorTileCount} · " +
             $"Wall {mapRuntime.CurrentWallTileCount}\n" +
             $"방 {ExplorationTilemapView.RoomSize}x{ExplorationTilemapView.RoomSize} · " +
-            $"간격 {ExplorationTilemapView.RoomSpacing}\n" +
-            $"Wall Collider 활성 · F9 새 Seed 재생성"); // Tilemap 완성 디버그 패널 표시
+            $"간격 {ExplorationTilemapView.RoomSpacing} · F9 재생성"); // 층 난이도와 Tilemap 디버그 표시
 
         foreach (ExplorationMapCell cell in mapData.Cells)
         {
