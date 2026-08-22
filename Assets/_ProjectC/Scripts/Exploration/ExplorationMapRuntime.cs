@@ -4,7 +4,7 @@ using UnityEngine; // 런타임 오브젝트 기능 사용
 using UnityEngine.InputSystem; // 디버그 재생성 입력 사용
 using UnityEngine.SceneManagement; // 탐사 Scene 감지 기능 사용
 
-public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵 기반 Tilemap 탐사 런타임
+public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Tilemap 및 미니맵 위치 런타임
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
@@ -29,7 +29,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵
     public int CurrentEncounterCount => encounterCoordinates.Count; // 현재 층 조우 개수 조회
     public bool RestoredFromSession { get; private set; } // 저장된 층 상태 복원 여부
     public int CurrentFloorTileCount => tilemapView != null ? tilemapView.FloorTileCount : 0; // 현재 Floor 타일 개수
-    public int CurrentWallPreviewTileCount => tilemapView != null ? tilemapView.WallTileCount : 0; // 현재 Wall Preview 타일 개수
+    public int CurrentWallTileCount => tilemapView != null ? tilemapView.WallTileCount : 0; // 현재 실제 Wall 타일 개수
 
     private void Awake() // 탐사 맵 런타임 초기화
     {
@@ -125,13 +125,13 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵
                 : "신규"; // 현재 층 생성 상태 문구 결정
 
         Debug.Log(
-            $"[Exploration][Day40] 절차 층 {stateText} 완료 - " +
+            $"[Exploration][Day41] 절차 층 {stateText} 완료 - " +
             $"Floor {CurrentFloor}F / " +
             $"Seed {CurrentMap.Seed} / " +
             $"Cells {CurrentMap.Cells.Count} / " +
             $"Encounters {CurrentEncounterCount} / " +
             $"FloorTiles {CurrentFloorTileCount} / " +
-            $"WallPreview {CurrentWallPreviewTileCount} / " +
+            $"Walls {CurrentWallTileCount} / " +
             $"Start {CurrentMap.StartCoordinate} / " +
             $"Stairs {CurrentMap.StairsCoordinate}"); // Tilemap 생성·복원 결과 로그
     }
@@ -160,7 +160,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵
         MovePlayerToStart(player); // 새 층 시작 셀로 이동
 
         Debug.Log(
-            $"[Exploration][Day40] 계단 이동 완료 - " +
+            $"[Exploration][Day41] 계단 이동 완료 - " +
             $"{CurrentFloor}F / " +
             $"조우 {CurrentEncounterCount}개"); // 계단 이동 완료 로그
 
@@ -183,6 +183,32 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵
         Vector2Int coordinate) // 지정 셀 조우 존재 여부 확인
     {
         return encounterCoordinates.Contains(coordinate); // 조우 셀 포함 여부 반환
+    }
+
+    public bool TryGetPlayerLogicalPosition(
+        out Vector2 logicalPosition) // 미니맵용 플레이어 연속 논리 위치 조회
+    {
+        logicalPosition = Vector2.zero; // 실패 기본값 지정
+
+        if (tilemapView == null ||
+            CurrentMap == null)
+        {
+            return false;
+        }
+
+        ExplorationPlayerController player =
+            FindFirstObjectByType<ExplorationPlayerController>(); // 현재 탐사 플레이어 조회
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        logicalPosition =
+            tilemapView.GetLogicalPosition(
+                player.transform.position); // 실제 Tilemap 위치를 논리 좌표 비율로 변환
+
+        return true;
     }
 
     private void GenerateEncounters() // 현재 맵 일반 셀에 절차 조우 배치
@@ -210,7 +236,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵
         if (validData.Count == 0)
         {
             Debug.LogWarning(
-                "[Exploration][Day40] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
+                "[Exploration][Day41] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
 
             return;
         }

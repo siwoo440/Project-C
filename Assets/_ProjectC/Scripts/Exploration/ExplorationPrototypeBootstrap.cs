@@ -166,11 +166,11 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             new Vector2(24f, -24f); // 안내 위치 설정
 
         instructionText.text =
-            "40일차 Tilemap 탐사 테스트\n" +
+            "41일차 Tilemap 충돌·미니맵 테스트\n" +
             "WASD / 방향키 이동 · 카메라가 플레이어를 자동 추적\n" +
-            "논리 셀은 7x7 방과 연결 통로로 Tilemap 변환\n" +
+            "실제 Wall Collider로 방과 통로 외부 이동 차단\n" +
+            "미니맵 P가 플레이어의 현재 방·통로 위치를 추적\n" +
             "색상 사각형은 조우 · 노란 사각형은 다음 층 계단\n" +
-            "Wall Preview는 표시만 하며 충돌은 41일차에 연결\n" +
             "F9: 새 Seed로 현재 층 재생성 · F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
     }
 

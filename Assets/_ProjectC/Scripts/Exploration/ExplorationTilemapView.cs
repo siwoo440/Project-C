@@ -1,8 +1,8 @@
-using System.Collections.Generic; // 생성된 Floor 셀 목록 사용
-using UnityEngine; // Grid와 런타임 Sprite 기능 사용
+using System.Collections.Generic; // Floor와 Wall 셀 집합 사용
+using UnityEngine; // Grid와 2D 물리 기능 사용
 using UnityEngine.Tilemaps; // Unity Tilemap 기능 사용
 
-public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실제 Tilemap으로 표시
+public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충돌 가능한 Tilemap으로 표시
 {
     public const int RoomSize = 7; // 한 논리 셀의 방 크기
     public const int RoomSpacing = 10; // 논리 셀 사이 방 중심 간격
@@ -18,36 +18,42 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
         new Vector3Int(-1, 1, 0),
         new Vector3Int(0, 1, 0),
         new Vector3Int(1, 1, 0)
-    }; // Floor 주변 Wall Preview 탐색 방향
+    }; // Floor 주변 8방향 Wall 탐색 방향
 
     private readonly HashSet<Vector3Int> floorCells =
         new HashSet<Vector3Int>(); // 현재 Floor 셀 집합
 
+    private readonly HashSet<Vector3Int> wallCells =
+        new HashSet<Vector3Int>(); // 현재 Wall 셀 집합
+
     private GameObject gridObject; // 런타임 Grid 오브젝트
     private Tilemap floorTilemap; // 실제 이동 공간 Floor Tilemap
-    private Tilemap wallTilemap; // 외곽 표시용 Wall Preview Tilemap
+    private Tilemap wallTilemap; // 실제 충돌 Wall Tilemap
+    private TilemapCollider2D wallTilemapCollider; // Wall 타일 충돌 생성기
+    private CompositeCollider2D wallCompositeCollider; // Wall 충돌 합성기
     private Tile floorTile; // 런타임 Floor Tile
-    private Tile wallTile; // 런타임 Wall Preview Tile
+    private Tile wallTile; // 런타임 Wall Tile
     private Sprite runtimeSquareSprite; // 런타임 타일 Sprite
 
     public int FloorTileCount => floorCells.Count; // 현재 Floor 타일 개수
-    public int WallTileCount { get; private set; } // 현재 Wall Preview 타일 개수
+    public int WallTileCount => wallCells.Count; // 현재 Wall 타일 개수
 
     public void Build(
-        ExplorationMapData mapData) // 논리 맵을 Tilemap으로 변환
+        ExplorationMapData mapData) // 논리 맵을 실제 충돌 Tilemap으로 변환
     {
         EnsureTilemapHierarchy(); // Grid와 Tilemap 계층 준비
         EnsureRuntimeTiles(); // 런타임 타일 준비
 
         floorTilemap.ClearAllTiles(); // 이전 Floor 제거
-        wallTilemap.ClearAllTiles(); // 이전 Wall Preview 제거
+        wallTilemap.ClearAllTiles(); // 이전 Wall 제거
         floorCells.Clear(); // Floor 셀 목록 초기화
-        WallTileCount = 0; // Wall Preview 개수 초기화
+        wallCells.Clear(); // Wall 셀 목록 초기화
 
         if (mapData == null ||
             mapData.Cells == null ||
             mapData.Cells.Count == 0)
         {
+            RefreshWallCollider(); // 빈 맵 Collider 정리
             return;
         }
 
@@ -73,9 +79,18 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
                 floorTile); // Floor Tilemap에 실제 타일 배치
         }
 
-        BuildWallPreview(); // Floor 바깥쪽 Wall Preview 생성
+        BuildWalls(); // 전체 Floor 외곽에 실제 Wall 생성
+
+        foreach (Vector3Int wallCell in wallCells)
+        {
+            wallTilemap.SetTile(
+                wallCell,
+                wallTile); // Wall Tilemap에 충돌 타일 배치
+        }
+
         floorTilemap.CompressBounds(); // Floor 사용 영역 정리
         wallTilemap.CompressBounds(); // Wall 사용 영역 정리
+        RefreshWallCollider(); // 변경된 Wall Collider 즉시 반영
     }
 
     public Vector2 GetWorldPosition(
@@ -94,6 +109,22 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
         return new Vector2(
             worldPosition.x,
             worldPosition.y); // 2D World 좌표 반환
+    }
+
+    public Vector2 GetLogicalPosition(
+        Vector3 worldPosition) // World 위치를 미니맵용 연속 논리 위치로 변환
+    {
+        EnsureTilemapHierarchy(); // Tilemap 존재 보장
+
+        Vector3Int tileCell =
+            floorTilemap.WorldToCell(
+                worldPosition); // 플레이어 World 위치의 Tile 셀 계산
+
+        return new Vector2(
+            tileCell.x /
+            (float)RoomSpacing,
+            tileCell.y /
+            (float)RoomSpacing); // 방과 통로 사이 이동을 포함한 논리 위치 반환
     }
 
     private void FillRoom(
@@ -171,10 +202,9 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
         }
     }
 
-    private void BuildWallPreview() // Floor 외곽에 충돌 없는 Wall Preview 생성
+    private void BuildWalls() // Floor 전체 외곽에 실제 Wall 생성
     {
-        HashSet<Vector3Int> wallCells =
-            new HashSet<Vector3Int>(); // 중복 없는 Wall Preview 셀 목록
+        wallCells.Clear(); // 이전 Wall 셀 초기화
 
         foreach (Vector3Int floorCell in floorCells)
         {
@@ -182,24 +212,14 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
             {
                 Vector3Int wallCell =
                     floorCell +
-                    direction; // Floor 주변 후보 셀 계산
+                    direction; // Floor 주변 Wall 후보 계산
 
                 if (!floorCells.Contains(wallCell))
                 {
-                    wallCells.Add(wallCell); // Floor가 아닌 주변 셀 Wall 등록
+                    wallCells.Add(wallCell); // Floor가 아닌 외곽 셀 Wall 등록
                 }
             }
         }
-
-        foreach (Vector3Int wallCell in wallCells)
-        {
-            wallTilemap.SetTile(
-                wallCell,
-                wallTile); // Wall Preview 타일 배치
-        }
-
-        WallTileCount =
-            wallCells.Count; // Wall Preview 개수 저장
     }
 
     private static Vector3Int GetRoomCenterCell(
@@ -216,7 +236,9 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
     private void EnsureTilemapHierarchy() // Grid와 Tilemap 런타임 계층 생성
     {
         if (floorTilemap != null &&
-            wallTilemap != null)
+            wallTilemap != null &&
+            wallTilemapCollider != null &&
+            wallCompositeCollider != null)
         {
             return;
         }
@@ -256,13 +278,22 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
 
         GameObject wallObject =
             new GameObject(
-                "WallPreview",
+                "Wall",
+                typeof(Rigidbody2D),
                 typeof(Tilemap),
-                typeof(TilemapRenderer)); // Wall Preview Tilemap 오브젝트 생성
+                typeof(TilemapRenderer),
+                typeof(TilemapCollider2D),
+                typeof(CompositeCollider2D)); // 실제 충돌 Wall Tilemap 생성
 
         wallObject.transform.SetParent(
             gridObject.transform,
             false); // Grid 하위 배치
+
+        Rigidbody2D wallBody =
+            wallObject.GetComponent<Rigidbody2D>(); // Wall Rigidbody2D 조회
+
+        wallBody.bodyType =
+            RigidbodyType2D.Static; // 움직이지 않는 정적 벽 설정
 
         wallTilemap =
             wallObject.GetComponent<Tilemap>(); // Wall Tilemap 조회
@@ -270,7 +301,25 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
         TilemapRenderer wallRenderer =
             wallObject.GetComponent<TilemapRenderer>(); // Wall Renderer 조회
 
-        wallRenderer.sortingOrder = -9; // Floor보다 위에 Wall Preview 표시
+        wallRenderer.sortingOrder = -9; // Floor보다 위에 Wall 표시
+
+        wallTilemapCollider =
+            wallObject.GetComponent<TilemapCollider2D>(); // Wall TilemapCollider2D 조회
+
+        wallTilemapCollider.compositeOperation =
+            Collider2D.CompositeOperation.Merge; // 인접 Wall 충돌을 Composite로 합성
+
+        wallCompositeCollider =
+            wallObject.GetComponent<CompositeCollider2D>(); // Wall CompositeCollider2D 조회
+
+        wallCompositeCollider.geometryType =
+            CompositeCollider2D.GeometryType.Polygons; // 벽을 채워진 충돌 영역으로 생성
+
+        wallCompositeCollider.generationType =
+            CompositeCollider2D.GenerationType.Synchronous; // Tile 변경 시 Collider 즉시 갱신
+
+        wallCompositeCollider.isTrigger =
+            false; // 실제 물리 충돌 활성화
     }
 
     private void EnsureRuntimeTiles() // 런타임 Floor와 Wall 타일 생성
@@ -314,13 +363,13 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
                 1f); // Floor 임시 색상 지정
 
         floorTile.colliderType =
-            Tile.ColliderType.None; // 40일차 Floor 충돌 비활성화
+            Tile.ColliderType.None; // Floor 자체는 충돌하지 않음
 
         wallTile =
-            ScriptableObject.CreateInstance<Tile>(); // Wall Preview Tile 생성
+            ScriptableObject.CreateInstance<Tile>(); // Wall Tile 생성
 
         wallTile.name =
-            "RuntimeExplorationWallPreviewTile"; // Wall Tile 이름 지정
+            "RuntimeExplorationWallTile"; // Wall Tile 이름 지정
 
         wallTile.sprite =
             runtimeSquareSprite; // Wall Sprite 지정
@@ -330,10 +379,23 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 실�
                 0.05f,
                 0.07f,
                 0.10f,
-                1f); // Wall Preview 임시 색상 지정
+                1f); // 실제 Wall 임시 색상 지정
 
         wallTile.colliderType =
-            Tile.ColliderType.None; // 41일차 전까지 Wall 충돌 비활성화
+            Tile.ColliderType.Grid; // Grid 셀 전체를 실제 벽 충돌로 사용
+    }
+
+    private void RefreshWallCollider() // Wall Tile 변경 사항을 물리에 즉시 반영
+    {
+        if (wallTilemapCollider == null)
+        {
+            return;
+        }
+
+        if (wallTilemapCollider.hasTilemapChanges)
+        {
+            wallTilemapCollider.ProcessTilemapChanges(); // 추가·삭제 Wall Collider 즉시 재생성
+        }
     }
 
     private void OnDestroy() // 런타임 Tile 리소스 정리
