@@ -16,3 +16,4 @@ MonoBehaviour:
   displayName: Test Party
   members:
   - {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - {fileID: 11400000, guid: 7cd78f5524294c979b8cb1ab53ba1a5c, type: 2}
