@@ -64,4 +64,20 @@ public sealed class ExplorationPlayerController : MonoBehaviour
 
         body.MovePosition(nextPosition);
     }
+
+    public void Teleport(Vector2 worldPosition) // 탐사 층 이동용 순간 위치 변경
+    {
+        moveInput = Vector2.zero; // 기존 이동 입력 제거
+
+        if (body != null) // 물리 몸체 존재 확인
+        {
+            body.position = worldPosition; // 물리 위치 변경
+            body.linearVelocity = Vector2.zero; // 기존 이동 속도 제거
+        }
+
+        transform.position = new Vector3(
+            worldPosition.x,
+            worldPosition.y,
+            0f); // Transform 위치 동기화
+    }
 }

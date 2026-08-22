@@ -11,9 +11,12 @@ public sealed class ExplorationSessionManager : MonoBehaviour
     private EncounterData activeEncounter;
     private Vector3 returnPosition;
     private bool hasReturnPosition;
+    private int currentFloor = 1; // 현재 탐사 층
 
     public static ExplorationSessionManager Instance => instance;
     public EncounterData ActiveEncounter => activeEncounter;
+    public int CurrentFloor => currentFloor; // 현재 층 조회
+    public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds;
@@ -148,6 +151,20 @@ public sealed class ExplorationSessionManager : MonoBehaviour
             : defaultPosition;
     }
 
+    public int AdvanceFloor() // 다음 층 진행
+    {
+        currentFloor += 1; // 현재 층 증가
+        activeEncounter = null; // 진행 중 조우 초기화
+        returnPosition = Vector3.zero; // 이전 층 복귀 위치 초기화
+        hasReturnPosition = false; // 이전 층 복귀 위치 해제
+        LastClearReward = null; // 이전 보상 표시 초기화
+
+        Debug.Log(
+            $"[Exploration][Day37] 다음 층 진입 - {currentFloor}F"); // 층 진행 로그
+
+        return currentFloor; // 변경된 층 반환
+    }
+
     public void ResetExploration()
     {
         clearedEncounterIds.Clear();
@@ -155,6 +172,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour
         returnPosition = Vector3.zero;
         hasReturnPosition = false;
         LastClearReward = null;
+        currentFloor = 1; // 탐사 층 초기화
     }
 
     private void GrantVictoryRewards(

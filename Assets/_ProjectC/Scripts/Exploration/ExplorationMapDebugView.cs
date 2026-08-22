@@ -1,10 +1,10 @@
 using UnityEngine; // IMGUI 디버그 표시 기능 사용
 
-public sealed class ExplorationMapDebugView : MonoBehaviour // 36일차 논리 맵 디버그 화면
+public sealed class ExplorationMapDebugView : MonoBehaviour // 37일차 논리 맵과 층 진행 디버그 화면
 {
     private const float CellSize = 28f; // 셀 표시 크기
     private const float CellStep = 36f; // 셀 간 표시 간격
-    private const float HeaderHeight = 62f; // 패널 상단 정보 높이
+    private const float HeaderHeight = 82f; // 패널 상단 정보 높이
     private const float PanelPadding = 18f; // 패널 내부 여백
 
     private ExplorationMapRuntime mapRuntime; // 절차 맵 런타임 참조
@@ -35,8 +35,9 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 36일차 논리 �
 
         GUI.Box(
             new Rect(panelX, panelY, panelWidth, panelHeight),
-            $"36일차 절차 맵  |  Seed {mapData.Seed}\n" +
-            $"S 시작 / ▼ 계단 / F9 새 맵"); // 디버그 패널 배경과 안내 표시
+            $"37일차 절차 맵  |  {mapRuntime.CurrentFloor}F  |  Seed {mapData.Seed}\n" +
+            $"S 시작 / ▼ 계단 / F9 새 맵\n" +
+            $"노란 사각형 접촉 : 다음 층"); // 디버그 패널 배경과 안내 표시
 
         foreach (ExplorationMapCell cell in mapData.Cells) // 전체 셀 순회
         {
