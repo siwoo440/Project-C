@@ -63,3 +63,37 @@ MonoBehaviour:
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
   - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 9a62c684e11b4eaa8514caa907595cc2, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: cb34bcf16157460baee1923768fcd0d6, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 17c6e447cd2a48bf97a1fd63c3ac5d8d, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 01cf936013ed42288b94790fa8b049ee, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: e4a4785083b0466ca7be3e6e154ea084, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 0f097d2366e94752b0e61f434361f478, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: c95a39fa113d4b2fa93317a35ff3bc63, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 2f7e55ba85144955a7119efb3158d510, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 095232494e924926b8845cb6c21c1cda, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: b98b9f083a31407aaab4d21caeeafa21, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 919419f3e46049a3826ed9ecfdeff7e6, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 2a74b88e1e0043579fbbd2517f899eee, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: bf128902ccfd42338ec0ae7b78d9d332, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 2ca2ae78a03c4f5f973089d7119824cc, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 63b5b7255db34d409ee8f9296e3ec185, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
