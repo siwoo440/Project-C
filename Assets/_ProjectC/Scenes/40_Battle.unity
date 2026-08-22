@@ -439,6 +439,84 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!1 &1917448886
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1917448888}
+  - component: {fileID: 1917448887}
+  - component: {fileID: 1917448889}
+  m_Layer: 0
+  m_Name: BattleSystems
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1917448887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917448886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f58c0e97f2a99ec44a1122c628f65256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleSceneSetup
+  battleLoadout: {fileID: 11400000, guid: daa38a44d01608342adf9a680d7209d8, type: 2}
+  enemies:
+  - {fileID: 11400000, guid: a5fbf174b853f374e9aca12b53d630ac, type: 2}
+  - {fileID: 11400000, guid: e2f80ec4bd474b88ba71359930b17d05, type: 2}
+  battleType: 0
+  unitViewPrefab: {fileID: 4072380188688632060, guid: fc991930e4d14a44b9a29d15f776d075, type: 3}
+  allyUnitRoot: {fileID: 675924956}
+  enemyUnitRoot: {fileID: 37766817}
+  handView: {fileID: 2051001002}
+  sharedMaximumActionPoints: 3
+  maximumHandSize: 5
+  initialHandSize: 3
+  cardsPerPlayerTurn: 1
+  enemyTurnDelay: 0.75
+  useFixedShuffleSeed: 0
+  fixedShuffleSeed: 12345
+  testDamage: 10
+--- !u!4 &1917448888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917448886}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1917448889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917448886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78632ceb62a683e4794ac9a6c49d2056, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleRelicBootstrap
+  battleSceneSetup: {fileID: 0}
+  debugCanvas: {fileID: 0}
+  showDebugWindowAtStart: 1
+  debugStartingRelics: []
 --- !u!1 &2051001000
 GameObject:
   m_ObjectHideFlags: 0
@@ -485,67 +563,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 95b0277a28e14c969d8fac6d762acf45, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::BattleHandView
---- !u!1 &1917448886
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1917448888}
-  - component: {fileID: 1917448887}
-  m_Layer: 0
-  m_Name: BattleSystems
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1917448887
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1917448886}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f58c0e97f2a99ec44a1122c628f65256, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BattleSceneSetup
-  battleLoadout: {fileID: 11400000, guid: daa38a44d01608342adf9a680d7209d8, type: 2}
-  enemies:
-  - {fileID: 11400000, guid: a5fbf174b853f374e9aca12b53d630ac, type: 2}
-  - {fileID: 11400000, guid: e2f80ec4bd474b88ba71359930b17d05, type: 2}
-  battleType: 0
-  unitViewPrefab: {fileID: 4072380188688632060, guid: fc991930e4d14a44b9a29d15f776d075, type: 3}
-  allyUnitRoot: {fileID: 675924956}
-  enemyUnitRoot: {fileID: 37766817}
-  handView: {fileID: 2051001002}
-  sharedMaximumActionPoints: 3
-  maximumHandSize: 5
-  initialHandSize: 3
-  useFixedShuffleSeed: 0
-  fixedShuffleSeed: 12345
-  testDamage: 10
---- !u!4 &1917448888
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1917448886}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::BattleHandView
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
