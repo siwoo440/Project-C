@@ -33,6 +33,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private int pendingHazardHealthDamage; // 다음 전투에 적용할 누적 환경 체력 피해
     private int pendingHazardMentalDamage; // 다음 전투에 적용할 누적 환경 정신력 피해
     private int hazardPenaltyAppliedAllyCount; // 현재 전투에서 환경 피해 적용 완료 아군 수
+    private string lastExplorationFailureReason; // 마지막 탐사 실패 원인
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
@@ -53,6 +54,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public int RunWireGained => runWireGained; // 이번 탐사 실제 전선 조회
     public int PendingHazardHealthDamage => pendingHazardHealthDamage; // 대기 환경 체력 피해 조회
     public int PendingHazardMentalDamage => pendingHazardMentalDamage; // 대기 환경 정신력 피해 조회
+    public string LastExplorationFailureReason => lastExplorationFailureReason; // 마지막 탐사 실패 원인 조회
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds; // 클리어 조우 목록 조회
@@ -203,11 +205,18 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         {
             LastClearReward = null; // 비승리 보상 제거
 
+            if (resultData.LivingAllyCount <= 0)
+            {
+                CompleteExplorationFailure(
+                    "전투에서 출전 파티가 전멸했습니다."); // 전투 전멸 탐사 실패 처리
+            }
+
             Debug.Log(
-                $"[Exploration][Day49] 조우 유지 - " +
+                $"[Exploration][Day51] 조우 비승리 - " +
                 $"{runtimeEncounterId} / " +
                 $"{encounterName} / " +
-                $"결과 {resultData.Result}"); // 조우 유지 로그
+                $"결과 {resultData.Result} / " +
+                $"생존 {resultData.LivingAllyCount}명"); // 조우 비승리 로그
         }
 
         activeEncounter = null; // 현재 전투 데이터 초기화
@@ -244,6 +253,33 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             $"철판 +{runIronPlateGained} / " +
             $"전선 +{runWireGained} / " +
             $"호감도 +{lastExplorationSuccessAffinity}"); // 탐사 성공 정산 로그
+
+        return true;
+    }
+
+    public bool CompleteExplorationFailure(string reason) // 파티 전멸 등 탐사 실패 처리
+    {
+        if (isExplorationCompleted)
+        {
+            return false;
+        }
+
+        isExplorationCompleted = true; // 탐사 완료 상태 기록
+        isExplorationSuccess = false; // 탐사 실패 상태 기록
+        completedFloor = currentFloor; // 실패 층 기록
+        completedEncounterCount = clearedEncounterIds.Count; // 실패 시점 클리어 조우 수 기록
+        lastExplorationSuccessAffinity = 0; // 실패 호감도 보상 없음
+        lastExplorationFailureReason =
+            string.IsNullOrWhiteSpace(reason)
+                ? "출전 파티가 전멸했습니다."
+                : reason; // 탐사 실패 원인 저장
+        LastClearReward = null; // 실패 시 마지막 전투 보상 제거
+
+        Debug.LogWarning(
+            $"[Exploration][Day51] 탐사 실패 - " +
+            $"{completedFloor}F / " +
+            $"생존 0명 / " +
+            $"원인 {lastExplorationFailureReason}"); // 탐사 실패 로그
 
         return true;
     }
@@ -446,12 +482,14 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         completedFloor = 0; // 완료 층 초기화
         completedEncounterCount = 0; // 완료 조우 수 초기화
         lastExplorationSuccessAffinity = 0; // 성공 호감도 표시 초기화
+        lastExplorationFailureReason = null; // 탐사 실패 원인 초기화
         runExperienceGained = 0; // 런 경험치 합계 초기화
         runGoldGained = 0; // 런 골드 합계 초기화
         runScrewGained = 0; // 런 나사 합계 초기화
         runIronPlateGained = 0; // 런 철판 합계 초기화
         runWireGained = 0; // 런 전선 합계 초기화
         ClearPendingHazardPenalty(); // 탐사 환경 피해 대기 상태 초기화
+        BattleResultManager.Instance?.ResetSavedPartyState(); // 다음 탐사용 파티 HP·정신력·사망 기록 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
 
         Debug.Log(

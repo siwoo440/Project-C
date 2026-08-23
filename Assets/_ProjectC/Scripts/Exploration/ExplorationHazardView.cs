@@ -27,14 +27,15 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
             return;
         }
 
-        bool hasPendingDamage =
-            sessionManager.PendingHazardHealthDamage > 0 ||
-            sessionManager.PendingHazardMentalDamage > 0; // 다음 전투 대기 환경 피해 여부
+        bool recentPulse =
+            Time.unscaledTime -
+            hazardRuntime.LastPulseTime <
+            1.6f; // 최근 환경 피해 알림 표시 여부
 
         if (!hazardRuntime.IsInHazard &&
-            !hasPendingDamage)
+            !recentPulse)
         {
-            return; // 안전하고 대기 피해도 없으면 HUD 숨김
+            return; // 안전 지역이며 최근 피해도 없으면 HUD 숨김
         }
 
         EnsureStyles(); // HUD 스타일 준비
@@ -58,7 +59,7 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
         string title =
             hazardRuntime.IsInHazard
                 ? $"퇴색 위험 지역  Lv.{hazardRuntime.CurrentHazardLevel}"
-                : "안전 지역 · 환경 피해 대기"; // 현재 지역 제목 구성
+                : "퇴색 피해 발생"; // 현재 지역 제목 구성
 
         GUI.Label(
             new Rect(
@@ -79,10 +80,8 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
                 panelRect.y + 42f,
                 panelRect.width - 28f,
                 24f),
-            $"노출도 {exposurePercent:0}%  " +
-            $"[HP -{sessionManager.PendingHazardHealthDamage} / " +
-            $"정신 -{sessionManager.PendingHazardMentalDamage} 다음 전투 반영]",
-            bodyStyle); // 노출도와 대기 피해 표시
+            $"노출도 {exposurePercent:0}% · 피해는 파티 HP/정신력에 즉시 반영",
+            bodyStyle); // 노출도와 즉시 피해 반영 안내 표시
 
         Rect barBackground =
             new Rect(
@@ -107,33 +106,18 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
             barFill,
             Texture2D.whiteTexture); // 기본 노출도 채움 표시
 
-        if (Time.unscaledTime -
-            hazardRuntime.LastPulseTime <
-            1.6f)
-        {
-            GUI.Label(
-                new Rect(
-                    panelRect.x + 14f,
-                    panelRect.y + 100f,
-                    panelRect.width - 28f,
-                    28f),
-                $"퇴색 피해 발생  HP -{hazardRuntime.LastHealthDamage} / " +
-                $"정신 -{hazardRuntime.LastMentalDamage}",
-                pulseStyle); // 최근 환경 피해 알림 표시
-        }
-        else
-        {
-            GUI.Label(
-                new Rect(
-                    panelRect.x + 14f,
-                    panelRect.y + 100f,
-                    panelRect.width - 28f,
-                    28f),
-                hazardRuntime.IsInHazard
-                    ? "위험 지역을 벗어나면 노출 증가가 멈춥니다."
-                    : "다음 전투 시작 시 누적 환경 피해가 파티에 적용됩니다.",
-                bodyStyle); // 일반 상태 안내 문구 표시
-        }
+        GUI.Label(
+            new Rect(
+                panelRect.x + 14f,
+                panelRect.y + 100f,
+                panelRect.width - 28f,
+                28f),
+            recentPulse
+                ? $"퇴색 피해 발생  HP -{hazardRuntime.LastHealthDamage} / 정신 -{hazardRuntime.LastMentalDamage}"
+                : "위험 지역을 벗어나면 노출 증가가 멈춥니다.",
+            recentPulse
+                ? pulseStyle
+                : bodyStyle); // 최근 피해 또는 안전 이동 안내 표시
     }
 
     private void EnsureStyles() // 위험 HUD GUI 스타일 준비
