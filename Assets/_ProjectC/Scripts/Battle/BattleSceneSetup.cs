@@ -220,6 +220,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 파티원 생성 시작
             BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateAlly(characterData); // 아군 런타임 생성
             resultManager?.ApplySavedAllyState(runtimeUnit); // 이전 전투에서 저장한 아군 체력 적용
+            ExplorationSessionManager.Instance?.ApplyPendingHazardPenalty(runtimeUnit,
+            battleLoadout.Party.MemberCount); // 탐사 중 누적된 환경 피해 적용
             BattleUnitView unitView = Instantiate(unitViewPrefab, allyUnitRoot); // 아군 화면 오브젝트 생성
             unitView.name = $"Ally_{runtimeUnit.UnitId}"; // 아군 오브젝트 이름 적용
             unitView.Bind(runtimeUnit); // 아군 화면 연결

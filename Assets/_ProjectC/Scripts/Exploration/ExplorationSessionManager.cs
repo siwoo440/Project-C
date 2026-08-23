@@ -30,6 +30,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private int runScrewGained; // 이번 탐사 실제 획득 나사
     private int runIronPlateGained; // 이번 탐사 실제 획득 철판
     private int runWireGained; // 이번 탐사 실제 획득 전선
+    private int pendingHazardHealthDamage; // 다음 전투에 적용할 누적 환경 체력 피해
+    private int pendingHazardMentalDamage; // 다음 전투에 적용할 누적 환경 정신력 피해
+    private int hazardPenaltyAppliedAllyCount; // 현재 전투에서 환경 피해 적용 완료 아군 수
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
@@ -48,6 +51,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public int RunScrewGained => runScrewGained; // 이번 탐사 실제 나사 조회
     public int RunIronPlateGained => runIronPlateGained; // 이번 탐사 실제 철판 조회
     public int RunWireGained => runWireGained; // 이번 탐사 실제 전선 조회
+    public int PendingHazardHealthDamage => pendingHazardHealthDamage; // 대기 환경 체력 피해 조회
+    public int PendingHazardMentalDamage => pendingHazardMentalDamage; // 대기 환경 정신력 피해 조회
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds; // 클리어 조우 목록 조회
@@ -274,6 +279,100 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         return added;
     }
 
+    public void AddPendingHazardPenalty(
+        int healthDamage,
+        int mentalDamage) // 탐사 환경 피해 누적
+    {
+        int safeHealthDamage =
+            Mathf.Max(
+                0,
+                healthDamage); // 음수 체력 피해 방지
+
+        int safeMentalDamage =
+            Mathf.Max(
+                0,
+                mentalDamage); // 음수 정신력 피해 방지
+
+        if (safeHealthDamage == 0 &&
+            safeMentalDamage == 0)
+        {
+            return;
+        }
+
+        pendingHazardHealthDamage +=
+            safeHealthDamage; // 다음 전투용 체력 피해 누적
+
+        pendingHazardMentalDamage +=
+            safeMentalDamage; // 다음 전투용 정신력 피해 누적
+
+        hazardPenaltyAppliedAllyCount = 0; // 새 환경 피해 발생 시 적용 카운트 초기화
+
+        Debug.Log(
+            $"[Exploration][Day50] 환경 피해 누적 - " +
+            $"HP -{safeHealthDamage}, 정신 -{safeMentalDamage} / " +
+            $"대기 합계 HP -{pendingHazardHealthDamage}, " +
+            $"정신 -{pendingHazardMentalDamage}"); // 환경 피해 누적 로그
+    }
+
+    public bool ApplyPendingHazardPenalty(
+        BattleUnitRuntime allyUnit,
+        int expectedPartyCount) // 다음 전투 아군에 대기 환경 피해 적용
+    {
+        if (allyUnit == null ||
+            allyUnit.Team != BattleTeam.Ally ||
+            (pendingHazardHealthDamage <= 0 &&
+             pendingHazardMentalDamage <= 0))
+        {
+            return false;
+        }
+
+        bool applied =
+            false; // 현재 아군 실제 환경 피해 적용 여부
+
+        if (!allyUnit.IsDead)
+        {
+            int targetHealth =
+                Mathf.Max(
+                    1,
+                    allyUnit.CurrentHealth -
+                    pendingHazardHealthDamage); // 51일차 사망 확장 전까지 최소 체력 1 보장
+
+            int targetMental =
+                allyUnit.CurrentMental -
+                pendingHazardMentalDamage; // 누적 정신력 감소 목표값 계산
+
+            allyUnit.ApplyPersistentHealth(
+                targetHealth); // 환경 체력 피해를 전투 시작 상태에 반영
+
+            allyUnit.ApplyPersistentMental(
+                targetMental); // 환경 정신력 피해를 전투 시작 상태에 반영
+
+            applied = true; // 생존 아군 환경 피해 적용 완료
+        }
+
+        hazardPenaltyAppliedAllyCount += 1; // 사망 여부와 관계없이 파티 처리 수 증가
+
+        int safePartyCount =
+            Mathf.Max(
+                1,
+                expectedPartyCount); // 잘못된 파티 수 최소값 보정
+
+        if (hazardPenaltyAppliedAllyCount >=
+            safePartyCount)
+        {
+            ClearPendingHazardPenalty(); // 전체 파티 처리 후 대기 피해 제거
+        }
+
+        return applied;
+    }
+
+    private void ClearPendingHazardPenalty() // 다음 전투용 환경 피해 초기화
+    {
+        pendingHazardHealthDamage = 0; // 대기 체력 피해 초기화
+        pendingHazardMentalDamage = 0; // 대기 정신력 피해 초기화
+        hazardPenaltyAppliedAllyCount = 0; // 적용 완료 수 초기화
+    }
+
     public Vector3 GetPlayerSpawnPosition(
         Vector3 defaultPosition) // 탐사 플레이어 생성 위치 조회
     {
@@ -352,6 +451,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         runScrewGained = 0; // 런 나사 합계 초기화
         runIronPlateGained = 0; // 런 철판 합계 초기화
         runWireGained = 0; // 런 전선 합계 초기화
+        ClearPendingHazardPenalty(); // 탐사 환경 피해 대기 상태 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
 
         Debug.Log(
