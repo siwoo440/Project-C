@@ -20,6 +20,8 @@ MonoBehaviour:
   physicalDefense: 3
   magicalResistance: 2
   initialMental: 50
+  weaknessCardTypes:
+  - 1
   awakeningDamagePercent: 10
   awakeningHealingPercent: 10
   collapseDamagePercent: -10

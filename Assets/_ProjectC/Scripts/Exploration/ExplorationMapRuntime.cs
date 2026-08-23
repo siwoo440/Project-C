@@ -19,6 +19,12 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private readonly Dictionary<Vector2Int, BattleType> encounterTypes =
         new Dictionary<Vector2Int, BattleType>(); // 현재 층 좌표별 조우 등급
 
+    private readonly Dictionary<GameObject, string> encounterRuntimeIds =
+        new Dictionary<GameObject, string>(); // 조우 오브젝트별 런타임 ID
+
+    private readonly Dictionary<string, Vector2Int> encounterCoordinates =
+        new Dictionary<string, Vector2Int>(); // 런타임 ID별 조우 좌표
+
     private ExplorationSessionManager sessionManager; // 탐사 세션 관리자
     private ExplorationTilemapView tilemapView; // 논리 맵 Tilemap 표시기
     private GameObject stairsObject; // 현재 계단 오브젝트
@@ -52,6 +58,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private void Update() // 디버그 입력과 초기 배치 처리
     {
         TryHandleInitialPlayerPlacement(); // 플레이어 생성 지연 대응
+        RemoveClearedEncounterObjects(); // 전투 승리 후 남은 조우 표시 제거
 
         Keyboard keyboard =
             Keyboard.current; // 현재 키보드 조회
@@ -514,6 +521,12 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
 
         encounterObjects.Add(encounterObject); // 현재 층 조우 오브젝트 등록
 
+        encounterRuntimeIds[encounterObject] =
+            runtimeEncounterId; // 조우 오브젝트 런타임 ID 등록
+
+        encounterCoordinates[runtimeEncounterId] =
+            cell.Coordinate; // 런타임 ID별 조우 좌표 등록
+
         encounterTypes[cell.Coordinate] =
             data.BattleType; // 현재 좌표 조우 등급 등록
     }
@@ -540,6 +553,60 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
     }
 
+    private void RemoveClearedEncounterObjects() // 클리어된 조우 런타임 표시 제거
+    {
+        if (sessionManager == null ||
+            encounterObjects.Count == 0)
+        {
+            return;
+        }
+
+        for (int index = encounterObjects.Count - 1;
+             index >= 0;
+             index--)
+        {
+            GameObject encounterObject =
+                encounterObjects[index]; // 현재 조우 오브젝트 조회
+
+            if (encounterObject == null)
+            {
+                encounterObjects.RemoveAt(index); // 이미 제거된 조우 목록 정리
+                continue;
+            }
+
+            if (!encounterRuntimeIds.TryGetValue(
+                    encounterObject,
+                    out string runtimeEncounterId))
+            {
+                continue;
+            }
+
+            if (!sessionManager.IsEncounterCleared(
+                    runtimeEncounterId))
+            {
+                continue;
+            }
+
+            if (encounterCoordinates.TryGetValue(
+                    runtimeEncounterId,
+                    out Vector2Int coordinate))
+            {
+                encounterTypes.Remove(coordinate); // 좌표별 조우 정보 제거
+            }
+
+            encounterRuntimeIds.Remove(encounterObject); // 오브젝트별 런타임 ID 제거
+            encounterCoordinates.Remove(runtimeEncounterId); // 런타임 ID별 좌표 제거
+            encounterObjects.RemoveAt(index); // 현재 층 조우 목록 제거
+
+            encounterObject.SetActive(false); // Trigger와 시각 표시 즉시 비활성화
+            Destroy(encounterObject); // 클리어 조우 오브젝트 제거
+
+            Debug.Log(
+                $"[Exploration][Hotfix] 클리어 조우 표시 제거 - " +
+                $"{runtimeEncounterId}"); // 클리어 표시 제거 로그
+        }
+    }
+
     private void ClearEncounterObjects() // 현재 층 조우 오브젝트 정리
     {
         foreach (GameObject encounterObject in encounterObjects)
@@ -554,6 +621,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
 
         encounterObjects.Clear(); // 조우 오브젝트 목록 초기화
+        encounterRuntimeIds.Clear(); // 오브젝트별 런타임 ID 초기화
+        encounterCoordinates.Clear(); // 런타임 ID별 좌표 초기화
         encounterTypes.Clear(); // 좌표별 조우 등급 초기화
     }
 
