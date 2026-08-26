@@ -4,8 +4,6 @@ using UnityEngine; // 유니티 기본 기능 사용
 
 public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결과와 아군 상태 보관
 {
-    private const int DefaultReviveHealthPercent = 30; // 기본 부활 최대 체력 비율
-    private const int DefaultReviveMental = 10; // 기본 부활 정신력
 
     private readonly Dictionary<string, int> savedAllyHealth =
         new Dictionary<string, int>(); // 아군별 저장 체력 목록
@@ -350,89 +348,6 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                GetLivingAllyCount() <= 0; // 출전 파티 전원 사망 판정
     }
 
-    public bool ReviveSavedAlly(
-        string unitId,
-        int healthPercent = DefaultReviveHealthPercent,
-        int mental = DefaultReviveMental) // 사망 파티원 기본 부활
-    {
-        CharacterData characterData =
-            FindActiveCharacter(
-                unitId); // 부활 대상 캐릭터 데이터 조회
-
-        if (characterData == null)
-        {
-            return false;
-        }
-
-        InitializeMemberState(
-            characterData); // 저장 상태 보장
-
-        if (savedAllyHealth[unitId] > 0)
-        {
-            return false; // 생존 캐릭터 부활 차단
-        }
-
-        int safePercent =
-            Mathf.Clamp(
-                healthPercent,
-                1,
-                100); // 부활 체력 비율 범위 보정
-
-        int revivedHealth =
-            Mathf.Max(
-                1,
-                Mathf.CeilToInt(
-                    characterData.MaxHealth *
-                    safePercent /
-                    100f)); // 최대 체력 비율 기반 부활 HP 계산
-
-        savedAllyHealth[unitId] =
-            revivedHealth; // 부활 체력 저장
-
-        savedAllyMental[unitId] =
-            Mathf.Clamp(
-                mental,
-                BattleMentalRuntime.MinimumMental,
-                BattleMentalRuntime.MaximumMental); // 낮은 정신력으로 부활
-
-        PartyStateChanged?.Invoke(); // 부활 상태 UI 갱신 알림
-
-        Debug.Log(
-            $"[BattleResultManager][Day51] 부활 - " +
-            $"{characterData.DisplayName} / " +
-            $"HP {revivedHealth}/{characterData.MaxHealth} / " +
-            $"정신 {savedAllyMental[unitId]}"); // 부활 결과 로그
-
-        return true;
-    }
-
-    public bool ReviveFirstDeadAlly() // 개발 테스트용 첫 사망 파티원 부활
-    {
-        if (ActiveParty == null)
-        {
-            return false;
-        }
-
-        foreach (CharacterData member in ActiveParty.Members)
-        {
-            if (member == null)
-            {
-                continue;
-            }
-
-            InitializeMemberState(
-                member); // 파티원 저장 상태 보장
-
-            if (savedAllyHealth[member.CharacterId] <= 0)
-            {
-                return ReviveSavedAlly(
-                    member.CharacterId); // 첫 사망 파티원 기본 부활
-            }
-        }
-
-        return false; // 사망 파티원 없음 반환
-    }
-
     public void ResetSavedPartyState() // 저장 아군 상태 전체 초기화
     {
         savedAllyHealth.Clear(); // 저장 아군 체력 비우기
@@ -508,26 +423,6 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
 
         allyDeathCounts[unitId] =
             previousDeathCount + 1; // 탐사 런 사망 횟수 증가
-    }
-
-    private CharacterData FindActiveCharacter(string unitId) // 현재 파티에서 캐릭터 데이터 조회
-    {
-        if (ActiveParty == null ||
-            string.IsNullOrWhiteSpace(unitId))
-        {
-            return null;
-        }
-
-        foreach (CharacterData member in ActiveParty.Members)
-        {
-            if (member != null &&
-                member.CharacterId == unitId)
-            {
-                return member; // 일치 캐릭터 반환
-            }
-        }
-
-        return null; // 일치 캐릭터 없음 반환
     }
 
     private void OnDestroy() // 결과 관리자 제거 처리
