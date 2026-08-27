@@ -76,6 +76,11 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
         {
             runtimeRoot.AddComponent<ShopPrototypeBootstrap>(); // 탐사 상점 코드 기반 UI 추가
         }
+
+        if (runtimeRoot.GetComponent<ExplorationRoomRoleBootstrap>() == null) // 56일차 방 역할 연결기 존재 확인
+        {
+            runtimeRoot.AddComponent<ExplorationRoomRoleBootstrap>(); // 절차 방 역할·특수 방 통합 연결
+        }
     }
 
     private static void ApplyActiveEncounterToBattle()
@@ -124,7 +129,8 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
 
         for (int index = 0; index < encounterData.Enemies.Count; index++)
         {
-            EnemyData enemyData = encounterData.Enemies[index];
+            EnemyData enemyData =
+                encounterData.Enemies[index];
 
             if (enemyData != null)
             {

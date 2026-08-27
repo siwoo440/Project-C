@@ -7,7 +7,8 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
 
     private RestRoomRunManager manager; // 휴식 회차 관리자
     private bool isOpen; // 휴식 창 표시 여부
-    private bool isHighRisk; // 테스트용 고위험 지역 여부
+    private bool isHighRisk; // 현재 휴식 방 고위험 여부
+    private bool roomRiskLocked; // 실제 방 위험도 고정 여부
     private int selectedCardIndex = -1; // 강화 선택 카드 위치
     private Vector2 cardScroll; // 카드 목록 스크롤 위치
     private string resultMessage = "미강화 카드 1장을 선택한 뒤 휴식을 실행하세요."; // 현재 안내 메시지
@@ -16,6 +17,16 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
     public void Initialize(RestRoomRunManager runManager) // Prototype 화면 초기화
     {
         manager = runManager; // 휴식 관리자 저장
+    }
+
+    public void OpenFromRoom(bool highRisk) // 실제 생성된 휴식 방에서 UI 열기
+    {
+        isHighRisk = highRisk; // 현재 방 위험도 적용
+        roomRiskLocked = true; // 실제 방 위험도 수동 변경 차단
+        resultMessage = highRisk
+            ? "고위험 휴식 방: HP 15% / 정신력 +15 / 카드 1장 강화"
+            : "일반 휴식 방: HP 25% / 정신력 +15 / 카드 1장 강화"; // 실제 방 휴식 효과 안내
+        OpenWindow(); // 휴식 창 표시
     }
 
     private void OnGUI() // Prototype 휴식 UI 표시
@@ -33,6 +44,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
 
         if (!isOpen && GUI.Button(openButtonRect, "휴식 방 테스트")) // 휴식 창 열기 입력
         {
+            roomRiskLocked = false; // 수동 테스트 위험도 변경 허용
             OpenWindow(); // 휴식 창 표시
         }
 
@@ -65,12 +77,16 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
 
         GUILayout.BeginHorizontal(); // 위험도 선택 행 시작
         GUILayout.Label(
-            isHighRisk
-                ? "테스트 지역: 고위험 (HP 15%)"
-                : "테스트 지역: 일반 (HP 25%)",
-            GUILayout.Width(330f)); // 현재 테스트 위험도 표시
+            roomRiskLocked
+                ? isHighRisk
+                    ? "실제 방 위험도: 고위험 (HP 15%)"
+                    : "실제 방 위험도: 일반 (HP 25%)"
+                : isHighRisk
+                    ? "테스트 지역: 고위험 (HP 15%)"
+                    : "테스트 지역: 일반 (HP 25%)",
+            GUILayout.Width(330f)); // 현재 휴식 위험도 표시
 
-        GUI.enabled = !manager.IsUsed; // 사용 전 위험도 변경 허용
+        GUI.enabled = !manager.IsUsed && !roomRiskLocked; // 수동 테스트에서만 위험도 변경 허용
         if (GUILayout.Button("일반 / 고위험 전환", GUILayout.Width(180f))) // 테스트 위험도 변경 입력
         {
             isHighRisk = !isHighRisk; // 테스트 위험도 반전
@@ -116,11 +132,13 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             CloseWindow(); // 휴식 창 숨김
         }
 
+        GUI.enabled = !roomRiskLocked; // 실제 휴식 방에서 테스트 초기화 차단
         if (GUILayout.Button("사용 상태만 초기화 (테스트)", GUILayout.Height(34f))) // Prototype 반복 테스트 입력
         {
             manager.ResetPrototypeUsage(); // 휴식 사용 여부만 초기화
             resultMessage = "휴식 사용 상태만 초기화했습니다. 이미 강화된 카드는 유지됩니다."; // 테스트 초기화 안내
         }
+        GUI.enabled = true; // UI 입력 상태 복구
         GUILayout.EndHorizontal(); // 하단 버튼 행 종료
     }
 
@@ -216,6 +234,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
 
         Time.timeScale = previousTimeScale; // 기존 시간 배율 복구
         isOpen = false; // 휴식 창 숨김
+        roomRiskLocked = false; // 다음 UI 열기 위험도 잠금 초기화
     }
 
     private void OnDisable() // 화면 비활성화 처리
@@ -224,6 +243,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
         {
             Time.timeScale = previousTimeScale; // 비활성화 시 시간 배율 복구
             isOpen = false; // 창 표시 상태 초기화
+            roomRiskLocked = false; // 방 위험도 잠금 초기화
         }
     }
 }
