@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [Serializable]
-public sealed class DeckCardEntry
+public sealed class DeckCardEntry : IDeckCardEntry // 공용 카드 항목 규약 구현
 {
     [SerializeField] private CardData card; // 덱에 등록된 카드
     [SerializeField] private CharacterData owner; // 카드 소유 캐릭터

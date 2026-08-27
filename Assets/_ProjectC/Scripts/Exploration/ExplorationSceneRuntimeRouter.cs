@@ -71,6 +71,11 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
         {
             runtimeRoot.AddComponent<ExplorationPrototypeBootstrap>();
         }
+
+        if (runtimeRoot.GetComponent<ShopPrototypeBootstrap>() == null) // 54일차 상점 연결기 존재 확인
+        {
+            runtimeRoot.AddComponent<ShopPrototypeBootstrap>(); // 탐사 상점 코드 기반 UI 추가
+        }
     }
 
     private static void ApplyActiveEncounterToBattle()
