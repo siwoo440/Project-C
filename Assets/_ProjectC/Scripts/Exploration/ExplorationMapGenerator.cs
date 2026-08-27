@@ -9,6 +9,8 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
     private const int EventWeightEnd = 80; // 이벤트 방 누적 가중치
     private const int TreasureWeightEnd = 90; // 보물 방 누적 가중치
     private const int RestWeightEnd = 95; // 휴식 방 누적 가중치
+    private const int MaxEventRoomCount = 3; // 층당 이벤트 방 최대 수
+    private const int MaxTreasureRoomCount = 1; // 층당 보물 방 최대 수
     private const int RoomTypeSeedSalt = 1489236017; // 방 역할 난수 분리값
 
     private static readonly Vector2Int[] Directions = // 상하좌우 확장 방향
@@ -19,7 +21,23 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         Vector2Int.left // 왼쪽 방향
     };
 
-    public static ExplorationMapData Generate(int requestedCellCount, int seed) // 지정 셀 수와 시드로 맵 생성
+    public static ExplorationMapData Generate(int requestedCellCount, int seed) // 기존 호출 호환 절차 맵 생성
+    {
+        int currentFloor =
+            ExplorationSessionManager.Instance != null
+                ? ExplorationSessionManager.Instance.CurrentFloor
+                : 1; // 활성 탐사 세션 층 또는 Editor 기본 1층 조회
+
+        return Generate(
+            requestedCellCount,
+            seed,
+            currentFloor); // 현재 층 규칙을 포함한 맵 생성
+    }
+
+    public static ExplorationMapData Generate(
+        int requestedCellCount,
+        int seed,
+        int currentFloor) // 지정 셀 수·Seed·층으로 맵 생성
     {
         int targetCellCount = Mathf.Max(2, requestedCellCount); // 최소 두 셀 보장
         System.Random random = new System.Random(seed); // 시드 기반 난수 생성기 준비
@@ -47,7 +65,7 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         Vector2Int stairsCoordinate = FindStairsCoordinate(creationOrder, random); // 시작점에서 먼 계단 좌표 선정
         List<ExplorationMapCell> cells = CreateCells(creationOrder, startCoordinate, stairsCoordinate); // 논리 셀 데이터 생성
         ApplyConnections(cells, coordinates); // 상하좌우 연결 정보 계산
-        ApplyRoomTypes(cells, startCoordinate, stairsCoordinate, seed); // 56일차 방 콘텐츠 역할 배정
+        ApplyRoomTypes(cells, startCoordinate, stairsCoordinate, seed, currentFloor); // 층 규칙 기반 방 콘텐츠 역할 배정
 
         return new ExplorationMapData(seed, cells, startCoordinate, stairsCoordinate); // 완성된 탐사 맵 반환
     }
@@ -83,12 +101,12 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         {
             return canCreateRest
                 ? ExplorationRoomType.Rest
-                : ExplorationRoomType.Normal; // 휴식 최대 수 초과 시 일반 방 대체
+                : ExplorationRoomType.Normal; // 휴식 제한 도달 시 일반 방 대체
         }
 
         return canCreateShop
             ? ExplorationRoomType.Shop
-            : ExplorationRoomType.Normal; // 상점 최대 수 초과 시 일반 방 대체
+            : ExplorationRoomType.Normal; // 상점 제한 도달 시 일반 방 대체
     }
 
     private static Vector2Int FindStairsCoordinate(List<Vector2Int> coordinates, System.Random random) // 계단 위치 선정
@@ -152,42 +170,95 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         List<ExplorationMapCell> cells,
         Vector2Int startCoordinate,
         Vector2Int stairsCoordinate,
-        int seed) // Seed 기반 방 콘텐츠 역할 배정
+        int seed,
+        int currentFloor) // Seed와 층 기반 방 콘텐츠 역할 배정
     {
         System.Random random = new System.Random(seed ^ RoomTypeSeedSalt); // 방 역할 전용 난수 생성기 준비
-        bool restCreated = false; // 휴식 방 생성 여부 초기화
-        bool shopCreated = false; // 상점 방 생성 여부 초기화
+        List<ExplorationMapCell> candidates = new List<ExplorationMapCell>(); // 특수 역할 배정 후보 목록
 
         foreach (ExplorationMapCell cell in cells) // 전체 셀 순회
         {
             if (cell.Coordinate == startCoordinate) // 시작 방 확인
             {
-                cell.SetRoomType(ExplorationRoomType.Normal); // 시작 방 특수 콘텐츠 제외
+                cell.SetRoomType(ExplorationRoomType.Normal); // 시작 방 안전 역할 유지
                 continue; // 다음 방 처리
             }
 
-            if (cell.Coordinate == stairsCoordinate) // 최장 거리 계단 방 확인
+            if (cell.Coordinate == stairsCoordinate) // 마지막 진행 방 확인
             {
-                cell.SetRoomType(ExplorationRoomType.Boss); // 최장 거리 방 보스 역할 고정
+                cell.SetRoomType(
+                    ExplorationFloorRules.GetGateRoomType(currentFloor)); // 층별 엘리트 또는 보스 관문 지정
                 continue; // 다음 방 처리
             }
 
+            candidates.Add(cell); // 일반 후보 방 등록
+        }
+
+        ShuffleCells(candidates, random); // 보장 방 위치 Seed 기반 무작위화
+
+        int nextCandidateIndex = 0; // 다음 보장 방 후보 인덱스
+
+        if (nextCandidateIndex < candidates.Count) // 휴식 방 배치 가능 여부 확인
+        {
+            candidates[nextCandidateIndex].SetRoomType(ExplorationRoomType.Rest); // 층당 휴식 방 1개 보장
+            nextCandidateIndex += 1; // 다음 후보 이동
+        }
+
+        if (nextCandidateIndex < candidates.Count) // 상점 방 배치 가능 여부 확인
+        {
+            candidates[nextCandidateIndex].SetRoomType(ExplorationRoomType.Shop); // 층당 상점 방 1개 보장
+            nextCandidateIndex += 1; // 다음 후보 이동
+        }
+
+        int eventCount = 0; // 추가 이벤트 방 수 초기화
+        int treasureCount = 0; // 추가 보물 방 수 초기화
+
+        for (int index = nextCandidateIndex; index < candidates.Count; index++) // 남은 후보 방 역할 배정
+        {
+            ExplorationMapCell cell = candidates[index]; // 현재 후보 방 조회
             int roll = random.Next(100); // 방 역할 가중치 난수 생성
             ExplorationRoomType roomType = ResolveRoomTypeForRoll(
                 roll,
-                !restCreated,
-                !shopCreated); // 상점·휴식 최대 한 개 제한 포함 역할 결정
+                false,
+                false); // 보장된 휴식·상점 추가 생성 차단
 
-            cell.SetRoomType(roomType); // 현재 방 역할 저장
+            if (roomType == ExplorationRoomType.Event) // 이벤트 방 추첨 확인
+            {
+                if (eventCount >= MaxEventRoomCount) // 이벤트 최대 수 확인
+                {
+                    roomType = ExplorationRoomType.Normal; // 초과 이벤트 일반 방 대체
+                }
+                else
+                {
+                    eventCount += 1; // 이벤트 방 수 증가
+                }
+            }
+            else if (roomType == ExplorationRoomType.Treasure) // 보물 방 추첨 확인
+            {
+                if (treasureCount >= MaxTreasureRoomCount) // 보물 최대 수 확인
+                {
+                    roomType = ExplorationRoomType.Normal; // 초과 보물 일반 방 대체
+                }
+                else
+                {
+                    treasureCount += 1; // 보물 방 수 증가
+                }
+            }
 
-            if (roomType == ExplorationRoomType.Rest) // 휴식 방 생성 확인
-            {
-                restCreated = true; // 추가 휴식 방 생성 차단
-            }
-            else if (roomType == ExplorationRoomType.Shop) // 상점 방 생성 확인
-            {
-                shopCreated = true; // 추가 상점 방 생성 차단
-            }
+            cell.SetRoomType(roomType); // 최종 방 역할 저장
+        }
+    }
+
+    private static void ShuffleCells(
+        List<ExplorationMapCell> cells,
+        System.Random random) // 방 후보 Seed 기반 순서 섞기
+    {
+        for (int index = cells.Count - 1; index > 0; index--) // 뒤에서 앞으로 후보 순회
+        {
+            int swapIndex = random.Next(index + 1); // 교환 대상 인덱스 선택
+            ExplorationMapCell temporary = cells[index]; // 현재 셀 임시 저장
+            cells[index] = cells[swapIndex]; // 선택 셀 현재 위치 이동
+            cells[swapIndex] = temporary; // 임시 셀 교환 위치 이동
         }
     }
 

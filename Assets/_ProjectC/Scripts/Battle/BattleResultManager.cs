@@ -396,6 +396,58 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         return true;
     }
 
+    public bool TryApplyRestRecovery(
+        int hazardLevel,
+        out int recoveredMemberCount) // 57일차 위험도별 휴식 회복을 영속 파티 상태에 적용
+    {
+        recoveredMemberCount = 0; // 회복 적용 생존 인원 초기화
+
+        if (ActiveParty == null) // 등록 파티 존재 확인
+        {
+            return false; // 회복 실패 반환
+        }
+
+        foreach (CharacterData member in ActiveParty.Members) // 현재 출전 파티원 순회
+        {
+            if (member == null ||
+                string.IsNullOrWhiteSpace(member.CharacterId)) // 잘못된 파티원 확인
+            {
+                continue; // 잘못된 파티원 제외
+            }
+
+            InitializeMemberState(member); // 저장 HP·정신력 상태 보장
+
+            string unitId = member.CharacterId; // 현재 파티원 ID 저장
+            int currentHealth = savedAllyHealth[unitId]; // 현재 저장 HP 조회
+
+            if (currentHealth <= 0) // 사망 파티원 확인
+            {
+                continue; // 휴식 부활·정신력 회복 제외
+            }
+
+            savedAllyHealth[unitId] =
+                RestRoomRecoveryService.CalculateRecoveredHealth(
+                    currentHealth,
+                    member.MaxHealth,
+                    hazardLevel); // 퇴색 위험도별 HP 회복 적용
+
+            savedAllyMental[unitId] =
+                RestRoomRecoveryService.CalculateRecoveredMental(
+                    savedAllyMental[unitId],
+                    false); // 생존 파티원 정신력 +15 적용
+
+            recoveredMemberCount += 1; // 회복 적용 생존 인원 증가
+        }
+
+        if (recoveredMemberCount < 1) // 회복 대상 생존자 존재 확인
+        {
+            return false; // 회복 실패 반환
+        }
+
+        PartyStateChanged?.Invoke(); // 탐사 파티 HUD 갱신 알림
+        return true; // 휴식 회복 성공 반환
+    }
+
     public void ResetSavedPartyState() // 저장 아군 상태 전체 초기화
     {
         savedAllyHealth.Clear(); // 저장 아군 체력 비우기

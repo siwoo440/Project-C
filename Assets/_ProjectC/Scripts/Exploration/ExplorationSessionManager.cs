@@ -196,9 +196,16 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
                 $"[Exploration][Day49] 조우 클리어 - " +
                 $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
 
-            if (clearedBattleType == BattleType.Boss)
+            if (clearedBattleType == BattleType.Boss &&
+                ExplorationFloorRules.IsFinalBossFloor(currentFloor))
             {
-                CompleteExplorationSuccess(); // 보스 승리를 탐사 성공으로 확정
+                CompleteExplorationSuccess(); // 10층 최종 보스 승리만 탐사 성공 확정
+            }
+            else if (clearedBattleType == BattleType.Boss)
+            {
+                Debug.Log(
+                    $"[Exploration][Day57] 중간 보스 클리어 - " +
+                    $"{currentFloor}F / 다음 층 진행 가능"); // 5층 중간 보스 승리 진행 로그
             }
         }
         else

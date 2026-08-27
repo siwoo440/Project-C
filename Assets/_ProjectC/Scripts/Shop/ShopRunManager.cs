@@ -7,6 +7,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     private ShopCatalogData catalog; // 현재 상점 카탈로그
     private RunDeckManager runDeckManager; // 탐사 회차 덱 관리자
     private ShopTransactionService transactionService; // 상점 거래 서비스
+    private string activeRoomRuntimeId; // 57일차 현재 상점 방 런타임 ID
 
     public static ShopRunManager Instance => instance; // 현재 상점 관리자 조회
     public ShopCatalogData Catalog => catalog; // 현재 카탈로그 조회
@@ -66,6 +67,22 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         Changed?.Invoke(); // 상점 준비 알림
         return true; // 상점 준비 성공 반환
     } // 상점 준비 종료
+
+    public void BeginRoomVisit(string roomRuntimeId) // 57일차 생성된 상점 방 최초 방문 준비
+    {
+        if (string.IsNullOrWhiteSpace(roomRuntimeId) ||
+            activeRoomRuntimeId == roomRuntimeId) // 잘못된 ID 또는 동일 상점 재호출 확인
+        {
+            return; // 상점 상태 재생성 중단
+        }
+
+        activeRoomRuntimeId = roomRuntimeId; // 현재 상점 방 ID 저장
+        transactionService = new ShopTransactionService(new PlayerResourceShopWallet()); // 새 상점 전용 판매 상태 생성
+        Changed?.Invoke(); // 상점 상품 표시 갱신 알림
+
+        Debug.Log(
+            $"[Shop][Day57] 새 상점 방 방문 준비 - {activeRoomRuntimeId}"); // 방별 상점 초기화 로그
+    }
 
     public ShopPurchaseResult TryPurchase(ShopOfferData offer) // 지정 상품 구매 시도
     { // 상품 구매 시작

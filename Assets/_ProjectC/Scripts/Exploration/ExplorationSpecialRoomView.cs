@@ -1,10 +1,8 @@
 using UnityEngine; // Trigger와 런타임 표시 기능 사용
 using UnityEngine.UI; // 기존 상점 열기 버튼 호출 사용
 
-public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식·상점 방 상호작용
+public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보물·휴식·상점 방 상호작용
 {
-    private const int TreasureGoldReward = 100; // Prototype 보물 골드 보상
-
     private static Sprite runtimeMarkerSprite; // 특수 방 공용 임시 스프라이트
 
     private ExplorationMapRuntime mapRuntime; // 현재 탐사 맵 런타임
@@ -34,7 +32,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
         }
 
         Texture2D texture = new Texture2D(1, 1); // 단색 임시 텍스처 생성
-        texture.name = "Day56SpecialRoomTexture"; // 임시 텍스처 이름 지정
+        texture.name = "Day57SpecialRoomTexture"; // 임시 텍스처 이름 지정
         texture.SetPixel(0, 0, Color.white); // 흰색 원본 픽셀 지정
         texture.Apply(); // 텍스처 변경 적용
 
@@ -44,7 +42,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
             new Vector2(0.5f, 0.5f),
             1f); // 단색 사각형 스프라이트 생성
 
-        runtimeMarkerSprite.name = "Day56SpecialRoomSprite"; // 임시 스프라이트 이름 지정
+        runtimeMarkerSprite.name = "Day57SpecialRoomSprite"; // 임시 스프라이트 이름 지정
         return runtimeMarkerSprite; // 생성 스프라이트 반환
     }
 
@@ -81,6 +79,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
 
         ExplorationSessionManager.EnsureInstance().MarkEventResolved(runtimeId); // 현재 휴식 방 사용 완료 저장
         waitingForRestUse = false; // 휴식 사용 감시 종료
+        gameObject.SetActive(false); // 사용 완료 휴식 방 표시 숨김
     }
 
     private void OnTriggerExit2D(Collider2D other) // 플레이어 특수 방 이탈 처리
@@ -104,6 +103,12 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
             return; // 다른 오브젝트 접촉 무시
         }
 
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
+        if (sessionManager.IsEventResolved(runtimeId)) // 이미 사용한 방 확인
+        {
+            return; // 재사용 차단
+        }
+
         switch (roomType) // 방 역할별 상호작용 분기
         {
             case ExplorationRoomType.Treasure:
@@ -120,39 +125,27 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
         }
     }
 
-    private void OpenTreasure() // Prototype 보물 방 보상 지급
+    private void OpenTreasure() // Prototype 랜덤 보물 보상 지급
     {
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 탐사 특수 방 상태 관리자 준비
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
 
-        if (sessionManager.IsEventResolved(runtimeId)) // 보물 획득 완료 여부 확인
+        if (!ExplorationTreasureRewardService.TryGrantReward(runtimeId, out string message)) // 랜덤 보상 지급 확인
         {
-            return; // 중복 보상 차단
+            Debug.LogWarning($"[Exploration][Day57] 보물 보상 지급 실패 - {runtimeId}", this); // 보상 실패 로그
+            return; // 실패 시 사용 완료 처리 중단
         }
 
-        PlayerResourceManager.EnsureInstance().AddResources(
-            TreasureGoldReward,
-            0,
-            0,
-            0); // Prototype 보물 Gold 지급
-
-        sessionManager.MarkEventResolved(runtimeId); // 보물 방 획득 완료 저장
-
-        Debug.Log(
-            $"[Exploration][Day56] 보물 방 획득 - Gold +{TreasureGoldReward} / {runtimeId}",
-            this); // 보물 획득 결과 로그
-
+        sessionManager.MarkEventResolved(runtimeId); // 보물 방 사용 완료 저장
+        Debug.Log($"[Exploration][Day57] {message} / {runtimeId}", this); // 보물 결과 로그
         gameObject.SetActive(false); // 획득 완료 보물 표시 숨김
     }
 
     private void OpenRestRoom() // 실제 생성된 휴식 방 열기
     {
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 휴식 방 사용 상태 관리자 준비
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 휴식 방 사용 상태 관리자 준비
 
         if (sessionManager.IsEventResolved(runtimeId)) // 현재 휴식 방 사용 완료 여부 확인
         {
-            Debug.Log("[Exploration][Day56] 이미 사용한 휴식 방입니다.", this); // 재사용 안내
             return; // 같은 휴식 방 재사용 차단
         }
 
@@ -167,7 +160,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
             restManager.Prepare(provider.BattleLoadout.Deck); // 현재 회차 덱 휴식 시스템 연결
         }
 
-        if (restManager.IsUsed) // 이전 휴식 방 사용 상태 확인
+        if (restManager.IsUsed) // 이전 층 휴식 사용 상태 확인
         {
             restManager.ResetPrototypeUsage(); // 새 휴식 방 단위 사용 상태 준비
         }
@@ -182,62 +175,66 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
             restView.Initialize(restManager); // 휴식 관리자 연결
         }
 
-        bool isHighRisk =
-            mapRuntime != null &&
+        int hazardLevel = 0; // 안전 방 기본 위험도
+        if (mapRuntime != null &&
             mapRuntime.TryGetHazardAt(
                 coordinate,
                 out ExplorationHazardRoomState hazardState) &&
-            hazardState != null; // 현재 휴식 방 퇴색 위험 존재 여부 판정
+            hazardState != null) // 현재 휴식 방 퇴색 위험 존재 여부 확인
+        {
+            hazardLevel = hazardState.Level; // 실제 퇴색 Lv1~3 적용
+        }
 
-        restView.OpenFromRoom(isHighRisk); // 실제 방 위험도 기반 휴식 UI 열기
+        restView.OpenFromRoom(hazardLevel); // 실제 위험도 기반 휴식 UI 열기
         waitingForRestUse = true; // 휴식 실행 완료 감시 시작
     }
 
-    private void OpenShop() // 실제 생성된 상점 방 열기
+    private void OpenShop() // 실제 생성된 일회성 상점 방 열기
     {
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 상점 사용 상태 관리자 준비
+
+        if (sessionManager.IsEventResolved(runtimeId)) // 현재 상점 방문 완료 여부 확인
+        {
+            return; // 같은 상점 재방문 차단
+        }
+
         ShopPrototypeView shopView =
             FindFirstObjectByType<ShopPrototypeView>(); // 기존 54일차 상점 UI 조회
 
         if (shopView == null) // 상점 UI 준비 여부 확인
         {
-            Debug.LogWarning(
-                "[Exploration][Day56] ShopPrototypeView가 아직 준비되지 않았습니다.",
-                this); // 상점 UI 누락 안내
+            Debug.LogWarning("[Exploration][Day57] ShopPrototypeView가 준비되지 않았습니다.", this); // 상점 UI 누락 안내
             return; // 상점 열기 중단
         }
 
-        Button[] buttons =
-            shopView.GetComponentsInChildren<Button>(true); // 상점 UI 전체 버튼 조회
+        ShopRunManager shopManager = ShopRunManager.Instance; // 현재 상점 회차 관리자 조회
+        if (shopManager != null) // 상점 관리자 준비 여부 확인
+        {
+            shopManager.BeginRoomVisit(runtimeId); // 현재 방 전용 판매 상태 준비
+        }
+
+        Button[] buttons = shopView.GetComponentsInChildren<Button>(true); // 상점 UI 전체 버튼 조회
 
         foreach (Button button in buttons) // 상점 버튼 순회
         {
             if (button != null &&
                 button.gameObject.name == "OpenShopButton") // 기존 상점 열기 버튼 확인
             {
-                button.onClick.Invoke(); // 기존 54일차 상점 열기 흐름 실행
+                button.onClick.Invoke(); // 기존 상점 열기 흐름 실행
+                sessionManager.MarkEventResolved(runtimeId); // 최초 방문 즉시 상점 사용 완료 처리
+                gameObject.SetActive(false); // 재방문 방지 상점 표시 숨김
                 return; // 상점 열기 완료
             }
         }
 
-        Debug.LogWarning(
-            "[Exploration][Day56] 기존 상점 열기 버튼을 찾지 못했습니다.",
-            this); // 상점 열기 연결 실패 안내
+        Debug.LogWarning("[Exploration][Day57] 기존 상점 열기 버튼을 찾지 못했습니다.", this); // 상점 연결 실패 안내
     }
 
     private void CreateRoomLabel() // 특수 방 역할 문자 표시 생성
     {
-        GameObject labelObject = new GameObject(
-            "RoomTypeLabel",
-            typeof(TextMesh)); // 방 역할 문자 오브젝트 생성
-
-        labelObject.transform.SetParent(
-            transform,
-            false); // 특수 방 표시 하위 배치
-
-        labelObject.transform.localPosition = new Vector3(
-            0f,
-            0f,
-            -0.1f); // 특수 방 중앙 문자 위치 지정
+        GameObject labelObject = new GameObject("RoomTypeLabel", typeof(TextMesh)); // 방 역할 문자 오브젝트 생성
+        labelObject.transform.SetParent(transform, false); // 특수 방 표시 하위 배치
+        labelObject.transform.localPosition = new Vector3(0f, 0f, -0.1f); // 특수 방 중앙 문자 위치 지정
 
         TextMesh labelText = labelObject.GetComponent<TextMesh>(); // 방 역할 TextMesh 조회
         labelText.text = GetRoomLabel(roomType); // 방 역할 축약 문자 지정
@@ -247,9 +244,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 보물·휴식
         labelText.characterSize = 0.08f; // 월드 공간 문자 크기 지정
         labelText.color = Color.white; // 문자 흰색 표시
 
-        MeshRenderer renderer =
-            labelObject.GetComponent<MeshRenderer>(); // 문자 렌더러 조회
-
+        MeshRenderer renderer = labelObject.GetComponent<MeshRenderer>(); // 문자 렌더러 조회
         if (renderer != null) // 문자 렌더러 존재 확인
         {
             renderer.sortingOrder = 5; // 방 사각형보다 앞에 표시
