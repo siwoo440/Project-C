@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_TEMP_STRATEGY
   displayName: 임시 마법
   description: 적 하나에게 마법 피해 8
-  artwork: {fileID: 0}
+  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
   cardType: 1
   cardTags: 0
   targetType: 3
