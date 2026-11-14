@@ -16,4 +16,15 @@ public sealed class StarterCardResourcesTests // 역할별 임시 시작 카드 
             Assert.IsNotNull(card.Artwork); // 시작 카드 일러스트 연결 확인
         } // 역할 카드 확인 종료
     } // 테스트 종료
+    [Test] // 테스트 지정
+    public void MagicianCard_UsesItsOwnIllustration() // 마법사 전용 일러스트 연결 확인
+    { // 테스트 시작
+        CardData magician = Resources.Load<CardData>("StarterCards/MagicianRepair"); // 마법사 전용 카드 조회
+        CardData common = Resources.Load<CardData>("StarterCards/Strategy"); // 공용 전략 카드 조회
+        Assert.IsNotNull(magician); // 마법사 카드 존재 확인
+        Assert.IsNotNull(common); // 공용 카드 존재 확인
+        Assert.IsNotNull(magician.Artwork); // 마법사 일러스트 연결 확인
+        Assert.AreNotSame(common.Artwork, magician.Artwork); // 공용 카드와 서로 다른 일러스트 확인
+        Assert.AreEqual("MagicianRepairArt", magician.Artwork.texture.name); // 전용 이미지 원본 확인
+    } // 테스트 종료
 } // 테스트 클래스 종료

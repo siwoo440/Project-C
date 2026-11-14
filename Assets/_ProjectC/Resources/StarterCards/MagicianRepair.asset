@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_01_REPAIR
   displayName: 임시 개조
   description: 버린 카드 더미에서 카드 한 장을 선택해 손패로 회수
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 3050149274871117732, guid: 1a796f082cc149f2b0690939ed233750, type: 3}
   cardType: 1
   cardTags: 0
   targetType: 0
