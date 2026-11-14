@@ -15,7 +15,7 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
         { // 전용 카드 준비 시작
             foreach (CharacterData member in selection.Members) // 선택 캐릭터 순회
             { // 전용 카드 확인 시작
-                string cardPath = member.CharacterId == "ARC_04" ? "StarterCards/EmperorGuard" : member.CharacterId == "ARC_02" ? "StarterCards/PriestessWard" : null; // 캐릭터 전용 카드 경로 선택
+                string cardPath = member.CharacterId == "ARC_04" ? "StarterCards/EmperorGuard" : member.CharacterId == "ARC_02" ? "StarterCards/PriestessWard" : member.CharacterId == "ARC_00" ? "StarterCards/FoolChoice" : null; // 캐릭터 전용 카드 경로 선택
                 if (cardPath == null) // 전용 카드 미구현 캐릭터 확인
                 { // 공용 카드 처리 시작
                     continue; // 다음 캐릭터 확인

@@ -1,5 +1,6 @@
 using System.Collections; // 코루틴 테스트 사용
 using System.Collections.Generic; // 전투 적 목록 복사 사용
+using System.Linq; // 손패 카드 포함 확인 사용
 using NUnit.Framework; // 테스트 검증 기능 사용
 using UnityEngine; // 유니티 객체 조회 사용
 using UnityEngine.SceneManagement; // 씬 상태 조회 사용
@@ -285,6 +286,95 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.AreEqual(previousMagical + 2, target.MagicalResistance); // 마법 저항 증가 확인
         Assert.Less(plannedAttack.PreviewDamage().AppliedDamage, previousDamage); // 예정 공격 피해 감소 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator FoolCard_OffersTwoCardsAndDrawsChosenCard() // 바보 선택 드로우 실제 사용 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        CardInstance foolCard = null; // 바보 전용 카드 초기화
+        foreach (CardInstance card in battle.BattleDeck.Cards) // 전체 시작 카드 순회
+        { // 전용 카드 검색 시작
+            if (card.SourceData.CardId == "CRD_ARC_00_CHOICE") // 바보 전용 카드 확인
+            { // 전용 카드 발견 시작
+                foolCard = card; // 바보 카드 저장
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(foolCard); // 바보 전용 카드 존재 확인
+        while (!battle.BattleDeck.Hand.Contains(foolCard) && battle.BattleDeck.DrawPileCount > 0) // 바보 카드 드로우 대기
+        { // 카드 드로우 시작
+            battle.BattleDeck.DrawCards(1); // 카드 한 장 드로우
+        } // 카드 드로우 종료
+        Assert.IsTrue(battle.BattleDeck.Hand.Contains(foolCard)); // 바보 카드 손패 존재 확인
+        for (int index = 0; index < 2; index++) // 선택 후보용 카드 두 장 준비
+        { // 후보 준비 시작
+            foreach (CardInstance card in new List<CardInstance>(battle.BattleDeck.Hand)) // 손패 복사본 순회
+            { // 버릴 카드 검색 시작
+                if (card != foolCard) // 바보 카드 제외 확인
+                { // 후보 확보 시작
+                    battle.BattleDeck.DiscardCard(card); // 일반 카드 버리기
+                    break; // 다음 후보 준비
+                } // 후보 확보 종료
+            } // 버릴 카드 검색 종료
+        } // 후보 준비 종료
+        BattleCardView foolView = null; // 바보 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 바보 카드 화면 검색 시작
+            if (candidate.RuntimeCard == foolCard && candidate.gameObject.activeInHierarchy) // 바보 카드 화면 확인
+            { // 화면 발견 시작
+                foolView = candidate; // 바보 카드 화면 저장
+                break; // 화면 검색 종료
+            } // 화면 발견 종료
+        } // 바보 카드 화면 검색 종료
+        Assert.IsNotNull(foolView); // 바보 카드 화면 존재 확인
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        foolView.OnPointerClick(null); // 바보 카드 사용
+        GameObject panel = null; // 선택 화면 초기화
+        float choiceDeadline = Time.realtimeSinceStartup + 5f; // 선택 화면 대기 제한 시간 설정
+        while (Time.realtimeSinceStartup < choiceDeadline && panel == null) // 선택 화면 생성 대기
+        { // 화면 대기 시작
+            yield return null; // 다음 프레임 대기
+            panel = GameObject.Find("DrawChoicePanel"); // 선택 화면 검색
+        } // 화면 대기 종료
+        Assert.IsNotNull(panel); // 선택 화면 존재 확인
+        Button[] choices = panel.GetComponentsInChildren<Button>(); // 선택 후보 버튼 조회
+        Assert.AreEqual(2, choices.Length); // 두 개 선택 후보 확인
+        Button endTurn = GameObject.Find("EndTurnButton").GetComponent<Button>(); // 턴 종료 버튼 조회
+        Assert.IsFalse(endTurn.interactable); // 선택 중 턴 종료 차단 확인
+        CardInstance firstCandidate = battle.BattleDeck.DrawPile[battle.BattleDeck.DrawPileCount - 1]; // 첫 후보 카드 저장
+        CardInstance secondCandidate = battle.BattleDeck.DrawPile[battle.BattleDeck.DrawPileCount - 2]; // 두 번째 후보 카드 저장
+        choices[1].onClick.Invoke(); // 두 번째 후보 선택
+        Assert.IsTrue(battle.BattleDeck.Hand.Contains(secondCandidate)); // 선택 카드 손패 이동 확인
+        Assert.AreSame(firstCandidate, battle.BattleDeck.DrawPile[battle.BattleDeck.DrawPileCount - 1]); // 다른 후보 맨 위 유지 확인
+        Assert.IsTrue(endTurn.interactable); // 선택 후 턴 종료 복구 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
 } // 테스트 클래스 종료
