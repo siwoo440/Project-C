@@ -55,6 +55,8 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/HierophantPreparation"; // 교황 카드 경로 반환
             case "ARC_07": // 전차 캐릭터
                 return "StarterCards/ChariotMark"; // 전차 카드 경로 반환
+            case "ARC_17": // 별 캐릭터
+                return "StarterCards/StarHealing"; // 별 카드 경로 반환
             default: // 전용 카드 미구현 캐릭터
                 return null; // 공용 카드 사용 반환
         } // 식별자 분기 종료

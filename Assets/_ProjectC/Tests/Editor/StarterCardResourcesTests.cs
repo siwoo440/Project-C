@@ -29,4 +29,17 @@ public sealed class StarterCardResourcesTests // 역할별 임시 시작 카드 
         Assert.AreEqual(magician.Artwork.texture.width, magician.Artwork.rect.width); // 카드 일러스트 전체 너비 확인
         Assert.AreEqual(magician.Artwork.texture.height, magician.Artwork.rect.height); // 카드 일러스트 전체 높이 확인
     } // 테스트 종료
+    [Test] // 테스트 지정
+    public void StarCard_UsesItsOwnIllustration() // 별 전용 일러스트 연결 확인
+    { // 테스트 시작
+        CardData star = Resources.Load<CardData>("StarterCards/StarHealing"); // 별 전용 카드 조회
+        CardData common = Resources.Load<CardData>("StarterCards/Support"); // 공용 지원 카드 조회
+        Assert.IsNotNull(star); // 별 카드 존재 확인
+        Assert.IsNotNull(common); // 공용 카드 존재 확인
+        Assert.IsNotNull(star.Artwork); // 별 일러스트 연결 확인
+        Assert.AreNotSame(common.Artwork, star.Artwork); // 서로 다른 일러스트 확인
+        Assert.AreEqual("StarHealingArt", star.Artwork.texture.name); // 전용 이미지 원본 확인
+        Assert.AreEqual(star.Artwork.texture.width, star.Artwork.rect.width); // 전체 이미지 너비 확인
+        Assert.AreEqual(star.Artwork.texture.height, star.Artwork.rect.height); // 전체 이미지 높이 확인
+    } // 테스트 종료
 } // 테스트 클래스 종료

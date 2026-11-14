@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: StarHealing
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_ARC_17_HEAL
+  displayName: 남은 빛
+  description: 아군 한 명의 다음 턴 시작 시 체력 6 회복
+  artwork: {fileID: 3173546234569911223, guid: 5a07c1d6c7374b11b55dcf777e78b992, type: 3}
+  cardType: 2
+  cardTags: 0
+  targetType: 1
+  apCost: 1
+  effectType: 2
+  damageType: 0
+  effectValue: 6
+  mentalChangeValue: 0
+  statusEffectType: 12
+  statusDuration: 1
+  statusMaximumStacks: 1
