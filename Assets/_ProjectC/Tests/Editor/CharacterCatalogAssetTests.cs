@@ -41,6 +41,8 @@ public sealed class CharacterCatalogAssetTests // 캐릭터 에셋 검증
     [TestCase("ARC_17")] // 별 초상화 검사 지정
     [TestCase("ARC_18")] // 달 초상화 검사 지정
     [TestCase("ARC_19")] // 태양 초상화 검사 지정
+    [TestCase("ARC_20")] // 심판 초상화 검사 지정
+    [TestCase("ARC_21")] // 세계 초상화 검사 지정
     public void CreatedCharacters_HavePortrait(string identifier) // 제작된 캐릭터 초상화 연결 확인
     { // 테스트 시작
         string path = $"Assets/_ProjectC/ScriptableObjects/Characters/{identifier}.asset"; // 캐릭터 에셋 경로 생성
