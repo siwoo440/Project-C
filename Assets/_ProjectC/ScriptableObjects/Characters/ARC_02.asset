@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 여사제
   description: "임시 능력치 · 기획 역할: 행동 예고 대응"
   role: 2
-  portrait: {fileID: 0}
+  portrait: {fileID: 7522089965635102650, guid: d6f14d1e4a740b044acd7e4fd31d7af8, type: 3}
   maxHealth: 92
   physicalDefense: 2
   magicalResistance: 5

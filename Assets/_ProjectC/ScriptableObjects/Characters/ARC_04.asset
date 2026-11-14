@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 황제
   description: "임시 능력치 · 기획 역할: 자신 중심 진형 보호"
   role: 1
-  portrait: {fileID: 0}
+  portrait: {fileID: -5074583922326056409, guid: fec021dcce875cd438f1fcabae7cec5e, type: 3}
   maxHealth: 130
   physicalDefense: 6
   magicalResistance: 3

@@ -21,4 +21,15 @@ public sealed class CharacterCatalogAssetTests // 캐릭터 에셋 검증
         } // 개별 에셋 확인 종료
         Assert.AreEqual(22, identifiers.Count); // 전체 캐릭터 수 확인
     } // 테스트 종료
+    [TestCase("ARC_00")] // 바보 초상화 검사 지정
+    [TestCase("ARC_02")] // 여사제 초상화 검사 지정
+    [TestCase("ARC_04")] // 황제 초상화 검사 지정
+    [TestCase("ARC_07")] // 전차 초상화 검사 지정
+    public void PrototypeParty_HasPortrait(string identifier) // 시제품 파티 초상화 연결 확인
+    { // 테스트 시작
+        string path = $"Assets/_ProjectC/ScriptableObjects/Characters/{identifier}.asset"; // 캐릭터 에셋 경로 생성
+        CharacterData character = AssetDatabase.LoadAssetAtPath<CharacterData>(path); // 캐릭터 에셋 조회
+        Assert.IsNotNull(character); // 캐릭터 에셋 존재 확인
+        Assert.IsNotNull(character.Portrait); // 초상화 스프라이트 연결 확인
+    } // 테스트 종료
 } // 테스트 클래스 종료

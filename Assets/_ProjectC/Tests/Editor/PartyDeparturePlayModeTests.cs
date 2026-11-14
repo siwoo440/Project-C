@@ -57,6 +57,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsNotNull(battle); // 전투 관리자 존재 확인
         Assert.IsTrue(battle.IsInitialized); // 전투 초기화 완료 확인
         Assert.AreEqual("ARC_00", battle.AllyUnits[0].CharacterSource.CharacterId); // 선택 캐릭터 전투 출전 확인
+        Assert.IsNotNull(battle.AllyUnits[0].Portrait); // 선택 캐릭터 전투 초상화 확인
         List<BattleUnitRuntime> enemies = new List<BattleUnitRuntime>(battle.EnemyUnits); // 전투 적 목록 복사
         foreach (BattleUnitRuntime enemy in enemies) // 전투 적 순회
         { // 적 처치 시작
