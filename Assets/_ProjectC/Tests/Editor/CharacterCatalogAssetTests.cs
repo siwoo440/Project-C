@@ -29,6 +29,10 @@ public sealed class CharacterCatalogAssetTests // 캐릭터 에셋 검증
     [TestCase("ARC_05")] // 교황 초상화 검사 지정
     [TestCase("ARC_06")] // 연인 초상화 검사 지정
     [TestCase("ARC_07")] // 전차 초상화 검사 지정
+    [TestCase("ARC_08")] // 힘 초상화 검사 지정
+    [TestCase("ARC_09")] // 은둔자 초상화 검사 지정
+    [TestCase("ARC_10")] // 운명 초상화 검사 지정
+    [TestCase("ARC_11")] // 정의 초상화 검사 지정
     public void CreatedCharacters_HavePortrait(string identifier) // 제작된 캐릭터 초상화 연결 확인
     { // 테스트 시작
         string path = $"Assets/_ProjectC/ScriptableObjects/Characters/{identifier}.asset"; // 캐릭터 에셋 경로 생성

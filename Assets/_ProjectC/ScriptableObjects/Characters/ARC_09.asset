@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 은둔자
   description: "임시 능력치 · 기획 역할: 덱 순서 예측과 배열"
   role: 3
-  portrait: {fileID: 0}
+  portrait: {fileID: 4026210465069105918, guid: 03a315e824bbccc469820853dff9890d, type: 3}
   maxHealth: 90
   physicalDefense: 2
   magicalResistance: 4
