@@ -105,7 +105,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 행동 연출 실행기 생성 종료
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
-        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
+        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews, enemyActionRuntime); // 카드 행동 관리자 생성
         battleEvents = new BattleEventDispatcher(); // 전투 단위 공용 이벤트 발행기 생성
         battleEventController = new BattleEventController(battleEvents, battleTurn, cardActionController, allyUnits, enemyUnits); // 기존 전투 신호 공용 이벤트 연결
         battleEventLogger = new BattleEventDebugLogger(battleEvents); // 공용 이벤트 발행 순서 로그 연결
@@ -121,7 +122,6 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         mentalController = new BattleMentalController(battleTurn, allyUnits, enemyUnits); // 정신력 흐름 관리자 생성
         statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits, statusEffectProcessor); // 상태 이상 발동 관리자 생성
         statusEffectController.StatusEffectsProcessed += HandleStatusEffectsProcessed; // 상태 처리 결과 화면 연결
-        enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
         RegisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 등록
         RegisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 등록
