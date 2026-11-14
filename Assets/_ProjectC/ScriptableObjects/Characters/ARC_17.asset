@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 별
   description: "임시 능력치 · 기획 역할: 예약된 지속 회복"
   role: 2
-  portrait: {fileID: 0}
+  portrait: {fileID: -5317342598946406424, guid: 5b05fe4457d70f24ab705109bb06e306, type: 3}
   maxHealth: 92
   physicalDefense: 2
   magicalResistance: 5
