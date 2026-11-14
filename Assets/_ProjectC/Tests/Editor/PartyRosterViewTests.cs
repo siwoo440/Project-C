@@ -17,11 +17,13 @@ public sealed class PartyRosterViewTests // 거점 파티 목록 화면 테스�
         CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 캐릭터 목록 조회
         view.Initialize(roster, new AvailableStatus()); // 목록 화면 초기화
         Button[] buttons = root.GetComponentsInChildren<Button>(); // 생성된 선택 버튼 조회
-        Assert.AreEqual(22, buttons.Length); // 전체 캐릭터 버튼 확인
+        Assert.AreEqual(23, buttons.Length); // 전체 캐릭터와 출발 버튼 확인
+        Assert.IsFalse(buttons[22].interactable); // 빈 파티 출발 차단 확인
         buttons[0].onClick.Invoke(); // 첫 캐릭터 선택
         PartySelection selection = view.Selection; // 현재 파티 선택 조회
         Assert.AreEqual(1, selection.Members.Count); // 선택 캐릭터 수 확인
         Assert.AreEqual("ARC_00", selection.Members[0].CharacterId); // 선택 캐릭터 확인
+        Assert.IsTrue(buttons[22].interactable); // 유효한 파티 출발 허용 확인
         Assert.IsFalse(buttons[21].interactable); // 세계 해금 전 선택 차단 확인
         buttons[0].onClick.Invoke(); // 첫 캐릭터 선택 해제
         Assert.AreEqual(0, selection.Members.Count); // 선택 해제 결과 확인

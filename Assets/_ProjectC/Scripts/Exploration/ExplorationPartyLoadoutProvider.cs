@@ -7,7 +7,7 @@ public sealed class ExplorationPartyLoadoutProvider : MonoBehaviour // 탐사 Sc
     [SerializeField] private BattleLoadoutData battleLoadout; // 전투 Scene과 동일한 출전 파티·덱 데이터
 
     public BattleLoadoutData BattleLoadout =>
-        battleLoadout; // 현재 연결 Loadout 조회
+        PartyLoadoutRuntime.Active != null ? PartyLoadoutRuntime.Active : battleLoadout; // 선택 편성 또는 기본 편성 조회
 
     public PartyDeploymentValidationResult DeploymentValidation
     {
@@ -20,6 +20,7 @@ public sealed class ExplorationPartyLoadoutProvider : MonoBehaviour // 탐사 Sc
 
     private void Awake() // 탐사 Scene 로드 시 출전 파티 등록
     {
+        battleLoadout = BattleLoadout; // 선택된 런타임 편성 우선 적용
         if (battleLoadout == null)
         {
             Debug.LogError(
