@@ -16,6 +16,16 @@ public sealed class DeckData : ScriptableObject
     public IReadOnlyList<DeckCardEntry> Cards => cards; // 덱 카드 목록 조회
     public int CardCount => cards.Count; // 현재 덱 카드 수 조회
 
+    public static DeckData CreateRuntime(IReadOnlyList<DeckCardEntry> entries) // 시작 덱 런타임 생성
+    { // 덱 생성 시작
+        DeckData runtimeDeck = CreateInstance<DeckData>(); // 새 덱 데이터 생성
+        foreach (DeckCardEntry entry in entries) // 시작 카드 순회
+        { // 카드 복사 시작
+            runtimeDeck.cards.Add(entry); // 시작 카드 항목 복사
+        } // 카드 복사 종료
+        return runtimeDeck; // 런타임 덱 반환
+    } // 덱 생성 종료
+
     public bool IsValidDeck()
     {
         if (cards.Count < 1) // 빈 덱 확인

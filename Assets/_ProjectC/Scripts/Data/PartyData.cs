@@ -31,6 +31,16 @@ public sealed class PartyData : ScriptableObject
 
     public int MemberCount => Members.Count; // 현재 Scene 기준 파티 인원 조회
 
+    public static PartyData CreateRuntime(IReadOnlyList<CharacterData> selectedMembers) // 선택 파티 런타임 생성
+    { // 파티 생성 시작
+        PartyData runtimeParty = CreateInstance<PartyData>(); // 새 파티 데이터 생성
+        foreach (CharacterData member in selectedMembers) // 선택 캐릭터 순회
+        { // 파티원 복사 시작
+            runtimeParty.members.Add(member); // 선택 캐릭터 복사
+        } // 파티원 복사 종료
+        return runtimeParty; // 런타임 파티 반환
+    } // 파티 생성 종료
+
     public bool ContainsCharacter(CharacterData character)
     {
         return character != null && members.Contains(character); // 원본 편성 포함 여부 반환
