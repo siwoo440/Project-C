@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 선택형 드로우"
   role: 3
   portrait: {fileID: -2524285793196723293, guid: 3d02ffa27c7d9a646a58d595d557781b, type: 3}
+  battleIllustration: {fileID: 4000000000000000000, guid: 0a2565f716c3482090fd905e728fb746, type: 3}
   maxHealth: 94
   physicalDefense: 2
   magicalResistance: 3

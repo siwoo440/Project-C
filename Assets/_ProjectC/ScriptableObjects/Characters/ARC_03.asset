@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 고정된 지원량 배분"
   role: 2
   portrait: {fileID: -6926176708118208756, guid: 14d2660a27f680a418e30917bb07acab, type: 3}
+  battleIllustration: {fileID: 4000000000000000003, guid: c3802ea952ea4dee86eb1dde5e059700, type: 3}
   maxHealth: 100
   physicalDefense: 3
   magicalResistance: 4
