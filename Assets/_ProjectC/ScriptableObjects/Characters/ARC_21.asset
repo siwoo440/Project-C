@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 서로 다른 캐릭터의 카드 순서 조율"
   role: 3
   portrait: {fileID: -3911395698881378174, guid: 2e66afa2dc1a3c649ab3a0d5035821a8, type: 3}
+  battleIllustration: {fileID: 4000000000000000021, guid: e0ea66f91c31463fae0b64ce2e4fa4da, type: 3}
   maxHealth: 100
   physicalDefense: 3
   magicalResistance: 4

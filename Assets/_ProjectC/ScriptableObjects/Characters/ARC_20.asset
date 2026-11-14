@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 낮은 체력 아군 즉시 구제"
   role: 2
   portrait: {fileID: -1189528836734716466, guid: 09ca8b3a6c089d14c991977117ca05a1, type: 3}
+  battleIllustration: {fileID: 4000000000000000020, guid: c1de37a515164e03bc999e2859d4a7e5, type: 3}
   maxHealth: 100
   physicalDefense: 3
   magicalResistance: 5

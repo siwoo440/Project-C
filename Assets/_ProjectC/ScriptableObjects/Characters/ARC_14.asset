@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 발생한 상태이상 정화"
   role: 2
   portrait: {fileID: -842263177252943939, guid: 4c3004bc86e4038478b6d5f264e2587a, type: 3}
+  battleIllustration: {fileID: 4000000000000000014, guid: f7a5b963e6824407bb7c299ee3725b4a, type: 3}
   maxHealth: 98
   physicalDefense: 3
   magicalResistance: 5
