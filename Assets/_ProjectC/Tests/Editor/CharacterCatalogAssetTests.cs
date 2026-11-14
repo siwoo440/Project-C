@@ -49,5 +49,7 @@ public sealed class CharacterCatalogAssetTests // 캐릭터 에셋 검증
         CharacterData character = AssetDatabase.LoadAssetAtPath<CharacterData>(path); // 캐릭터 에셋 조회
         Assert.IsNotNull(character); // 캐릭터 에셋 존재 확인
         Assert.IsNotNull(character.Portrait); // 초상화 스프라이트 연결 확인
+        Assert.AreEqual(character.Portrait.texture.width, character.Portrait.rect.width, identifier); // 초상화 전체 너비 사용 확인
+        Assert.AreEqual(character.Portrait.texture.height, character.Portrait.rect.height, identifier); // 초상화 전체 높이 사용 확인
     } // 테스트 종료
 } // 테스트 클래스 종료
