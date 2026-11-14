@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 동료 한 명의 피해 대신 받기"
   role: 1
   portrait: {fileID: 2412137392819057210, guid: bec24b1a6c8576942914ad4c90ffa140, type: 3}
+  battleIllustration: {fileID: 4000000000000000008, guid: 976b49af412643cf9275292153992643, type: 3}
   maxHealth: 128
   physicalDefense: 6
   magicalResistance: 2
