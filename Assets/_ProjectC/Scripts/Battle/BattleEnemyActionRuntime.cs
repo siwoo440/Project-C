@@ -95,6 +95,24 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return actionResult; // 행동 실행 결과 반환
     } // 행동 실행 종료
+    public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
+    { // 공격 유도 시작
+        if (disposed || enemyUnit == null || targetUnit == null || targetUnit.IsDead || targetUnit.Team != BattleTeam.Ally || !ContainsUnit(allyUnits, targetUnit)) // 대상과 관리자 유효성 확인
+        { // 유도 불가 처리 시작
+            return false; // 유도 실패 반환
+        } // 유도 불가 처리 종료
+        BattleEnemyAction action = FindAction(enemyUnit); // 해당 적의 예정 행동 조회
+        if (action == null || action == executingAction || !action.IsExecutable || action.ActionType != EnemyActionType.Attack || action.Target == targetUnit) // 유도 가능한 단일 공격 확인
+        { // 잘못된 공격 처리 시작
+            return false; // 유도 실패 반환
+        } // 잘못된 공격 처리 종료
+        if (!action.ChangeTarget(targetUnit)) // 공격 대상 변경 시도
+        { // 변경 실패 처리 시작
+            return false; // 유도 실패 반환
+        } // 변경 실패 처리 종료
+        StateChanged?.Invoke(); // 변경된 공격 예고 알림
+        return true; // 유도 성공 반환
+    } // 공격 유도 종료
     public BattleEnemyAction FindAction(BattleUnitRuntime enemyUnit) // 적 예정 행동 조회
     { // 행동 조회 시작
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순회
