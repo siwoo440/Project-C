@@ -480,10 +480,10 @@ MonoBehaviour:
   allyUnitRoot: {fileID: 675924956}
   enemyUnitRoot: {fileID: 37766817}
   handView: {fileID: 2051001002}
-  sharedMaximumActionPoints: 3
-  maximumHandSize: 5
-  initialHandSize: 3
-  cardsPerPlayerTurn: 1
+  sharedMaximumActionPoints: 6
+  maximumHandSize: 20
+  initialHandSize: 8
+  cardsPerPlayerTurn: 4
   enemyTurnDelay: 0.75
   useFixedShuffleSeed: 0
   fixedShuffleSeed: 12345

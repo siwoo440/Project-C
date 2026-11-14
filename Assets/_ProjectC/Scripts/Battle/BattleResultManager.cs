@@ -44,6 +44,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
 
         if (existingManager != null)
         {
+            Instance = existingManager; // 기존 관리자 전역 등록
             return existingManager; // Scene 관리자 반환
         }
 
@@ -52,7 +53,8 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                 "BattleResultManager",
                 typeof(BattleResultManager)); // 영구 결과 관리자 오브젝트 생성
 
-        return managerObject.GetComponent<BattleResultManager>(); // 생성 관리자 반환
+        Instance = managerObject.GetComponent<BattleResultManager>(); // 생성 관리자 전역 등록
+        return Instance; // 생성 관리자 반환
     }
 
     private void Awake() // 결과 관리자 초기화

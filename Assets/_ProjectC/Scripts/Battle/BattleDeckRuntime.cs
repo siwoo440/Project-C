@@ -82,10 +82,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 잘못된 요청 처리 시작
             return 0; // 드로우 없음 반환
         } // 잘못된 요청 처리 종료
-        int availableHandSpace = MaxHandSize - hand.Count; // 남은 손패 공간 계산
-        int targetDrawCount = Math.Min(requestedCount, availableHandSpace); // 실제 목표 드로우 수 계산
         int drawnCount = 0; // 실제 드로우 수 초기화
-        while (drawnCount < targetDrawCount) // 목표 수까지 반복
+        int processedCount = 0; // 처리한 카드 수 초기화
+        List<CardInstance> overflowCards = new List<CardInstance>(); // 초과 카드 임시 목록
+        while (processedCount < requestedCount) // 요청 수까지 반복
         { // 반복 드로우 시작
             if (drawPile.Count < 1 && !RefillDrawPile()) // 빈 카드 더미 재구성 시도
             { // 드로우 불가 처리 시작
@@ -94,11 +94,20 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             int topIndex = drawPile.Count - 1; // 카드 더미 맨 위 위치 계산
             CardInstance drawnCard = drawPile[topIndex]; // 맨 위 카드 선택
             drawPile.RemoveAt(topIndex); // 뽑을 카드 더미에서 제거
-            hand.Add(drawnCard); // 손패에 카드 추가
-            drawnCount++; // 실제 드로우 수 증가
+            if (hand.Count < MaxHandSize) // 손패 공간 확인
+            { // 손패 추가 시작
+                hand.Add(drawnCard); // 손패에 카드 추가
+                drawnCount++; // 실제 드로우 수 증가
+            } // 손패 추가 종료
+            else // 손패 가득 참 확인
+            { // 초과 카드 처리 시작
+                overflowCards.Add(drawnCard); // 초과 카드 임시 보관
+            } // 초과 카드 처리 종료
+            processedCount++; // 처리 카드 수 증가
         } // 반복 드로우 종료
+        discardPile.AddRange(overflowCards); // 초과 카드 버린 더미 이동
         EnsureValidState(); // 드로우 후 덱 상태 검증
-        if (drawnCount > 0) // 실제 드로우 확인
+        if (processedCount > 0) // 카드 이동 여부 확인
         { // 상태 알림 시작
             StateChanged?.Invoke(); // 덱 상태 변경 알림
         } // 상태 알림 종료
