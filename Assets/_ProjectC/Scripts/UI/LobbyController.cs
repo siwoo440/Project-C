@@ -2,6 +2,21 @@ using UnityEngine;
 
 public sealed class LobbyController : MonoBehaviour
 {
+    private void Start() // 거점 화면 시작
+    { // 시작 처리 시작
+        Canvas canvas = FindFirstObjectByType<Canvas>(); // 거점 캔버스 조회
+        CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 공용 캐릭터 목록 조회
+        if (canvas == null || roster == null) // 화면 또는 목록 누락 확인
+        { // 누락 처리 시작
+            Debug.LogError("[LobbyController] 편성 화면에 필요한 캔버스 또는 캐릭터 목록이 없습니다."); // 데이터 누락 안내
+            return; // 편성 화면 생성 중단
+        } // 누락 처리 종료
+        CharacterRecoveryManager recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 상태 관리자 준비
+        BattleResultManager.EnsureInstance(); // 파티 상태 관리자 준비
+        GameObject viewObject = new GameObject("PartyRosterView", typeof(RectTransform), typeof(PartyRosterView)); // 편성 화면 객체 생성
+        viewObject.transform.SetParent(canvas.transform, false); // 거점 캔버스 연결
+        viewObject.GetComponent<PartyRosterView>().Initialize(roster, new CharacterRecoveryDeploymentStatusProvider(recovery)); // 캐릭터 목록 화면 구성
+    } // 시작 처리 종료
     public void OpenSettings()
     {
         if (SceneFlowManager.Instance == null) // SceneFlowManager 존재 여부 확인
