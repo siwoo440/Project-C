@@ -15,7 +15,7 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
         { // 전용 카드 준비 시작
             foreach (CharacterData member in selection.Members) // 선택 캐릭터 순회
             { // 전용 카드 확인 시작
-                string cardPath = member.CharacterId == "ARC_04" ? "StarterCards/EmperorGuard" : member.CharacterId == "ARC_02" ? "StarterCards/PriestessWard" : member.CharacterId == "ARC_00" ? "StarterCards/FoolChoice" : member.CharacterId == "ARC_07" ? "StarterCards/ChariotMark" : member.CharacterId == "ARC_03" ? "StarterCards/EmpressFeast" : null; // 캐릭터 전용 카드 경로 선택
+                string cardPath = GetCharacterCardPath(member.CharacterId); // 캐릭터 전용 카드 경로 선택
                 if (cardPath == null) // 전용 카드 미구현 캐릭터 확인
                 { // 공용 카드 처리 시작
                     continue; // 다음 캐릭터 확인
@@ -37,6 +37,26 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
         Active = next; // 새 출발 편성 저장
         return true; // 편성 준비 성공 반환
     } // 편성 준비 종료
+    private static string GetCharacterCardPath(string characterId) // 캐릭터 전용 카드 경로 조회
+    { // 경로 조회 시작
+        switch (characterId) // 캐릭터 식별자 분기
+        { // 식별자 분기 시작
+            case "ARC_00": // 바보 캐릭터
+                return "StarterCards/FoolChoice"; // 바보 카드 경로 반환
+            case "ARC_01": // 마법사 캐릭터
+                return "StarterCards/MagicianRepair"; // 마법사 카드 경로 반환
+            case "ARC_02": // 여사제 캐릭터
+                return "StarterCards/PriestessWard"; // 여사제 카드 경로 반환
+            case "ARC_03": // 여황제 캐릭터
+                return "StarterCards/EmpressFeast"; // 여황제 카드 경로 반환
+            case "ARC_04": // 황제 캐릭터
+                return "StarterCards/EmperorGuard"; // 황제 카드 경로 반환
+            case "ARC_07": // 전차 캐릭터
+                return "StarterCards/ChariotMark"; // 전차 카드 경로 반환
+            default: // 전용 카드 미구현 캐릭터
+                return null; // 공용 카드 사용 반환
+        } // 식별자 분기 종료
+    } // 경로 조회 종료
     public static void Clear() // 현재 출발 편성 정리
     { // 편성 정리 시작
         if (Active == null) // 현재 편성 존재 확인

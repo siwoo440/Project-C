@@ -525,4 +525,101 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.AreEqual(previousPoints - 2, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator MagicianCard_RecoversChosenDiscardedCard() // 마법사 버린 카드 선택 회수 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[1].onClick.Invoke(); // 마법사 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        CardInstance magicianCard = null; // 마법사 전용 카드 초기화
+        foreach (CardInstance card in battle.BattleDeck.Hand) // 손패 카드 순회
+        { // 전용 카드 검색 시작
+            if (card.SourceData.CardId == "CRD_ARC_01_REPAIR") // 마법사 카드 확인
+            { // 전용 카드 발견 시작
+                magicianCard = card; // 마법사 카드 저장
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(magicianCard); // 마법사 전용 카드 존재 확인
+        BattleCardView initialView = null; // 최초 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 최초 카드 화면 검색 시작
+            if (candidate.RuntimeCard == magicianCard && candidate.gameObject.activeInHierarchy) // 마법사 카드 화면 확인
+            { // 카드 화면 발견 시작
+                initialView = candidate; // 최초 카드 화면 저장
+                break; // 화면 검색 종료
+            } // 카드 화면 발견 종료
+        } // 최초 카드 화면 검색 종료
+        Assert.IsNotNull(initialView); // 최초 카드 화면 존재 확인
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        initialView.OnPointerClick(null); // 빈 버린 더미에서 카드 사용 시도
+        Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 빈 버린 더미 행동력 유지 확인
+        List<CardInstance> discarded = new List<CardInstance>(); // 회수 후보 목록 생성
+        foreach (CardInstance card in new List<CardInstance>(battle.BattleDeck.Hand)) // 손패 복사본 순회
+        { // 회수 후보 준비 시작
+            if (card == magicianCard) // 전용 카드 여부 확인
+            { // 전용 카드 제외 시작
+                continue; // 다음 카드 확인
+            } // 전용 카드 제외 종료
+            discarded.Add(card); // 회수 후보 기록
+            battle.BattleDeck.DiscardCard(card); // 회수 후보 버리기
+            if (discarded.Count == 3) // 후보 세 장 준비 확인
+            { // 후보 준비 완료 시작
+                break; // 후보 준비 종료
+            } // 후보 준비 완료 종료
+        } // 회수 후보 준비 종료
+        Assert.AreEqual(3, discarded.Count); // 버린 카드 세 장 준비 확인
+        BattleCardView magicianView = null; // 갱신된 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 갱신된 손패 화면 순회
+        { // 마법사 화면 검색 시작
+            if (candidate.RuntimeCard == magicianCard && candidate.gameObject.activeInHierarchy) // 마법사 카드 화면 확인
+            { // 카드 화면 발견 시작
+                magicianView = candidate; // 갱신된 카드 화면 저장
+                break; // 화면 검색 종료
+            } // 카드 화면 발견 종료
+        } // 마법사 화면 검색 종료
+        Assert.IsNotNull(magicianView); // 마법사 카드 화면 존재 확인
+        magicianView.OnPointerClick(null); // 마법사 회수 카드 사용
+        GameObject panel = null; // 선택 화면 초기화
+        float choiceDeadline = Time.realtimeSinceStartup + 5f; // 선택 화면 제한 시간 설정
+        while (Time.realtimeSinceStartup < choiceDeadline && panel == null) // 선택 화면 생성 대기
+        { // 화면 대기 시작
+            yield return null; // 다음 프레임 대기
+            panel = GameObject.Find("DrawChoicePanel"); // 선택 화면 검색
+        } // 화면 대기 종료
+        Assert.IsNotNull(panel); // 회수 선택 화면 존재 확인
+        Button next = panel.transform.Find("NextPage").GetComponent<Button>(); // 다음 페이지 버튼 조회
+        next.onClick.Invoke(); // 세 번째 후보 페이지 이동
+        panel.transform.Find("Choice_2").GetComponent<Button>().onClick.Invoke(); // 세 번째 버린 카드 선택
+        Assert.IsTrue(battle.BattleDeck.Hand.Contains(discarded[2])); // 선택 카드 손패 회수 확인
+        Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(discarded[0])); // 선택하지 않은 카드 유지 확인
+        Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(magicianCard)); // 사용한 마법사 카드 버림 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 회수 카드 행동력 소비 확인
+        Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료

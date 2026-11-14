@@ -13,7 +13,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
-    private IReadOnlyList<CardInstance> pendingDrawChoices; // 선택 드로우 대기 후보
+    private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
+    private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
     private bool actionPending; // 카드 행동 연출 진행 여부
     private bool disposed; // 연결 해제 여부
@@ -118,7 +119,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 종료 확인
         { // 입력 잠금 처리 시작
             CancelSelection(); // 카드 선택 상태 초기화
-            CloseDrawChoice(); // 대기 선택 화면 정리
+            CloseCardChoice(); // 대기 선택 화면 정리
         } // 입력 잠금 처리 종료
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 턴 상태 처리 종료
@@ -195,37 +196,45 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
     { // 연출 완료 처리 시작
         actionPending = false; // 카드 행동 진행 상태 해제
-        ShowPendingDrawChoices(); // 대기 중인 드로우 선택 화면 표시
+        ShowPendingCardChoices(); // 대기 중인 드로우 선택 화면 표시
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 연출 완료 처리 종료
-    private void ShowPendingDrawChoices() // 대기 중인 선택 드로우 표시
+    private void ShowPendingCardChoices() // 대기 중인 선택 드로우 표시
     { // 선택 화면 표시 시작
-        if (pendingDrawChoices == null || pendingDrawChoices.Count == 0 || !turnRuntime.IsPlayerTurn) // 선택 후보와 플레이어 턴 확인
+        if (pendingCardChoices == null || pendingCardChoices.Count == 0 || !turnRuntime.IsPlayerTurn) // 선택 후보와 플레이어 턴 확인
         { // 선택 불필요 처리 시작
-            pendingDrawChoices = null; // 대기 후보 정리
+            pendingCardChoices = null; // 대기 후보 정리
             return; // 선택 화면 표시 중단
         } // 선택 불필요 처리 종료
         Canvas canvas = handView.GetComponentInParent<Canvas>(); // 전투 화면 캔버스 조회
         if (canvas == null) // 캔버스 존재 확인
         { // 화면 누락 처리 시작
-            pendingDrawChoices = null; // 대기 후보 정리
+            pendingCardChoices = null; // 대기 후보 정리
             Debug.LogError("[BattleCardActionController] 선택 드로우 화면을 표시할 캔버스가 없습니다."); // 화면 생성 실패 출력
             return; // 선택 화면 표시 중단
         } // 화면 누락 처리 종료
-        drawChoiceView = BattleDrawChoiceView.Show(canvas.transform, pendingDrawChoices, HandleDrawChoiceSelected); // 선택 화면 생성
+        string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
+        drawChoiceView = BattleDrawChoiceView.Show(canvas.transform, pendingCardChoices, HandleCardChoiceSelected, title); // 선택 화면 생성
         handView.SetInteractionLocked(true); // 선택 중 손패와 턴 종료 잠금
     } // 선택 화면 표시 종료
-    private void HandleDrawChoiceSelected(CardInstance choice) // 드로우 후보 선택 처리
+    private void HandleCardChoiceSelected(CardInstance choice) // 드로우 후보 선택 처리
     { // 선택 처리 시작
-        int choiceCount = pendingDrawChoices == null ? 0 : pendingDrawChoices.Count; // 현재 후보 수 조회
-        runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
-        pendingDrawChoices = null; // 대기 후보 정리
+        int choiceCount = pendingCardChoices == null ? 0 : pendingCardChoices.Count; // 현재 후보 수 조회
+        if (pendingChoiceEffect == CardEffectType.RecoverDiscard) // 버린 카드 회수 선택 확인
+        { // 버린 카드 회수 시작
+            runtimeDeck.TryRecoverDiscard(choice); // 선택한 버린 카드 회수
+        } // 버린 카드 회수 종료
+        else // 덱 위 카드 선택 확인
+        { // 선택 드로우 시작
+            runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
+        } // 선택 드로우 종료
+        pendingCardChoices = null; // 대기 후보 정리
         drawChoiceView = null; // 닫힌 선택 화면 참조 정리
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 처리 종료
-    private void CloseDrawChoice() // 대기 선택 화면 정리
+    private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
-        pendingDrawChoices = null; // 대기 후보 정리
+        pendingCardChoices = null; // 대기 후보 정리
         if (drawChoiceView != null) // 선택 화면 존재 확인
         { // 화면 닫기 시작
             drawChoiceView.Close(); // 선택 화면 닫기
@@ -258,6 +267,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 정신력 변경 불가 처리 시작
             return false; // 정신력 대상 불가 반환
         } // 정신력 변경 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RecoverDiscard && runtimeDeck.DiscardPileCount == 0) // 회수할 버린 카드 존재 확인
+        { // 회수 불가 처리 시작
+            return false; // 선택 불가 반환
+        } // 회수 불가 처리 종료
         if (cardInstance.EffectType == CardEffectType.ChooseDraw && runtimeDeck.DrawPileCount + runtimeDeck.DiscardPileCount == 0) // 선택할 카드 존재 확인
         { // 선택 불가 처리 시작
             return false; // 선택 불가 반환
@@ -329,7 +342,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -362,10 +375,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.RecoverDiscard) // 버린 카드 회수 효과 확인
+        { // 마법사 전용 효과 시작
+            pendingChoiceEffect = CardEffectType.RecoverDiscard; // 회수 선택 효과 저장
+            pendingCardChoices = new List<CardInstance>(runtimeDeck.DiscardPile); // 사용 카드 제외 버린 카드 후보 복사
+            return pendingCardChoices.Count; // 준비된 후보 수 반환
+        } // 마법사 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.ChooseDraw) // 선택 드로우 효과 확인
         { // 바보 전용 효과 시작
-            pendingDrawChoices = runtimeDeck.PrepareDrawChoices(cardInstance.EffectValue); // 덱 위 선택 후보 준비
-            return pendingDrawChoices.Count; // 준비된 후보 수 반환
+            pendingChoiceEffect = CardEffectType.ChooseDraw; // 선택 드로우 효과 저장
+            pendingCardChoices = runtimeDeck.PrepareDrawChoices(cardInstance.EffectValue); // 덱 위 선택 후보 준비
+            return pendingCardChoices.Count; // 준비된 후보 수 반환
         } // 바보 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget) // 공격 예고 대상 보호 효과 확인
         { // 여사제 전용 효과 시작
@@ -445,6 +465,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RecoverDiscard) // 버린 카드 회수 문구 확인
+        { // 카드 회수 문구 시작
+            return "버린 카드 회수 후보"; // 전용 효과 이름 반환
+        } // 카드 회수 문구 종료
         if (cardInstance.EffectType == CardEffectType.ChooseDraw) // 선택 드로우 문구 확인
         { // 선택 드로우 문구 시작
             return "선택 드로우 후보"; // 전용 효과 이름 반환
@@ -542,7 +566,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 연결 해제 중단
         } // 중복 해제 처리 종료
         disposed = true; // 연결 해제 상태 저장
-        CloseDrawChoice(); // 대기 선택 화면 정리
+        CloseCardChoice(); // 대기 선택 화면 정리
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작
             handView.CardClicked -= HandleCardClicked; // 카드 클릭 이벤트 해제
