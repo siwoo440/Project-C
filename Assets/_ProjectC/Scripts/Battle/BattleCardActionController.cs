@@ -412,8 +412,25 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
         int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
+        BattleStatusEffectInstance chariotMark = targetUnit.GetStatusEffect(BattleStatusEffectType.ChariotMark); // 대상의 전차 표식 조회
+        if (chariotMark != null && cardInstance.OwnerUnit.CharacterSource != null && cardInstance.OwnerUnit.CharacterSource.CharacterId == "ARC_07") // 전차의 표식 대상 공격 확인
+        { // 표식 추가 피해 시작
+            baseDamage += chariotMark.EffectiveValue; // 표식 추가 원본 피해 적용
+        } // 표식 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
+        if (cardInstance.StatusEffectType == BattleStatusEffectType.ChariotMark && !targetUnit.IsDead) // 생존 적 표식 카드 확인
+        { // 전차 표식 처리 시작
+            foreach (BattleUnitView enemyView in enemyUnitViews) // 적 화면 순회
+            { // 기존 표식 정리 시작
+                if (enemyView != null && enemyView.RuntimeUnit != null) // 적 유닛 존재 확인
+                { // 기존 표식 제거 시작
+                    enemyView.RuntimeUnit.RemoveStatusEffect(BattleStatusEffectType.ChariotMark); // 이전 집중 대상 표식 해제
+                } // 기존 표식 제거 종료
+            } // 기존 표식 정리 종료
+            BattleStatusEffectApplyResult markResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.ChariotMark, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 새 집중 대상 표식 적용
+            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.ChariotMark, markResult); // 표식 적용 결과 표시
+        } // 전차 표식 처리 종료
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
