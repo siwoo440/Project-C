@@ -48,6 +48,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleEventDebugLogger battleEventLogger; // 전투 공용 이벤트 순서 기록기
     private BattleMentalStateCutInView mentalStateCutInView; // 각성·붕괴 전체 화면 컷인
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
+    private MagicianPassiveRuntime magicianPassive; // 마법사 카드 회수 패시브
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
     private BattleResultView resultView; // 전투 종료 결과 화면
@@ -90,9 +91,12 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, activeDeckCards, allyUnits, maximumHandSize, shuffleSeed); // 현재 보유 카드 기반 전투 더미 생성
         sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
         battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn, battleType); // 전투 유형 포함 턴 관리자 생성
+        magicianPassive = new MagicianPassiveRuntime(battleDeck, battleTurn, allyUnits); // 마법사 패시브 연결
         if (!handView.Bind(battleDeck, sharedActionPoints, battleTurn)) // 손패 화면 연결 확인
         { // 손패 화면 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
+            magicianPassive.Dispose(); // 초기화 실패 패시브 연결 해제
+            magicianPassive = null; // 실패한 패시브 참조 제거
             battleTurn.Dispose(); // 턴 관리자 이벤트 연결 해제
             battleTurn = null; // 턴 관리자 참조 제거
             return; // 초기화 중단
@@ -778,6 +782,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             enemyActionRuntime.Dispose(); // 적 행동 사망 이벤트 해제
             enemyActionRuntime = null; // 적 행동 관리자 참조 제거
         } // 적 행동 관리자 해제 종료
+        magicianPassive?.Dispose(); // 마법사 패시브 연결 해제
+        magicianPassive = null; // 마법사 패시브 참조 제거
         if (battleTurn != null) // 전투 턴 관리자 확인
         { // 턴 관리자 해제 시작
             battleTurn.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
