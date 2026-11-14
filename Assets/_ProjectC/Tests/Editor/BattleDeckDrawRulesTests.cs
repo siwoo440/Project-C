@@ -94,4 +94,44 @@ public sealed class BattleDeckDrawRulesTests // 드로우 규칙 테스트
         Object.DestroyImmediate(card); // 카드 원본 정리
         Object.DestroyImmediate(owner); // 캐릭터 원본 정리
     } // 테스트 종료
+    [Test] // 테스트 지정
+    public void RecoverDiscard_ReturnsSelectedCardAndPreservesOwnership() // 버린 카드 선택 회수 확인
+    { // 테스트 시작
+        CharacterData owner = ScriptableObject.CreateInstance<CharacterData>(); // 소유자 생성
+        CardData card = ScriptableObject.CreateInstance<CardData>(); // 카드 원본 생성
+        DeckData source = ScriptableObject.CreateInstance<DeckData>(); // 덱 원본 생성
+        List<IDeckCardEntry> entries = new List<IDeckCardEntry> { new RunDeckCardEntry(card, owner), new RunDeckCardEntry(card, owner), new RunDeckCardEntry(card, owner) }; // 카드 세 장 생성
+        BattleUnitRuntime unit = BattleUnitRuntime.CreateAlly(owner); // 아군 유닛 생성
+        BattleDeckRuntime deck = BattleDeckRuntime.Create(source, entries, new[] { unit }, 3, 1); // 테스트 덱 생성
+        deck.DrawCards(2); // 카드 두 장 드로우
+        CardInstance recovered = deck.Hand[0]; // 회수할 카드 보관
+        deck.DiscardCard(recovered); // 회수할 카드 버리기
+        Assert.IsFalse(deck.TryRecoverDiscard(deck.Hand[0])); // 버린 더미 밖 카드 회수 차단 확인
+        Assert.IsTrue(deck.TryRecoverDiscard(recovered)); // 버린 카드 회수 확인
+        Assert.AreSame(recovered, deck.Hand[deck.HandCount - 1]); // 같은 카드 손패 이동 확인
+        Assert.AreSame(unit, recovered.OwnerUnit); // 카드 소유자 유지 확인
+        Assert.AreEqual(0, deck.DiscardPileCount); // 버린 더미 비움 확인
+        Assert.IsFalse(deck.TryRecoverDiscard(recovered)); // 이미 회수한 카드 재회수 차단 확인
+        Assert.IsTrue(deck.IsStateValid()); // 전체 카드 보존 확인
+        Object.DestroyImmediate(source); // 덱 원본 정리
+        Object.DestroyImmediate(card); // 카드 원본 정리
+        Object.DestroyImmediate(owner); // 캐릭터 원본 정리
+    } // 테스트 종료
+    [Test] // 테스트 지정
+    public void RecoverDiscard_RejectsFullHandWithoutMovingCard() // 손패가 가득 찬 카드 회수 차단 확인
+    { // 테스트 시작
+        CharacterData owner = ScriptableObject.CreateInstance<CharacterData>(); // 소유자 생성
+        CardData card = ScriptableObject.CreateInstance<CardData>(); // 카드 원본 생성
+        DeckData source = ScriptableObject.CreateInstance<DeckData>(); // 덱 원본 생성
+        List<IDeckCardEntry> entries = new List<IDeckCardEntry> { new RunDeckCardEntry(card, owner), new RunDeckCardEntry(card, owner) }; // 카드 두 장 생성
+        BattleDeckRuntime deck = BattleDeckRuntime.Create(source, entries, new[] { BattleUnitRuntime.CreateAlly(owner) }, 1, 1); // 손패 한 장 제한 덱 생성
+        deck.DrawCards(2); // 손패 한 장과 초과 버림 생성
+        CardInstance discarded = deck.DiscardPile[0]; // 버린 카드 조회
+        Assert.IsFalse(deck.TryRecoverDiscard(discarded)); // 가득 찬 손패 회수 차단 확인
+        Assert.AreSame(discarded, deck.DiscardPile[0]); // 버린 카드 위치 유지 확인
+        Assert.IsTrue(deck.IsStateValid()); // 전체 카드 보존 확인
+        Object.DestroyImmediate(source); // 덱 원본 정리
+        Object.DestroyImmediate(card); // 카드 원본 정리
+        Object.DestroyImmediate(owner); // 캐릭터 원본 정리
+    } // 테스트 종료
 } // 테스트 클래스 종료
