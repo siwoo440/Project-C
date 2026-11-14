@@ -4,6 +4,7 @@ using UnityEngine; // 영구 관리자 오브젝트 사용
 
 public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리자
 {
+    public const int MinimumCardsAfterRemoval = 10; // 카드 제거 후 최소 보유 장수
     private static RunDeckManager instance; // 현재 회차 덱 관리자
     private readonly List<RunDeckCardEntry> cards = new List<RunDeckCardEntry>(); // 현재 보유 카드 목록
     private DeckData sourceDeck; // 초기 원본 덱
@@ -71,7 +72,7 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
 
     public bool CanRemoveAt(int cardIndex) // 지정 카드 제거 가능 여부
     {
-        return cardIndex >= 0 && cardIndex < cards.Count && cards.Count > 1; // 유효 위치와 최소 한 장 유지 반환
+        return cardIndex >= 0 && cardIndex < cards.Count && cards.Count > MinimumCardsAfterRemoval; // 유효 위치와 최소 열 장 유지 반환
     }
 
     public bool TryRemoveAt(int cardIndex) // 지정 카드 제거 시도
