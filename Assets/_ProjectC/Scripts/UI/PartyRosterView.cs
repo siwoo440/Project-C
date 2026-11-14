@@ -9,12 +9,13 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
     private readonly List<Button> buttons = new List<Button>(); // 캐릭터 선택 버튼 목록
     private readonly List<TMP_Text> labels = new List<TMP_Text>(); // 캐릭터 표시 문구 목록
     private IPartyDeploymentStatusProvider statusProvider; // 출전 상태 제공자
+    private CharacterUnlockProgress unlockProgress; // 캐릭터 해금 상태
     private TMP_Text summary; // 현재 편성 안내 문구
     private Button startButton; // 탐사 출발 버튼
     private CharacterRecoveryManager recoveryManager; // 회복 상태 변경 감시자
     private BattleResultManager resultManager; // 전투 결과 변경 감시자
     public PartySelection Selection { get; private set; } // 현재 편성 상태 조회
-    public void Initialize(CharacterRosterData roster, IPartyDeploymentStatusProvider provider) // 캐릭터 목록 화면 초기화
+    public void Initialize(CharacterRosterData roster, IPartyDeploymentStatusProvider provider, CharacterUnlockProgress progress = null) // 캐릭터 목록 화면 초기화
     { // 초기화 시작
         if (roster == null || provider == null) // 필수 데이터 확인
         { // 데이터 누락 처리 시작
@@ -25,7 +26,8 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
             throw new InvalidOperationException("파티 화면이 이미 초기화되었습니다."); // 중복 초기화 예외
         } // 중복 처리 종료
         statusProvider = provider; // 출전 상태 제공자 저장
-        Selection = new PartySelection(provider); // 빈 파티 선택 상태 생성
+        unlockProgress = progress ?? CharacterUnlockProgress.Shared; // 해금 상태 저장
+        Selection = new PartySelection(provider, unlockProgress); // 빈 파티 선택 상태 생성
         recoveryManager = CharacterRecoveryManager.Instance; // 현재 회복 관리자 조회
         resultManager = BattleResultManager.Instance; // 현재 전투 결과 관리자 조회
         if (recoveryManager != null) // 회복 관리자 존재 확인
@@ -86,12 +88,12 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
         { // 버튼 갱신 시작
             CharacterData character = characters[index]; // 현재 캐릭터 조회
             bool selected = ContainsMember(character); // 현재 선택 여부 확인
-            bool lockedWorld = character.CharacterId == "ARC_21"; // 세계 해금 기능 대기 확인
+            bool lockedWorld = !unlockProgress.IsUnlocked(character); // 캐릭터 해금 상태 확인
             int remaining = recoveryManager != null ? recoveryManager.GetRemainingRecoveryExpeditions(character) : 0; // 남은 회복 탐사 횟수 조회
             PartyMemberDeploymentViewState state = PartyDeploymentViewStateFactory.Create(character, statusProvider, remaining); // 출전 표시 상태 계산
             buttons[index].interactable = !lockedWorld && (selected || state.CanSelect); // 선택 가능 상태 설정
             buttons[index].image.color = selected ? new Color(0.28f, 0.48f, 0.35f) : new Color(0.22f, 0.25f, 0.34f); // 선택 배경 색상 설정
-            labels[index].text = $"{character.DisplayName}\n{(lockedWorld ? "해금 예정" : selected ? "선택됨" : state.StatusText)}"; // 이름과 상태 표시
+            labels[index].text = $"{character.DisplayName}\n{(lockedWorld ? "10층 보스 승리 시 해금" : selected ? "선택됨" : state.StatusText)}"; // 이름과 상태 표시
         } // 버튼 갱신 종료
         summary.text = $"선택 {Selection.Members.Count}/4 · 임시 시작 카드 사용"; // 현재 선택 인원과 임시 덱 안내
         startButton.interactable = Selection.Validate().CanDeploy; // 출전 가능한 파티만 출발 허용
@@ -113,6 +115,9 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
         portrait.raycastTarget = false; // 버튼 입력 방해 방지
         portrait.enabled = character.Portrait != null; // 초상화가 있을 때만 표시
         TMP_Text label = CreateLabel("Label", rect, character.DisplayName, 20f); // 캐릭터 문구 생성
+        label.enableAutoSizing = true; // 긴 상태 문구 크기 자동 조정
+        label.fontSizeMin = 12f; // 최소 글자 크기 설정
+        label.fontSizeMax = 20f; // 최대 글자 크기 설정
         label.rectTransform.anchorMin = Vector2.zero; // 문구 시작점 설정
         label.rectTransform.anchorMax = Vector2.one; // 문구 끝점 설정
         label.rectTransform.offsetMin = new Vector2(60f, 0f); // 초상화와 문구 간격 설정

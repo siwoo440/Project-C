@@ -6,6 +6,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
 
     private static ExplorationSessionManager instance; // 탐사 관리자 인스턴스
+    private CharacterUnlockProgress unlockProgress = CharacterUnlockProgress.Shared; // 캐릭터 해금 상태
 
     private readonly HashSet<string> clearedEncounterIds =
         new HashSet<string>(); // 클리어 런타임 조우 ID 목록
@@ -199,7 +200,10 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             if (clearedBattleType == BattleType.Boss &&
                 ExplorationFloorRules.IsFinalBossFloor(currentFloor))
             {
-                CompleteExplorationSuccess(); // 10층 최종 보스 승리만 탐사 성공 확정
+                if (CompleteExplorationSuccess()) // 최종 탐사 성공 확인
+                { // 세계 해금 기록 시작
+                    unlockProgress.RecordFinalClear(); // 최초 최종 탐사 승리 해금 기록
+                } // 세계 해금 기록 종료
             }
             else if (clearedBattleType == BattleType.Boss)
             {
