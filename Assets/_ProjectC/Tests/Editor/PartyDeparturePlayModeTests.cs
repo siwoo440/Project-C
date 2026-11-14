@@ -371,9 +371,37 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         CardInstance secondCandidate = battle.BattleDeck.DrawPile[battle.BattleDeck.DrawPileCount - 2]; // 두 번째 후보 카드 저장
         choices[1].onClick.Invoke(); // 두 번째 후보 선택
         Assert.IsTrue(battle.BattleDeck.Hand.Contains(secondCandidate)); // 선택 카드 손패 이동 확인
-        Assert.AreSame(firstCandidate, battle.BattleDeck.DrawPile[battle.BattleDeck.DrawPileCount - 1]); // 다른 후보 맨 위 유지 확인
-        Assert.IsTrue(endTurn.interactable); // 선택 후 턴 종료 복구 확인
+        Assert.IsFalse(endTurn.interactable); // 남은 카드 결정 중 턴 종료 차단 확인
+        GameObject remainder = GameObject.Find("RemainingCardChoicePanel"); // 남은 카드 선택 화면 조회
+        Assert.IsNotNull(remainder); // 남은 카드 선택 화면 존재 확인
+        remainder.transform.Find("DiscardRemaining").GetComponent<Button>().onClick.Invoke(); // 남은 카드 버리기 선택
+        Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(firstCandidate)); // 선택하지 않은 카드 버림 확인
+        Assert.IsTrue(endTurn.interactable); // 모든 선택 후 턴 종료 복구 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        Assert.IsTrue(battle.BattleDeck.TryRecoverDiscard(foolCard)); // 같은 턴 바보 카드 회수
+        BattleCardView secondView = null; // 두 번째 바보 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 갱신된 손패 화면 순회
+        { // 바보 카드 화면 검색 시작
+            if (candidate.RuntimeCard == foolCard && candidate.gameObject.activeInHierarchy) // 바보 카드 화면 확인
+            { // 카드 화면 발견 시작
+                secondView = candidate; // 두 번째 카드 화면 저장
+                break; // 화면 검색 종료
+            } // 카드 화면 발견 종료
+        } // 바보 카드 화면 검색 종료
+        Assert.IsNotNull(secondView); // 두 번째 바보 카드 화면 존재 확인
+        secondView.OnPointerClick(null); // 같은 턴 바보 카드 재사용
+        GameObject secondPanel = null; // 두 번째 드로우 선택 화면 초기화
+        float secondDeadline = Time.realtimeSinceStartup + 5f; // 두 번째 화면 제한 시간 설정
+        while (Time.realtimeSinceStartup < secondDeadline && secondPanel == null) // 두 번째 화면 대기
+        { // 두 번째 화면 대기 시작
+            yield return null; // 다음 프레임 대기
+            secondPanel = GameObject.Find("DrawChoicePanel"); // 두 번째 선택 화면 조회
+        } // 두 번째 화면 대기 종료
+        Assert.IsNotNull(secondPanel); // 두 번째 선택 화면 존재 확인
+        secondPanel.transform.Find("Choice_0").GetComponent<Button>().onClick.Invoke(); // 두 번째 드로우 후보 선택
+        Assert.IsNull(GameObject.Find("RemainingCardChoicePanel")); // 같은 턴 패시브 재발동 방지 확인
+        Assert.IsTrue(endTurn.interactable); // 두 번째 선택 후 턴 종료 복구 확인
+        Assert.AreEqual(previousPoints - 2, battle.SharedActionPoints.CurrentActionPoints); // 두 번의 카드 비용 확인
         Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료

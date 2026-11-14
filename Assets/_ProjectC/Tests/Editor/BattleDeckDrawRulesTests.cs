@@ -134,4 +134,22 @@ public sealed class BattleDeckDrawRulesTests // 드로우 규칙 테스트
         Object.DestroyImmediate(card); // 카드 원본 정리
         Object.DestroyImmediate(owner); // 캐릭터 원본 정리
     } // 테스트 종료
+    [Test] // 테스트 지정
+    public void DiscardDrawTop_RejectsOtherCardsAndPreservesDeck() // 맨 위 카드만 버리기 확인
+    { // 테스트 시작
+        CharacterData owner = ScriptableObject.CreateInstance<CharacterData>(); // 소유자 생성
+        CardData card = ScriptableObject.CreateInstance<CardData>(); // 카드 원본 생성
+        DeckData source = ScriptableObject.CreateInstance<DeckData>(); // 덱 원본 생성
+        List<IDeckCardEntry> entries = new List<IDeckCardEntry> { new RunDeckCardEntry(card, owner), new RunDeckCardEntry(card, owner) }; // 카드 두 장 생성
+        BattleDeckRuntime deck = BattleDeckRuntime.Create(source, entries, new[] { BattleUnitRuntime.CreateAlly(owner) }, 2, 1); // 테스트 덱 생성
+        IReadOnlyList<CardInstance> choices = deck.PrepareDrawChoices(2); // 덱 위 후보 두 장 조회
+        Assert.IsFalse(deck.TryDiscardDrawTop(choices[1])); // 두 번째 카드 버리기 차단 확인
+        Assert.IsTrue(deck.TryDiscardDrawTop(choices[0])); // 맨 위 카드 버리기 확인
+        Assert.AreSame(choices[0], deck.DiscardPile[0]); // 버린 카드 위치 확인
+        Assert.AreSame(choices[1], deck.DrawPile[0]); // 남은 카드 위치 확인
+        Assert.IsTrue(deck.IsStateValid()); // 전체 카드 보존 확인
+        Object.DestroyImmediate(source); // 덱 원본 정리
+        Object.DestroyImmediate(card); // 카드 원본 정리
+        Object.DestroyImmediate(owner); // 캐릭터 원본 정리
+    } // 테스트 종료
 } // 테스트 클래스 종료

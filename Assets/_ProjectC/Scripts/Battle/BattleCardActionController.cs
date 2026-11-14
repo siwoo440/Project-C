@@ -16,6 +16,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
+    private BattleRemainingCardChoiceView remainingChoiceView; // 남은 카드 처리 선택 화면
+    private CardInstance remainingChoiceCard; // 남은 선택 후보 카드
+    private bool pendingFoolPassive; // 바보 패시브 선택 대기 여부
+    private int lastFoolPassiveRound = -1; // 바보 패시브 마지막 발동 턴
     private bool actionPending; // 카드 행동 연출 진행 여부
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
@@ -220,30 +224,71 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void HandleCardChoiceSelected(CardInstance choice) // 드로우 후보 선택 처리
     { // 선택 처리 시작
         int choiceCount = pendingCardChoices == null ? 0 : pendingCardChoices.Count; // 현재 후보 수 조회
+        CardInstance remaining = null; // 선택하지 않은 카드 초기화
+        if (pendingFoolPassive && pendingCardChoices != null) // 바보 패시브 선택 여부 확인
+        { // 남은 카드 검색 시작
+            foreach (CardInstance candidate in pendingCardChoices) // 선택 후보 순회
+            { // 남은 카드 확인 시작
+                if (candidate != choice) // 선택하지 않은 카드 확인
+                { // 남은 카드 저장 시작
+                    remaining = candidate; // 남은 카드 저장
+                    break; // 남은 카드 검색 종료
+                } // 남은 카드 저장 종료
+            } // 남은 카드 확인 종료
+        } // 남은 카드 검색 종료
+        bool processed = false; // 카드 선택 처리 결과 초기화
         if (pendingChoiceEffect == CardEffectType.RecoverDiscard) // 버린 카드 회수 선택 확인
         { // 버린 카드 회수 시작
-            runtimeDeck.TryRecoverDiscard(choice); // 선택한 버린 카드 회수
+            processed = runtimeDeck.TryRecoverDiscard(choice); // 선택한 버린 카드 회수
         } // 버린 카드 회수 종료
         else // 덱 위 카드 선택 확인
         { // 선택 드로우 시작
-            runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
+            processed = runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
         } // 선택 드로우 종료
         pendingCardChoices = null; // 대기 후보 정리
         drawChoiceView = null; // 닫힌 선택 화면 참조 정리
+        if (processed && pendingFoolPassive && remaining != null && runtimeDeck.DrawPileCount > 0 && runtimeDeck.DrawPile[runtimeDeck.DrawPileCount - 1] == remaining) // 남은 카드 패시브 발동 확인
+        { // 남은 카드 처리 선택 시작
+            pendingFoolPassive = false; // 대기 패시브 해제
+            lastFoolPassiveRound = turnRuntime.CurrentRound; // 이번 턴 패시브 발동 기록
+            remainingChoiceCard = remaining; // 남은 카드 저장
+            Canvas canvas = handView.GetComponentInParent<Canvas>(); // 전투 화면 캔버스 조회
+            remainingChoiceView = BattleRemainingCardChoiceView.Show(canvas.transform, remaining, HandleRemainingCardSelected); // 남은 카드 처리 화면 생성
+            return; // 남은 카드 선택까지 입력 잠금 유지
+        } // 남은 카드 처리 선택 종료
+        pendingFoolPassive = false; // 대기 패시브 해제
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 처리 종료
+    private void HandleRemainingCardSelected(bool discard) // 남은 카드 처리 선택
+    { // 남은 카드 처리 시작
+        if (discard) // 버리기 선택 확인
+        { // 남은 카드 버리기 시작
+            runtimeDeck.TryDiscardDrawTop(remainingChoiceCard); // 남은 맨 위 카드 버리기
+        } // 남은 카드 버리기 종료
+        remainingChoiceCard = null; // 남은 카드 참조 정리
+        remainingChoiceView = null; // 닫힌 선택 화면 참조 정리
+        handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
+    } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
         pendingCardChoices = null; // 대기 후보 정리
-        if (drawChoiceView != null) // 선택 화면 존재 확인
-        { // 화면 닫기 시작
-            drawChoiceView.Close(); // 선택 화면 닫기
-            drawChoiceView = null; // 선택 화면 참조 정리
-            if (handView != null && !actionSequenceRunner.IsBusy) // 손패와 연출 상태 확인
-            { // 입력 복구 시작
-                handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
-            } // 입력 복구 종료
-        } // 화면 닫기 종료
+        pendingFoolPassive = false; // 대기 패시브 해제
+        remainingChoiceCard = null; // 남은 카드 참조 정리
+        bool hadChoiceView = drawChoiceView != null || remainingChoiceView != null; // 선택 화면 존재 여부 확인
+        if (drawChoiceView != null) // 카드 선택 화면 존재 확인
+        { // 카드 선택 화면 닫기 시작
+            drawChoiceView.Close(); // 카드 선택 화면 닫기
+            drawChoiceView = null; // 카드 선택 화면 참조 정리
+        } // 카드 선택 화면 닫기 종료
+        if (remainingChoiceView != null) // 남은 카드 화면 존재 확인
+        { // 남은 카드 화면 닫기 시작
+            remainingChoiceView.Close(); // 남은 카드 화면 닫기
+            remainingChoiceView = null; // 남은 카드 화면 참조 정리
+        } // 남은 카드 화면 닫기 종료
+        if (hadChoiceView && handView != null && !actionSequenceRunner.IsBusy) // 선택 화면과 연출 상태 확인
+        { // 입력 복구 시작
+            handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
+        } // 입력 복구 종료
     } // 선택 화면 정리 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
     { // 대상 검사 시작
@@ -383,6 +428,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 마법사 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.ChooseDraw) // 선택 드로우 효과 확인
         { // 바보 전용 효과 시작
+            pendingFoolPassive = cardInstance.OwnerUnit.CharacterSource != null && cardInstance.OwnerUnit.CharacterSource.CharacterId == "ARC_00" && cardInstance.SourceData.CardId == "CRD_ARC_00_CHOICE" && lastFoolPassiveRound != turnRuntime.CurrentRound; // 바보의 첫 선택 드로우 확인
             pendingChoiceEffect = CardEffectType.ChooseDraw; // 선택 드로우 효과 저장
             pendingCardChoices = runtimeDeck.PrepareDrawChoices(cardInstance.EffectValue); // 덱 위 선택 후보 준비
             return pendingCardChoices.Count; // 준비된 후보 수 반환

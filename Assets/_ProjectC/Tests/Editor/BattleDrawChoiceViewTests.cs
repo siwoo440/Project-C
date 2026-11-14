@@ -6,9 +6,14 @@ using UnityEngine.UI; // 선택 버튼 조회 사용
 public sealed class BattleDrawChoiceViewTests // 카드 선택 화면 테스트
 { // 테스트 클래스 시작
     private static CardInstance selectedCard; // 선택된 후보 카드
+    private static bool? remainingDiscarded; // 남은 카드 처리 결과
     private static void RecordSelection(CardInstance card) // 선택 결과 기록
     { // 결과 기록 시작
         selectedCard = card; // 선택 카드 저장
+    } // 결과 기록 종료
+    private static void RecordRemainingChoice(bool discard) // 남은 카드 처리 결과 기록
+    { // 결과 기록 시작
+        remainingDiscarded = discard; // 남은 카드 처리 결과 저장
     } // 결과 기록 종료
     [UnityTest] // 코루틴 테스트 지정
     public IEnumerator ChoiceView_PaginatesAndSelectsCardsBeyondFirstPage() // 여러 후보 페이지와 선택 확인
@@ -38,6 +43,21 @@ public sealed class BattleDrawChoiceViewTests // 카드 선택 화면 테스트
         Assert.IsNotNull(thirdChoice); // 세 번째 후보 표시 확인
         thirdChoice.GetComponent<Button>().onClick.Invoke(); // 세 번째 후보 선택
         Assert.AreSame(cards[2], selectedCard); // 올바른 후보 선택 확인
+        Object.Destroy(canvas); // 테스트 캔버스 정리
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator RemainingChoice_AllowsKeepingCardOnDeck() // 남은 카드 덱 유지 선택 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        GameObject canvas = new GameObject("RemainingTestCanvas", typeof(RectTransform), typeof(Canvas)); // 테스트 캔버스 생성
+        CharacterData owner = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 카드 소유자 조회
+        CardData source = Resources.Load<CardData>("StarterCards/Attack"); // 카드 원본 조회
+        CardInstance card = CardInstance.Create(source, BattleUnitRuntime.CreateAlly(owner), 0, 0); // 선택 카드 생성
+        remainingDiscarded = null; // 선택 결과 초기화
+        BattleRemainingCardChoiceView view = BattleRemainingCardChoiceView.Show(canvas.transform, card, RecordRemainingChoice); // 남은 카드 선택 화면 생성
+        view.transform.Find("KeepRemaining").GetComponent<Button>().onClick.Invoke(); // 덱 맨 위 유지 선택
+        Assert.AreEqual(false, remainingDiscarded); // 버리지 않음 선택 결과 확인
         Object.Destroy(canvas); // 테스트 캔버스 정리
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
