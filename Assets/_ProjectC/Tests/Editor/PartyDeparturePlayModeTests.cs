@@ -653,4 +653,76 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator HierophantCard_PreparesAllyForFirstEnemyAttack() // 교황 사전 방어 카드 실제 사용 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[5].onClick.Invoke(); // 교황 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        BattleEnemyAction firstAttack = battle.EnemyActionRuntime.PlannedActions[0]; // 첫 예정 적 공격 조회
+        BattleUnitRuntime target = firstAttack.Target; // 공격 예고 대상 조회
+        int previousDamage = firstAttack.PreviewDamage().AppliedDamage; // 준비 전 예상 피해 저장
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView cardView = null; // 교황 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 전용 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_05_PREPARE" && candidate.gameObject.activeInHierarchy) // 교황 카드 확인
+            { // 전용 카드 발견 시작
+                cardView = candidate; // 교황 카드 화면 저장
+                Assert.AreSame(battle.AllyUnits[1], candidate.RuntimeCard.OwnerUnit); // 교황 카드 소유자 확인
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(cardView); // 교황 전용 카드 존재 확인
+        BattleUnitView targetView = null; // 보호 대상 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 유닛 화면 순회
+        { // 아군 화면 검색 시작
+            if (candidate.RuntimeUnit == target) // 공격 대상 화면 확인
+            { // 대상 화면 발견 시작
+                targetView = candidate; // 대상 화면 저장
+                break; // 화면 검색 종료
+            } // 대상 화면 발견 종료
+        } // 아군 화면 검색 종료
+        Assert.IsNotNull(targetView); // 보호 대상 화면 존재 확인
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        cardView.OnPointerClick(null); // 교황 카드 선택
+        targetView.OnPointerClick(null); // 방어 준비 대상 선택
+        float effectDeadline = Time.realtimeSinceStartup + 5f; // 상태 적용 제한 시간 설정
+        while (Time.realtimeSinceStartup < effectDeadline && target.GetStatusEffect(BattleStatusEffectType.GuardPreparation) == null) // 방어 준비 대기
+        { // 준비 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 준비 대기 종료
+        Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 방어 준비 적용 확인
+        int preparedDamage = firstAttack.PreviewDamage().AppliedDamage; // 준비 적용 예상 피해 조회
+        Assert.Less(preparedDamage, previousDamage); // 적 공격 예상 피해 감소 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 카드 행동력 소비 확인
+        BattleEnemyActionResult result = battle.EnemyActionRuntime.ExecuteAction(firstAttack); // 예정 적 공격 실행
+        Assert.AreEqual(preparedDamage, result.DamageResult.AppliedDamage); // 예고와 실제 피해 일치 확인
+        Assert.IsNull(target.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 첫 공격 후 준비 소모 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료
