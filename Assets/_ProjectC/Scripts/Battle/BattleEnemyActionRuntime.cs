@@ -55,6 +55,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             BattleEnemyAction action = CreateAction(enemyUnit, enemyIndex); // 적 예정 행동 생성
             if (action != null) // 생성 행동 확인
             { // 유효 행동 처리 시작
+                action.SetPreparationPreviewRule(IsFirstAttackAgainstTarget); // 방어 준비 예고 순서 연결
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
@@ -63,6 +64,21 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
+    private bool IsFirstAttackAgainstTarget(BattleEnemyAction action) // 대상별 첫 예정 공격 확인
+    { // 첫 공격 확인 시작
+        foreach (BattleEnemyAction candidate in plannedActions) // 행동 순서대로 예정 행동 순회
+        { // 앞선 공격 검사 시작
+            if (candidate == action) // 현재 공격 도달 확인
+            { // 첫 공격 처리 시작
+                return true; // 앞선 공격 없음 반환
+            } // 첫 공격 처리 종료
+            if (candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.DamageType != BattleDamageType.None && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
+            { // 앞선 공격 처리 시작
+                return false; // 방어 준비 선행 소모 반환
+            } // 앞선 공격 처리 종료
+        } // 앞선 공격 검사 종료
+        return false; // 예정 목록 밖 공격 제외
+    } // 첫 공격 확인 종료
     public BattleEnemyActionResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
         if (disposed || action == null || !plannedActions.Contains(action)) // 실행 대상 유효성 확인
