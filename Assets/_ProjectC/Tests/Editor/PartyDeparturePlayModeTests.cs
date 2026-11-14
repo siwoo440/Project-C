@@ -208,4 +208,83 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator PriestessCard_ProtectsAllyTargetedByAttack() // 여사제 전용 보호 카드 실제 사용 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[2].onClick.Invoke(); // 여사제 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        BattleUnitRuntime target = battle.AllyUnits[0]; // 공격 예고 대상 조회
+        BattleUnitRuntime priestess = battle.AllyUnits[1]; // 여사제 전투 유닛 조회
+        Assert.AreSame(target, battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]).Target); // 공격 예고 대상 확인
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView priestessCard = null; // 여사제 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 카드 화면 순회
+        { // 전용 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_02_WARD") // 여사제 카드 확인
+            { // 전용 카드 발견 시작
+                priestessCard = candidate; // 여사제 카드 저장
+                Assert.AreSame(priestess, candidate.RuntimeCard.OwnerUnit); // 카드 소유자 확인
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(priestessCard); // 여사제 카드 손패 존재 확인
+        BattleUnitView targetView = null; // 공격 대상 화면 초기화
+        BattleUnitView priestessView = null; // 여사제 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 유닛 화면 순회
+        { // 아군 화면 검색 시작
+            if (candidate.RuntimeUnit == target) // 공격 대상 화면 확인
+            { // 대상 화면 저장 시작
+                targetView = candidate; // 대상 화면 저장
+            } // 대상 화면 저장 종료
+            if (candidate.RuntimeUnit == priestess) // 여사제 화면 확인
+            { // 여사제 화면 저장 시작
+                priestessView = candidate; // 여사제 화면 저장
+            } // 여사제 화면 저장 종료
+        } // 아군 화면 검색 종료
+        Assert.IsNotNull(targetView); // 대상 화면 존재 확인
+        Assert.IsNotNull(priestessView); // 여사제 화면 존재 확인
+        BattleEnemyAction plannedAttack = battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]); // 예정 공격 조회
+        int previousDamage = plannedAttack.PreviewDamage().AppliedDamage; // 보호 전 예상 피해 저장
+        int previousPhysical = target.PhysicalDefense; // 기존 물리 방어력 저장
+        int previousMagical = target.MagicalResistance; // 기존 마법 저항력 저장
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        priestessCard.OnPointerClick(null); // 여사제 카드 선택
+        priestessView.OnPointerClick(null); // 공격 예고가 없는 아군 선택
+        Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
+        targetView.OnPointerClick(null); // 공격 예고 대상 선택
+        for (int frame = 0; frame < 300 && target.PhysicalDefense == previousPhysical; frame++) // 카드 효과 대기
+        { // 카드 효과 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 카드 효과 대기 종료
+        Assert.AreEqual(previousPhysical + 2, target.PhysicalDefense); // 물리 방어 증가 확인
+        Assert.AreEqual(previousMagical + 2, target.MagicalResistance); // 마법 저항 증가 확인
+        Assert.Less(plannedAttack.PreviewDamage().AppliedDamage, previousDamage); // 예정 공격 피해 감소 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료

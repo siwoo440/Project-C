@@ -216,6 +216,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 정신력 변경 불가 처리 시작
             return false; // 정신력 대상 불가 반환
         } // 정신력 변경 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget && (targetUnit.Team != BattleTeam.Ally || !HasIncomingAttack(targetUnit))) // 공격 예고 보호 대상 확인
+        { // 보호 불가 대상 처리 시작
+            return false; // 선택 불가 반환
+        } // 보호 불가 대상 처리 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도 카드 확인
         { // 공격 유도 대상 확인 시작
             BattleEnemyAction action = enemyActions.FindAction(targetUnit); // 선택 적의 예정 행동 조회
@@ -238,6 +242,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 return false; // 잘못된 대상 반환
         } // 대상 분기 종료
     } // 대상 검사 종료
+    private bool HasIncomingAttack(BattleUnitRuntime allyUnit) // 예정 공격 대상 여부 확인
+    { // 공격 예고 확인 시작
+        foreach (BattleEnemyAction action in enemyActions.PlannedActions) // 예정 적 행동 순회
+        { // 공격 대상 검사 시작
+            if (action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == allyUnit) // 실행 가능한 공격 예고 확인
+            { // 공격 예고 발견 시작
+                return true; // 보호 대상 반환
+            } // 공격 예고 발견 종료
+        } // 공격 대상 검사 종료
+        return false; // 공격 예고 없음 반환
+    } // 공격 예고 확인 종료
     private void UpdateTargetHighlights() // 선택 가능 대상 강조
     { // 대상 강조 시작
         UpdateTargetHighlights(allyUnitViews); // 아군 대상 강조 갱신
@@ -268,7 +283,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -301,6 +316,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget) // 공격 예고 대상 보호 효과 확인
+        { // 여사제 전용 효과 시작
+            BattleStatusEffectApplyResult physicalResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 물리 방어력 증가
+            BattleStatusEffectApplyResult magicalResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.MagicalResistanceUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 마법 저항력 증가
+            BattleUnitView targetView = FindUnitView(targetUnit); // 보호 대상 화면 조회
+            targetView?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseUp, physicalResult); // 물리 방어 효과 표시
+            targetView?.ShowStatusApplyFeedback(BattleStatusEffectType.MagicalResistanceUp, magicalResult); // 마법 저항 효과 표시
+            int physicalAmount = physicalResult == BattleStatusEffectApplyResult.Applied || physicalResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 적용된 물리 방어 수치
+            int magicalAmount = magicalResult == BattleStatusEffectApplyResult.Applied || magicalResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 적용된 마법 저항 수치
+            return physicalAmount + magicalAmount; // 전체 보호 효과 수치 반환
+        } // 여사제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도와 방어 효과 확인
         { // 황제 전용 효과 시작
             enemyActions.TryRedirectAttack(targetUnit, cardInstance.OwnerUnit); // 선택 적의 공격을 소유자에게 유도
@@ -351,6 +377,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget) // 공격 예고 보호 문구 확인
+        { // 보호 문구 시작
+            return "예고 대상 보호"; // 전용 효과 이름 반환
+        } // 보호 문구 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도 문구 확인
         { // 공격 유도 문구 시작
             return "공격 유도와 방어"; // 전용 효과 이름 반환
