@@ -73,6 +73,8 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/TemperanceCleanse"; // 절제의 디버프 정화 카드 경로 반환
             case "ARC_15": // 악마 캐릭터
                 return "StarterCards/DevilBloodPrice"; // 악마의 체력 소모 공격 카드 경로 반환
+            case "ARC_16": // 탑 캐릭터
+                return "StarterCards/TowerShatter"; // 탑의 광역 방어도 파괴 카드 경로 반환
             case "ARC_17": // 별 캐릭터
                 return "StarterCards/StarHealing"; // 별 카드 경로 반환
             default: // 전용 카드 미구현 캐릭터

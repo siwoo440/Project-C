@@ -59,6 +59,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "표식"; // 전차 표식 이름 반환
             case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
                 return "예약 회복"; // 예약 회복 이름 반환
+            case BattleStatusEffectType.StarPassiveReservedHealing: // 별 패시브 예약 회복 종류
+                return "추가 예약 회복"; // 별도 예약 회복 이름 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return "방어 준비"; // 방어 준비 이름 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
@@ -95,6 +97,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "표"; // 전차 표식 아이콘 반환
             case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
                 return "별"; // 예약 회복 아이콘 반환
+            case BattleStatusEffectType.StarPassiveReservedHealing: // 별 패시브 예약 회복 종류
+                return "빛"; // 추가 회복 아이콘 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return "준"; // 방어 준비 아이콘 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
@@ -127,6 +131,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"이번 턴 돌파 표식 {effectiveValue}개. 대상 변경 또는 턴 종료 시 제거"; // 전차 표식 설명 반환
             case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
                 return $"다음 아군 턴 시작 체력 회복 {effectiveValue}"; // 예약 회복 설명 반환
+            case BattleStatusEffectType.StarPassiveReservedHealing: // 별 패시브 예약 회복 종류
+                return $"다음 아군 턴 시작 추가 체력 회복 {effectiveValue}"; // 추가 예약 회복 설명 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return $"다음 적 공격 직전 방어도 {effectiveValue} 획득"; // 방어 준비 설명 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류

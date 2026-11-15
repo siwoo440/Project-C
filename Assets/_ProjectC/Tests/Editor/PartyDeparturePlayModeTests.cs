@@ -189,7 +189,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
         BattleUnitRuntime emperor = battle.AllyUnits[1]; // 황제 전투 유닛 조회
         BattleUnitRuntime enemy = battle.EnemyUnits[0]; // 첫 적 조회
-        Assert.AreSame(battle.AllyUnits[0], battle.EnemyActionRuntime.FindAction(enemy).Target); // 기존 공격 대상 확인
+        BattleEnemyAction initialAttack = battle.EnemyActionRuntime.FindAction(enemy); // 첫 적의 예정 공격 조회
+        Assert.IsNotNull(initialAttack); // 예정 공격 존재 확인
+        Assert.AreEqual(EnemyActionType.Attack, initialAttack.ActionType); // 예정 공격 행동 확인
+        Assert.IsTrue(initialAttack.ChangeTarget(battle.AllyUnits[0])); // 무작위 조우에서도 공격 대상을 바보로 설정
+        Assert.AreSame(battle.AllyUnits[0], initialAttack.Target); // 기존 공격 대상 확인
         int emperorCardCount = 0; // 황제 전용 카드 장수 초기화
         foreach (CardInstance card in battle.BattleDeck.Cards) // 시작 덱 카드 순회
         { // 전용 카드 확인 시작
@@ -276,7 +280,17 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
         BattleUnitRuntime target = battle.AllyUnits[0]; // 공격 예고 대상 조회
         BattleUnitRuntime priestess = battle.AllyUnits[1]; // 여사제 전투 유닛 조회
-        Assert.AreSame(target, battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]).Target); // 공격 예고 대상 확인
+        BattleEnemyAction plannedAttack = battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]); // 첫 적의 예정 공격 조회
+        Assert.IsNotNull(plannedAttack); // 예정 공격 존재 확인
+        Assert.AreEqual(EnemyActionType.Attack, plannedAttack.ActionType); // 첫 행동의 공격 여부 확인
+        foreach (BattleEnemyAction action in battle.EnemyActionRuntime.PlannedActions) // 전체 예정 행동 순회
+        { // 비대상 아군 검사 준비 시작
+            if (action.ActionType == EnemyActionType.Attack) // 예정 공격 여부 확인
+            { // 공격 대상 고정 시작
+                Assert.IsTrue(action.ChangeTarget(target)); // 모든 공격을 다른 아군에게 설정
+            } // 공격 대상 고정 종료
+        } // 비대상 아군 검사 준비 종료
+        Assert.AreSame(target, plannedAttack.Target); // 공격 예고 대상 확인
         battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
         BattleCardView priestessCard = null; // 여사제 카드 화면 초기화
         foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 카드 화면 순회
@@ -304,7 +318,6 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 아군 화면 검색 종료
         Assert.IsNotNull(targetView); // 대상 화면 존재 확인
         Assert.IsNotNull(priestessView); // 여사제 화면 존재 확인
-        BattleEnemyAction plannedAttack = battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]); // 예정 공격 조회
         int previousDamage = plannedAttack.PreviewDamage().AppliedDamage; // 보호 전 예상 피해 저장
         int previousBlock = priestess.CurrentBlock; // 여사제 기존 방어도 저장
         int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
@@ -830,12 +843,14 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 예약 대기 종료
         Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.StarReservedHealing)); // 회복 예약 상태 확인
+        Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.StarPassiveReservedHealing)); // 별 패시브 추가 회복 예약 확인
         Assert.AreEqual(healthBefore, target.CurrentHealth); // 카드 사용 시 즉시 회복 없음 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 카드 행동력 소비 확인
         new BattleStatusEffectProcessor().ProcessPhaseStart(target, 2); // 다음 아군 턴 시작 상태 처리
-        Assert.AreEqual(healthBefore + 8, target.CurrentHealth); // 기존 재생과 예약 회복 합계 확인
+        Assert.AreEqual(healthBefore + 10, target.CurrentHealth); // 기존 재생과 두 예약 회복 합계 확인
         Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.Regeneration)); // 기존 재생 효과 독립 유지 확인
         Assert.IsNull(target.GetStatusEffect(BattleStatusEffectType.StarReservedHealing)); // 한 번 발동 후 예약 소멸 확인
+        Assert.IsNull(target.GetStatusEffect(BattleStatusEffectType.StarPassiveReservedHealing)); // 추가 예약 회복 소멸 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
 } // 테스트 클래스 종료

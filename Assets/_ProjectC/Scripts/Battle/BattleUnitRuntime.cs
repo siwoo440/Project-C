@@ -322,6 +322,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         CurrentBlock = 0; // 방어도 초기화
         BlockChanged?.Invoke(this); // 방어도 변경 알림
     } // 방어도 제거 종료
+    public int RemoveBlock(int amount) // 지정 수치만큼 방어도 제거
+    { // 방어도 부분 제거 시작
+        if (IsDead || amount <= 0 || CurrentBlock <= 0) // 생존 상태와 제거 가능한 방어도 확인
+        { // 방어도 제거 불가 시작
+            return 0; // 제거량 없음 반환
+        } // 방어도 제거 불가 종료
+        int removed = Math.Min(CurrentBlock, amount); // 남은 방어도를 넘지 않는 제거량 계산
+        CurrentBlock -= removed; // 실제 방어도 감소
+        BlockChanged?.Invoke(this); // 방어도 화면 갱신 알림
+        return removed; // 실제 제거량 반환
+    } // 방어도 부분 제거 종료
     public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null) // 예상 피해 계산
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인

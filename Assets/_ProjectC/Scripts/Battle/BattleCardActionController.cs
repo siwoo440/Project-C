@@ -12,6 +12,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly LoversPartnerRuntime loversPartner; // 연인 파트너와 행동 기록
     private readonly ChariotConcentrationRuntime chariotConcentration; // 전차 집중 공격과 표식 기록
+    private readonly StarRecoveryPassiveRuntime starRecoveryPassive; // 별의 턴당 추가 예약 회복
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
@@ -41,6 +42,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         enemyActions = enemyRuntime ?? throw new ArgumentNullException(nameof(enemyRuntime)); // 적 행동 관리자 저장
         loversPartner = new LoversPartnerRuntime(turnRuntime, enemyActions.AllyUnits); // 연인 파트너 관리자 생성
         chariotConcentration = new ChariotConcentrationRuntime(turnRuntime, enemyActions.EnemyUnits); // 전차 집중 공격 관리자 생성
+        starRecoveryPassive = new StarRecoveryPassiveRuntime(turnRuntime); // 별 추가 예약 회복 관리자 생성
         loversPartner.Changed += RefreshPartnerMarkers; // 파트너 표시 갱신 연결
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
@@ -212,6 +214,21 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 카드 충돌 처리 시작
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
+        if (cardInstance.SourceData.CardId == "CRD_ARC_16_SHATTER") // 탑의 광역 방어도 파괴 카드 확인
+        { // 전체 적 방어도 제거 시작
+            foreach (BattleUnitRuntime targetUnit in targetUnits) // 실제 공격 대상 순회
+            { // 적별 방어도 제거 시작
+                if (targetUnit == null || targetUnit.IsDead || targetUnit.Team != BattleTeam.Enemy) // 생존한 적 대상 확인
+                { // 유효하지 않은 대상 처리 시작
+                    continue; // 다음 대상 이동
+                } // 유효하지 않은 대상 처리 종료
+                int removed = targetUnit.RemoveBlock(cardInstance.SourceData.SecondaryEffectValue); // 피해 적용 전 적 방어도 제거
+                if (removed > 0) // 실제 방어도 제거 확인
+                { // 방어도 파괴 표시 시작
+                    FindUnitView(targetUnit)?.ShowStatusFeedback($"방어도 -{removed}", true); // 방어도 제거 결과 표시
+                } // 방어도 파괴 표시 종료
+            } // 적별 방어도 제거 종료
+        } // 전체 적 방어도 제거 종료
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies) // 전체 아군 방어도 배분 확인
         { // 효과 적용 시작
@@ -224,6 +241,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
+        starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
         bool discarded = runtimeDeck.DiscardCard(cardInstance); // 사용 카드를 버린 카드 더미로 이동
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
@@ -790,6 +808,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         loversPartner.Changed -= RefreshPartnerMarkers; // 파트너 표시 갱신 해제
         loversPartner.Dispose(); // 파트너 관리자 연결 해제
         chariotConcentration.Dispose(); // 전차 표식 관리자 연결 해제
+        starRecoveryPassive.Dispose(); // 별 추가 예약 회복 관리자 정리
         CloseCardChoice(); // 대기 선택 화면 정리
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작
