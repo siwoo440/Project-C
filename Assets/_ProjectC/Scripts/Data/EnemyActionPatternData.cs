@@ -15,6 +15,8 @@ public sealed class EnemyActionPatternData // 적 순차 행동 한 단계 데�
     [SerializeField] private int statusEffectDuration = 1; // 상태 지속 횟수
     [Min(1)] // 상태 최대 중첩 최소값
     [SerializeField] private int statusEffectMaximumStacks = 1; // 상태 최대 중첩 수
+    [Range(0, 100)] // 공격 후 상태 부여 확률 범위
+    [SerializeField] private int statusEffectChancePercent; // 공격 적중 후 상태 부여 확률
     [SerializeField] private EnemyTargetRule targetRule = EnemyTargetRule.FirstLiving; // 대상 선택 규칙
     [Min(1)] // 최소 행동 속도 제한
     [SerializeField] private int minimumActionSpeed = 1; // 최소 행동 속도
@@ -27,6 +29,8 @@ public sealed class EnemyActionPatternData // 적 순차 행동 한 단계 데�
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public int StatusEffectDuration => Mathf.Max(1, statusEffectDuration); // 보정된 상태 지속 횟수 조회
     public int StatusEffectMaximumStacks => Mathf.Max(1, statusEffectMaximumStacks); // 보정된 상태 최대 중첩 조회
+    public int StatusEffectValue => Mathf.Max(1, statusEffectValue); // 보정된 추가 상태 수치 조회
+    public int StatusEffectChancePercent => Mathf.Clamp(statusEffectChancePercent, 0, 100); // 보정된 추가 상태 부여 확률 조회
     public EnemyTargetRule TargetRule => targetRule; // 대상 선택 규칙 조회
     public int MinimumActionSpeed => Mathf.Max(1, minimumActionSpeed); // 보정된 최소 행동 속도 조회
     public int MaximumActionSpeed => Mathf.Max(MinimumActionSpeed, maximumActionSpeed); // 보정된 최대 행동 속도 조회

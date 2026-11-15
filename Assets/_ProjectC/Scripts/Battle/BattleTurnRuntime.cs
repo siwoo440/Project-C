@@ -68,6 +68,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 턴 종료 실패 반환
         } // 종료 불가 처리 종료
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 종료 알림
+        if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
+        { // 종료된 전투 처리 시작
+            return true; // 종료 결과 단계 유지
+        } // 종료된 전투 처리 종료
         CurrentPhase = BattleTurnPhase.EnemyTurn; // 적 턴 설정
         PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
@@ -83,6 +87,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 적 턴 종료 알림
+        if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
+        { // 종료된 전투 처리 시작
+            return true; // 종료 결과 단계 유지
+        } // 종료된 전투 처리 종료
         ClearRoundBlock(allyUnits); // 라운드 전환 시 아군 방어도 정리
         ClearRoundBlock(enemyUnits); // 라운드 전환 시 적 방어도 정리
         CurrentRound++; // 다음 라운드 증가

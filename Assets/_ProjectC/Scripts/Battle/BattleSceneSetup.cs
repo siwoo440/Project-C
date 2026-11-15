@@ -606,7 +606,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
                 unitView?.ShowStatusFeedback($"{effectName} 만료", BattleStatusEffectInstance.IsDebuffType(processResult.EffectType)); // 상태 만료 문구 표시
             } // 만료 피드백 종료
             string triggerLabel = processResult.WasTriggered ? $"적용 {processResult.AppliedAmount}" : "지속"; // 발동 또는 유지 문구 계산
-            Debug.Log($"[BattleStatus] 턴 시작 / 라운드 {processResult.Round} / 대상 {runtimeUnit.DisplayName} / {effectName} / {triggerLabel} / 지속 {processResult.PreviousRemainingTurns}→{processResult.RemainingTurns} / 제거 {processResult.RemovalReason}", this); // 통합 상태 처리 결과 출력
+            Debug.Log($"[BattleStatus] 턴 처리 / 라운드 {processResult.Round} / 대상 {runtimeUnit.DisplayName} / {effectName} / {triggerLabel} / 지속 {processResult.PreviousRemainingTurns}→{processResult.RemainingTurns} / 제거 {processResult.RemovalReason}", this); // 통합 상태 처리 결과 출력
         } // 개별 결과 표시 종료
     } // 상태 결과 표시 종료
     private void RegisterAllyStatusIntentEvents() // 아군 상태 변경 이벤트 등록
@@ -704,6 +704,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 상태 결과 처리 종료
             else // 공격 행동 결과 처리
             { // 피해 결과 처리 시작
+                if (actionResult.WasMissed) // 공격 빗나감 확인
+                { // 빗나감 피드백 시작
+                    targetView?.ShowStatusFeedback("빗나감", false); // 대상에 빗나감 표시
+                } // 빗나감 피드백 종료
+                if (actionResult.HasAdditionalStatus) // 공격 후 상태 적용 시도 확인
+                { // 추가 상태 피드백 시작
+                    targetView?.ShowStatusApplyFeedback(enemyAction.StatusEffectType, actionResult.StatusApplyResult); // 상태 적용 또는 면역 결과 표시
+                } // 추가 상태 피드백 종료
                 BattleDamageResult damageResult = actionResult.DamageResult; // 적 피해 결과 조회
                 string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
                 Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 패턴 {enemyAction.PatternIndex}/{enemyAction.PatternCount} {enemyAction.PatternDisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력

@@ -13,5 +13,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     ChariotMark, // 전차 집중 공격 표식
     GuardPreparation, // 다음 적 공격 대비
     StarReservedHealing, // 별의 다음 턴 예약 회복
-    StarPassiveReservedHealing // 별 패시브의 별도 예약 회복
+    StarPassiveReservedHealing, // 별 패시브의 별도 예약 회복
+    Burn, // 턴 종료 시 감소하는 화상 피해
+    Blind // 한 턴 공격 명중률 감소
 } // 열거형 종료

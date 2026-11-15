@@ -10,6 +10,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
     internal sealed class RunSnapshot // 탐사 회차 저장 정보
     { // 탐사 저장 정보 시작
         public int version; // 탐사 저장 형식 버전
+        public int encounterPoolVersion; // 탐사 중 고정된 조우 목록 버전
         public int floor; // 현재 탐사 층
         public int seed; // 현재 층 생성 시드
         public Vector3 position; // 플레이어 위치
@@ -145,6 +146,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             RunSnapshot snapshot = new RunSnapshot // 동일 시점 탐사 상태 생성
             { // 탐사 저장 정보 설정 시작
                 version = 1, // 저장 형식 버전 설정
+                encounterPoolVersion = session.EncounterPoolVersion, // 현재 탐사의 고정 조우 목록 버전 저장
                 floor = session.CurrentFloor, // 현재 탐사 층 설정
                 seed = session.CurrentFloorSeed, // 현재 층 시드 설정
                 position = position, // 플레이어 위치 설정
@@ -290,6 +292,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 필수 정보 오류 시작
             return false; // 복원 불가 반환
         } // 필수 정보 오류 종료
+        if (snapshot.encounterPoolVersion < 0 || snapshot.encounterPoolVersion > ExplorationSessionManager.LatestEncounterPoolVersion) // 지원 조우 목록 버전 확인
+        { // 미지원 목록 버전 처리 시작
+            return false; // 알 수 없는 조우 구성의 복원 차단
+        } // 미지원 목록 버전 처리 종료
         if (snapshot.floor < 1 || snapshot.floor > ExplorationFloorRules.TotalFloorCount || !IsFinite(snapshot.position.x) || !IsFinite(snapshot.position.y) || !IsFinite(snapshot.position.z) || !IsFinite(snapshot.hazardExposure) || snapshot.hazardExposure < 0f || snapshot.hazardExposure >= 100f) // 층과 위치 및 위험 노출도 검사
         { // 위치 정보 오류 시작
             return false; // 복원 불가 반환

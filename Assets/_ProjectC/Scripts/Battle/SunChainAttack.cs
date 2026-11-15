@@ -9,7 +9,12 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         return card != null && card.SourceData != null && card.SourceData.CardId == CardId; // 태양 카드 식별자 일치 여부 반환
     } // 전용 카드 확인 종료
     public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies) // 다른 생존 적 하나에게 두 번째 공격 적용
+    { // 기본 연속 공격 시작
+        return TryAttack(card, primary, enemies, out _); // 명중 결과를 생략한 연속 공격 반환
+    } // 기본 연속 공격 종료
+    public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies, out bool missed) // 추가 대상과 빗나감 결과 조회
     { // 연속 공격 시작
+        missed = false; // 빗나감 결과 초기화
         if (!IsChainCard(card) || card.OwnerUnit == null || card.OwnerUnit.IsDead || primary == null || enemies == null) // 유효한 카드와 공격자 확인
         { // 연속 공격 불가 시작
             return null; // 추가 대상 없음 반환
@@ -28,6 +33,11 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
             return null; // 연속 공격 생략 반환
         } // 추가 대상 없음 처리 종료
         BattleUnitRuntime target = candidates[UnityEngine.Random.Range(0, candidates.Count)]; // 다른 생존 적 중 하나 무작위 선택
+        if (!BattleHitChance.Roll(card.OwnerUnit)) // 두 번째 공격의 독립 명중 판정
+        { // 추가 공격 빗나감 처리 시작
+            missed = true; // 빗나감 결과 저장
+            return target; // 빗나간 추가 대상 반환
+        } // 추가 공격 빗나감 처리 종료
         int baseDamage = (int)Math.Min(int.MaxValue, (long)card.SourceData.SecondaryEffectValue + card.OwnerUnit.AttackPowerBonus); // 두 번째 기본 피해와 공격력 증가 계산
         int damage = card.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 공격자의 현재 정신 상태 피해 보정
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정

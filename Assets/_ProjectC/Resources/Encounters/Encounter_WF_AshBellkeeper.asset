@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9682775985224b5fb72eaffb83f64fdf, type: 3}
+  m_Name: Encounter_WF_AshBellkeeper
+  m_EditorClassIdentifier: Assembly-CSharp::EncounterData
+  encounterId: ENC_WF_ASHBELLKEEPER
+  displayName: "\uC708\uD130\uD3F4 \xB7 \uC7BF\uB354\uBBF8 \uC885\uC9C0\uAE30"
+  battleType: 2
+  minimumEncounterPoolVersion: 1
+  explorationPosition: {x: 0, y: 0}
+  enemies:
+  - {fileID: 11400000, guid: 9b88bc11eeaf9d44994d09701e422bc8, type: 2}
+  characterExperienceReward: 10
+  goldReward: 50
+  screwReward: 25
+  ironPlateReward: 20
+  wireReward: 15

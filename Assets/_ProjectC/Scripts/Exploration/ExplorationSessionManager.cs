@@ -4,6 +4,7 @@ using UnityEngine; // 영구 오브젝트와 위치 기능 사용
 public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사 런 상태 관리자
 {
     private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
+    public const int LatestEncounterPoolVersion = 1; // 새 탐사의 최신 조우 목록 버전
 
     private static ExplorationSessionManager instance; // 탐사 관리자 인스턴스
     private CharacterUnlockProgress unlockProgress = CharacterUnlockProgress.Shared; // 캐릭터 해금 상태
@@ -20,6 +21,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private bool hasReturnPosition; // 복귀 위치 존재 여부
     private int currentFloor = 1; // 현재 탐사 층
     private int currentFloorSeed; // 현재 층 절차 생성 Seed
+    private int encounterPoolVersion = LatestEncounterPoolVersion; // 현재 탐사의 고정 조우 목록 버전
     private bool hasCurrentFloorSeed; // 현재 층 Seed 존재 여부
     private bool isExplorationCompleted; // 탐사 완료 여부
     private int completionVersion; // 탐사 종료별 고유 처리 순번
@@ -43,6 +45,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
     public int CurrentFloor => currentFloor; // 현재 층 조회
+    public int EncounterPoolVersion => encounterPoolVersion; // 저장된 탐사 조우 목록 버전 조회
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
     public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
     public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
@@ -487,6 +490,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     internal void RestoreRunState(ExplorationSaveService.RunSnapshot snapshot) // 저장된 탐사 상태 복원
     { // 탐사 상태 복원 시작
         ResetExploration(); // 이전 탐사 상태 제거
+        encounterPoolVersion = snapshot.encounterPoolVersion; // 저장 당시 조우 목록 버전 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
         currentFloorSeed = snapshot.seed; // 저장 맵 시드 적용
         hasCurrentFloorSeed = true; // 저장 시드 존재 표시
@@ -521,6 +525,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         hasReturnPosition = false; // 복귀 위치 해제
         LastClearReward = null; // 마지막 보상 초기화
         currentFloor = 1; // 탐사 층 초기화
+        encounterPoolVersion = LatestEncounterPoolVersion; // 새 탐사에는 최신 조우 목록 적용
         isExplorationCompleted = false; // 탐사 완료 상태 초기화
         isExplorationSuccess = false; // 탐사 성공 상태 초기화
         completedFloor = 0; // 완료 층 초기화

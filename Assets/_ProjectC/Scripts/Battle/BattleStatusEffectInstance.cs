@@ -7,7 +7,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public int StackCount { get; private set; } // 현재 중첩 수
     public int MaximumStacks { get; private set; } // 최대 중첩 수
     public int EffectiveValue => Value * StackCount; // 전체 적용 수치
-    public bool IsExpired => RemainingTurns <= 0; // 지속 종료 여부
+    public bool IsExpired => RemainingTurns <= 0 || EffectType == BattleStatusEffectType.Burn && Value <= 0; // 지속 종료 또는 화상 수치 소진 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
@@ -35,12 +35,23 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     { // 지속 감소 시작
         RemainingTurns = Math.Max(0, RemainingTurns - 1); // 남은 횟수 한 단계 감소
     } // 지속 감소 종료
+    public void DecayBurn() // 화상 수치 한 단계 감소
+    { // 화상 감소 시작
+        if (EffectType == BattleStatusEffectType.Burn) // 화상 상태 확인
+        { // 화상 수치 감소 시작
+            Value = Math.Max(0, Value - 1); // 화상 수치 한 점 감소
+        } // 화상 수치 감소 종료
+    } // 화상 감소 종료
     public static string GetDisplayName(BattleStatusEffectType effectType) // 상태 이상 표시 이름 조회
     { // 표시 이름 조회 시작
         switch (effectType) // 상태 이상 종류 분기
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
                 return "중독"; // 중독 이름 반환
+            case BattleStatusEffectType.Burn: // 화상 종류
+                return "화상"; // 화상 이름 반환
+            case BattleStatusEffectType.Blind: // 실명 종류
+                return "실명"; // 실명 이름 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재생"; // 재생 이름 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격력 증가 종류
@@ -71,7 +82,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark; // 감소 상태 포함 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark; // 감소 상태 포함 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -79,6 +90,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
                 return "독"; // 중독 아이콘 반환
+            case BattleStatusEffectType.Burn: // 화상 종류
+                return "화"; // 화상 아이콘 반환
+            case BattleStatusEffectType.Blind: // 실명 종류
+                return "암"; // 실명 아이콘 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재"; // 재생 아이콘 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
@@ -113,6 +128,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
                 return $"진영 턴 시작에 방어 무시 피해 {effectiveValue}"; // 중독 설명 반환
+            case BattleStatusEffectType.Burn: // 화상 종류
+                return $"진영 턴 종료에 피해 {effectiveValue}, 화상 수치 1 감소"; // 화상 설명 반환
+            case BattleStatusEffectType.Blind: // 실명 종류
+                return $"공격 명중률 {effectiveValue}%p 감소"; // 실명 설명 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류

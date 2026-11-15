@@ -11,6 +11,9 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     [SerializeField] private string encounterId; // 조우 고유 ID
     [SerializeField] private string displayName; // 조우 표시 이름
     [SerializeField] private BattleType battleType = BattleType.Normal; // 전투 유형
+    [Min(0)] // 조우 목록 버전 최소값
+    [SerializeField] private int minimumEncounterPoolVersion; // 조우가 처음 추가된 목록 버전
+    [SerializeField] private bool legacyOnly; // 이전 탐사에서만 사용하는 임시 조우 표시
 
     [Header("탐사 배치")]
     [SerializeField] private Vector2 explorationPosition; // 기존 탐사 위치 호환값
@@ -38,6 +41,10 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     public string EncounterId => encounterId; // 조우 ID 조회
     public string DisplayName => displayName; // 조우 이름 조회
     public BattleType BattleType => battleType; // 전투 유형 조회
+    public bool IsAvailableForPoolVersion(int version) // 저장된 조우 목록 버전 호환 확인
+    { // 조우 버전 확인 시작
+        return version >= 0 && minimumEncounterPoolVersion <= version && (!legacyOnly || version == 0); // 저장 버전과 이전 전용 여부 확인
+    } // 조우 버전 확인 종료
     public Vector2 ExplorationPosition => explorationPosition; // 기존 위치 조회
     public IReadOnlyList<EnemyData> Enemies => enemies; // 적 목록 조회
 

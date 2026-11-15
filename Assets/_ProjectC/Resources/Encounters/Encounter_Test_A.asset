@@ -15,6 +15,7 @@ MonoBehaviour:
   encounterId: ENC_TEST_A
   displayName: "테스트 조우 A"
   battleType: 0
+  legacyOnly: 1
   explorationPosition: {x: -1.7, y: -1.0}
   enemies:
   - {fileID: 11400000, guid: a5fbf174b853f374e9aca12b53d630ac, type: 2}

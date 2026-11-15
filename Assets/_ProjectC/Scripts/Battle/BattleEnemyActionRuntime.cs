@@ -265,7 +265,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return null; // 행동 생성 실패 반환
             } // 패턴 대상 없음 처리 종료
             int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed); // 패턴 행동 속도 결정
-            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder); // 순차 패턴 행동 반환
+            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue); // 순차 패턴과 공격 후 상태 확률 전달
         } // 패턴 행동 생성 종료
         if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
         { // 미지원 행동 처리 시작

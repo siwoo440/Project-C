@@ -34,10 +34,22 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
     } // 턴 시작 처리 종료
     private void HandlePhaseEnded(BattleTurnPhase phase, int round) // 진영 턴 종료 처리
     { // 턴 종료 처리 시작
-        if (disposed || phase != BattleTurnPhase.EnemyTurn) // 적 턴 종료 여부 확인
+        if (disposed || turnRuntime.IsBattleEnded) // 상태 처리 가능 여부 확인
         { // 준비 유지 처리 시작
-            return; // 방어 준비 정리 중단
+            return; // 상태 처리 중단
         } // 준비 유지 처리 종료
+        if (phase == BattleTurnPhase.PlayerTurn) // 아군 턴 종료 확인
+        { // 아군 종료 상태 처리 시작
+            ProcessEndUnits(allyUnits, round); // 아군 화상과 실명 종료 처리
+        } // 아군 종료 상태 처리 종료
+        else if (phase == BattleTurnPhase.EnemyTurn) // 적 턴 종료 확인
+        { // 적 종료 상태 처리 시작
+            ProcessEndUnits(enemyUnits, round); // 적 화상과 실명 종료 처리
+        } // 적 종료 상태 처리 종료
+        if (phase != BattleTurnPhase.EnemyTurn || turnRuntime.IsBattleEnded) // 적 턴 종료와 전투 지속 확인
+        { // 방어 준비 유지 또는 전투 종료 시작
+            return; // 방어 준비 정리 중단
+        } // 방어 준비 유지 또는 전투 종료 종료
         foreach (BattleUnitRuntime ally in allyUnits) // 아군 유닛 순회
         { // 준비 만료 처리 시작
             if (ally != null) // 아군 존재 확인
@@ -46,6 +58,21 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료
+    private void ProcessEndUnits(IReadOnlyList<BattleUnitRuntime> units, int round) // 진영의 턴 종료 상태 처리
+    { // 종료 상태 일괄 처리 시작
+        foreach (BattleUnitRuntime unit in units) // 진영 유닛 순회
+        { // 개별 종료 상태 처리 시작
+            if (turnRuntime.IsBattleEnded) // 전투 종료 확인
+            { // 종료 처리 중단 시작
+                return; // 남은 유닛 처리 중단
+            } // 종료 처리 중단 종료
+            IReadOnlyList<BattleStatusEffectProcessResult> results = statusEffectProcessor.ProcessPhaseEnd(unit, round); // 유닛의 화상과 실명 처리
+            if (results.Count > 0) // 처리 결과 존재 확인
+            { // 처리 결과 알림 시작
+                StatusEffectsProcessed?.Invoke(unit, results); // 상태 처리 결과 알림
+            } // 처리 결과 알림 종료
+        } // 개별 종료 상태 처리 종료
+    } // 종료 상태 일괄 처리 종료
     private void ProcessUnits(IReadOnlyList<BattleUnitRuntime> units, int round) // 진영 상태 이상 일괄 처리
     { // 일괄 처리 시작
         for (int unitIndex = 0; unitIndex < units.Count; unitIndex++) // 유닛 목록 순회
