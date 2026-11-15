@@ -6,6 +6,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
     public BattleUnitRuntime Target { get; private set; } // 대상 아군 조회
+    public BattleUnitRuntime SharedDamageRecipient { get; private set; } // 피해 분담 동료 조회
     public EnemyActionType ActionType { get; } // 행동 종류 조회
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public int Amount { get; } // 층 난이도 포함 예정 수치 조회
@@ -94,9 +95,31 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return false;
         }
 
+        if (Target != target) // 기존 공격 대상 변경 확인
+        { // 기존 분담 해제 시작
+            SharedDamageRecipient = null; // 이전 대상의 피해 분담 해제
+        } // 기존 분담 해제 종료
         Target = target; // 새 대상 저장
         return true;
     }
+    internal bool SetDamageShare(BattleUnitRuntime recipient) // 생존 동료를 피해 분담자로 설정
+    { // 피해 분담 설정 시작
+        if (recipient == null || recipient.IsDead || recipient == Target || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 분담자와 공격 유효성 확인
+        { // 분담 설정 불가 시작
+            return false; // 설정 실패 반환
+        } // 분담 설정 불가 종료
+        SharedDamageRecipient = recipient; // 현재 공격의 피해 분담자 저장
+        return true; // 설정 성공 반환
+    } // 피해 분담 설정 종료
+    internal bool ClearDamageShare(BattleUnitRuntime recipient) // 지정 분담자의 피해 분담 해제
+    { // 피해 분담 해제 시작
+        if (recipient == null || SharedDamageRecipient != recipient) // 기존 분담자 일치 확인
+        { // 해제 대상 없음 시작
+            return false; // 변경 없음 반환
+        } // 해제 대상 없음 종료
+        SharedDamageRecipient = null; // 지정 분담자 연결 해제
+        return true; // 해제 성공 반환
+    } // 피해 분담 해제 종료
 
     internal void SetPreparationPreviewRule(Func<BattleEnemyAction, bool> rule) // 방어 준비 예고 규칙 연결
     { // 예고 규칙 연결 시작
@@ -110,8 +133,29 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     { // 예정 피해 계산 시작
         return PreviewDamageWithBlock(Target == null ? 0 : getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this)); // 공격 순서별 방어도 반영
     } // 예정 피해 계산 종료
+    public int PreviewSharedDamage() // 분담자가 받을 실제 피해 예고
+    { // 분담 피해 예고 시작
+        if (Target == null || Target.IsDead || SharedDamageRecipient == null || SharedDamageRecipient.IsDead) // 공격 대상과 생존 분담자 확인
+        { // 분담 피해 없음 처리 시작
+            return 0; // 분담 피해 없음 반환
+        } // 분담 피해 없음 처리 종료
+        int block = getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this); // 공격 전 대상의 예상 방어도 조회
+        BattleDamageResult preview = PreviewDamageBeforeShare(block); // 분담 전 대상의 방어 적용 피해 계산
+        int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 방어 적용 후 남은 피해 계산
+        return Math.Min(SharedDamageRecipient.CurrentHealth, remaining / 2); // 분담자의 남은 체력을 반영한 피해 반환
+    } // 분담 피해 예고 종료
     internal BattleDamageResult PreviewDamageWithBlock(int block) // 지정 방어도 기준 예정 피해 계산
-    {
+    { // 분담을 포함한 피해 예고 시작
+        BattleDamageResult preview = PreviewDamageBeforeShare(block); // 대상 방어를 적용한 기본 예고 계산
+        if (Target != null && SharedDamageRecipient != null && !SharedDamageRecipient.IsDead) // 생존한 피해 분담자 확인
+        { // 분담 예고 계산 시작
+            int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 대상 방어 적용 후 남은 피해 계산
+            return preview.WithAppliedDamage(Math.Min(Target.CurrentHealth, remaining - remaining / 2)); // 홀수는 원래 대상에 배정한 예고 반환
+        } // 분담 예고 계산 종료
+        return preview; // 일반 공격 예고 반환
+    } // 분담을 포함한 피해 예고 종료
+    private BattleDamageResult PreviewDamageBeforeShare(int block) // 지정 방어도 기준 분담 전 예정 피해 계산
+    { // 분담 전 피해 예고 시작
         if (Target == null ||
             Target.IsDead)
         {
@@ -161,7 +205,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             Target.TakeDamage(
                 modifiedAmount,
                 DamageType,
-                Actor); // 대상 피해 적용
+                Actor, // 공격 적 전달
+                SharedDamageRecipient); // 생존 분담자를 포함한 대상 피해 적용
 
         return BattleEnemyActionResult.FromDamage(
             damageResult); // 피해 행동 결과 반환

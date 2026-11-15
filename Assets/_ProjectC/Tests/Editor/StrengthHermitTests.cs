@@ -15,7 +15,7 @@ public sealed class StrengthHermitTests // 힘과 은둔자 임시 능력 검사
         public bool CanDeploy(CharacterData character) => true; // 출전 가능 상태 반환
     } // 출전 상태 제공 종료
     [UnityTest] // 탐사 저장과 복원 검사 지정
-    public IEnumerator ExplorationSave_RestoresBothExclusiveCards() // 두 전용 카드의 실제 저장 복원 확인
+    public IEnumerator ExplorationSave_RestoresFourExclusiveCards() // 네 전용 카드의 실제 저장 복원 확인
     { // 탐사 저장 복원 검사 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 탐사 저장 경로 생성
@@ -31,7 +31,7 @@ public sealed class StrengthHermitTests // 힘과 은둔자 임시 능력 검사
             { // 로비 준비 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 로비 준비 대기 종료
-            PartyDepartureTestSupport.StartExploration(8, 9); // 힘과 은둔자로 탐사 시작
+            PartyDepartureTestSupport.StartExploration(8, 9, 10, 11); // 힘·은둔자·운명·정의로 탐사 시작
             for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && Object.FindFirstObjectByType<ExplorationPlayerController>() == null;) // 탐사 플레이어 준비 대기
             { // 탐사 플레이어 대기 시작
                 yield return null; // 다음 프레임 대기
@@ -46,13 +46,19 @@ public sealed class StrengthHermitTests // 힘과 은둔자 임시 능력 검사
             Assert.IsTrue(ExplorationSaveService.Load(path)); // 실제 탐사 저장 복원 확인
             bool strengthFound = false; // 힘 전용 카드 복원 여부 초기화
             bool hermitFound = false; // 은둔자 전용 카드 복원 여부 초기화
+            bool fateFound = false; // 운명 전용 카드 복원 여부 초기화
+            bool justiceFound = false; // 정의 전용 카드 복원 여부 초기화
             foreach (RunDeckCardEntry entry in RunDeckManager.Instance.Cards) // 복원된 회차 카드 순회
             { // 전용 카드 확인 시작
                 strengthFound |= entry.Card.CardId == "CRD_ARC_08_GUARD" && entry.Owner.CharacterId == "ARC_08"; // 힘 카드와 소유자 확인
                 hermitFound |= entry.Card.CardId == "CRD_ARC_09_ARRANGE" && entry.Owner.CharacterId == "ARC_09"; // 은둔자 카드와 소유자 확인
+                fateFound |= entry.Card.CardId == "CRD_ARC_10_REROLL" && entry.Owner.CharacterId == "ARC_10"; // 운명 카드와 소유자 확인
+                justiceFound |= entry.Card.CardId == "CRD_ARC_11_SHARE" && entry.Owner.CharacterId == "ARC_11"; // 정의 카드와 소유자 확인
             } // 전용 카드 확인 종료
             Assert.IsTrue(strengthFound); // 힘 전용 카드 복원 확인
             Assert.IsTrue(hermitFound); // 은둔자 전용 카드 복원 확인
+            Assert.IsTrue(fateFound); // 운명 전용 카드 복원 확인
+            Assert.IsTrue(justiceFound); // 정의 전용 카드 복원 확인
         } // 실제 탐사 저장 검사 종료
         finally // 테스트 저장 파일 정리
         { // 저장 파일 정리 시작

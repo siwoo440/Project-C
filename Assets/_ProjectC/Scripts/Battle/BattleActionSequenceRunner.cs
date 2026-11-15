@@ -154,6 +154,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 effectType == CardEffectType.SelectPartner || // 파트너 지정 지원 연출
                 effectType == CardEffectType.GuardAllyAttack || // 동료 보호 지원 연출
                 effectType == CardEffectType.ArrangeDrawTop || // 덱 순서 정리 지원 연출
+                effectType == CardEffectType.RerollRandomAttack || // 공격 재굴림 지원 연출
+                effectType == CardEffectType.ShareAllyAttack || // 동료 피해 분담 지원 연출
                 effectType == CardEffectType.ProtectAttackTarget || // 공격 예고 보호 지원 연출
                 effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
                 effectType == CardEffectType.Heal ||

@@ -43,7 +43,7 @@ MonoBehaviour:
     statusEffectValue: 1
     statusEffectDuration: 1
     statusEffectMaximumStacks: 1
-    targetRule: 0
+    targetRule: 2
     minimumActionSpeed: 5
     maximumActionSpeed: 7
   - displayName: "중독 분사"

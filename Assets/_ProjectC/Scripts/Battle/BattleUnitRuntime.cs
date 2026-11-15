@@ -297,7 +297,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 피해 처리
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null) // 피해와 선택적 분담 처리
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -305,6 +305,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 무효 처리 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit); // 최종 피해 계산
+        int sharedDamage = 0; // 동료에게 분담할 피해 초기화
+        if (sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead) // 생존한 다른 아군 분담자 확인
+        { // 피해 분담 계산 시작
+            int remainingDamage = Math.Max(0, damageResult.FinalDamage - damageResult.AbsorbedDamage); // 방어와 방어도 적용 후 피해 계산
+            sharedDamage = remainingDamage / 2; // 내림한 절반을 분담자에게 배정
+            damageResult = damageResult.WithAppliedDamage(Math.Min(CurrentHealth, remainingDamage - sharedDamage)); // 홀수 한 점을 원래 대상에 배정
+        } // 피해 분담 계산 종료
         if (consumePreparation) // 방어 준비 발동 확인
         { // 준비 소모 시작
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 발동한 방어 준비 제거
@@ -331,8 +338,37 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             Defeated?.Invoke(sourceUnit, this); // 발생자 포함 처치 완료 알림
             Died?.Invoke(this); // 사망 이벤트 알림
         } // 사망 알림 종료
+        if (sharedDamage > 0 && sharingAlly != null && !sharingAlly.IsDead) // 실제 분담 피해와 생존 상태 확인
+        { // 분담 피해 적용 시작
+            sharingAlly.TakeSharedDamage(sharedDamage, damageType, sourceUnit); // 추가 방어 계산 없이 분담 피해 적용
+        } // 분담 피해 적용 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
+    private void TakeSharedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 방어 계산이 끝난 분담 피해 적용
+    { // 분담 피해 처리 시작
+        if (amount <= 0 || IsDead) // 실제 피해와 생존 상태 확인
+        { // 분담 피해 없음 처리 시작
+            return; // 분담 피해 처리 중단
+        } // 분담 피해 없음 처리 종료
+        int applied = Math.Min(CurrentHealth, amount); // 남은 체력에 맞춘 피해량 계산
+        BattleDamageResult result = new BattleDamageResult(amount, 0, amount, applied, damageType); // 추가 방어와 방어도 없는 피해 결과 생성
+        CurrentHealth -= applied; // 분담자의 체력 감소
+        bool diedNow = CurrentHealth == 0; // 분담자의 사망 여부 확인
+        if (diedNow) // 새 사망 여부 확인
+        { // 사망 상태 기록 시작
+            IsDead = true; // 사망 상태 저장
+        } // 사망 상태 기록 종료
+        DamageTaken?.Invoke(this, result); // 분담 피해 화면 알림
+        HealthChanged?.Invoke(this); // 분담자 체력 갱신 알림
+        DamageResolved?.Invoke(sourceUnit, this, result); // 발생자 포함 분담 피해 알림
+        ApplyDamageMental(applied, diedNow, sourceUnit); // 분담 피해의 정신력 변화 적용
+        if (diedNow) // 신규 사망 확인
+        { // 분담자 사망 처리 시작
+            ClearStatusEffects(); // 사망한 분담자의 상태 이상 제거
+            Defeated?.Invoke(sourceUnit, this); // 분담자 처치 알림
+            Died?.Invoke(this); // 분담자 사망 알림
+        } // 분담자 사망 처리 종료
+    } // 분담 피해 처리 종료
     private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
     { // 준비 적용 확인 시작
         if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy) // 유효한 적의 피해 확인

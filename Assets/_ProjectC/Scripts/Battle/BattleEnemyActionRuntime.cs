@@ -154,6 +154,50 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 변경된 공격 예고 알림
         return true; // 유도 성공 반환
     } // 공격 유도 종료
+    public bool CanRerollRandomAttack(BattleUnitRuntime enemyUnit) // 무작위 예정 공격 재굴림 가능 확인
+    { // 재굴림 가능 확인 시작
+        if (disposed || enemyUnit == null || enemyUnit.IsDead || CollectLivingAllies().Count < 2) // 관리자와 복수 생존 대상 확인
+        { // 재굴림 불가 처리 시작
+            return false; // 재굴림 불가 반환
+        } // 재굴림 불가 처리 종료
+        BattleEnemyAction action = FindAction(enemyUnit); // 선택 적의 예정 행동 조회
+        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.TargetRule == EnemyTargetRule.RandomLiving; // 무작위 공격 재굴림 가능 여부 반환
+    } // 재굴림 가능 확인 종료
+    public bool TryRerollRandomAttack(BattleUnitRuntime enemyUnit) // 무작위 예정 공격 대상 다시 선택
+    { // 무작위 공격 재굴림 시작
+        if (!CanRerollRandomAttack(enemyUnit)) // 재굴림 가능 여부 확인
+        { // 재굴림 불가 처리 시작
+            return false; // 재굴림 실패 반환
+        } // 재굴림 불가 처리 종료
+        BattleEnemyAction action = FindAction(enemyUnit); // 선택 적의 예정 공격 조회
+        BattleUnitRuntime target = SelectTarget(EnemyTargetRule.RandomLiving); // 기존 대상을 포함한 생존 아군 재추첨
+        if (!action.ChangeTarget(target)) // 재추첨된 대상 적용 확인
+        { // 대상 적용 실패 시작
+            return false; // 재굴림 실패 반환
+        } // 대상 적용 실패 종료
+        StateChanged?.Invoke(); // 재굴림된 공격 예고 알림
+        return true; // 재굴림 성공 반환
+    } // 무작위 공격 재굴림 종료
+    public bool CanShareAllyAttack(BattleUnitRuntime protector, BattleUnitRuntime ally) // 동료 공격 피해 분담 가능 확인
+    { // 피해 분담 가능 확인 시작
+        return CanProtectAlly(protector, ally); // 다른 생존 아군의 예정 공격 존재 여부 반환
+    } // 피해 분담 가능 확인 종료
+    public bool TryShareAllyAttack(BattleUnitRuntime protector, BattleUnitRuntime ally) // 동료의 첫 예정 공격 피해 분담 설정
+    { // 피해 분담 설정 시작
+        if (!CanShareAllyAttack(protector, ally)) // 분담 가능 여부 확인
+        { // 분담 불가 처리 시작
+            return false; // 분담 실패 반환
+        } // 분담 불가 처리 종료
+        foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
+        { // 첫 동료 공격 검색 시작
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally && action.SetDamageShare(protector)) // 동료의 첫 공격에 분담자 설정
+            { // 분담 설정 완료 시작
+                StateChanged?.Invoke(); // 변경된 피해 예고 알림
+                return true; // 분담 설정 성공 반환
+            } // 분담 설정 완료 종료
+        } // 첫 동료 공격 검색 종료
+        return false; // 설정할 공격 없음 반환
+    } // 피해 분담 설정 종료
     public bool CanProtectAlly(BattleUnitRuntime guard, BattleUnitRuntime ally) // 동료 대신 공격받기 가능 여부 확인
     { // 동료 보호 가능 확인 시작
         if (disposed || guard == null || ally == null || guard == ally || guard.IsDead || ally.IsDead || guard.Team != BattleTeam.Ally || ally.Team != BattleTeam.Ally || !ContainsUnit(allyUnits, guard) || !ContainsUnit(allyUnits, ally)) // 보호자와 동료의 전투 상태 확인
@@ -359,6 +403,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 실행 행동 처리 시작
                 continue; // 대상 재선택 제외
             } // 실행 행동 처리 종료
+            changed |= action.ClearDamageShare(allyUnit); // 사망한 분담자의 연결 해제
             if (action.Target != allyUnit) // 사망 대상 일치 확인
             { // 다른 대상 처리 시작
                 continue; // 다음 행동 이동

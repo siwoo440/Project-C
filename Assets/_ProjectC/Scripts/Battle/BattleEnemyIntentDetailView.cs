@@ -250,6 +250,10 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
 
             builder.AppendLine(
                 $"예상 피해 : {modifiedDamage} → {previewResult.AppliedDamage}"); // 예상 실제 피해 표시
+            if (currentAction.SharedDamageRecipient != null && !currentAction.SharedDamageRecipient.IsDead) // 생존한 피해 분담자 확인
+            { // 분담 피해 안내 시작
+                builder.AppendLine($"분담 피해 : {currentAction.SharedDamageRecipient.DisplayName} {currentAction.PreviewSharedDamage()}"); // 분담자의 실제 예상 피해 표시
+            } // 분담 피해 안내 종료
         }
         else if (currentAction.ActionType == EnemyActionType.ApplyStatusEffect)
         {

@@ -12,5 +12,7 @@ public enum CardEffectType // 카드 효과 종류
     GainBlock, // 피해 흡수 방어도 획득 효과
     SelectPartner, // 연인의 동료 파트너 지정 효과
     GuardAllyAttack, // 동료의 예정 공격 대신 받기 효과
-    ArrangeDrawTop // 덱 위 카드 순서 정리 효과
+    ArrangeDrawTop, // 덱 위 카드 순서 정리 효과
+    RerollRandomAttack, // 적 무작위 공격 대상 재굴림 효과
+    ShareAllyAttack // 동료의 예정 공격 피해 분담 효과
 } // 열거형 종료

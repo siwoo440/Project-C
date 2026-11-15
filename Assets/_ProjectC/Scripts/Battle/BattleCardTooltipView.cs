@@ -77,6 +77,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 무작위 공격 재굴림 확인
+        { // 재굴림 이름 시작
+            return "공격 대상 재굴림"; // 재굴림 효과 이름 반환
+        } // 재굴림 이름 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack) // 동료 피해 분담 확인
+        { // 피해 분담 이름 시작
+            return "동료 피해 분담"; // 피해 분담 효과 이름 반환
+        } // 피해 분담 이름 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
         { // 동료 보호 이름 시작
             return "동료 보호"; // 동료 보호 효과 이름 반환
@@ -113,6 +121,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 무작위 공격 재굴림 확인
+        { // 재굴림 상세 시작
+            return "무작위 공격 대상 재선택. 같은 대상도 선택 가능"; // 재굴림 상세 반환
+        } // 재굴림 상세 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack) // 동료 피해 분담 확인
+        { // 피해 분담 상세 시작
+            return "다른 아군의 첫 예정 공격을 방어 후 절반씩 분담"; // 피해 분담 상세 반환
+        } // 피해 분담 상세 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
         { // 동료 보호 상세 시작
             return "다른 아군의 첫 예정 공격 대신 받기"; // 동료 보호 상세 반환

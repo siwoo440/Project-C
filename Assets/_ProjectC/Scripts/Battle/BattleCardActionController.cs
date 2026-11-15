@@ -355,6 +355,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 동료 보호 불가 시작
             return false; // 선택 불가 반환
         } // 동료 보호 불가 종료
+        if (cardInstance.EffectType == CardEffectType.RerollRandomAttack && !enemyActions.CanRerollRandomAttack(targetUnit)) // 적 무작위 공격 재굴림 가능 확인
+        { // 재굴림 불가 처리 시작
+            return false; // 선택 불가 반환
+        } // 재굴림 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack && !enemyActions.CanShareAllyAttack(cardInstance.OwnerUnit, targetUnit)) // 동료의 예정 공격 분담 가능 확인
+        { // 피해 분담 불가 처리 시작
+            return false; // 선택 불가 반환
+        } // 피해 분담 불가 처리 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner && !loversPartner.CanSetPartner(cardInstance.OwnerUnit, targetUnit)) // 생존한 다른 파트너 후보 확인
         { // 파트너 지정 불가 처리 시작
             return false; // 선택 불가 반환
@@ -425,7 +433,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -458,6 +466,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 운명의 공격 대상 재굴림 확인
+        { // 무작위 대상 재굴림 시작
+            return enemyActions.TryRerollRandomAttack(targetUnit) ? 1 : 0; // 재굴림 성공 여부 반환
+        } // 무작위 대상 재굴림 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack) // 정의의 동료 피해 분담 확인
+        { // 동료 피해 분담 시작
+            return enemyActions.TryShareAllyAttack(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 분담 설정 성공 여부 반환
+        } // 동료 피해 분담 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 힘의 동료 보호 효과 확인
         { // 동료 보호 처리 시작
             return enemyActions.TryProtectAlly(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 첫 예정 공격 대신 받기 결과 반환
@@ -552,6 +568,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 공격 대상 재굴림 확인
+        { // 재굴림 문구 시작
+            return "무작위 공격 대상 재굴림"; // 재굴림 효과 이름 반환
+        } // 재굴림 문구 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack) // 피해 분담 효과 확인
+        { // 피해 분담 문구 시작
+            return "동료 공격 피해 분담"; // 피해 분담 효과 이름 반환
+        } // 피해 분담 문구 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
         { // 동료 보호 문구 시작
             return "동료 공격 대신 받기"; // 동료 보호 이름 반환

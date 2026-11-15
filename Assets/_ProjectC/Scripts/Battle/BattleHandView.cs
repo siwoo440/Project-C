@@ -306,6 +306,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 보호 대상 없음 처리 시작
             return false; // 동료 보호 카드 사용 차단
         } // 보호 대상 없음 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ShareAllyAttack && !turnRuntime.HasOtherLivingAlly(cardInstance.OwnerUnit)) // 피해를 나눌 생존 동료 확인
+        { // 분담 대상 없음 처리 시작
+            return false; // 피해 분담 카드 사용 차단
+        } // 분담 대상 없음 처리 종료
         if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.RecoverDiscard && runtimeDeck.DiscardPileCount == 0) // 회수할 버린 카드 확인
         { // 회수 후보 없음 처리 시작
             return false; // 버린 카드 회수 사용 차단
