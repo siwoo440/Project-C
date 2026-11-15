@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_ARC_04_GUARD
   displayName: 황제의 수호
-  description: 적 하나의 공격을 자신에게 유도하고 2턴간 물리 방어력 3 증가
+  description: 적 하나의 공격을 자신에게 유도하고 임시 방어도 3 획득
   artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
   cardType: 4
   cardTags: 0
   targetType: 3
-  apCost: 1
+  apCost: 2
   effectType: 5
   damageType: 0
   effectValue: 3

@@ -128,7 +128,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
                 return $"다음 아군 턴 시작 체력 회복 {effectiveValue}"; // 예약 회복 설명 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
-                return $"다음 적 공격의 방어력 증가 {effectiveValue}"; // 방어 준비 설명 반환
+                return $"다음 적 공격 직전 방어도 {effectiveValue} 획득"; // 방어 준비 설명 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
                 return "적용 시 정신력 4 감소"; // 정신력 교란 설명 반환
             default: // 알 수 없는 종류

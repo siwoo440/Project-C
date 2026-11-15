@@ -292,9 +292,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
         } // 사망 유닛 처리 종료
         BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
-        int bonusDefense = preparation == null ? 0 : preparation.EffectiveValue; // 임시 방어 수치 계산
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense + bonusDefense, MagicalResistance + bonusDefense); // 준비 효과 포함 피해 계산
-        return damageResult.WithBlock(blockOverride ?? CurrentBlock, CurrentHealth); // 방어도와 체력 포함 결과 반환
+        int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
+        int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
+        return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
     public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 피해 처리
     { // 피해 처리 시작
@@ -307,6 +308,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         if (consumePreparation) // 방어 준비 발동 확인
         { // 준비 소모 시작
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 발동한 방어 준비 제거
+            GainBlock(damageResult.PreparedBlock); // 피해 적용 직전 준비 방어도 획득
         } // 준비 소모 종료
         CurrentHealth = Mathf.Max(0, CurrentHealth - damageResult.AppliedDamage); // 현재 체력 감소
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
@@ -333,7 +335,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 피해 처리 종료
     private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
     { // 준비 적용 확인 시작
-        if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy || (damageType != BattleDamageType.Physical && damageType != BattleDamageType.Magical)) // 적의 물리·마법 공격 확인
+        if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy) // 유효한 적의 피해 확인
         { // 준비 미적용 처리 시작
             return null; // 준비 효과 없음 반환
         } // 준비 미적용 처리 종료
