@@ -62,4 +62,32 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 0}
     potion: {fileID: 11400000, guid: c0384ec08d434caa9a332a19dcd744db, type: 2}
+  - offerId: SHOP_RLC_ASH_SEAL
+    offerType: 1
+    price: 220
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: a7acc046d2b7cbb4b896c2dc98e02a93, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_MUSIC_BOX
+    offerType: 1
+    price: 320
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 4d587820f79439740b6a6f5c0c940cb0, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BRONZE_CENSER
+    offerType: 1
+    price: 300
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 4e51487af9b66ca47be3a336ece115ba, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FLOATING_STONE
+    offerType: 1
+    price: 270
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 3963d505d8ba7b24eb81dbe983391c01, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
