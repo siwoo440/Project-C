@@ -11,6 +11,14 @@ public sealed class FacilityUpgradeDebugView : MonoBehaviour // 35일차 임시 
     private Vector2 detailScroll; // 상세 정보 스크롤 위치
     private bool panelVisible; // 강화 패널 표시 여부
 
+    public void OpenPanel() // 로비에서 설비 강화 화면 열기
+    { // 설비 화면 열기 시작
+        if (IsLobbyScene()) // 로비 씬 여부 확인
+        { // 로비 화면 열기 시작
+            panelVisible = true; // 설비 강화 화면 표시
+        } // 로비 화면 열기 종료
+    } // 설비 화면 열기 종료
+
     private void Update() // 키보드 입력 처리
     {
         if (!IsLobbyScene()) // 로비 Scene 여부 확인
@@ -33,7 +41,6 @@ public sealed class FacilityUpgradeDebugView : MonoBehaviour // 35일차 임시 
             return; // 다른 Scene에서 UI 출력 중단
         }
 
-        GUI.Box(new Rect(12f, 12f, 220f, 32f), "F7 : Facility Upgrade"); // 강화 UI 단축키 안내
         if (!panelVisible) // 패널 숨김 여부 확인
         {
             return; // 상세 UI 출력 중단
@@ -42,7 +49,7 @@ public sealed class FacilityUpgradeDebugView : MonoBehaviour // 35일차 임시 
         FacilityUpgradeManager facilityManager = FacilityUpgradeManager.EnsureInstance(); // 설비 관리자 준비
         PlayerResourceManager resourceManager = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
         GUILayout.BeginArea(new Rect(35f, 55f, 980f, 650f), GUI.skin.window); // 강화 화면 전체 영역 시작
-        GUILayout.Label("35 Day - Ceruleon Facility Upgrade"); // 강화 화면 제목 출력
+        GUILayout.Label("설비 강화"); // 강화 화면 제목 출력
         GUILayout.Label($"Gold {resourceManager.Gold}   Screw {resourceManager.Screw}   Iron {resourceManager.IronPlate}   Wire {resourceManager.Wire}"); // 현재 보유 자원 출력
         GUILayout.Space(8f); // 상단 여백 추가
         GUILayout.BeginHorizontal(); // 설비 목록과 상세 영역 가로 배치 시작
@@ -50,10 +57,10 @@ public sealed class FacilityUpgradeDebugView : MonoBehaviour // 35일차 임시 
         DrawFacilityDetail(facilityManager); // 우측 선택 설비 상세 출력
         GUILayout.EndHorizontal(); // 가로 배치 종료
         GUILayout.Space(8f); // 하단 여백 추가
-        if (GUILayout.Button("DEBUG : Gold / Screw / Iron / Wire +500", GUILayout.Height(34f))) // 테스트 자원 지급 버튼 출력
-        {
-            resourceManager.AddResources(500, 500, 500, 500); // 테스트용 자원 지급
-        }
+        if (GUILayout.Button("닫기", GUILayout.Height(34f))) // 강화 화면 닫기 버튼 출력
+        { // 강화 화면 닫기 시작
+            panelVisible = false; // 설비 강화 화면 숨김
+        } // 강화 화면 닫기 종료
         GUILayout.EndArea(); // 강화 화면 전체 영역 종료
     }
 

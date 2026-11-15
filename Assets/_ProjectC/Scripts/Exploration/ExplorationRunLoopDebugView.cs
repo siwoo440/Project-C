@@ -67,22 +67,14 @@ public sealed class ExplorationRunLoopDebugView : MonoBehaviour // 45일차 탐�
         sceneLoadRequested = false; // 다음 Scene 이동 허용
     }
 
-    private void OnGUI() // 탐사 성공·거점 정산 개발 UI 출력
-    {
-        string sceneName =
-            SceneManager.GetActiveScene().name; // 현재 Scene 이름 조회
-
-        if (sceneName == ExplorationSceneName)
-        {
-            DrawExplorationReturnPanel(); // 탐사 성공 후 거점 복귀 UI 출력
-            return;
-        }
-
-        if (sceneName == LobbySceneName)
-        {
-            DrawLobbySettlementPanel(); // 거점 정산·다음 탐사 UI 출력
-        }
-    }
+    private void OnGUI() // 탐사 성공 후 거점 복귀 화면 출력
+    { // 탐사 복귀 화면 확인 시작
+        string sceneName = SceneManager.GetActiveScene().name; // 현재 씬 이름 조회
+        if (sceneName == ExplorationSceneName) // 탐사 씬 여부 확인
+        { // 탐사 복귀 화면 출력 시작
+            DrawExplorationReturnPanel(); // 탐사 성공 후 거점 복귀 화면 출력
+        } // 탐사 복귀 화면 출력 종료
+    } // 탐사 복귀 화면 확인 종료
 
     private void DrawExplorationReturnPanel() // 탐사 성공 후 거점 복귀 패널
     {
@@ -124,137 +116,6 @@ public sealed class ExplorationRunLoopDebugView : MonoBehaviour // 45일차 탐�
         GUILayout.EndArea(); // 거점 복귀 패널 종료
     }
 
-    private void DrawLobbySettlementPanel() // Lobby 정산과 다음 탐사 패널
-    {
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
-
-        CharacterProgressionManager progressionManager =
-            CharacterProgressionManager.EnsureInstance(); // 영구 성장 관리자 준비
-
-        CharacterAffinityManager affinityManager =
-            CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비
-
-        PlayerResourceManager resourceManager =
-            PlayerResourceManager.EnsureInstance(); // 영구 자원 관리자 준비
-
-        Rect panelRect =
-            new Rect(
-                Screen.width - 610f,
-                55f,
-                570f,
-                610f); // 오른쪽 거점 정산 영역 계산
-
-        GUILayout.BeginArea(
-            panelRect,
-            GUI.skin.window); // 거점 정산 패널 시작
-
-        GUILayout.Label(
-            "45일차 - 탐사 정산 / 거점 루프"); // 정산 패널 제목 출력
-
-        GUILayout.Space(8f); // 제목 여백 추가
-
-        if (sessionManager.IsExplorationCompleted &&
-            sessionManager.IsExplorationSuccess)
-        {
-            DrawCompletedRunSummary(
-                sessionManager); // 지난 탐사 성공 정산 출력
-        }
-        else
-        {
-            GUILayout.Label(
-                "정산할 완료 탐사가 없습니다."); // 신규 게임 또는 새 탐사 준비 상태 출력
-
-            GUILayout.Label(
-                "새 탐사를 시작하면 1F와 새 Seed로 시작합니다."); // 새 탐사 안내 출력
-        }
-
-        GUILayout.Space(12f); // 정산과 영구 상태 사이 여백 추가
-
-        GUILayout.Label(
-            "현재 영구 진행"); // 영구 진행 제목 출력
-
-        GUILayout.Label(
-            $"캐릭터 Lv.{progressionManager.Level}  " +
-            $"EXP {progressionManager.CurrentExperience}" +
-            $"/{progressionManager.RequiredExperience}"); // 현재 캐릭터 성장 출력
-
-        GUILayout.Label(
-            $"호감도 {affinityManager.Affinity}"); // 현재 누적 호감도 출력
-
-        GUILayout.Label(
-            $"Gold {resourceManager.Gold}"); // 현재 보유 Gold 출력
-
-        GUILayout.Label(
-            $"나사 {resourceManager.Screw} / " +
-            $"철판 {resourceManager.IronPlate} / " +
-            $"전선 {resourceManager.Wire}"); // 현재 보유 재료 출력
-
-        GUILayout.Space(12f); // 시설 안내 전 여백 추가
-
-        GUILayout.Label(
-            "F7 : 기존 Facility Upgrade 화면"); // 기존 설비 강화 기능 안내
-
-        GUILayout.Label(
-            "정산 자원을 사용해 시설을 강화한 뒤 다음 탐사를 시작합니다."); // 거점 성장 루프 안내
-
-        GUILayout.Space(12f); // 다음 탐사 버튼 전 여백 추가
-
-        GUI.enabled =
-            !sceneLoadRequested; // Scene 이동 중 중복 입력 차단
-
-        string startButtonLabel =
-            sessionManager.IsExplorationCompleted
-                ? "정산 완료 · 다음 탐사 시작"
-                : "새 탐사 시작"; // 현재 상태별 시작 버튼 문구 결정
-
-        if (GUILayout.Button(
-                startButtonLabel,
-                GUILayout.Height(52f)))
-        {
-            StartNewExploration(); // 런 초기화 후 새 탐사 이동
-        }
-
-        GUI.enabled = true; // GUI 활성 상태 복구
-        GUILayout.EndArea(); // 거점 정산 패널 종료
-    }
-
-    private static void DrawCompletedRunSummary(
-        ExplorationSessionManager sessionManager) // 완료 탐사 정산 정보 출력
-    {
-        GUILayout.Label(
-            "탐사 성공"); // 성공 결과 제목 출력
-
-        GUILayout.Label(
-            $"최종 도달 층 : {sessionManager.CompletedFloor}F"); // 완료 층 출력
-
-        GUILayout.Label(
-            $"클리어 조우 : {sessionManager.CompletedEncounterCount}개"); // 클리어 조우 수 출력
-
-        GUILayout.Space(6f); // 보상 구역 여백 추가
-
-        GUILayout.Label(
-            "이번 탐사 실제 획득량"); // 탐사 보상 합계 제목 출력
-
-        GUILayout.Label(
-            $"EXP +{sessionManager.RunExperienceGained}"); // 런 경험치 합계 출력
-
-        GUILayout.Label(
-            $"Gold +{sessionManager.RunGoldGained}"); // 런 골드 합계 출력
-
-        GUILayout.Label(
-            $"나사 +{sessionManager.RunScrewGained}"); // 런 나사 합계 출력
-
-        GUILayout.Label(
-            $"철판 +{sessionManager.RunIronPlateGained}"); // 런 철판 합계 출력
-
-        GUILayout.Label(
-            $"전선 +{sessionManager.RunWireGained}"); // 런 전선 합계 출력
-
-        GUILayout.Label(
-            $"호감도 +{sessionManager.LastExplorationSuccessAffinity}"); // 탐사 성공 호감도 출력
-    }
-
     private void ReturnToLobby() // 탐사 성공 결과 유지 후 거점 이동
     {
         ExplorationSessionManager sessionManager =
@@ -275,20 +136,6 @@ public sealed class ExplorationRunLoopDebugView : MonoBehaviour // 45일차 탐�
 
         LoadScene(
             LobbySceneName); // 탐사 결과를 초기화하지 않고 Lobby 이동
-    }
-
-    private void StartNewExploration() // 다음 탐사 상태 초기화 후 이동
-    {
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
-
-        sessionManager.ResetExploration(); // 지난 런 상태와 정산 합계 초기화
-
-        Debug.Log(
-            "[Exploration][Day45] 거점에서 다음 탐사를 시작합니다."); // 새 탐사 시작 로그
-
-        LoadScene(
-            ExplorationSceneName); // 새 1F 탐사 Scene 이동
     }
 
     private void LoadScene(

@@ -69,14 +69,11 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
                 yield return null; // 다음 프레임 대기
             } // 메뉴 대기 종료
             Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 테스트용 거점 이동
-            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 거점 편성 화면 대기
-            { // 거점 대기 시작
+            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+            { // 로비 대기 시작
                 yield return null; // 다음 프레임 대기
-            } // 거점 대기 종료
-            PartyRosterView rosterView = Object.FindFirstObjectByType<PartyRosterView>(); // 거점 편성 화면 조회
-            Button[] rosterButtons = rosterView.GetComponentsInChildren<Button>(); // 캐릭터와 출발 버튼 조회
-            rosterButtons[0].onClick.Invoke(); // 첫 캐릭터 선택
-            rosterButtons[22].onClick.Invoke(); // 탐사 출발
+            } // 로비 대기 종료
+            PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
             for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationPlayerController>() == null; frame++) // 탐사 플레이어 생성 대기
             { // 탐사 대기 시작
                 yield return null; // 다음 프레임 대기
@@ -316,6 +313,8 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         string warning = panel.Find("WarningMessage").GetComponent<TMP_Text>().text; // 경고 문구 조회
         StringAssert.Contains("저장", warning); // 저장 데이터 경고 확인
         StringAssert.Contains("처음", warning); // 처음부터 시작 경고 확인
+        StringAssert.Contains("자동 저장", warning); // 자동 저장 덮어쓰기 안내 확인
+        StringAssert.Contains("수동 저장은 유지", warning); // 수동 저장 유지 안내 확인
         panel.Find("CancelNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 취소
         Assert.IsFalse(panel.gameObject.activeSelf); // 경고 패널 닫힘 확인
         Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메인 메뉴 유지 확인
@@ -625,11 +624,16 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         Assert.IsNotNull(warningPanel.Find("WarningBackdrop").GetComponent<Image>().sprite); // 제작된 경고 배경 이미지 확인
         Assert.IsNotNull(warningPanel.Find("ConfirmNewGame").GetComponent<Image>().sprite); // 제작된 확인 버튼 이미지 확인
         Assert.IsNotNull(warningPanel.Find("CancelNewGame").GetComponent<Image>().sprite); // 제작된 취소 버튼 이미지 확인
+        RectTransform confirmRect = warningPanel.Find("ConfirmNewGame").GetComponent<RectTransform>(); // 새 게임 확인 버튼 영역 조회
+        RectTransform cancelRect = warningPanel.Find("CancelNewGame").GetComponent<RectTransform>(); // 새 게임 취소 버튼 영역 조회
+        Assert.AreEqual(new Vector2(300f, 96f), confirmRect.sizeDelta); // 1.5배 확대된 확인 버튼 크기 확인
+        Assert.AreEqual(new Vector2(300f, 96f), cancelRect.sizeDelta); // 1.5배 확대된 취소 버튼 크기 확인
+        Assert.Greater(cancelRect.anchoredPosition.x - confirmRect.anchoredPosition.x, confirmRect.sizeDelta.x); // 확인과 취소 버튼 간격 확인
         warningPanel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 시작 확인
         yield return null; // 거점 씬 전환 대기
         yield return null; // 거점 초기화 대기
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 진입 확인
-        Assert.IsNotNull(Object.FindFirstObjectByType<PartyRosterView>()); // 편성 화면 연결 확인
+        Assert.IsNull(GameObject.Find("PartyRosterView")); // 기존 파티 편성 창 제거 확인
         GameObject saveEntry = GameObject.Find("SaveMenuEntry"); // 거점 저장 메뉴 버튼 조회
         Assert.IsNotNull(saveEntry); // 거점 저장 메뉴 버튼 존재 확인
         saveEntry.GetComponent<Button>().onClick.Invoke(); // 거점 저장 화면 열기

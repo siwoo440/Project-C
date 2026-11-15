@@ -19,16 +19,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 메뉴 대기 종료
         Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메인 메뉴 진입 확인
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 생성 대기
-        { // 편성 화면 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 화면 대기 종료
-        PartyRosterView view = Object.FindFirstObjectByType<PartyRosterView>(); // 거점 편성 화면 조회
-        Assert.IsNotNull(view); // 편성 화면 생성 확인
-        Button[] buttons = view.GetComponentsInChildren<Button>(); // 캐릭터와 출발 버튼 조회
-        buttons[0].onClick.Invoke(); // 첫 캐릭터 선택
-        Assert.IsTrue(buttons[22].interactable); // 유효한 파티 출발 가능 확인
-        buttons[22].onClick.Invoke(); // 탐사 출발 요청
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 전환 대기
         { // 탐사 대기 시작
             yield return null; // 다음 프레임 대기
@@ -130,15 +125,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        PartyRosterView rosterView = Object.FindFirstObjectByType<PartyRosterView>(); // 편성 화면 조회
-        Button[] buttons = rosterView.GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[4].onClick.Invoke(); // 황제 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0, 4); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -219,14 +210,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[2].onClick.Invoke(); // 여사제 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0, 2); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -298,13 +286,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -415,13 +401,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[7].onClick.Invoke(); // 전차 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(7); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -507,14 +491,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[3].onClick.Invoke(); // 여황제 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0, 3); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -563,13 +544,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[1].onClick.Invoke(); // 마법사 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(1); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -691,14 +670,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[5].onClick.Invoke(); // 교황 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0, 5); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
@@ -763,14 +739,11 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
-        { // 편성 대기 시작
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
-        } // 편성 대기 종료
-        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
-        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
-        buttons[17].onClick.Invoke(); // 별 캐릭터 선택
-        buttons[22].onClick.Invoke(); // 탐사 출발
+        } // 로비 대기 종료
+        PartyDepartureTestSupport.StartExploration(0, 17); // 테스트 파티 준비 후 탐사 시작
         for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기

@@ -73,6 +73,11 @@ public sealed class SaveMenuControllerTests // 저장 화면 연결 검증
             Assert.IsNotNull(confirmation.Find("WarningBackdrop").GetComponent<Image>().sprite); // 제작된 확인창 배경 이미지 확인
             Assert.IsNotNull(confirmation.Find("ConfirmButton").GetComponent<Image>().sprite); // 제작된 확인 버튼 이미지 확인
             Assert.IsNotNull(confirmation.Find("CancelButton").GetComponent<Image>().sprite); // 제작된 취소 버튼 이미지 확인
+            RectTransform confirmRect = confirmation.Find("ConfirmButton").GetComponent<RectTransform>(); // 삭제 확인 버튼 영역 조회
+            RectTransform cancelRect = confirmation.Find("CancelButton").GetComponent<RectTransform>(); // 삭제 취소 버튼 영역 조회
+            Assert.AreEqual(new Vector2(300f, 96f), confirmRect.sizeDelta); // 1.5배 확대된 확인 버튼 크기 확인
+            Assert.AreEqual(new Vector2(300f, 96f), cancelRect.sizeDelta); // 1.5배 확대된 취소 버튼 크기 확인
+            Assert.Greater(cancelRect.anchoredPosition.x - confirmRect.anchoredPosition.x, confirmRect.sizeDelta.x); // 확인과 취소 버튼 간격 확인
             Assert.IsTrue(service.CanLoad(1)); // 확인 전 파일 유지 확인
             confirmation.Find("CancelButton").GetComponent<Button>().onClick.Invoke(); // 삭제 취소 실행
             Assert.IsTrue(service.CanLoad(1)); // 취소 후 파일 유지 확인
