@@ -72,7 +72,7 @@ public sealed class ExpeditionSetupTests // 맵 선택과 새 편성 흐름 검�
         Assert.AreEqual(Color.white, border.color); // 프로필 흰색 구분선 색상 확인
         grid.Find("Character_0").GetComponent<Button>().onClick.Invoke(); // 첫 캐릭터 선택
         Assert.IsTrue(start.interactable); // 유효한 파티 출발 허용 확인
-        Assert.AreEqual("바보", slots.Find("Slot_0/Name").GetComponent<TMP_Text>().text); // 첫 편성 칸 이름 확인
+        Assert.AreEqual("바보", slots.Find("Slot_3/Name").GetComponent<TMP_Text>().text); // 첫 편성 칸 이름 확인
         for (int index = 1; index < 4; index++) // 나머지 편성 가능 칸 순회
         { // 캐릭터 선택 시작
             grid.Find("Character_" + index).GetComponent<Button>().onClick.Invoke(); // 각 캐릭터 선택

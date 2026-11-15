@@ -107,33 +107,33 @@ public sealed class PartyPresetTests // 편성별 저장과 전환 검증
             Assert.IsTrue(presetFour.interactable); // 네 번째 편성 선택 허용 확인
             grid.Find("Character_0").GetComponent<Button>().onClick.Invoke(); // 첫 편성에 바보 선택
             presetTwo.onClick.Invoke(); // 두 번째 편성 선택
-            Assert.AreEqual("빈 슬롯", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 독립 상태 확인
+            Assert.AreEqual("빈 슬롯", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 독립 상태 확인
             grid.Find("Character_1").GetComponent<Button>().onClick.Invoke(); // 두 번째 편성에 마법사 선택
             presetThree.onClick.Invoke(); // 세 번째 편성 선택
             grid.Find("Character_2").GetComponent<Button>().onClick.Invoke(); // 세 번째 편성에 여사제 선택
             presetFour.onClick.Invoke(); // 네 번째 편성 선택
             grid.Find("Character_3").GetComponent<Button>().onClick.Invoke(); // 네 번째 편성에 여황제 선택
             presetOne.onClick.Invoke(); // 첫 번째 편성으로 전환
-            Assert.AreEqual("바보", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 첫 편성 보존 확인
+            Assert.AreEqual("바보", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 첫 편성 보존 확인
             presetTwo.onClick.Invoke(); // 두 번째 편성으로 전환
-            Assert.AreEqual("마법사", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 보존 확인
+            Assert.AreEqual("마법사", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 보존 확인
             presetThree.onClick.Invoke(); // 세 번째 편성으로 전환
-            Assert.AreEqual("여사제", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 세 번째 편성 보존 확인
+            Assert.AreEqual("여사제", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 세 번째 편성 보존 확인
             presetFour.onClick.Invoke(); // 네 번째 편성으로 전환
-            Assert.AreEqual("여황제", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 네 번째 편성 보존 확인
+            Assert.AreEqual("여황제", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 네 번째 편성 보존 확인
             Assert.IsTrue(LobbySaveService.Save(path)); // 네 편성의 독립 저장 확인
             storeType.GetMethod("Reset").Invoke(null, null); // 현재 편성 데이터 초기화
             Assert.IsTrue(LobbySaveService.Load(path)); // 저장된 편성 데이터 복원
             UnityEngine.Object.DestroyImmediate(view.gameObject); // 이전 편성 화면 제거
             view = PartyFormationView.Open(canvasObject.GetComponent<Canvas>()); // 복원된 편성 화면 열기
             root = view.transform; // 복원 화면 영역 조회
-            Assert.AreEqual("여황제", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 마지막 선택 편성 복원 확인
+            Assert.AreEqual("여황제", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 마지막 선택 편성 복원 확인
             root.Find("Preset_2").GetComponent<Button>().onClick.Invoke(); // 복원된 세 번째 편성 선택
-            Assert.AreEqual("여사제", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 세 번째 편성 저장 복원 확인
+            Assert.AreEqual("여사제", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 세 번째 편성 저장 복원 확인
             root.Find("Preset_1").GetComponent<Button>().onClick.Invoke(); // 복원된 두 번째 편성 선택
-            Assert.AreEqual("마법사", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 저장 복원 확인
+            Assert.AreEqual("마법사", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 두 번째 편성 저장 복원 확인
             root.Find("Preset_0").GetComponent<Button>().onClick.Invoke(); // 복원된 첫 편성 선택
-            Assert.AreEqual("바보", root.Find("Slots/Slot_0/Name").GetComponent<TMP_Text>().text); // 첫 편성 저장 복원 확인
+            Assert.AreEqual("바보", root.Find("Slots/Slot_3/Name").GetComponent<TMP_Text>().text); // 첫 편성 저장 복원 확인
         } // 편성 전환 검사 종료
         finally // 테스트 상태 정리 시작
         { // 화면과 파일 정리 시작
