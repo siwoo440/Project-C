@@ -48,6 +48,15 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         DontDestroyOnLoad(gameObject); // Scene 전환 상태 유지
     } // 상점 관리자 초기화 종료
 
+    public void ResetSession() // 이전 상점 회차 초기화
+    { // 상점 회차 초기화 시작
+        catalog = null; // 이전 상품 목록 해제
+        runDeckManager = null; // 이전 회차 덱 연결 해제
+        transactionService = null; // 이전 판매 상태 제거
+        activeRoomRuntimeId = null; // 이전 상점 방 식별자 제거
+        Changed?.Invoke(); // 상점 상태 변경 알림
+    } // 상점 회차 초기화 종료
+
     public bool Prepare(ShopCatalogData catalogData, DeckData deckData) // 카탈로그와 회차 덱 준비
     { // 상점 준비 시작
         if (catalogData == null || !catalogData.IsValidData() || deckData == null || !deckData.IsValidDeck()) // 필수 데이터 유효성 확인

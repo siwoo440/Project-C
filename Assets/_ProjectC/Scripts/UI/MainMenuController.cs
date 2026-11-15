@@ -27,6 +27,24 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
             Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 안내
             return; // 게임 시작 중단
         } // 관리자 누락 처리 종료
+        PlayerResourceManager.Instance?.ResetResources(); // 이전 게임 자원 초기화
+        FacilityUpgradeManager.Instance?.ResetFacilities(); // 이전 게임 설비 초기화
+        CharacterProgressionManager.Instance?.ResetProgress(); // 이전 게임 성장 초기화
+        CharacterAffinityManager.Instance?.ResetAffinity(); // 이전 게임 호감도 초기화
+        CharacterRecoveryManager.Instance?.ResetRecoveryState(); // 이전 게임 회복 상태 초기화
+        BattleResultManager.Instance?.DiscardPendingResult(); // 이전 전투 결과 제거
+        BattleResultManager.Instance?.ResetSavedPartyState(); // 이전 게임 파티 상태 초기화
+        ExplorationSessionManager.Instance?.ResetExploration(); // 이전 게임 탐사 상태 초기화
+        ShopRunManager.Instance?.ResetSession(); // 이전 상점 회차 초기화
+        RestRoomRunManager.Instance?.ResetSession(); // 이전 휴식 회차 초기화
+        RunDeckManager.Instance?.ResetToSource(null); // 이전 회차 덱 제거
+        PartyLoadoutRuntime.Clear(); // 이전 파티 편성 제거
+        ConsumableRunManager.Instance?.Inventory.Clear(); // 이전 게임 소모품 제거
+        while (RelicRunManager.Instance != null && RelicRunManager.Instance.Inventory.Count > 0) // 이전 게임 유물 존재 확인
+        { // 유물 제거 시작
+            string relicId = RelicRunManager.Instance.Inventory.OwnedRelics[0].RelicId; // 첫 유물 식별자 조회
+            RelicRunManager.Instance.TryRemove(relicId); // 첫 유물 제거
+        } // 유물 제거 종료
         SceneFlowManager.Instance.LoadScene("20_Lobby"); // 거점 씬 이동
     } // 게임 시작 종료
     public void OpenSettings() // 설정 화면 이동

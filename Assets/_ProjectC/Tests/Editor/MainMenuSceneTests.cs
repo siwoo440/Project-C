@@ -1,6 +1,7 @@
 using System.Collections; // 코루틴 테스트 기능 사용
 using NUnit.Framework; // 테스트 기능 사용
 using TMPro; // 메뉴 글자 조회 기능 사용
+using UnityEditor; // 테스트용 에셋 조회 기능 사용
 using UnityEditor.SceneManagement; // 편집기 씬 조회 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.SceneManagement; // 씬 자료형 사용
@@ -30,11 +31,46 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         yield return null; // 메뉴 이벤트 재연결 대기
         Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메뉴 복귀 확인
         view = Object.FindFirstObjectByType<MainMenuView>(); // 복귀 메뉴 화면 조회
+        PlayerResourceManager.EnsureInstance().AddResources(23, 4, 5, 6); // 이전 게임 자원 준비
+        CharacterProgressionManager.EnsureInstance().AddExperience(100); // 이전 게임 성장 준비
+        CharacterAffinityManager.EnsureInstance().GrantExplorationSuccessAffinity(7); // 이전 게임 호감도 준비
+        ExplorationSessionManager.EnsureInstance().AdvanceFloor(); // 이전 탐사 층 준비
+        RelicData relic = AssetDatabase.LoadAssetAtPath<RelicData>("Assets/_ProjectC/Data/Relics/TEST_MAX_HP.asset"); // 테스트 유물 조회
+        ConsumableItemData potion = AssetDatabase.LoadAssetAtPath<ConsumableItemData>("Assets/_ProjectC/Data/Consumables/POTION_TEST_HEAL.asset"); // 테스트 소모품 조회
+        CharacterData world = AssetDatabase.LoadAssetAtPath<CharacterData>("Assets/_ProjectC/ScriptableObjects/Characters/ARC_21.asset"); // 세계 캐릭터 조회
+        bool worldWasUnlocked = CharacterUnlockProgress.Shared.IsUnlocked(world); // 기존 세계 해금 상태 보관
+        Assert.AreEqual(RelicAcquireResult.Acquired, RelicRunManager.EnsureInstance().TryAcquire(relic)); // 이전 유물 획득 확인
+        Assert.IsTrue(ConsumableRunManager.EnsureInstance().TryAcquire(potion, out int potionSlot)); // 이전 소모품 획득 확인
+        CharacterData fool = AssetDatabase.LoadAssetAtPath<CharacterData>("Assets/_ProjectC/ScriptableObjects/Characters/ARC_00.asset"); // 바보 캐릭터 조회
+        PartySelection previousSelection = new PartySelection(new CharacterRecoveryDeploymentStatusProvider(CharacterRecoveryManager.EnsureInstance())); // 이전 파티 선택 생성
+        Assert.IsTrue(previousSelection.TryAdd(fool)); // 이전 파티 캐릭터 선택
+        Assert.IsTrue(PartyLoadoutRuntime.Prepare(previousSelection)); // 이전 파티 편성 준비
+        Assert.IsTrue(BattleResultManager.EnsureInstance().RegisterParty(PartyLoadoutRuntime.Active.Party)); // 이전 파티 상태 등록
+        RunDeckManager.EnsureInstance().ResetToSource(PartyLoadoutRuntime.Active.Deck); // 이전 회차 덱 준비
+        BattleResultData previousResult = new BattleResultData(BattleResult.Victory, BattleType.Normal, 1, new BattleUnitRuntime[0], new string[0]); // 이전 전투 결과 준비
+        Assert.IsTrue(BattleResultManager.Instance.StoreResult(previousResult)); // 이전 전투 결과 등록
+        ShopCatalogData catalog = AssetDatabase.LoadAssetAtPath<ShopCatalogData>("Assets/_ProjectC/Resources/Shop/ShopCatalog_Test.asset"); // 테스트 상점 목록 조회
+        Assert.IsTrue(ShopRunManager.EnsureInstance().Prepare(catalog, PartyLoadoutRuntime.Active.Deck)); // 이전 상점 준비
+        Assert.IsTrue(RestRoomRunManager.EnsureInstance().Prepare(PartyLoadoutRuntime.Active.Deck)); // 이전 휴식 준비
         view.NewGameButton.onClick.Invoke(); // 새로하기 버튼 실행
         yield return null; // 거점 씬 전환 대기
         yield return null; // 거점 초기화 대기
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 진입 확인
         Assert.IsNotNull(Object.FindFirstObjectByType<PartyRosterView>()); // 편성 화면 연결 확인
+        Assert.AreEqual(0, PlayerResourceManager.Instance.Gold); // 이전 골드 초기화 확인
+        Assert.AreEqual(0, PlayerResourceManager.Instance.Screw); // 이전 나사 초기화 확인
+        Assert.AreEqual(1, CharacterProgressionManager.Instance.Level); // 이전 성장 초기화 확인
+        Assert.AreEqual(1, ExplorationSessionManager.Instance.CurrentFloor); // 이전 탐사 층 초기화 확인
+        Assert.AreEqual(0, CharacterAffinityManager.Instance.Affinity); // 이전 호감도 초기화 확인
+        Assert.AreEqual(0, RelicRunManager.Instance.Inventory.Count); // 이전 유물 초기화 확인
+        Assert.AreEqual(0, ConsumableRunManager.Instance.Inventory.Count); // 이전 소모품 초기화 확인
+        Assert.IsNull(BattleResultManager.Instance.ActiveParty); // 이전 전투 파티 해제 확인
+        Assert.IsFalse(BattleResultManager.Instance.HasPendingResult); // 이전 전투 결과 제거 확인
+        Assert.AreEqual(0, RunDeckManager.Instance.CardCount); // 이전 회차 덱 제거 확인
+        Assert.IsNull(PartyLoadoutRuntime.Active); // 이전 파티 편성 제거 확인
+        Assert.IsFalse(ShopRunManager.Instance.IsReady); // 이전 상점 상태 제거 확인
+        Assert.IsNull(RestRoomRunManager.Instance.SourceDeck); // 이전 휴식 덱 제거 확인
+        Assert.AreEqual(worldWasUnlocked, CharacterUnlockProgress.Shared.IsUnlocked(world)); // 기존 세계 해금 유지 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [Test] // 테스트 지정
