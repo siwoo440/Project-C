@@ -25,7 +25,7 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         { // 탐사 기본 경로 설정 시작
             explorationSavePath = ExplorationSaveService.DefaultPath; // 탐사 저장 경로 보관
         } // 탐사 기본 경로 설정 종료
-        menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, CanContinue()); // 저장 상태에 맞춰 메뉴 동작 연결
+        menuView.Bind(ShowNewGameWarning, OpenSaveMenu, OpenSettings, QuitGame, CanContinue()); // 저장 상태에 맞춰 메뉴 동작 연결
         if (EventSystem.current != null) // 입력 관리자 존재 확인
         { // 첫 버튼 선택 시작
             EventSystem.current.SetSelectedGameObject(menuView.NewGameButton.gameObject); // 새로하기 기본 선택
@@ -58,6 +58,26 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         ResetRunState(); // 이전 탐사 회차 상태 정리
         SceneFlowManager.Instance.LoadScene("20_Lobby"); // 거점 씬 이동
     } // 게임 시작 종료
+    private SaveSlotService CreateSlotService() // 메뉴 저장 경로의 슬롯 서비스 생성
+    { // 슬롯 서비스 생성 시작
+        string directory = savePath == LobbySaveService.DefaultPath ? Path.Combine(Application.persistentDataPath, "save-slots") : savePath + ".slots"; // 기본 또는 독립 테스트 슬롯 경로 선택
+        return new SaveSlotService(directory, savePath, explorationSavePath); // 메뉴 저장 경로 연결
+    } // 슬롯 서비스 생성 종료
+    private void OpenSaveMenu() // 저장 슬롯 화면 열기
+    { // 슬롯 화면 열기 시작
+        Canvas canvas = menuView.GetComponentInParent<Canvas>(); // 메인 메뉴 캔버스 조회
+        if (canvas == null || FindFirstObjectByType<SaveMenuController>() != null) // 캔버스와 중복 화면 확인
+        { // 화면 생성 불가 처리 시작
+            return; // 슬롯 화면 열기 중단
+        } // 화면 생성 불가 처리 종료
+        SaveSlotService service = CreateSlotService(); // 메뉴 슬롯 저장 서비스 생성
+        SaveMenuController slotMenu = SaveMenuController.Open(canvas, service, false, false, index => SaveSlotNavigator.Load(service, index)); // 메인 메뉴 슬롯 화면 표시
+        slotMenu.Closed += RefreshMenu; // 저장 화면 닫기 후 메뉴 상태 갱신
+    } // 슬롯 화면 열기 종료
+    private void RefreshMenu() // 저장 변경 후 메뉴 상태 갱신
+    { // 메뉴 상태 갱신 시작
+        menuView.Bind(ShowNewGameWarning, OpenSaveMenu, OpenSettings, QuitGame, CanContinue()); // 저장 상태별 이어하기 동작 갱신
+    } // 메뉴 상태 갱신 종료
     public void ContinueGame() // 저장된 게임 이어하기
     { // 이어하기 시작
         bool resumeExploration = IsExplorationLatest(); // 최근 유효 탐사 저장 확인
@@ -70,7 +90,7 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         bool loaded = resumeExploration ? ExplorationSaveService.Load(explorationSavePath) : LobbySaveService.Load(savePath); // 선택한 저장 상태 복원
         if (!loaded) // 저장 상태 복원 확인
         { // 저장 복원 실패 처리 시작
-            menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, false); // 이어하기 버튼 비활성화
+            menuView.Bind(ShowNewGameWarning, OpenSaveMenu, OpenSettings, QuitGame, false); // 이어하기 버튼 비활성화
             Debug.LogWarning("[MainMenu] 저장 데이터를 불러올 수 없습니다."); // 복원 실패 안내
             return; // 이어하기 중단
         } // 저장 복원 실패 처리 종료
@@ -82,7 +102,15 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
     } // 이어하기 종료
     private bool CanContinue() // 이어하기 가능 여부 확인
     { // 이어하기 가능 여부 확인 시작
-        return IsExplorationLatest() || LobbySaveService.CanLoad(savePath); // 유효한 탐사 또는 거점 저장 확인
+        SaveSlotService service = CreateSlotService(); // 현재 저장 경로 슬롯 서비스 생성
+        for (int index = 0; index < SaveMenuView.SlotCount; index++) // 전체 저장 슬롯 순회
+        { // 저장 슬롯 검사 시작
+            if (service.HasFile(index)) // 손상 파일을 포함한 슬롯 존재 확인
+            { // 유효 슬롯 처리 시작
+                return true; // 슬롯 관리 화면 진입 가능 반환
+            } // 유효 슬롯 처리 종료
+        } // 저장 슬롯 검사 종료
+        return false; // 저장 파일이 있는 슬롯 없음 반환
     } // 이어하기 가능 여부 확인 종료
     private bool IsExplorationLatest() // 최근 유효 탐사 저장 확인
     { // 최근 탐사 저장 확인 시작
@@ -107,7 +135,7 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
             return false; // 거점 저장 사용
         } // 시간 접근 오류 처리 종료
     } // 최근 탐사 저장 확인 종료
-    private static void ResetRunState() // 탐사 회차 상태 정리
+    public static void ResetRunState() // 탐사 회차 상태 정리
     { // 회차 상태 정리 시작
         ExplorationSessionManager.Instance?.ResetExploration(); // 이전 게임 탐사 상태 초기화
         ShopRunManager.Instance?.ResetSession(); // 이전 상점 회차 초기화

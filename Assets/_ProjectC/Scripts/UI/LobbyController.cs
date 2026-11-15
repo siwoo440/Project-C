@@ -23,6 +23,7 @@ public sealed class LobbyController : MonoBehaviour
         GameObject viewObject = new GameObject("PartyRosterView", typeof(RectTransform), typeof(PartyRosterView)); // 편성 화면 객체 생성
         viewObject.transform.SetParent(canvas.transform, false); // 거점 캔버스 연결
         viewObject.GetComponent<PartyRosterView>().Initialize(roster, new CharacterRecoveryDeploymentStatusProvider(recovery)); // 캐릭터 목록 화면 구성
+        SaveMenuEntry.Install(canvas, false); // 거점 저장 메뉴 버튼 설치
     } // 시작 처리 종료
     public void OpenSettings()
     {

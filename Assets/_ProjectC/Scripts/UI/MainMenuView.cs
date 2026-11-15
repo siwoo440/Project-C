@@ -62,8 +62,9 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         RectTransform backdrop = backdropObject.GetComponent<RectTransform>(); // 경고 상자 영역 조회
         backdrop.anchorMin = new Vector2(0.5f, 0.5f); // 상자 시작 앵커 설정
         backdrop.anchorMax = new Vector2(0.5f, 0.5f); // 상자 끝 앵커 설정
-        backdrop.sizeDelta = new Vector2(740f, 340f); // 경고 상자 크기 설정
+        backdrop.sizeDelta = new Vector2(840f, 440f); // 경고 상자 크기 설정
         backdropObject.GetComponent<Image>().color = new Color(0.10f, 0.13f, 0.18f, 1f); // 경고 상자 색상
+        WarningUiArt.ApplyBackdrop(backdropObject.GetComponent<Image>()); // 제작 경고 배경 적용
         GameObject messageObject = new GameObject("WarningMessage", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 경고 문구 생성
         messageObject.transform.SetParent(confirmationPanel.transform, false); // 경고 문구 자식 배치
         RectTransform messageRect = messageObject.GetComponent<RectTransform>(); // 경고 문구 영역 조회
@@ -97,6 +98,7 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         rect.sizeDelta = new Vector2(200f, 64f); // 버튼 크기 설정
         Image image = buttonObject.GetComponent<Image>(); // 버튼 배경 조회
         image.color = new Color(0.32f, 0.40f, 0.45f, 1f); // 버튼 배경 색상
+        WarningUiArt.ApplyButton(image); // 제작 경고 버튼 이미지 적용
         Button button = buttonObject.GetComponent<Button>(); // 버튼 입력 기능 조회
         button.targetGraphic = image; // 버튼 상태 색상 연결
         GameObject labelObject = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 버튼 글자 생성
