@@ -23,6 +23,10 @@ public static class ExplorationAutoSave // 전투 전후 자동 저장 지점
             return false; // 자동 저장 실패 반환
         } // 세션 누락 처리 종료
         string explorationFile = runPath ?? ExplorationSaveService.DefaultPath; // 탐사 자동 저장 경로 결정
+        if (SaveFileStorage.IsUnsupportedVersion(explorationFile) || SaveFileStorage.IsUnsupportedVersion(SaveFileStorage.BackupPath(explorationFile))) // 지원하지 않는 탐사 저장 버전 확인
+        { // 새 탐사 저장 보호 시작
+            return false; // 자동 저장과 탐사 파일 정리 차단
+        } // 새 탐사 저장 보호 종료
         if (!session.IsExplorationCompleted) // 탐사 진행 상태 확인
         { // 진행 중 탐사 저장 시작
             return ExplorationSaveService.Save(explorationFile, position); // 보상과 클리어 상태가 반영된 탐사 저장

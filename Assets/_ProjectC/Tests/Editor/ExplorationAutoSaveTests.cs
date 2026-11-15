@@ -49,7 +49,7 @@ public sealed class ExplorationAutoSaveTests // 전투 전후 자동 저장 검�
             Assert.AreEqual(rewardedGold, resources.Gold); // 승리 보상 중복 지급 방지 확인
             Assert.IsTrue(session.CompleteExplorationFailure("테스트 종료")); // 탐사 종료 상태 설정
             File.WriteAllText(blockingPath, "파일"); // 거점 저장 폴더 대신 파일 생성
-            LogAssert.Expect(LogType.Warning, new Regex("\\[LobbySave\\] 저장 실패")); // 예상된 거점 저장 실패 로그 확인
+            LogAssert.Expect(LogType.Warning, new Regex("\\[SaveFile\\] 저장 실패")); // 예상된 거점 저장 실패 로그 확인
             Assert.IsFalse(ExplorationAutoSave.SaveAfterBattle(Vector3.zero, runPath, Path.Combine(blockingPath, "save.json"))); // 실패한 거점 저장 결과 확인
             Assert.IsTrue(File.Exists(runPath)); // 거점 저장 실패 시 기존 탐사 저장 보존 확인
             Assert.IsTrue(ExplorationAutoSave.SaveAfterBattle(Vector3.zero, runPath, lobbyPath)); // 종료 후 거점 저장 확인
