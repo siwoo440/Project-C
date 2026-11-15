@@ -2,6 +2,7 @@ using UnityEngine;
 
 public sealed class LobbyController : MonoBehaviour
 {
+    private Canvas lobbyCanvas; // 현재 로비 캔버스
     private void Start() // 거점 화면 시작
     { // 시작 처리 시작
         Canvas canvas = FindFirstObjectByType<Canvas>(); // 거점 캔버스 조회
@@ -10,6 +11,7 @@ public sealed class LobbyController : MonoBehaviour
             Debug.LogError("[LobbyController] 로비 캔버스가 없습니다."); // 화면 누락 안내
             return; // 로비 화면 생성 중단
         } // 누락 처리 종료
+        lobbyCanvas = canvas; // 로비 캔버스 보관
         Texture2D background = Resources.Load<Texture2D>("UI/LobbyBackground"); // 거점 배경 이미지 조회
         if (background != null) // 배경 이미지 존재 확인
         { // 배경 연결 시작
@@ -29,7 +31,7 @@ public sealed class LobbyController : MonoBehaviour
         { // 이전 버튼 숨김 시작
             oldSettings.gameObject.SetActive(false); // 기존 설정 버튼 숨김
         } // 이전 버튼 숨김 종료
-        LobbyLayoutView.Create(canvas, OpenSettings, OpenFacility); // 새 로비 화면 구성
+        LobbyLayoutView.Create(canvas, OpenSettings, OpenFacility, OpenExpedition); // 새 로비 화면 구성
         SaveMenuEntry.Install(canvas, false); // 거점 저장 메뉴 버튼 설치
     } // 시작 처리 종료
     private void OpenFacility() // 설비 강화 화면 열기
@@ -37,6 +39,14 @@ public sealed class LobbyController : MonoBehaviour
         FacilityUpgradeDebugView view = FacilityUpgradeManager.EnsureInstance().GetComponent<FacilityUpgradeDebugView>(); // 기존 설비 강화 화면 조회
         view?.OpenPanel(); // 설비 강화 화면 표시
     } // 설비 화면 열기 종료
+    private void OpenExpedition() // 탐사 맵 선택 화면 열기
+    { // 맵 선택 열기 시작
+        if (FindFirstObjectByType<SaveMenuController>() != null) // 저장 화면 열림 확인
+        { // 중복 화면 처리 시작
+            return; // 맵 선택 열기 중단
+        } // 중복 화면 처리 종료
+        ExpeditionMapView.Open(lobbyCanvas); // 탐사 맵 선택 화면 표시
+    } // 맵 선택 열기 종료
     public void OpenSettings()
     {
         if (SceneFlowManager.Instance == null) // SceneFlowManager 존재 여부 확인

@@ -49,6 +49,14 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
         { // 정사각형 버튼 여백 조정 시작
             return new Rect(texture.width * 0.09f, texture.height * 0.09f, texture.width * 0.82f, texture.height * 0.82f); // 버튼 외부 투명 여백 제외
         } // 정사각형 버튼 여백 조정 종료
+        if (name == "FormationPanel") // 편성 화면 패널 이미지 확인
+        { // 편성 패널 여백 조정 시작
+            return new Rect(texture.width * 0.09f, texture.height * 0.02f, texture.width * 0.82f, texture.height * 0.96f); // 패널 외부 투명 여백 제외
+        } // 편성 패널 여백 조정 종료
+        if (name == "FormationCard") // 캐릭터 편성 칸 이미지 확인
+        { // 편성 칸 여백 조정 시작
+            return new Rect(texture.width * 0.08f, texture.height * 0.035f, texture.width * 0.84f, texture.height * 0.93f); // 편성 칸 외부 투명 여백 제외
+        } // 편성 칸 여백 조정 종료
         if (name == "Gold") // 골드 아이콘 확인
         { // 골드 여백 조정 시작
             return new Rect(texture.width * 0.24f, texture.height * 0.18f, texture.width * 0.52f, texture.height * 0.64f); // 골드 외부 투명 여백 제외

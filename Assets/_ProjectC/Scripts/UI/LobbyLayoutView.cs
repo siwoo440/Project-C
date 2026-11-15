@@ -10,7 +10,7 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
     private TMP_Text screwText; // 나사 표시 문구
     private TMP_Text ironText; // 철판 표시 문구
     private TMP_Text wireText; // 전선 표시 문구
-    public static LobbyLayoutView Create(Canvas canvas, Action openSettings, Action openFacility) // 로비 화면 생성
+    public static LobbyLayoutView Create(Canvas canvas, Action openSettings, Action openFacility, Action openExpedition) // 로비 화면 생성
     { // 로비 화면 생성 시작
         GameObject root = new GameObject("LobbyLayout", typeof(RectTransform), typeof(LobbyLayoutView)); // 로비 화면 객체 생성
         root.transform.SetParent(canvas.transform, false); // 로비 캔버스 연결
@@ -20,10 +20,10 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         rect.offsetMin = Vector2.zero; // 화면 시작 여백 제거
         rect.offsetMax = Vector2.zero; // 화면 끝 여백 제거
         LobbyLayoutView view = root.GetComponent<LobbyLayoutView>(); // 로비 화면 컴포넌트 조회
-        view.Build(openSettings, openFacility); // 로비 자원과 버튼 배치
+        view.Build(openSettings, openFacility, openExpedition); // 로비 자원과 버튼 배치
         return view; // 생성 화면 반환
     } // 로비 화면 생성 종료
-    private void Build(Action openSettings, Action openFacility) // 로비 화면 요소 배치
+    private void Build(Action openSettings, Action openFacility, Action openExpedition) // 로비 화면 요소 배치
     { // 화면 요소 배치 시작
         CreatePlate("GoldBackdrop", new Vector2(0.847f, 0.93f), new Vector2(130f, 76f)); // 축소된 골드 배경 배치
         Image goldIcon = CreateIcon("GoldIcon", transform, "Gold"); // 골드 아이콘 생성
@@ -43,7 +43,7 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         LobbyUiArt.Apply(settings.GetComponent<Image>(), "Settings"); // 제작한 톱니바퀴 이미지 적용
         CreateButton("CharacterButton", "캐릭터", new Vector2(0.88f, 0.73f), new Vector2(300f, 140f), null); // 캐릭터 버튼 배치
         CreateButton("FormationButton", "편성", new Vector2(0.88f, 0.55f), new Vector2(300f, 140f), null); // 편성 버튼 배치
-        CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), null); // 탐사 버튼 배치
+        CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), openExpedition); // 탐사 버튼 배치
         CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), null); // 도감 버튼 배치
         CreateButton("FacilityButton", "설비 강화", new Vector2(0.296f, 0.055f), new Vector2(250f, 68f), openFacility); // 축소된 물자 옆 설비 강화 버튼 배치
         resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
