@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_11_SHARE
   displayName: 공정한 판정
   description: 다른 아군의 첫 예정 공격을 방어 후 절반씩 분담. 홀수는 원래 대상이 더 받습니다. (임시 효과)
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: f60f2241fe10b96438cb269cd24815f6, type: 3}
   cardType: 4
   cardTags: 0
   targetType: 1

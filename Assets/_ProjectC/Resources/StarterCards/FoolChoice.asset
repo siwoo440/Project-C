@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_00_CHOICE
   displayName: 바보의 선택
   description: 덱 위 카드 최대 2장 중 한 장을 선택해 드로우
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 9d5d7bb15aec9af40ae21b4bd08f14a7, type: 3}
   cardType: 1
   cardTags: 0
   targetType: 0

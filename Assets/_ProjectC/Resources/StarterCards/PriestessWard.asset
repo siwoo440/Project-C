@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_02_WARD
   displayName: 여사제의 결계
   description: 선택한 아군에게 임시 방어도 2 부여. 적 턴 종료 후 사라짐
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 1eab618cc22112a4c82f4a99c88ea836, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1

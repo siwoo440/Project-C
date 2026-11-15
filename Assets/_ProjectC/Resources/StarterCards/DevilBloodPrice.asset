@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_15_BLOOD_PRICE
   displayName: 달콤한 거래
   description: 자신의 체력 5를 소모해 적 하나에게 물리 피해 20. 체력이 5 이하이면 사용할 수 없습니다. (임시 효과)
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 566d23eb19584664dacde93580d8c0d7, type: 3}
   cardType: 0
   cardTags: 0
   targetType: 3

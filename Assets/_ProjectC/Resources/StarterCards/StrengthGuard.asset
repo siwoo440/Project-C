@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_08_GUARD
   displayName: 버팀목
   description: 다른 아군에게 예정된 첫 공격을 자신이 대신 받습니다. (임시 효과)
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: ed67ea42a9466884b9bb63b25e5dab80, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1

@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_TEMP_DEFENSE
   displayName: 임시 방어
   description: 아군 하나의 물리 방어력 3 증가
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 07d257f11f999504f947a00c55be359e, type: 3}
   cardType: 4
   cardTags: 0
   targetType: 1
