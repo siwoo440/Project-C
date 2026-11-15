@@ -44,6 +44,9 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         encounter.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 실제 조우 접촉 처리 실행
         string encounterId = ExplorationSessionManager.Instance.ActiveRuntimeEncounterId; // 현재 조우 식별자 기록
         Assert.IsFalse(string.IsNullOrEmpty(encounterId)); // 조우 시작 상태 확인
+        string autoSavePath = ExplorationSaveService.DefaultPath; // 격리된 탐사 자동 저장 경로 조회
+        Assert.IsTrue(ExplorationSaveService.CanLoad(autoSavePath)); // 실제 전투 진입 전 자동 저장 확인
+        StringAssert.DoesNotContain(encounterId, System.IO.File.ReadAllText(autoSavePath)); // 전투 전에는 조우가 클리어되지 않음 확인
         for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 전환 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
@@ -70,6 +73,46 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.AreEqual("30_Exploration", SceneManager.GetActiveScene().name); // 전투 후 탐사 복귀 확인
         yield return null; // 전투 결과 반영 대기
         Assert.IsTrue(ExplorationSessionManager.Instance.IsEncounterCleared(encounterId)); // 조우 클리어 상태 확인
+        for (float saveDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < saveDeadline && (!System.IO.File.Exists(autoSavePath) || !System.IO.File.ReadAllText(autoSavePath).Contains(encounterId));) // 클리어 결과 자동 저장 대기
+        { // 결과 저장 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 결과 저장 대기 종료
+        Assert.IsTrue(ExplorationSaveService.CanLoad(autoSavePath)); // 전투 후 자동 저장 유효성 확인
+        StringAssert.Contains(encounterId, System.IO.File.ReadAllText(autoSavePath)); // 실제 전투 클리어 자동 저장 확인
+        int awardedGold = PlayerResourceManager.Instance.Gold; // 자동 저장 시 지급된 골드 보관
+        ExplorationSessionManager.Instance.ResetExploration(); // 현재 탐사 상태 제거
+        PlayerResourceManager.Instance.ResetResources(); // 현재 보상 자원 제거
+        Assert.IsTrue(ExplorationSaveService.Load(autoSavePath)); // 전투 후 자동 저장 복원
+        Assert.IsTrue(ExplorationSessionManager.Instance.IsEncounterCleared(encounterId)); // 복원된 조우 클리어 확인
+        Assert.AreEqual(awardedGold, PlayerResourceManager.Instance.Gold); // 보상 골드의 정확한 복원 확인
+        GameObject treasureObject = new GameObject("AutoSaveTreasureTest"); // 독립 보물 방 객체 생성
+        ExplorationSpecialRoomView treasure = treasureObject.AddComponent<ExplorationSpecialRoomView>(); // 실제 보물 방 동작 추가
+        treasure.Initialize(null, Vector2Int.zero, ExplorationRoomType.Treasure, "auto-test-treasure"); // 독립 보물 식별자 지정
+        treasure.SendMessage("OpenTreasure"); // 실제 보물 획득 흐름 실행
+        Assert.IsTrue(ExplorationSessionManager.Instance.IsEventResolved("auto-test-treasure")); // 보물 획득 완료 확인
+        StringAssert.Contains("auto-test-treasure", System.IO.File.ReadAllText(autoSavePath)); // 보물 보상 처리 후 자동 저장 확인
+        Object.Destroy(treasureObject); // 독립 보물 방 객체 제거
+        ExplorationEventData eventData = ExplorationEventCatalog.LoadEvents()[0]; // 실제 탐사 이벤트 원본 조회
+        GameObject eventObject = new GameObject("AutoSaveEventTest"); // 독립 이벤트 객체 생성
+        ExplorationEventView eventView = eventObject.AddComponent<ExplorationEventView>(); // 실제 이벤트 동작 추가
+        eventView.Initialize(eventData, "auto-test-event"); // 독립 이벤트 식별자 지정
+        ExplorationEventPanelView eventPanel = ExplorationEventPanelView.EnsureInstance(); // 실제 이벤트 패널 조회
+        eventPanel.ShowEvent(eventView, eventData, "auto-test-event"); // 테스트 이벤트 선택 화면 열기
+        eventPanel.SendMessage("HandleChoiceSelected", (object)0); // 실제 이벤트 첫 선택 결과 적용
+        Assert.IsTrue(ExplorationSessionManager.Instance.IsEventResolved("auto-test-event")); // 이벤트 처리 완료 확인
+        StringAssert.Contains("auto-test-event", System.IO.File.ReadAllText(autoSavePath)); // 이벤트 결과 자동 저장 확인
+        eventPanel.StopAllCoroutines(); // 렌더링 대기 중인 테스트 패널 정리
+        eventPanel.SendMessage("CloseCurrentEvent"); // 테스트 이벤트 패널 닫기
+        Object.Destroy(eventObject); // 독립 이벤트 객체 제거
+        ShopCatalogData shopCatalog = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 실제 상점 상품 목록 조회
+        ShopRunManager shop = ShopRunManager.EnsureInstance(); // 실제 상점 관리자 조회
+        Assert.IsTrue(shop.Prepare(shopCatalog, PartyLoadoutRuntime.Active.Deck)); // 탐사 상점 준비 확인
+        shop.BeginRoomVisit("auto-test-shop"); // 독립 상점 방문 기록
+        ExplorationSessionManager.Instance.MarkEventResolved("auto-test-shop"); // 상점 방문 완료 기록
+        PlayerResourceManager.Instance.AddResources(1000, 0, 0, 0); // 테스트 상품 구매 골드 준비
+        ShopOfferData offer = shopCatalog.Offers[5]; // 실제 구매 가능한 상품 조회
+        Assert.AreEqual(ShopPurchaseResult.Success, shop.TryPurchase(offer)); // 실제 상점 거래 성공 확인
+        StringAssert.Contains(offer.OfferId, System.IO.File.ReadAllText(autoSavePath)); // 판매 완료 상태 자동 저장 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정

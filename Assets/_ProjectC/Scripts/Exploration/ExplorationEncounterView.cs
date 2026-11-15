@@ -50,6 +50,16 @@ public sealed class ExplorationEncounterView : MonoBehaviour // 탐사 조우 �
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
+        SceneFlowManager sceneFlowManager = SceneFlowManager.Instance; // 전투 씬 전환 관리자 조회
+        if (sceneFlowManager == null || sceneFlowManager.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("40_Battle") || !sessionManager.CanBeginEncounter(runtimeEncounterId, encounterData)) // 정상 조우와 씬 이동 가능 여부 확인
+        { // 전투 진입 불가 처리 시작
+            return; // 조우 상태와 기존 자동 저장 유지
+        } // 전투 진입 불가 처리 종료
+        if (!ExplorationAutoSave.SaveBeforeBattle(player.transform.position)) // 조우 시작 전 자동 저장 확인
+        { // 자동 저장 실패 처리 시작
+            Debug.LogWarning("[ExplorationAutoSave] 전투 전 상태를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
+        } // 자동 저장 실패 처리 종료
+
         if (!sessionManager.BeginEncounter(
                 runtimeEncounterId,
                 encounterData,
@@ -60,19 +70,6 @@ public sealed class ExplorationEncounterView : MonoBehaviour // 탐사 조우 �
         }
 
         transitionRequested = true; // 전투 Scene 이동 요청 잠금
-
-        SceneFlowManager sceneFlowManager =
-            SceneFlowManager.Instance; // Scene 흐름 관리자 조회
-
-        if (sceneFlowManager == null)
-        {
-            Debug.LogError(
-                "[ExplorationEncounterView] SceneFlowManager가 없어 전투 Scene으로 이동할 수 없습니다.",
-                this); // Scene 관리자 누락 오류 출력
-
-            transitionRequested = false; // 이동 요청 잠금 해제
-            return;
-        }
 
         sceneFlowManager.LoadScene("40_Battle"); // 전투 Scene 이동
 
