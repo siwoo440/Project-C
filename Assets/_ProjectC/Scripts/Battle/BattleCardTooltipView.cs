@@ -77,6 +77,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
+        { // 손패 정리 이름 시작
+            return "드로우 후 손패 정리"; // 달 카드 효과 이름 반환
+        } // 손패 정리 이름 종료
         if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 동료 디버프 이전 효과 확인
         { // 디버프 이전 이름 시작
             return "동료 디버프 이전"; // 디버프 이전 효과 이름 반환
@@ -125,6 +129,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
+        { // 손패 정리 상세 시작
+            return $"최대 {cardInstance.EffectValue}장 드로우 후 손패 하나 선택해 버리기"; // 달 카드의 드로우와 선택 상세 반환
+        } // 손패 정리 상세 종료
+        if (SunChainAttack.IsChainCard(cardInstance)) // 태양의 서로 다른 적 연속 공격 확인
+        { // 태양 연속 공격 상세 시작
+            return $"선택한 적 피해 {cardInstance.EffectValue} · 다른 무작위 적 피해 {cardInstance.SourceData.SecondaryEffectValue}"; // 태양 카드의 두 공격 수치 반환
+        } // 태양 연속 공격 상세 종료
         if (cardInstance.SourceData.CardId == "CRD_ARC_16_SHATTER") // 탑의 광역 방어도 파괴 카드 확인
         { // 광역 방어도 파괴 상세 시작
             return $"모든 적의 방어도 {cardInstance.SourceData.SecondaryEffectValue} 제거 후 물리 피해 {cardInstance.EffectValue}"; // 제거 순서와 피해 상세 반환

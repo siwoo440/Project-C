@@ -84,8 +84,37 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 잘못된 요청 처리 시작
             return 0; // 드로우 없음 반환
         } // 잘못된 요청 처리 종료
+        int drawnCount = DrawCardsCore(requestedCount, out int processedCount); // 요청 카드 드로우 처리
+        EnsureValidState(); // 드로우 후 덱 상태 검증
+        if (processedCount > 0) // 카드 이동 여부 확인
+        { // 상태 알림 시작
+            StateChanged?.Invoke(); // 덱 상태 변경 알림
+        } // 상태 알림 종료
+        return drawnCount; // 실제 드로우 수 반환
+    } // 카드 드로우 종료
+    public bool TryPlayAndDraw(CardInstance playedCard, int requestedCount, out int drawnCount) // 사용 카드를 제외하고 드로우
+    { // 사용과 드로우 처리 시작
+        drawnCount = 0; // 실제 드로우 수 초기화
+        if (playedCard == null || !hand.Remove(playedCard)) // 사용 카드의 손패 위치 확인
+        { // 사용 불가 처리 시작
+            return false; // 사용 실패 반환
+        } // 사용 불가 처리 종료
+        try // 사용 카드 위치 복구 보장
+        { // 드로우 처리 시작
+            drawnCount = DrawCardsCore(Math.Max(0, requestedCount), out _); // 사용 카드 공간을 제외한 드로우
+        } // 드로우 처리 종료
+        finally // 사용한 카드 이동 보장
+        { // 사용 카드 이동 시작
+            discardPile.Add(playedCard); // 드로우 완료 후 사용 카드를 버린 더미에 추가
+        } // 사용 카드 이동 종료
+        EnsureValidState(); // 전체 카드 위치와 손패 제한 검증
+        StateChanged?.Invoke(); // 사용과 드로우 결과 알림
+        return true; // 사용 성공 반환
+    } // 사용과 드로우 처리 종료
+    private int DrawCardsCore(int requestedCount, out int processedCount) // 카드 영역 변경만 처리
+    { // 공통 드로우 시작
         int drawnCount = 0; // 실제 드로우 수 초기화
-        int processedCount = 0; // 처리한 카드 수 초기화
+        processedCount = 0; // 처리한 카드 수 초기화
         List<CardInstance> overflowCards = new List<CardInstance>(); // 초과 카드 임시 목록
         while (processedCount < requestedCount) // 요청 수까지 반복
         { // 반복 드로우 시작
@@ -112,13 +141,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             processedCount++; // 처리 카드 수 증가
         } // 반복 드로우 종료
         discardPile.AddRange(overflowCards); // 초과 카드 버린 더미 이동
-        EnsureValidState(); // 드로우 후 덱 상태 검증
-        if (processedCount > 0) // 카드 이동 여부 확인
-        { // 상태 알림 시작
-            StateChanged?.Invoke(); // 덱 상태 변경 알림
-        } // 상태 알림 종료
         return drawnCount; // 실제 드로우 수 반환
-    } // 카드 드로우 종료
+    } // 공통 드로우 종료
     public IReadOnlyList<CardInstance> PeekDrawTop(int maximumChoices) // 현재 덱 위의 생존 카드 확인
     { // 덱 위 확인 시작
         List<CardInstance> choices = new List<CardInstance>(); // 덱 위 후보 목록 생성

@@ -242,11 +242,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
         starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
-        bool discarded = runtimeDeck.DiscardCard(cardInstance); // 사용 카드를 버린 카드 더미로 이동
+        bool discarded = cardInstance.EffectType == CardEffectType.DrawThenDiscard || runtimeDeck.DiscardCard(cardInstance); // 달 카드의 선행 이동 또는 일반 카드 버리기 확인
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
         } // 카드 이동 실패 처리 종료
+        if (discarded && cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
+        { // 버릴 카드 후보 준비 시작
+            pendingCardChoices = new List<CardInstance>(runtimeDeck.Hand); // 사용한 카드를 제외한 현재 손패 복사
+        } // 버릴 카드 후보 준비 종료
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
@@ -301,7 +305,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogError("[BattleCardActionController] 선택 드로우 화면을 표시할 캔버스가 없습니다."); // 화면 생성 실패 출력
             return; // 선택 화면 표시 중단
         } // 화면 누락 처리 종료
-        string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : pendingChoiceEffect == CardEffectType.ArrangeDrawTop ? "다음에 뽑을 카드 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
+        string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : pendingChoiceEffect == CardEffectType.ArrangeDrawTop ? "다음에 뽑을 카드 선택" : pendingChoiceEffect == CardEffectType.DrawThenDiscard ? "버릴 손패 한 장 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
         drawChoiceView = BattleDrawChoiceView.Show(canvas.transform, pendingCardChoices, HandleCardChoiceSelected, title); // 선택 화면 생성
         handView.SetInteractionLocked(true); // 선택 중 손패와 턴 종료 잠금
     } // 선택 화면 표시 종료
@@ -329,6 +333,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 덱 순서 변경 시작
             processed = runtimeDeck.TryMoveDrawTop(choice, choiceCount); // 선택한 카드를 맨 위에 배치
         } // 덱 순서 변경 종료
+        else if (pendingChoiceEffect == CardEffectType.DrawThenDiscard) // 드로우 후 손패 버리기 선택 확인
+        { // 손패 버리기 시작
+            processed = runtimeDeck.DiscardCard(choice); // 선택한 손패 카드 한 장 버리기
+        } // 손패 버리기 종료
         else // 덱 위 카드 선택 확인
         { // 선택 드로우 시작
             processed = runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
@@ -424,6 +432,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 덱 순서 정리 불가 시작
             return false; // 선택 불가 반환
         } // 덱 순서 정리 불가 종료
+        if (cardInstance.EffectType == CardEffectType.DrawThenDiscard && !runtimeDeck.HasDrawableCards && runtimeDeck.HandCount <= 1) // 드로우와 사용 후 남을 손패 확인
+        { // 드로우와 버리기 불가 시작
+            return false; // 선택 불가 반환
+        } // 드로우와 버리기 불가 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack && !enemyActions.CanProtectAlly(cardInstance.OwnerUnit, targetUnit)) // 대신 받을 동료 공격 확인
         { // 동료 보호 불가 시작
             return false; // 선택 불가 반환
@@ -510,7 +522,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -543,6 +555,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우와 손패 정리 확인
+        { // 달 카드 드로우 처리 시작
+            pendingChoiceEffect = CardEffectType.DrawThenDiscard; // 드로우 후 손패 선택 효과 저장
+            return runtimeDeck.TryPlayAndDraw(cardInstance, cardInstance.EffectValue, out int drawnCount) ? drawnCount : 0; // 사용 카드 공간을 확보하고 가능한 카드 드로우
+        } // 달 카드 드로우 처리 종료
         if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 매달린 자의 디버프 이전 효과 확인
         { // 디버프 이전 선택 준비 시작
             pendingDebuffSource = targetUnit; // 디버프를 넘길 동료 저장
@@ -653,6 +670,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 약화 대상 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
+        if (SunChainAttack.IsChainCard(cardInstance)) // 태양의 서로 다른 적 연속 공격 확인
+        { // 태양 추가 공격 시작
+            SunChainAttack.TryAttack(cardInstance, targetUnit, enemyActions.EnemyUnits); // 다른 생존 적에게 두 번째 공격 적용
+        } // 태양 추가 공격 종료
         chariotConcentration.RecordAttack(cardInstance, targetUnit); // 전차의 대상별 공격과 표식 처리
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
@@ -668,6 +689,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 드로우 후 손패 정리 효과 확인
+        { // 달 카드 효과 문구 시작
+            return "드로우와 손패 선택 버리기"; // 달 전용 효과 이름 반환
+        } // 달 카드 효과 문구 종료
         if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 동료 디버프 이전 효과 확인
         { // 디버프 이전 문구 시작
             return "동료 디버프 이전 후보"; // 디버프 이전 효과 이름 반환
