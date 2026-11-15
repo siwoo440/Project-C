@@ -20,7 +20,7 @@ public sealed class SaveMenuEntry : MonoBehaviour // 게임 화면의 저장 메
         rect.anchoredPosition = new Vector2(-150f, 62f); // 화면 오른쪽 아래 버튼 배치
         rect.sizeDelta = new Vector2(250f, 64f); // 버튼 크기 설정
         Image background = target.GetComponent<Image>(); // 버튼 배경 조회
-        background.color = new Color(0.15f, 0.15f, 0.14f, 0.92f); // 금속 계열 어두운 배경 설정
+        LobbyUiArt.Apply(background, "Button"); // 제작한 저장 메뉴 버튼 이미지 적용
         Button button = target.GetComponent<Button>(); // 버튼 입력 조회
         button.targetGraphic = background; // 버튼 색상 대상 연결
         SaveMenuEntry entry = target.GetComponent<SaveMenuEntry>(); // 버튼 동작 컴포넌트 조회

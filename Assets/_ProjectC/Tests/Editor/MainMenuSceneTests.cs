@@ -626,8 +626,8 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         Assert.IsNotNull(warningPanel.Find("CancelNewGame").GetComponent<Image>().sprite); // 제작된 취소 버튼 이미지 확인
         RectTransform confirmRect = warningPanel.Find("ConfirmNewGame").GetComponent<RectTransform>(); // 새 게임 확인 버튼 영역 조회
         RectTransform cancelRect = warningPanel.Find("CancelNewGame").GetComponent<RectTransform>(); // 새 게임 취소 버튼 영역 조회
-        Assert.AreEqual(new Vector2(300f, 96f), confirmRect.sizeDelta); // 1.5배 확대된 확인 버튼 크기 확인
-        Assert.AreEqual(new Vector2(300f, 96f), cancelRect.sizeDelta); // 1.5배 확대된 취소 버튼 크기 확인
+        Assert.AreEqual(new Vector2(300f, 144f), confirmRect.sizeDelta); // 세로로 확대된 확인 버튼 크기 확인
+        Assert.AreEqual(new Vector2(300f, 144f), cancelRect.sizeDelta); // 세로로 확대된 취소 버튼 크기 확인
         Assert.Greater(cancelRect.anchoredPosition.x - confirmRect.anchoredPosition.x, confirmRect.sizeDelta.x); // 확인과 취소 버튼 간격 확인
         warningPanel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 시작 확인
         yield return null; // 거점 씬 전환 대기
