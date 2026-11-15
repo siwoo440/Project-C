@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: WorldLink
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_ARC_21_LINK
+  displayName: 이어진 세계
+  description: 아군 하나에게 방어도 3. 이번 턴 다른 동료 둘의 전용 카드 사용 시 체력 비율이 가장 낮은 다른 아군에게 방어도 3. (임시 효과)
+  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  cardType: 2
+  cardTags: 0
+  targetType: 1
+  apCost: 2
+  effectType: 9
+  damageType: 0
+  effectValue: 3
+  secondaryEffectValue: 3
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 2
+  statusMaximumStacks: 3
