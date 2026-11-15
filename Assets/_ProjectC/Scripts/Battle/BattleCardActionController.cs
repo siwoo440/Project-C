@@ -19,6 +19,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
     private BattleRemainingCardChoiceView remainingChoiceView; // 남은 카드 처리 선택 화면
+    private BattleDebuffChoiceView debuffChoiceView; // 디버프 이전 선택 화면
+    private IReadOnlyList<BattleStatusEffectInstance> pendingDebuffChoices; // 이전할 디버프 선택 후보
+    private BattleUnitRuntime pendingDebuffSource; // 디버프를 넘길 동료
+    private BattleUnitRuntime pendingDebuffRecipient; // 디버프를 받을 카드 소유자
     private CardInstance remainingChoiceCard; // 남은 선택 후보 카드
     private bool pendingFoolPassive; // 바보 패시브 선택 대기 여부
     private int lastFoolPassiveRound = -1; // 바보 패시브 마지막 발동 턴
@@ -224,8 +228,39 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 연출 완료 처리 시작
         actionPending = false; // 카드 행동 진행 상태 해제
         ShowPendingCardChoices(); // 대기 중인 드로우 선택 화면 표시
+        ShowPendingDebuffChoices(); // 대기 중인 디버프 선택 화면 표시
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 연출 완료 처리 종료
+    private void ShowPendingDebuffChoices() // 대기 중인 디버프 이전 선택 표시
+    { // 디버프 선택 표시 시작
+        if (pendingDebuffChoices == null || pendingDebuffChoices.Count == 0 || !turnRuntime.IsPlayerTurn) // 후보와 플레이어 턴 확인
+        { // 선택 불필요 처리 시작
+            pendingDebuffChoices = null; // 대기 중인 디버프 후보 정리
+            pendingDebuffSource = null; // 디버프 원래 대상 정리
+            pendingDebuffRecipient = null; // 디버프 이전 대상 정리
+            return; // 선택 화면 표시 중단
+        } // 선택 불필요 처리 종료
+        Canvas canvas = handView.GetComponentInParent<Canvas>(); // 전투 화면 캔버스 조회
+        if (canvas == null) // 선택 화면 부모 존재 확인
+        { // 캔버스 없음 처리 시작
+            pendingDebuffChoices = null; // 대기 디버프 후보 정리
+            pendingDebuffSource = null; // 디버프 원래 대상 정리
+            pendingDebuffRecipient = null; // 디버프 이전 대상 정리
+            Debug.LogError("[BattleCardActionController] 디버프 선택 화면을 표시할 캔버스가 없습니다."); // 선택 화면 누락 안내
+            return; // 선택 화면 표시 중단
+        } // 캔버스 없음 처리 종료
+        debuffChoiceView = BattleDebuffChoiceView.Show(canvas.transform, pendingDebuffChoices, HandleDebuffChoiceSelected); // 디버프 한 가지 선택 화면 생성
+        handView.SetInteractionLocked(true); // 선택 중 손패와 턴 종료 잠금
+    } // 디버프 선택 표시 종료
+    private void HandleDebuffChoiceSelected(BattleStatusEffectInstance effect) // 선택한 디버프 이전 처리
+    { // 선택 디버프 처리 시작
+        BattleDebuffTransfer.TryTransfer(pendingDebuffSource, pendingDebuffRecipient, effect); // 선택한 디버프 한 가지 이전
+        pendingDebuffChoices = null; // 디버프 후보 정리
+        pendingDebuffSource = null; // 원래 동료 참조 정리
+        pendingDebuffRecipient = null; // 디버프 이전 대상 참조 정리
+        debuffChoiceView = null; // 닫힌 선택 화면 참조 정리
+        handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
+    } // 선택 디버프 처리 종료
     private void ShowPendingCardChoices() // 대기 중인 선택 드로우 표시
     { // 선택 화면 표시 시작
         if (pendingCardChoices == null || pendingCardChoices.Count == 0 || !turnRuntime.IsPlayerTurn) // 선택 후보와 플레이어 턴 확인
@@ -301,7 +336,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         pendingCardChoices = null; // 대기 후보 정리
         pendingFoolPassive = false; // 대기 패시브 해제
         remainingChoiceCard = null; // 남은 카드 참조 정리
-        bool hadChoiceView = drawChoiceView != null || remainingChoiceView != null; // 선택 화면 존재 여부 확인
+        pendingDebuffChoices = null; // 디버프 선택 후보 정리
+        pendingDebuffSource = null; // 디버프 원래 대상 정리
+        pendingDebuffRecipient = null; // 디버프 이전 대상 정리
+        bool hadChoiceView = drawChoiceView != null || remainingChoiceView != null || debuffChoiceView != null; // 선택 화면 존재 여부 확인
         if (drawChoiceView != null) // 카드 선택 화면 존재 확인
         { // 카드 선택 화면 닫기 시작
             drawChoiceView.Close(); // 카드 선택 화면 닫기
@@ -312,6 +350,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             remainingChoiceView.Close(); // 남은 카드 화면 닫기
             remainingChoiceView = null; // 남은 카드 화면 참조 정리
         } // 남은 카드 화면 닫기 종료
+        if (debuffChoiceView != null) // 디버프 선택 화면 존재 확인
+        { // 디버프 선택 화면 닫기 시작
+            debuffChoiceView.Close(); // 디버프 선택 화면 닫기
+            debuffChoiceView = null; // 디버프 선택 화면 참조 정리
+        } // 디버프 선택 화면 닫기 종료
         if (hadChoiceView && handView != null && !actionSequenceRunner.IsBusy) // 선택 화면과 연출 상태 확인
         { // 입력 복구 시작
             handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
@@ -363,6 +406,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 피해 분담 불가 처리 시작
             return false; // 선택 불가 반환
         } // 피해 분담 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff && BattleDebuffTransfer.GetChoices(targetUnit, cardInstance.OwnerUnit).Count == 0) // 동료의 이전 가능한 디버프 확인
+        { // 디버프 이전 불가 처리 시작
+            return false; // 선택 불가 반환
+        } // 디버프 이전 불가 처리 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner && !loversPartner.CanSetPartner(cardInstance.OwnerUnit, targetUnit)) // 생존한 다른 파트너 후보 확인
         { // 파트너 지정 불가 처리 시작
             return false; // 선택 불가 반환
@@ -433,7 +480,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -466,6 +513,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 매달린 자의 디버프 이전 효과 확인
+        { // 디버프 이전 선택 준비 시작
+            pendingDebuffSource = targetUnit; // 디버프를 넘길 동료 저장
+            pendingDebuffRecipient = cardInstance.OwnerUnit; // 디버프를 받을 소유자 저장
+            pendingDebuffChoices = BattleDebuffTransfer.GetChoices(targetUnit, cardInstance.OwnerUnit); // 이전 가능한 디버프 목록 준비
+            return pendingDebuffChoices.Count; // 선택 가능한 디버프 수 반환
+        } // 디버프 이전 선택 준비 종료
         if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 운명의 공격 대상 재굴림 확인
         { // 무작위 대상 재굴림 시작
             return enemyActions.TryRerollRandomAttack(targetUnit) ? 1 : 0; // 재굴림 성공 여부 반환
@@ -551,6 +605,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
         int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
+        if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
+        { // 약화 대상 추가 피해 시작
+            baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
+        } // 약화 대상 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
         chariotConcentration.RecordAttack(cardInstance, targetUnit); // 전차의 대상별 공격과 표식 처리
@@ -568,6 +626,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 동료 디버프 이전 효과 확인
+        { // 디버프 이전 문구 시작
+            return "동료 디버프 이전 후보"; // 디버프 이전 효과 이름 반환
+        } // 디버프 이전 문구 종료
         if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 공격 대상 재굴림 확인
         { // 재굴림 문구 시작
             return "무작위 공격 대상 재굴림"; // 재굴림 효과 이름 반환
