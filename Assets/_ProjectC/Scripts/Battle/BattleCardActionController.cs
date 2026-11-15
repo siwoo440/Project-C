@@ -10,6 +10,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
+    private readonly LoversPartnerRuntime loversPartner; // 연인 파트너와 행동 기록
+    private readonly ChariotConcentrationRuntime chariotConcentration; // 전차 집중 공격과 표식 기록
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
@@ -33,6 +35,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         actionSequenceRunner = sequenceRunner ?? throw new ArgumentNullException(nameof(sequenceRunner)); // 행동 연출 실행기 저장
         statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
         enemyActions = enemyRuntime ?? throw new ArgumentNullException(nameof(enemyRuntime)); // 적 행동 관리자 저장
+        loversPartner = new LoversPartnerRuntime(turnRuntime, enemyActions.AllyUnits); // 연인 파트너 관리자 생성
+        chariotConcentration = new ChariotConcentrationRuntime(turnRuntime, enemyActions.EnemyUnits); // 전차 집중 공격 관리자 생성
+        loversPartner.Changed += RefreshPartnerMarkers; // 파트너 표시 갱신 연결
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
         handView.CardClicked += HandleCardClicked; // 카드 클릭 이벤트 등록
@@ -127,6 +132,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 입력 잠금 처리 종료
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 턴 상태 처리 종료
+    private void RefreshPartnerMarkers() // 파트너 화면 표시 갱신
+    { // 파트너 표시 갱신 시작
+        foreach (BattleUnitView view in allyUnitViews) // 아군 화면 목록 순회
+        { // 개별 파트너 표시 시작
+            if (view != null) // 아군 화면 존재 확인
+            { // 유효 화면 처리 시작
+                view.SetPartnerMarker(view.RuntimeUnit == loversPartner.Partner, loversPartner.PartnerUsedCardThisTurn); // 현재 파트너와 카드 사용 상태 적용
+            } // 유효 화면 처리 종료
+        } // 개별 파트너 표시 종료
+    } // 파트너 표시 갱신 종료
     private void HandleUnitDied(BattleUnitRuntime runtimeUnit) // 유닛 사망 처리
     { // 유닛 사망 처리 시작
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
@@ -184,6 +199,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
     { // 카드 충돌 처리 시작
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
+        loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies) // 전체 아군 방어도 배분 확인
         { // 효과 적용 시작
@@ -327,6 +343,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 선택 불가 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.SelectPartner && !loversPartner.CanSetPartner(cardInstance.OwnerUnit, targetUnit)) // 생존한 다른 파트너 후보 확인
+        { // 파트너 지정 불가 처리 시작
+            return false; // 선택 불가 반환
+        } // 파트너 지정 불가 처리 종료
         if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget && (targetUnit.Team != BattleTeam.Ally || !HasIncomingAttack(targetUnit))) // 공격 예고 보호 대상 확인
         { // 보호 불가 대상 처리 시작
             return false; // 선택 불가 반환
@@ -393,7 +413,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -426,6 +446,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.SelectPartner) // 연인 파트너 지정 효과 확인
+        { // 파트너 지정 처리 시작
+            return loversPartner.TrySetPartner(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 지정 성공 여부 반환
+        } // 파트너 지정 처리 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 획득 시작
             return targetUnit.GainBlock(cardInstance.EffectValue); // 대상의 실제 방어도 획득량 반환
@@ -489,25 +513,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
         int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
-        BattleStatusEffectInstance chariotMark = targetUnit.GetStatusEffect(BattleStatusEffectType.ChariotMark); // 대상의 전차 표식 조회
-        if (chariotMark != null && cardInstance.OwnerUnit.CharacterSource != null && cardInstance.OwnerUnit.CharacterSource.CharacterId == "ARC_07") // 전차의 표식 대상 공격 확인
-        { // 표식 추가 피해 시작
-            baseDamage += chariotMark.EffectiveValue; // 표식 추가 원본 피해 적용
-        } // 표식 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
-        if (cardInstance.StatusEffectType == BattleStatusEffectType.ChariotMark && !targetUnit.IsDead) // 생존 적 표식 카드 확인
-        { // 전차 표식 처리 시작
-            foreach (BattleUnitView enemyView in enemyUnitViews) // 적 화면 순회
-            { // 기존 표식 정리 시작
-                if (enemyView != null && enemyView.RuntimeUnit != null) // 적 유닛 존재 확인
-                { // 기존 표식 제거 시작
-                    enemyView.RuntimeUnit.RemoveStatusEffect(BattleStatusEffectType.ChariotMark); // 이전 집중 대상 표식 해제
-                } // 기존 표식 제거 종료
-            } // 기존 표식 정리 종료
-            BattleStatusEffectApplyResult markResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.ChariotMark, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 새 집중 대상 표식 적용
-            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.ChariotMark, markResult); // 표식 적용 결과 표시
-        } // 전차 표식 처리 종료
+        chariotConcentration.RecordAttack(cardInstance, targetUnit); // 전차의 대상별 공격과 표식 처리
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
@@ -522,6 +530,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.SelectPartner) // 파트너 지정 문구 확인
+        { // 파트너 문구 시작
+            return "파트너 지정"; // 파트너 효과 이름 반환
+        } // 파트너 문구 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 문구 확인
         { // 방어도 문구 시작
             return "방어도"; // 방어도 효과 이름 반환
@@ -627,6 +639,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 연결 해제 중단
         } // 중복 해제 처리 종료
         disposed = true; // 연결 해제 상태 저장
+        loversPartner.Changed -= RefreshPartnerMarkers; // 파트너 표시 갱신 해제
+        loversPartner.Dispose(); // 파트너 관리자 연결 해제
+        chariotConcentration.Dispose(); // 전차 표식 관리자 연결 해제
         CloseCardChoice(); // 대기 선택 화면 정리
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작

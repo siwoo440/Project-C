@@ -124,7 +124,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
-                return $"전차의 후속 공격 원본 피해 증가 {effectiveValue}"; // 전차 표식 설명 반환
+                return $"이번 턴 돌파 표식 {effectiveValue}개. 대상 변경 또는 턴 종료 시 제거"; // 전차 표식 설명 반환
             case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
                 return $"다음 아군 턴 시작 체력 회복 {effectiveValue}"; // 예약 회복 설명 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류

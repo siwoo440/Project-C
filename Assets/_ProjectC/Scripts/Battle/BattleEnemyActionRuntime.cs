@@ -10,6 +10,8 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private BattleEnemyAction executingAction; // 현재 실행 행동
     private bool disposed; // 연결 해제 여부
     public IReadOnlyList<BattleEnemyAction> PlannedActions => plannedActions; // 예정 행동 목록 조회
+    public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 전투 아군 목록 조회
+    public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 전투 적 목록 조회
     public event Action StateChanged; // 예정 행동 변경 이벤트
     public BattleEnemyActionRuntime(IReadOnlyList<BattleUnitRuntime> enemies, IReadOnlyList<BattleUnitRuntime> allies) // 적 행동 관리자 생성
     { // 생성자 시작

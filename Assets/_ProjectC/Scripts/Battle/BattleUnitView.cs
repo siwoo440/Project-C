@@ -26,6 +26,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private BattleMentalView mentalView; // 정신력 표시 화면
     private GameObject blockRoot; // 방어도 표시 배경
     private TMP_Text blockText; // 방어도 수치 텍스트
+    private GameObject partnerRoot; // 파트너 표시 배경
+    private TMP_Text partnerText; // 파트너 상태 텍스트
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -75,6 +77,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         { // 방어도 화면 숨김 시작
             blockRoot.SetActive(false); // 연결 해제 시 방어도 숨김
         } // 방어도 화면 숨김 종료
+        if (partnerRoot != null) // 파트너 화면 존재 확인
+        { // 파트너 화면 숨김 시작
+            partnerRoot.SetActive(false); // 연결 해제 시 파트너 숨김
+        } // 파트너 화면 숨김 종료
         if (targetOutline != null) // 대상 윤곽선 존재 확인
         { // 대상 윤곽선 초기화 시작
             targetOutline.enabled = false; // 기존 선택 강조 해제
@@ -185,6 +191,52 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 연결 없음 처리 종료
         targetOutline.enabled = targetable; // 선택 가능 대상 윤곽선 적용
     } // 대상 표시 종료
+    public void SetPartnerMarker(bool isPartner, bool usedCard) // 파트너 표시 적용
+    { // 파트너 표시 시작
+        if (!isPartner || RuntimeUnit == null || RuntimeUnit.IsDead) // 파트너 표시 조건 확인
+        { // 파트너 숨김 시작
+            if (partnerRoot != null) // 기존 표시 존재 확인
+            { // 기존 표시 숨김 시작
+                partnerRoot.SetActive(false); // 파트너 표시 숨김
+            } // 기존 표시 숨김 종료
+            return; // 파트너 표시 중단
+        } // 파트너 숨김 종료
+        EnsurePartnerView(); // 파트너 표시 화면 준비
+        partnerText.text = usedCard ? "파트너 사용" : "파트너"; // 카드 사용 여부 표시
+        partnerRoot.SetActive(true); // 파트너 표시 활성화
+    } // 파트너 표시 종료
+    private void EnsurePartnerView() // 파트너 표시 화면 생성
+    { // 파트너 화면 생성 시작
+        if (partnerRoot != null) // 기존 화면 확인
+        { // 중복 생성 처리 시작
+            return; // 화면 생성 중단
+        } // 중복 생성 처리 종료
+        partnerRoot = new GameObject("PartnerView", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 파트너 배경 생성
+        partnerRoot.transform.SetParent(transform, false); // 유닛 화면 자식 배치
+        RectTransform rootRect = partnerRoot.GetComponent<RectTransform>(); // 배경 위치 정보 조회
+        rootRect.anchorMin = new Vector2(0f, 1f); // 왼쪽 위 최소 앵커
+        rootRect.anchorMax = new Vector2(0f, 1f); // 왼쪽 위 최대 앵커
+        rootRect.pivot = new Vector2(0f, 1f); // 왼쪽 위 기준점
+        rootRect.anchoredPosition = new Vector2(4f, -76f); // 초상화 위쪽 위치
+        rootRect.sizeDelta = new Vector2(76f, 26f); // 파트너 배경 크기
+        Image background = partnerRoot.GetComponent<Image>(); // 배경 이미지 조회
+        background.color = new Color(0.3f, 0.12f, 0.23f, 0.94f); // 자주색 배경 적용
+        background.raycastTarget = false; // 대상 선택 입력 유지
+        GameObject textObject = new GameObject("PartnerText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 파트너 텍스트 생성
+        textObject.transform.SetParent(partnerRoot.transform, false); // 배경 자식 배치
+        RectTransform textRect = textObject.GetComponent<RectTransform>(); // 텍스트 위치 정보 조회
+        textRect.anchorMin = Vector2.zero; // 텍스트 최소 앵커
+        textRect.anchorMax = Vector2.one; // 텍스트 최대 앵커
+        textRect.offsetMin = Vector2.zero; // 텍스트 아래 여백
+        textRect.offsetMax = Vector2.zero; // 텍스트 위 여백
+        partnerText = textObject.GetComponent<TMP_Text>(); // 텍스트 컴포넌트 조회
+        partnerText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 글꼴 적용
+        partnerText.fontSize = 14f; // 글자 크기 적용
+        partnerText.fontStyle = FontStyles.Bold; // 굵은 글자 적용
+        partnerText.alignment = TextAlignmentOptions.Center; // 가운데 정렬 적용
+        partnerText.color = new Color(1f, 0.85f, 0.94f, 1f); // 밝은 분홍 글자 적용
+        partnerText.raycastTarget = false; // 대상 선택 입력 유지
+    } // 파트너 화면 생성 종료
     public void OnPointerClick(PointerEventData eventData) // 유닛 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
         if (RuntimeUnit == null || RuntimeUnit.IsDead) // 유닛 연결과 생존 상태 확인

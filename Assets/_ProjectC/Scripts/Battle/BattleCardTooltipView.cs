@@ -105,6 +105,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.SelectPartner) // 파트너 지정 효과 확인
+        { // 파트너 상세 처리 시작
+            return "생존한 다른 아군을 파트너로 지정"; // 파트너 지정 상세 반환
+        } // 파트너 상세 처리 종료
         if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
         { // 디버프 해제 상세 처리 시작
             return "모든 디버프 해제"; // 디버프 해제 상세 반환

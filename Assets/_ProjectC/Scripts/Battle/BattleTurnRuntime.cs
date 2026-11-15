@@ -17,6 +17,17 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     public bool CanEscape => !disposed && BattleType == BattleType.Normal && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 현재 도주 가능 여부
+    public bool HasOtherLivingAlly(BattleUnitRuntime owner) // 본인 외 생존 아군 확인
+    { // 생존 동료 확인 시작
+        foreach (BattleUnitRuntime ally in allyUnits) // 아군 목록 순회
+        { // 생존 동료 검사 시작
+            if (ally != null && ally != owner && !ally.IsDead) // 다른 생존 아군 확인
+            { // 생존 동료 발견 시작
+                return true; // 생존 동료 존재 반환
+            } // 생존 동료 발견 종료
+        } // 생존 동료 검사 종료
+        return false; // 생존 동료 없음 반환
+    } // 생존 동료 확인 종료
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
