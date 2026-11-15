@@ -72,6 +72,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 적 턴 종료 알림
+        ClearRoundBlock(allyUnits); // 라운드 전환 시 아군 방어도 정리
+        ClearRoundBlock(enemyUnits); // 라운드 전환 시 적 방어도 정리
         CurrentRound++; // 다음 라운드 증가
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 시작 알림
@@ -92,6 +94,13 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         SetBattleResult(BattleResult.Escape); // 도주 결과 확정
         return true; // 도주 성공 반환
     } // 도주 요청 종료
+    private static void ClearRoundBlock(IReadOnlyList<BattleUnitRuntime> units) // 진영의 남은 방어도 정리
+    { // 방어도 정리 시작
+        foreach (BattleUnitRuntime unit in units) // 진영 유닛 순회
+        { // 개별 정리 시작
+            unit?.ClearBlock(); // 유효한 유닛 방어도 제거
+        } // 개별 정리 종료
+    } // 방어도 정리 종료
     public bool RegisterSummonedEnemy(BattleUnitRuntime enemyUnit) // 소환 적 사망 판정 등록
     { // 소환 적 등록 시작
         if (disposed || IsBattleEnded || enemyUnit == null || enemyUnit.Team != BattleTeam.Enemy || !ContainsUnit(enemyUnits, enemyUnit)) // 소환 적 등록 조건 확인

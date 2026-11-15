@@ -19,6 +19,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public int PhysicalDefense => CalculateDefense(BasePhysicalDefense, BattleStatusEffectType.PhysicalDefenseUp, BattleStatusEffectType.PhysicalDefenseDown); // 현재 물리 방어력
     public int MagicalResistance => CalculateDefense(BaseMagicalResistance, BattleStatusEffectType.MagicalResistanceUp, BattleStatusEffectType.MagicalResistanceDown); // 현재 마법 저항력
     public int CurrentHealth { get; private set; } // 현재 체력
+    public int CurrentBlock { get; private set; } // 현재 피해 흡수 방어도
     public bool IsDead { get; private set; } // 사망 여부
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
     public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
@@ -30,6 +31,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public CharacterData CharacterSource { get; } // 아군 원본 데이터
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
+    public event Action<BattleUnitRuntime> BlockChanged; // 방어도 변경 이벤트
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
@@ -260,7 +262,30 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         statusEffects.Clear(); // 상태 이상 목록 초기화
         StatusEffectsChanged?.Invoke(this); // 상태 이상 제거 알림
     } // 전체 상태 제거 종료
-    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 예상 피해 계산
+    public int GainBlock(int amount) // 방어도 획득
+    { // 방어도 획득 시작
+        if (IsDead || amount <= 0) // 획득 불가 조건 확인
+        { // 획득 불가 처리 시작
+            return 0; // 획득량 없음 반환
+        } // 획득 불가 처리 종료
+        int gained = (int)Math.Min((long)amount, (long)int.MaxValue - CurrentBlock); // 정수 범위 내 획득량 계산
+        if (gained > 0) // 실제 획득 확인
+        { // 획득 처리 시작
+            CurrentBlock += gained; // 현재 방어도 증가
+            BlockChanged?.Invoke(this); // 방어도 변경 알림
+        } // 획득 처리 종료
+        return gained; // 실제 획득량 반환
+    } // 방어도 획득 종료
+    public void ClearBlock() // 남은 방어도 제거
+    { // 방어도 제거 시작
+        if (CurrentBlock <= 0) // 제거할 방어도 확인
+        { // 제거 불필요 처리 시작
+            return; // 중복 알림 방지
+        } // 제거 불필요 처리 종료
+        CurrentBlock = 0; // 방어도 초기화
+        BlockChanged?.Invoke(this); // 방어도 변경 알림
+    } // 방어도 제거 종료
+    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null) // 예상 피해 계산
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
@@ -269,8 +294,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
         int bonusDefense = preparation == null ? 0 : preparation.EffectiveValue; // 임시 방어 수치 계산
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense + bonusDefense, MagicalResistance + bonusDefense); // 준비 효과 포함 피해 계산
-        int expectedAppliedDamage = Mathf.Min(CurrentHealth, damageResult.FinalDamage); // 남은 체력 기준 실제 피해 계산
-        return damageResult.WithAppliedDamage(expectedAppliedDamage); // 예상 체력 피해 포함 결과 반환
+        return damageResult.WithBlock(blockOverride ?? CurrentBlock, CurrentHealth); // 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
     public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 피해 처리
     { // 피해 처리 시작
@@ -285,6 +309,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 발동한 방어 준비 제거
         } // 준비 소모 종료
         CurrentHealth = Mathf.Max(0, CurrentHealth - damageResult.AppliedDamage); // 현재 체력 감소
+        CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
         { // 사망 처리 시작
@@ -292,6 +317,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 사망 처리 종료
         DamageTaken?.Invoke(this, damageResult); // 피해 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
+        if (damageResult.AbsorbedDamage > 0) // 방어도 소모 여부 확인
+        { // 소모 알림 시작
+            BlockChanged?.Invoke(this); // 방어도 변경 알림
+        } // 소모 알림 종료
         DamageResolved?.Invoke(sourceUnit, this, damageResult); // 발생자 포함 피해 완료 알림
         ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
         if (diedNow) // 신규 사망 확인

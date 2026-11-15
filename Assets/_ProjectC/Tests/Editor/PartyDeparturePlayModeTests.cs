@@ -244,7 +244,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
-    public IEnumerator PriestessCard_ProtectsAllyTargetedByAttack() // 여사제 전용 보호 카드 실제 사용 확인
+    public IEnumerator PriestessCard_ProtectsAllyWithoutIncomingAttack() // 공격 예고 없는 아군 보호 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
@@ -302,20 +302,17 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsNotNull(priestessView); // 여사제 화면 존재 확인
         BattleEnemyAction plannedAttack = battle.EnemyActionRuntime.FindAction(battle.EnemyUnits[0]); // 예정 공격 조회
         int previousDamage = plannedAttack.PreviewDamage().AppliedDamage; // 보호 전 예상 피해 저장
-        int previousPhysical = target.PhysicalDefense; // 기존 물리 방어력 저장
-        int previousMagical = target.MagicalResistance; // 기존 마법 저항력 저장
+        int previousBlock = priestess.CurrentBlock; // 여사제 기존 방어도 저장
         int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
         priestessCard.OnPointerClick(null); // 여사제 카드 선택
         priestessView.OnPointerClick(null); // 공격 예고가 없는 아군 선택
-        Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
-        targetView.OnPointerClick(null); // 공격 예고 대상 선택
-        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && target.PhysicalDefense == previousPhysical;) // 카드 효과 대기
+        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && priestess.CurrentBlock == previousBlock;) // 카드 효과 대기
         { // 카드 효과 대기 시작
             yield return null; // 다음 프레임 대기
         } // 카드 효과 대기 종료
-        Assert.AreEqual(previousPhysical + 2, target.PhysicalDefense); // 물리 방어 증가 확인
-        Assert.AreEqual(previousMagical + 2, target.MagicalResistance); // 마법 저항 증가 확인
-        Assert.LessOrEqual(plannedAttack.PreviewDamage().AppliedDamage, previousDamage); // 방어 증가 후 예정 피해 비증가 확인
+        Assert.AreEqual(previousBlock + 2, priestess.CurrentBlock); // 선택 아군의 방어도 획득 확인
+        Assert.AreEqual(0, target.CurrentBlock); // 선택하지 않은 아군의 방어도 유지 확인
+        Assert.AreEqual(previousDamage, plannedAttack.PreviewDamage().AppliedDamage); // 다른 아군의 공격 예고 유지 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
@@ -563,17 +560,17 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             } // 전용 카드 발견 종료
         } // 전용 카드 검색 종료
         Assert.IsNotNull(empressCard); // 여황제 카드 손패 존재 확인
-        int firstDefense = battle.AllyUnits[0].PhysicalDefense; // 첫 아군 기존 방어력 저장
-        int secondDefense = battle.AllyUnits[1].PhysicalDefense; // 여황제 기존 방어력 저장
+        int firstBlock = battle.AllyUnits[0].CurrentBlock; // 첫 아군 기존 방어도 저장
+        int secondBlock = battle.AllyUnits[1].CurrentBlock; // 여황제 기존 방어도 저장
         int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
         empressCard.OnPointerClick(null); // 여황제 전체 방어 카드 사용
         float effectDeadline = Time.realtimeSinceStartup + 5f; // 카드 효과 제한 시간 설정
-        while (Time.realtimeSinceStartup < effectDeadline && battle.AllyUnits[0].PhysicalDefense == firstDefense) // 방어 효과 적용 대기
+        while (Time.realtimeSinceStartup < effectDeadline && battle.AllyUnits[0].CurrentBlock == firstBlock) // 방어 효과 적용 대기
         { // 효과 대기 시작
             yield return null; // 다음 프레임 대기
         } // 효과 대기 종료
-        Assert.AreEqual(firstDefense + 3, battle.AllyUnits[0].PhysicalDefense); // 첫 아군 방어 증가 확인
-        Assert.AreEqual(secondDefense + 3, battle.AllyUnits[1].PhysicalDefense); // 여황제 방어 증가 확인
+        Assert.AreEqual(firstBlock + 2, battle.AllyUnits[0].CurrentBlock); // 첫 아군 나머지 포함 방어도 확인
+        Assert.AreEqual(secondBlock + 1, battle.AllyUnits[1].CurrentBlock); // 여황제 방어도 배분 확인
         Assert.AreEqual(previousPoints - 2, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료

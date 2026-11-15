@@ -185,10 +185,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 카드 충돌 처리 시작
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
-        foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
+        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies) // 전체 아군 방어도 배분 확인
         { // 효과 적용 시작
-            totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
+            totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
         } // 효과 적용 종료
+        else // 일반 카드 효과 분기
+        { // 일반 효과 처리 시작
+            foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
+            { // 대상별 효과 적용 시작
+                totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
+            } // 대상별 효과 적용 종료
+        } // 일반 효과 처리 종료
         bool discarded = runtimeDeck.DiscardCard(cardInstance); // 사용 카드를 버린 카드 더미로 이동
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
@@ -387,7 +394,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -420,6 +427,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
+        { // 방어도 획득 시작
+            return targetUnit.GainBlock(cardInstance.EffectValue); // 대상의 실제 방어도 획득량 반환
+        } // 방어도 획득 종료
         if (cardInstance.EffectType == CardEffectType.RecoverDiscard) // 버린 카드 회수 효과 확인
         { // 마법사 전용 효과 시작
             pendingChoiceEffect = CardEffectType.RecoverDiscard; // 회수 선택 효과 저장
@@ -511,6 +522,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 문구 확인
+        { // 방어도 문구 시작
+            return "방어도"; // 방어도 효과 이름 반환
+        } // 방어도 문구 종료
         if (cardInstance.EffectType == CardEffectType.RecoverDiscard) // 버린 카드 회수 문구 확인
         { // 카드 회수 문구 시작
             return "버린 카드 회수 후보"; // 전용 효과 이름 반환

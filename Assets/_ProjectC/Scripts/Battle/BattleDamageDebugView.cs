@@ -144,10 +144,11 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
                 0,
                 cardBaseDamage + attackPowerBonus); // 정신 보정 전 공격값 계산
 
+        int absorbedDamage = Mathf.Min(target.CurrentBlock, result.FinalDamage); // 방어도 예상 흡수량 계산
         int predictedAppliedDamage =
             Mathf.Min(
                 target.CurrentHealth,
-                result.FinalDamage); // 현재 체력 기준 실제 적용 피해 계산
+                result.FinalDamage - absorbedDamage); // 방어도와 체력 기준 실제 피해 계산
 
         string defenseName =
             result.DamageType == BattleDamageType.Physical
@@ -177,8 +178,8 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
 
         calculationText.AppendLine($"최종 버림 : {result.RawDamage} × 100 / (100 + {result.DefenseValue}) × {result.WeaknessMultiplier:0.00} = {result.FinalDamage}"); // 약점 포함 최종 계산식 기록
 
-        calculationText.AppendLine(
-            $"적용 피해 min(현재 HP {target.CurrentHealth}, {result.FinalDamage}) = {predictedAppliedDamage}"); // 실제 적용 피해 기록
+        calculationText.AppendLine($"방어도 흡수 {absorbedDamage} / 남은 피해 {result.FinalDamage - absorbedDamage}"); // 방어도 흡수 계산 기록
+        calculationText.AppendLine($"적용 피해 min(현재 HP {target.CurrentHealth}, {result.FinalDamage - absorbedDamage}) = {predictedAppliedDamage}"); // 실제 적용 피해 기록
 
         calculationText.AppendLine(); // 대상 사이 여백 기록
 

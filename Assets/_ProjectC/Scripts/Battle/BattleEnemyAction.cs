@@ -3,6 +3,7 @@ using System; // 기본 예외 기능 사용
 public sealed class BattleEnemyAction // 적 예정 행동 정보
 {
     private Func<BattleEnemyAction, bool> canPreviewPreparation; // 방어 준비 예고 순서 확인
+    private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
     public BattleUnitRuntime Target { get; private set; } // 대상 아군 조회
     public EnemyActionType ActionType { get; } // 행동 종류 조회
@@ -101,7 +102,15 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     { // 예고 규칙 연결 시작
         canPreviewPreparation = rule; // 공격 순서 확인 규칙 저장
     } // 예고 규칙 연결 종료
+    internal void SetBlockPreviewRule(Func<BattleEnemyAction, int> rule) // 방어도 예고 규칙 연결
+    { // 방어도 규칙 연결 시작
+        getPreviewBlock = rule; // 방어도 예측 규칙 저장
+    } // 방어도 규칙 연결 종료
     public BattleDamageResult PreviewDamage() // 예정 피해 계산
+    { // 예정 피해 계산 시작
+        return PreviewDamageWithBlock(Target == null ? 0 : getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this)); // 공격 순서별 방어도 반영
+    } // 예정 피해 계산 종료
+    internal BattleDamageResult PreviewDamageWithBlock(int block) // 지정 방어도 기준 예정 피해 계산
     {
         if (Target == null ||
             Target.IsDead)
@@ -117,7 +126,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         return Target.PreviewDamage( // 적 공격 예상 피해 계산
             modifiedAmount, // 정신 상태 포함 피해량 전달
             DamageType, // 공격 피해 유형 전달
-            canPreviewPreparation == null || canPreviewPreparation(this) ? Actor : null); // 첫 공격에만 방어 준비 포함
+            canPreviewPreparation == null || canPreviewPreparation(this) ? Actor : null, // 첫 공격에만 방어 준비 포함
+            block); // 예상 잔여 방어도 전달
     }
 
     public BattleEnemyActionResult Execute() // 예정 행동 실행
