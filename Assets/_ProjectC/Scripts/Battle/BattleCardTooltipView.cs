@@ -77,6 +77,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
+        { // 동료 보호 이름 시작
+            return "동료 보호"; // 동료 보호 효과 이름 반환
+        } // 동료 보호 이름 종료
+        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 덱 순서 정리 효과 확인
+        { // 덱 순서 정리 이름 시작
+            return "덱 순서 정리"; // 덱 순서 정리 효과 이름 반환
+        } // 덱 순서 정리 이름 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 문구 시작
             return cardInstance.TargetType == CardTargetType.AllAllies ? "전체 방어도 배분" : "방어도 획득"; // 대상별 방어도 문구 반환
@@ -105,6 +113,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
+        { // 동료 보호 상세 시작
+            return "다른 아군의 첫 예정 공격 대신 받기"; // 동료 보호 상세 반환
+        } // 동료 보호 상세 종료
+        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 덱 순서 정리 효과 확인
+        { // 덱 순서 정리 상세 시작
+            return $"덱 위 최대 {cardInstance.EffectValue}장 확인 후 한 장을 맨 위로 이동"; // 덱 순서 정리 상세 반환
+        } // 덱 순서 정리 상세 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner) // 파트너 지정 효과 확인
         { // 파트너 상세 처리 시작
             return "생존한 다른 아군을 파트너로 지정"; // 파트너 지정 상세 반환

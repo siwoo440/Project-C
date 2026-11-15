@@ -119,6 +119,40 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 상태 알림 종료
         return drawnCount; // 실제 드로우 수 반환
     } // 카드 드로우 종료
+    public IReadOnlyList<CardInstance> PeekDrawTop(int maximumChoices) // 현재 덱 위의 생존 카드 확인
+    { // 덱 위 확인 시작
+        List<CardInstance> choices = new List<CardInstance>(); // 덱 위 후보 목록 생성
+        for (int index = drawPile.Count - 1; index >= 0 && choices.Count < maximumChoices; index--) // 맨 위부터 후보 수까지 순회
+        { // 카드 후보 확인 시작
+            CardInstance candidate = drawPile[index]; // 현재 덱 카드 조회
+            if (IsDrawable(candidate)) // 생존 소유자 카드 확인
+            { // 후보 추가 시작
+                choices.Add(candidate); // 덱 위 순서대로 후보 추가
+            } // 후보 추가 종료
+        } // 카드 후보 확인 종료
+        return choices.AsReadOnly(); // 외부 수정이 불가능한 후보 반환
+    } // 덱 위 확인 종료
+    public bool TryMoveDrawTop(CardInstance choice, int maximumChoices) // 선택 후보를 덱 맨 위로 이동
+    { // 덱 순서 변경 시작
+        if (choice == null || maximumChoices <= 0) // 선택 카드와 후보 수 확인
+        { // 잘못된 선택 처리 시작
+            return false; // 변경 실패 반환
+        } // 잘못된 선택 처리 종료
+        IReadOnlyList<CardInstance> choices = PeekDrawTop(maximumChoices); // 현재 덱 위 후보 재확인
+        bool found = false; // 선택 카드 포함 여부 초기화
+        foreach (CardInstance candidate in choices) // 현재 후보 순회
+        { // 선택 카드 비교 시작
+            found |= candidate == choice; // 선택 카드 일치 기록
+        } // 선택 카드 비교 종료
+        if (!found || !drawPile.Remove(choice)) // 유효 후보와 실제 덱 위치 확인
+        { // 후보 이탈 처리 시작
+            return false; // 변경 실패 반환
+        } // 후보 이탈 처리 종료
+        drawPile.Add(choice); // 선택 카드를 덱 맨 위에 배치
+        EnsureValidState(); // 카드 영역 보존 확인
+        StateChanged?.Invoke(); // 변경된 덱 상태 알림
+        return true; // 변경 성공 반환
+    } // 덱 순서 변경 종료
     public IReadOnlyList<CardInstance> PrepareDrawChoices(int maximumChoices) // 덱 위 선택 후보 준비
     { // 선택 후보 준비 시작
         List<CardInstance> choices = new List<CardInstance>(); // 빈 선택 후보 목록 생성

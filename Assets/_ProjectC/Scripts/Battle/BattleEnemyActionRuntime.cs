@@ -154,6 +154,37 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 변경된 공격 예고 알림
         return true; // 유도 성공 반환
     } // 공격 유도 종료
+    public bool CanProtectAlly(BattleUnitRuntime guard, BattleUnitRuntime ally) // 동료 대신 공격받기 가능 여부 확인
+    { // 동료 보호 가능 확인 시작
+        if (disposed || guard == null || ally == null || guard == ally || guard.IsDead || ally.IsDead || guard.Team != BattleTeam.Ally || ally.Team != BattleTeam.Ally || !ContainsUnit(allyUnits, guard) || !ContainsUnit(allyUnits, ally)) // 보호자와 동료의 전투 상태 확인
+        { // 보호 불가 처리 시작
+            return false; // 보호 불가 반환
+        } // 보호 불가 처리 종료
+        foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
+        { // 공격 가능 확인 시작
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally) // 동료를 향한 유효 공격 확인
+            { // 보호 가능 처리 시작
+                return true; // 대신 받을 공격 존재 반환
+            } // 보호 가능 처리 종료
+        } // 공격 가능 확인 종료
+        return false; // 예정 공격 없음 반환
+    } // 동료 보호 가능 확인 종료
+    public bool TryProtectAlly(BattleUnitRuntime guard, BattleUnitRuntime ally) // 동료의 첫 예정 공격을 대신 받기
+    { // 동료 보호 시작
+        if (!CanProtectAlly(guard, ally)) // 보호 가능 상태 확인
+        { // 보호 불가 처리 시작
+            return false; // 보호 실패 반환
+        } // 보호 불가 처리 종료
+        foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
+        { // 첫 공격 검색 시작
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally && action.ChangeTarget(guard)) // 동료의 첫 공격을 보호자로 전환
+            { // 공격 전환 처리 시작
+                StateChanged?.Invoke(); // 변경된 공격 예고 알림
+                return true; // 보호 성공 반환
+            } // 공격 전환 처리 종료
+        } // 첫 공격 검색 종료
+        return false; // 전환할 공격 없음 반환
+    } // 동료 보호 종료
     public BattleEnemyAction FindAction(BattleUnitRuntime enemyUnit) // 적 예정 행동 조회
     { // 행동 조회 시작
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순회
