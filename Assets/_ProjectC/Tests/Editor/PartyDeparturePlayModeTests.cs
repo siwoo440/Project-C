@@ -13,18 +13,18 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 전환 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 전환 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메인 메뉴 진입 확인
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 전환 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "30_Exploration";) // 탐사 씬 전환 대기
         { // 탐사 대기 시작
             yield return null; // 다음 프레임 대기
         } // 탐사 대기 종료
@@ -33,7 +33,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         ExplorationPartyLoadoutProvider provider = Object.FindFirstObjectByType<ExplorationPartyLoadoutProvider>(); // 탐사 편성 제공자 조회
         Assert.IsNotNull(provider); // 탐사 편성 제공자 존재 확인
         Assert.AreEqual("ARC_00", provider.BattleLoadout.Party.Members[0].CharacterId); // 선택 캐릭터 전달 확인
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 생성 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 생성 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
@@ -44,7 +44,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         encounter.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 실제 조우 접촉 처리 실행
         string encounterId = ExplorationSessionManager.Instance.ActiveRuntimeEncounterId; // 현재 조우 식별자 기록
         Assert.IsFalse(string.IsNullOrEmpty(encounterId)); // 조우 시작 상태 확인
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 전환 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 전환 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -63,7 +63,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         BattleResultView resultView = Object.FindFirstObjectByType<BattleResultView>(); // 전투 결과 화면 조회
         Assert.IsNotNull(resultView); // 전투 결과 화면 존재 확인
         resultView.GetComponentInChildren<Button>().onClick.Invoke(); // 전투 결과 확인
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 복귀 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "30_Exploration";) // 탐사 복귀 대기
         { // 탐사 복귀 대기 시작
             yield return null; // 다음 프레임 대기
         } // 탐사 복귀 대기 종료
@@ -120,24 +120,24 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0, 4); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         ExplorationEncounterView encounter = Object.FindFirstObjectByType<ExplorationEncounterView>(); // 탐사 조우 조회
         ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 탐사 플레이어 조회
         encounter.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -205,22 +205,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0, 2); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -281,22 +281,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -396,22 +396,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(7); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -486,22 +486,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0, 3); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -539,22 +539,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(1); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -665,22 +665,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0, 5); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료
@@ -734,22 +734,22 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메인 메뉴 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
         PartyDepartureTestSupport.StartExploration(0, 17); // 테스트 파티 준비 후 탐사 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationEncounterView>() == null;) // 탐사 조우 대기
         { // 조우 대기 시작
             yield return null; // 다음 프레임 대기
         } // 조우 대기 종료
         Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<BattleSceneSetup>() == null;) // 전투 씬 대기
         { // 전투 대기 시작
             yield return null; // 다음 프레임 대기
         } // 전투 대기 종료

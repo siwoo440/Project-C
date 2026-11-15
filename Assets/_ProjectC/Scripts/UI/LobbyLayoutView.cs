@@ -41,7 +41,7 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         LobbyUiArt.Apply(help.GetComponent<Image>(), "Help"); // 제작한 물음표 이미지 적용
         Button settings = CreateButton("SettingsButton", string.Empty, new Vector2(0.965f, 0.93f), new Vector2(70f, 70f), openSettings); // 정사각형 설정 버튼 배치
         LobbyUiArt.Apply(settings.GetComponent<Image>(), "Settings"); // 제작한 톱니바퀴 이미지 적용
-        CreateButton("CharacterButton", "캐릭터", new Vector2(0.88f, 0.73f), new Vector2(300f, 140f), null); // 캐릭터 버튼 배치
+        CreateButton("CharacterButton", "캐릭터", new Vector2(0.88f, 0.73f), new Vector2(300f, 140f), () => CharacterListView.Open(GetComponentInParent<Canvas>())); // 캐릭터 목록 버튼 배치
         CreateButton("FormationButton", "편성", new Vector2(0.88f, 0.55f), new Vector2(300f, 140f), null); // 편성 버튼 배치
         CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), openExpedition); // 탐사 버튼 배치
         CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), null); // 도감 버튼 배치

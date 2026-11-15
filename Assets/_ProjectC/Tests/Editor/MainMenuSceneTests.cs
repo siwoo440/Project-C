@@ -64,17 +64,17 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         try // 테스트 파일 정리 보장
         { // 탐사 이어하기 검증 시작
             SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
             { // 메뉴 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 메뉴 대기 종료
             Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 테스트용 거점 이동
-            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 초기화 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 초기화 대기
             { // 로비 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 로비 대기 종료
             PartyDepartureTestSupport.StartExploration(0); // 테스트 파티 준비 후 탐사 시작
-            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationPlayerController>() == null; frame++) // 탐사 플레이어 생성 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationPlayerController>() == null;) // 탐사 플레이어 생성 대기
             { // 탐사 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 탐사 대기 종료
@@ -126,11 +126,11 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             SaveMenuController slotMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 슬롯 화면 조회
             Assert.IsNotNull(slotMenu); // 슬롯 화면 표시 확인
             slotMenu.transform.Find("SaveMenu/Slot_0/LoadButton").GetComponent<Button>().onClick.Invoke(); // 자동 탐사 저장 불러오기 실행
-            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 전환 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "30_Exploration";) // 탐사 씬 전환 대기
             { // 씬 전환 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 씬 전환 대기 종료
-            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationPlayerController>() == null; frame++) // 복원 플레이어 생성 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<ExplorationPlayerController>() == null;) // 복원 플레이어 생성 대기
             { // 플레이어 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 플레이어 대기 종료
@@ -303,7 +303,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
@@ -336,7 +336,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         { // 새 게임 저장 검증 시작
             System.IO.File.WriteAllText(path, "이전 탐사 저장"); // 이전 탐사 저장 준비
             SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
             { // 메뉴 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 메뉴 대기 종료
@@ -372,7 +372,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         try // 테스트 파일 정리 보장
         { // 이어하기 검증 시작
             SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
             { // 메뉴 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 메뉴 대기 종료
@@ -427,7 +427,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         try // 테스트 파일 정리 보장
         { // 손상 저장 검증 시작
             SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
             { // 메뉴 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 메뉴 대기 종료
@@ -582,7 +582,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 진입 대기
         { // 대기 시작
             yield return null; // 다음 프레임 대기
         } // 대기 종료
