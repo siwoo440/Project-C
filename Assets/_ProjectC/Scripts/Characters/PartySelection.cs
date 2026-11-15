@@ -27,6 +27,15 @@ public sealed class PartySelection // 출전 파티 선택 상태
         members.Add(character); // 캐릭터 선택 목록 추가
         return true; // 선택 성공 반환
     } // 선택 처리 종료
+    internal bool TryRestoreMember(CharacterData character) // 저장된 캐릭터 편성 복원
+    { // 저장 캐릭터 복원 시작
+        if (character == null || members.Count >= PartyData.MaxPartySize || members.Contains(character)) // 캐릭터와 편성 중복 확인
+        { // 잘못된 복원 처리 시작
+            return false; // 기존 편성 유지
+        } // 잘못된 복원 처리 종료
+        members.Add(character); // 출전 제한 상태를 유지한 캐릭터 추가
+        return true; // 편성 복원 성공 반환
+    } // 저장 캐릭터 복원 종료
     public bool TryRemove(CharacterData character) // 캐릭터 선택 해제 시도
     { // 해제 처리 시작
         return character != null && members.Remove(character); // 선택 해제 결과 반환
