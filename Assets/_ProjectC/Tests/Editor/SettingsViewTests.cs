@@ -25,17 +25,28 @@ public sealed class SettingsViewTests // 설정 탭과 옵션 화면 검증
         } // 설정 화면 대기 종료
         SettingsView view = Object.FindFirstObjectByType<SettingsView>(); // 설정 화면 조회
         Assert.IsNotNull(view); // 설정 화면 존재 확인
+        Image panel = view.transform.Find("Options").GetComponent<Image>(); // 설정 목록 패널 이미지 조회
+        Assert.AreEqual(Image.Type.Sliced, panel.type); // 패널 크기 변경 시 모서리 유지 확인
+        Assert.Greater(panel.sprite.border.x, 0f); // 패널 모서리 고정 영역 확인
         Transform tabs = view.transform.Find("Tabs"); // 설정 탭 영역 조회
         Assert.AreEqual(5, tabs.childCount); // 다섯 설정 탭 확인
         Transform list = view.transform.Find("Options/Viewport/Rows"); // 설정 항목 목록 조회
         Assert.AreEqual(13, list.childCount); // 그래픽 설정 항목 수 확인
         Assert.AreEqual("화면 모드", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 기획서 그래픽 항목 이름 확인
         Assert.AreEqual("무테창", list.GetChild(0).Find("Value").GetComponent<TMP_Text>().text); // 기획서 그래픽 기본값 확인
-        Assert.IsFalse(list.GetChild(0).Find("Previous").GetComponent<Button>().interactable); // 연결 전 값 변경 차단 확인
+        Assert.IsTrue(list.GetChild(0).Find("Previous").GetComponent<Button>().interactable); // 화면 모드 변경 허용 확인
+        Assert.IsFalse(list.GetChild(4).Find("Previous").GetComponent<Button>().interactable); // 미연결 밝기 변경 차단 확인
+        list.GetChild(0).Find("Next").GetComponent<Button>().onClick.Invoke(); // 다음 화면 모드 선택
+        Assert.AreEqual("창모드", list.GetChild(0).Find("Value").GetComponent<TMP_Text>().text); // 변경한 화면 모드 표시 확인
+        list.GetChild(0).Find("Previous").GetComponent<Button>().onClick.Invoke(); // 원래 화면 모드 복구
         tabs.Find("Tab_1").GetComponent<Button>().onClick.Invoke(); // 사운드 탭 선택
         Assert.AreEqual(9, list.childCount); // 기획서 사운드 항목 수 확인
         Assert.AreEqual("마스터 볼륨", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 사운드 첫 항목 확인
         Assert.AreEqual("80", list.GetChild(0).Find("Value").GetComponent<TMP_Text>().text); // 사운드 기본값 확인
+        list.GetChild(0).Find("Next").GetComponent<Button>().onClick.Invoke(); // 마스터 음량 한 단계 증가
+        Assert.AreEqual("81", list.GetChild(0).Find("Value").GetComponent<TMP_Text>().text); // 변경된 음량 표시 확인
+        Assert.AreEqual(0.81f, AudioListener.volume, 0.001f); // 변경된 Unity 전체 음량 확인
+        list.GetChild(0).Find("Previous").GetComponent<Button>().onClick.Invoke(); // 원래 마스터 음량 복구
         tabs.Find("Tab_2").GetComponent<Button>().onClick.Invoke(); // 게임 플레이 탭 선택
         Assert.AreEqual(16, list.childCount); // 기획서 게임 플레이 항목 수 확인
         Assert.AreEqual("난이도", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 게임 플레이 첫 항목 확인
