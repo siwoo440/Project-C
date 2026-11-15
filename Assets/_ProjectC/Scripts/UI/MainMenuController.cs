@@ -19,12 +19,16 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         { // 기본 경로 설정 시작
             savePath = LobbySaveService.DefaultPath; // 기본 저장 경로 보관
         } // 기본 경로 설정 종료
-        menuView.Bind(StartGame, ContinueGame, OpenSettings, QuitGame, LobbySaveService.CanLoad(savePath)); // 저장 상태에 맞춰 메뉴 동작 연결
+        menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, LobbySaveService.CanLoad(savePath)); // 저장 상태에 맞춰 메뉴 동작 연결
         if (EventSystem.current != null) // 입력 관리자 존재 확인
         { // 첫 버튼 선택 시작
             EventSystem.current.SetSelectedGameObject(menuView.NewGameButton.gameObject); // 새로하기 기본 선택
         } // 첫 버튼 선택 종료
     } // 초기화 종료
+    private void ShowNewGameWarning() // 새로하기 경고 요청
+    { // 경고 요청 시작
+        menuView.ShowNewGameConfirmation(StartGame); // 새 게임 확인 화면 표시
+    } // 경고 요청 종료
     public void StartGame() // 게임 시작
     { // 게임 시작 처리
         if (SceneFlowManager.Instance == null) // 씬 관리자 존재 확인
@@ -51,7 +55,7 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         } // 씬 이동 불가 처리 종료
         if (!LobbySaveService.Load(savePath)) // 저장 상태 복원 시도
         { // 저장 복원 실패 처리 시작
-            menuView.Bind(StartGame, ContinueGame, OpenSettings, QuitGame, false); // 이어하기 버튼 비활성화
+            menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, false); // 이어하기 버튼 비활성화
             Debug.LogWarning("[MainMenu] 저장 데이터를 불러올 수 없습니다."); // 복원 실패 안내
             return; // 이어하기 중단
         } // 저장 복원 실패 처리 종료
