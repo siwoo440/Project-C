@@ -118,7 +118,7 @@ public sealed class BattleMentalStateCutInView : MonoBehaviour, IDisposable // �
             BattleEventContext eventContext = pendingCutIns.Dequeue(); // 다음 컷인 이벤트 조회
             ApplyEventVisual(eventContext); // 상태별 시각 요소 적용
             yield return Fade(0f, 1f, FadeInDuration, true); // 컷인 빠른 등장
-            yield return new WaitForSecondsRealtime(HoldDuration); // 컷인 상태 유지
+            yield return new WaitForSecondsRealtime(GameplaySpeedSettings.BattleDuration(HoldDuration)); // 선택한 속도로 컷인 상태 유지
             yield return Fade(1f, 0f, FadeOutDuration, false); // 컷인 부드러운 퇴장
         } // 개별 컷인 재생 종료
         canvasGroup.blocksRaycasts = false; // 포인터 차단 해제
@@ -150,7 +150,7 @@ public sealed class BattleMentalStateCutInView : MonoBehaviour, IDisposable // �
         float elapsed = 0f; // 경과 시간 초기화
         while (elapsed < duration) // 전환 시간 순회
         { // 프레임 전환 처리 시작
-            elapsed += Time.unscaledDeltaTime; // 시간 배율 무시 경과 시간 증가
+            elapsed += Time.unscaledDeltaTime * GameplaySpeedSettings.BattleMultiplier(); // 선택한 속도로 컷인 전환 진행
             float progress = duration <= 0f ? 1f : Mathf.Clamp01(elapsed / duration); // 전환 진행률 계산
             canvasGroup.alpha = Mathf.Lerp(startAlpha, endAlpha, progress); // 전체 투명도 보간
             float scale = scaleUp ? Mathf.Lerp(0.82f, 1.04f, progress) : Mathf.Lerp(1.04f, 1f, progress); // 초상화 확대 비율 계산

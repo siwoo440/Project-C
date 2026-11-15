@@ -79,7 +79,7 @@ public sealed class BattleCombatFeedbackView : MonoBehaviour // 전투 결과 �
             float normalizedTime = Mathf.Clamp01(elapsedTime / FlashDuration); // 강조 진행 비율 계산
             float alpha = Mathf.Lerp(0.3f, 0f, normalizedTime); // 강조 투명도 계산
             flashOverlay.color = new Color(feedbackColor.r, feedbackColor.g, feedbackColor.b, alpha); // 강조 색상 적용
-            elapsedTime += Time.unscaledDeltaTime; // 실제 시간 누적
+            elapsedTime += Time.unscaledDeltaTime * GameplaySpeedSettings.BattleMultiplier(); // 선택한 속도로 전투 피드백 진행
             yield return null; // 다음 프레임 대기
         } // 강조 프레임 처리 종료
         flashOverlay.color = Color.clear; // 강조 색상 초기화

@@ -92,6 +92,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         scroll.horizontal = false; // 가로 스크롤 차단
         scroll.vertical = true; // 세로 스크롤 허용
         scroll.movementType = ScrollRect.MovementType.Clamped; // 목록 범위 밖 이동 차단
+        scroll.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(36f); // 선택한 편성 목록 스크롤 속도 적용
         for (int index = 0; index < roster.Characters.Count; index++) // 전체 캐릭터 순회
         { // 캐릭터 버튼 생성 시작
             CreateCharacterButton(grid, roster.Characters[index], index); // 캐릭터별 선택 버튼 생성

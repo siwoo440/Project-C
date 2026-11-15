@@ -675,7 +675,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 적 턴 중단 처리 종료
             if (enemyTurnDelay > 0f) // 적 행동 대기 시간 확인
             { // 적 행동 대기 시작
-                yield return new WaitForSeconds(enemyTurnDelay); // 설정 시간만큼 대기
+                yield return new WaitForSeconds(GameplaySpeedSettings.BattleDuration(enemyTurnDelay)); // 선택한 속도로 적 행동 대기
             } // 적 행동 대기 종료
             BattleEnemyActionResult actionResult = BattleEnemyActionResult.Empty(enemyAction.ActionType, enemyAction.DamageType); // 적 행동 결과 초기화
             BattleUnitView actorView = FindUnitView(enemyAction.Actor, enemyUnitViews); // 행동 적 화면 조회

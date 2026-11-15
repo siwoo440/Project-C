@@ -128,7 +128,7 @@ public sealed class RelicDebugWindow : MonoBehaviour, IDisposable // 유물 획�
         scrollRect.horizontal = false; // 가로 스크롤 비활성화
         scrollRect.vertical = true; // 세로 스크롤 활성화
         scrollRect.movementType = ScrollRect.MovementType.Clamped; // 스크롤 범위 제한
-        scrollRect.scrollSensitivity = 34f; // 마우스 휠 감도 적용
+        scrollRect.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(34f); // 선택한 유물 스크롤 속도 적용
     }
 
     private void RefreshRelics() // 보유 유물 목록 다시 그리기

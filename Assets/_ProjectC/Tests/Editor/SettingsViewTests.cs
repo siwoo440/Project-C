@@ -8,6 +8,19 @@ using UnityEngine.UI; // 설정 버튼과 목록 사용
 
 public sealed class SettingsViewTests // 설정 탭과 옵션 화면 검증
 { // 설정 화면 테스트 시작
+    [Test] // 설정 설명 목록 검사 지정
+    public void SettingsHelp_HasExplanationForEveryPlannedOption() // 기획 설정별 설명 존재 확인
+    { // 설정 설명 목록 검사 시작
+        for (int category = 0; category < SettingsCatalog.Items.Length; category++) // 모든 설정 분류 순회
+        { // 설정 분류 검사 시작
+            for (int index = 0; index < SettingsCatalog.Items[category].Length; index++) // 분류별 설정 항목 순회
+            { // 설정 설명 검사 시작
+                string description = SettingsHelpCatalog.Get(category, index); // 해당 설정의 쉬운 설명 조회
+                Assert.IsFalse(string.IsNullOrWhiteSpace(description)); // 설명 문구 존재 확인
+                Assert.AreNotEqual("설명을 확인할 수 없습니다.", description); // 실제 항목의 설명 누락 방지
+            } // 설정 설명 검사 종료
+        } // 설정 분류 검사 종료
+    } // 설정 설명 목록 검사 종료
     [UnityTest] // 플레이 모드 테스트 지정
     public IEnumerator Settings_ShowsFiveTabsAndReturnsToPreviousScene() // 설정 분류와 복귀 확인
     { // 설정 화면 검증 시작
@@ -31,6 +44,17 @@ public sealed class SettingsViewTests // 설정 탭과 옵션 화면 검증
         Transform tabs = view.transform.Find("Tabs"); // 설정 탭 영역 조회
         Assert.AreEqual(5, tabs.childCount); // 다섯 설정 탭 확인
         Transform list = view.transform.Find("Options/Viewport/Rows"); // 설정 항목 목록 조회
+        RectTransform options = view.transform.Find("Options").GetComponent<RectTransform>(); // 왼쪽 설정 목록 영역 조회
+        RectTransform help = view.transform.Find("HelpPanel").GetComponent<RectTransform>(); // 오른쪽 설정 설명 영역 조회
+        Assert.Less(options.anchorMax.x, help.anchorMin.x); // 설정 목록과 설명 패널 분리 확인
+        Assert.IsNotNull(help.Find("Illustration").GetComponent<Image>().sprite); // 사진이 없을 때 임시 이미지 확인
+        Assert.AreEqual("화면 모드", help.Find("Title").GetComponent<TMP_Text>().text); // 초기 선택 항목 제목 확인
+        Assert.IsTrue(list.GetChild(0).GetComponent<Outline>().enabled); // 처음 선택한 설정 강조 확인
+        list.GetChild(2).GetComponent<Button>().onClick.Invoke(); // 프레임 제한 설정 선택
+        Assert.AreEqual("프레임 제한", help.Find("Title").GetComponent<TMP_Text>().text); // 선택 설정의 제목 변경 확인
+        StringAssert.Contains("1초", help.Find("Description").GetComponent<TMP_Text>().text); // 처음 보는 사용자를 위한 설명 확인
+        Assert.IsTrue(list.GetChild(2).GetComponent<Outline>().enabled); // 선택 설정 테두리 강조 확인
+        Assert.IsFalse(list.GetChild(0).GetComponent<Outline>().enabled); // 이전 설정 강조 해제 확인
         Assert.AreEqual(13, list.childCount); // 그래픽 설정 항목 수 확인
         Assert.AreEqual("화면 모드", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 기획서 그래픽 항목 이름 확인
         Assert.AreEqual("무테창", list.GetChild(0).Find("Value").GetComponent<TMP_Text>().text); // 기획서 그래픽 기본값 확인
@@ -50,6 +74,11 @@ public sealed class SettingsViewTests // 설정 탭과 옵션 화면 검증
         tabs.Find("Tab_2").GetComponent<Button>().onClick.Invoke(); // 게임 플레이 탭 선택
         Assert.AreEqual(16, list.childCount); // 기획서 게임 플레이 항목 수 확인
         Assert.AreEqual("난이도", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 게임 플레이 첫 항목 확인
+        Assert.IsTrue(list.GetChild(3).Find("Next").GetComponent<Button>().interactable); // 전투 속도 변경 허용 확인
+        list.GetChild(3).Find("Next").GetComponent<Button>().onClick.Invoke(); // 빠른 전투 속도 선택
+        Assert.AreEqual("x2.0", list.GetChild(3).Find("Value").GetComponent<TMP_Text>().text); // 변경된 전투 속도 표시 확인
+        Assert.AreEqual(2f, GameplaySpeedSettings.BattleMultiplier()); // 실제 전투 배율 반영 확인
+        list.GetChild(3).Find("Previous").GetComponent<Button>().onClick.Invoke(); // 원래 전투 속도 복구
         Canvas.ForceUpdateCanvases(); // 설정 목록 배치 갱신
         ScrollRect scroll = view.transform.Find("Options").GetComponent<ScrollRect>(); // 설정 목록 스크롤 조회
         float initialPosition = scroll.content.anchoredPosition.y; // 스크롤 시작 위치 보관
@@ -58,6 +87,10 @@ public sealed class SettingsViewTests // 설정 탭과 옵션 화면 검증
         tabs.Find("Tab_3").GetComponent<Button>().onClick.Invoke(); // 조작 탭 선택
         Assert.AreEqual(9, list.childCount); // 기획서 조작 항목 수 확인
         Assert.AreEqual("키 설정(리바인드)", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 조작 첫 항목 확인
+        list.GetChild(5).Find("Next").GetComponent<Button>().onClick.Invoke(); // 빠른 스크롤 속도 선택
+        Assert.AreEqual("빠름", list.GetChild(5).Find("Value").GetComponent<TMP_Text>().text); // 변경된 스크롤 속도 표시 확인
+        Assert.AreEqual(54f, scroll.scrollSensitivity, 0.001f); // 실제 설정 화면 스크롤 속도 반영 확인
+        list.GetChild(5).Find("Previous").GetComponent<Button>().onClick.Invoke(); // 원래 스크롤 속도 복구
         tabs.Find("Tab_4").GetComponent<Button>().onClick.Invoke(); // 언어 탭 선택
         Assert.AreEqual(6, list.childCount); // 기획서 언어 항목 수 확인
         Assert.AreEqual("언어 선택", list.GetChild(0).Find("Name").GetComponent<TMP_Text>().text); // 언어 첫 항목 확인

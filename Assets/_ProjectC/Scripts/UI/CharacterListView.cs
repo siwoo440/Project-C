@@ -53,7 +53,7 @@ public sealed class CharacterListView : MonoBehaviour // 로비 캐릭터 목록
         scroll.horizontal = false; // 가로 스크롤 차단
         scroll.vertical = true; // 세로 스크롤 허용
         scroll.movementType = ScrollRect.MovementType.Clamped; // 목록 범위 밖 이동 차단
-        scroll.scrollSensitivity = 36f; // 마우스 휠 이동 폭 설정
+        scroll.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(36f); // 선택한 스크롤 속도 적용
         for (int index = 0; index < roster.Characters.Count; index++) // 실제 캐릭터 목록 순회
         { // 캐릭터 카드 생성 시작
             CreateCard(grid, roster.Characters[index], index); // 캐릭터별 이미지와 이름 표시

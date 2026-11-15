@@ -57,7 +57,9 @@ public sealed class GraphicsAudioSettings // 지원하는 화면과 음량 설�
             new Option("frame", 0, 2, new[] { "30", "60", "120", "무제한" }, 1), // 기획 프레임 제한과 기본값
             new Option("vsync", 0, 3, new[] { "켜기", "끄기" }, 1), // 기획 수직 동기화와 기본값
             new Option("quality", 0, 7, new[] { "낮음", "중간", "높음", "울트라" }, 2), // 기획 그래픽 품질과 기본값
-            new Option("master", 1, 0, volume, 80) // 기획 마스터 음량과 기본값
+            new Option("master", 1, 0, volume, 80), // 기획 마스터 음량과 기본값
+            new Option("battleSpeed", 2, 3, new[] { "x1.0", "x1.5", "x2.0" }, 1), // 기획 전투 속도와 기본값
+            new Option("scrollSpeed", 3, 5, new[] { "느림", "보통", "빠름" }, 1) // 기획 스크롤 속도와 기본값
         }; // 지원 설정 목록 종료
     } // 지원 선택값 생성 종료
     private static Option Find(int category, int row) // 설정 위치로 지원 항목 조회

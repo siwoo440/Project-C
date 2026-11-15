@@ -175,8 +175,7 @@ public sealed class BattleUnitMotionView : MonoBehaviour
                 basePosition +
                 Vector2.right * shakeOffset;
 
-            elapsedTime +=
-                Time.unscaledDeltaTime;
+            elapsedTime += Time.unscaledDeltaTime * GameplaySpeedSettings.BattleMultiplier(); // 선택한 전투 속도로 피격 연출 진행
 
             yield return null;
         }
@@ -243,8 +242,7 @@ public sealed class BattleUnitMotionView : MonoBehaviour
                     targetPosition,
                     normalizedTime);
 
-            elapsedTime +=
-                Time.unscaledDeltaTime;
+            elapsedTime += Time.unscaledDeltaTime * GameplaySpeedSettings.BattleMultiplier(); // 선택한 전투 속도로 이동 연출 진행
 
             yield return null;
         }
@@ -280,8 +278,7 @@ public sealed class BattleUnitMotionView : MonoBehaviour
                     targetScale,
                     normalizedTime);
 
-            elapsedTime +=
-                Time.unscaledDeltaTime;
+            elapsedTime += Time.unscaledDeltaTime * GameplaySpeedSettings.BattleMultiplier(); // 선택한 전투 속도로 확대 연출 진행
 
             yield return null;
         }
