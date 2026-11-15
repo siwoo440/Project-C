@@ -38,6 +38,14 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
         Assert.IsNotNull(view.transform.Find("FacilityButton").GetComponent<Button>()); // 설비 강화 버튼 확인
         Assert.IsNotNull(view.transform.Find("HelpButton").GetComponent<Button>()); // 도움말 버튼 확인
         Assert.IsNotNull(view.transform.Find("SettingsButton").GetComponent<Button>()); // 설정 버튼 확인
+        RectTransform settingsRect = view.transform.Find("SettingsButton").GetComponent<RectTransform>(); // 설정 버튼 영역 조회
+        RectTransform helpRect = view.transform.Find("HelpButton").GetComponent<RectTransform>(); // 도움말 버튼 영역 조회
+        Assert.AreEqual(settingsRect.sizeDelta.x, settingsRect.sizeDelta.y); // 정사각형 설정 버튼 확인
+        Assert.AreEqual(helpRect.sizeDelta.x, helpRect.sizeDelta.y); // 정사각형 도움말 버튼 확인
+        Assert.AreSame(Resources.Load<Texture2D>("UI/Lobby/Settings"), settingsRect.GetComponent<Image>().sprite.texture); // 제작된 톱니바퀴 이미지 사용 확인
+        Assert.AreSame(Resources.Load<Texture2D>("UI/Lobby/Help"), helpRect.GetComponent<Image>().sprite.texture); // 제작된 물음표 이미지 사용 확인
+        Assert.AreEqual(string.Empty, settingsRect.Find("Label").GetComponent<TMP_Text>().text); // 설정 버튼 글자 제거 확인
+        Assert.AreEqual(string.Empty, helpRect.Find("Label").GetComponent<TMP_Text>().text); // 도움말 버튼 별도 글자 제거 확인
         Assert.IsNotNull(view.transform.Find("CharacterButton").GetComponent<Image>().sprite); // 제작한 로비 버튼 이미지 확인
         Assert.IsNotNull(GameObject.Find("SaveMenuEntry").GetComponent<Image>().sprite); // 저장 메뉴 버튼 이미지 확인
         RectTransform characterButton = view.transform.Find("CharacterButton").GetComponent<RectTransform>(); // 캐릭터 버튼 위치 조회
@@ -49,8 +57,9 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
         Assert.Less(view.transform.Find("CodexButton").GetComponent<RectTransform>().anchorMin.x, 0.2f); // 도감 버튼 왼쪽 배치 확인
         PlayerResourceManager resources = PlayerResourceManager.Instance; // 현재 자원 관리자 조회
         resources.AddResources(37, 2, 3, 4); // 자원 표시 갱신용 값 변경
-        Assert.IsTrue(view.transform.Find("Gold").GetComponent<TMP_Text>().text.Contains(resources.Gold.ToString())); // 골드 실제 값 표시 확인
+        Assert.AreEqual(resources.Gold.ToString(), view.transform.Find("Gold").GetComponent<TMP_Text>().text); // 골드 숫자만 표시 확인
         Transform group = view.transform.Find("Resources"); // 물자 영역 조회
+        Assert.LessOrEqual(group.GetComponent<RectTransform>().sizeDelta.x, 330f); // 물자 전체 영역 폭 축소 확인
         string[] names = { "Screw", "IronPlate", "Wire" }; // 개별 물자 영역 이름
         int[] counts = { resources.Screw, resources.IronPlate, resources.Wire }; // 개별 물자 실제 수량
         for (int index = 0; index < names.Length; index++) // 전체 물자 영역 순회
@@ -61,7 +70,7 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
             Image icon = item.Find("Icon").GetComponent<Image>(); // 물자 아이콘 조회
             Assert.IsNotNull(icon.sprite); // 물자 아이콘 이미지 확인
             Assert.AreEqual(icon.rectTransform.sizeDelta.x, icon.rectTransform.sizeDelta.y); // 정사각형 아이콘 크기 확인
-            Assert.IsTrue(item.Find("Value").GetComponent<TMP_Text>().text.Contains(counts[index].ToString())); // 해당 물자 실제 수량 확인
+            Assert.AreEqual(counts[index].ToString(), item.Find("Value").GetComponent<TMP_Text>().text); // 물자 이름 없이 수량만 표시 확인
         } // 개별 물자 표시 확인 종료
         view.transform.Find("FacilityButton").GetComponent<Button>().onClick.Invoke(); // 설비 강화 화면 열기
         FacilityUpgradeDebugView facility = Object.FindFirstObjectByType<FacilityUpgradeDebugView>(); // 설비 강화 화면 조회

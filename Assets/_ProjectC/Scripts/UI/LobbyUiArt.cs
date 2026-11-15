@@ -45,6 +45,10 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
         { // 자원 패널 여백 조정 시작
             return new Rect(texture.width * 0.01f, texture.height * 0.30f, texture.width * 0.98f, texture.height * 0.40f); // 자원 패널 외부 투명 여백 제외
         } // 자원 패널 여백 조정 종료
+        if (name == "Settings" || name == "Help") // 설정과 도움말 이미지 확인
+        { // 정사각형 버튼 여백 조정 시작
+            return new Rect(texture.width * 0.09f, texture.height * 0.09f, texture.width * 0.82f, texture.height * 0.82f); // 버튼 외부 투명 여백 제외
+        } // 정사각형 버튼 여백 조정 종료
         if (name == "Gold") // 골드 아이콘 확인
         { // 골드 여백 조정 시작
             return new Rect(texture.width * 0.24f, texture.height * 0.18f, texture.width * 0.52f, texture.height * 0.64f); // 골드 외부 투명 여백 제외
