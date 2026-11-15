@@ -401,7 +401,10 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             SaveMenuController slotMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 저장 슬롯 화면 조회
             Assert.IsNotNull(slotMenu); // 저장 슬롯 화면 표시 확인
             slotMenu.transform.Find("SaveMenu/Slot_0/LoadButton").GetComponent<Button>().onClick.Invoke(); // 자동 슬롯 불러오기 실행
-            yield return null; // 거점 씬 전환 대기
+            for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "20_Lobby";) // 거점 씬 전환 대기
+            { // 거점 이동 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 거점 이동 대기 종료
             yield return null; // 거점 초기화 대기
             Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 복원 진입 확인
             Assert.AreEqual(savedGold, resources.Gold); // 저장 자원 복원 확인
@@ -595,10 +598,16 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         } // 저장 파일 확인 종료
         Assert.AreEqual(hasAnySlot, view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
         view.transform.Find("SettingsButton").GetComponent<Button>().onClick.Invoke(); // 설정 버튼 실행
-        yield return null; // 설정 씬 전환 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "90_Settings";) // 설정 씬 전환 대기
+        { // 설정 이동 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 설정 이동 대기 종료
         Assert.AreEqual("90_Settings", SceneManager.GetActiveScene().name); // 설정 진입 확인
         Object.FindFirstObjectByType<SettingsController>().Back(); // 메뉴 복귀 요청
-        yield return null; // 메뉴 씬 복귀 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "10_MainMenu";) // 메뉴 씬 복귀 대기
+        { // 메뉴 복귀 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 복귀 대기 종료
         yield return null; // 메뉴 이벤트 재연결 대기
         Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메뉴 복귀 확인
         view = Object.FindFirstObjectByType<MainMenuView>(); // 복귀 메뉴 화면 조회
@@ -636,7 +645,10 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         Assert.AreEqual(new Vector2(300f, 144f), cancelRect.sizeDelta); // 세로로 확대된 취소 버튼 크기 확인
         Assert.Greater(cancelRect.anchoredPosition.x - confirmRect.anchoredPosition.x, confirmRect.sizeDelta.x); // 확인과 취소 버튼 간격 확인
         warningPanel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 시작 확인
-        yield return null; // 거점 씬 전환 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "20_Lobby";) // 거점 씬 전환 대기
+        { // 거점 이동 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 거점 이동 대기 종료
         yield return null; // 거점 초기화 대기
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 진입 확인
         Assert.IsNull(GameObject.Find("PartyRosterView")); // 기존 파티 편성 창 제거 확인

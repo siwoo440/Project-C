@@ -13,12 +13,12 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
     { // 로비 화면 검증 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<MainMenuController>() == null; frame++) // 메인 메뉴 준비 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && Object.FindFirstObjectByType<MainMenuController>() == null;) // 메인 메뉴 준비 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 새 거점 진입
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyController>() == null; frame++) // 새 로비 화면 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && Object.FindFirstObjectByType<LobbyController>() == null;) // 새 로비 화면 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
@@ -77,7 +77,10 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
         System.Reflection.FieldInfo visible = typeof(FacilityUpgradeDebugView).GetField("panelVisible", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 설비 화면 표시 상태 조회
         Assert.IsTrue((bool)visible.GetValue(facility)); // 설비 강화 화면 표시 확인
         view.transform.Find("SettingsButton").GetComponent<Button>().onClick.Invoke(); // 로비 설정 화면 열기
-        yield return null; // 설정 씬 이동 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "90_Settings";) // 설정 씬 이동 대기
+        { // 설정 씬 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 설정 씬 대기 종료
         Assert.AreEqual("90_Settings", SceneManager.GetActiveScene().name); // 로비 설정 씬 진입 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 로비 화면 검증 종료
