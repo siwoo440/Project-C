@@ -16,6 +16,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     public int DrawPileCount => drawPile.Count; // 뽑을 카드 수 조회
     public int HandCount => hand.Count; // 손패 카드 수 조회
     public int DiscardPileCount => discardPile.Count; // 버린 카드 수 조회
+    public bool HasDrawableCards => CountDrawable(drawPile) > 0 || CountDrawable(discardPile) > 0; // 생존 소유자 카드의 드로우 가능 여부
     public int MaxHandSize { get; } // 최대 손패 수
     public event Action StateChanged; // 덱 상태 변경 이벤트
     public event Action<CardInstance> CardRecovered; // 버린 카드 회수 이벤트
@@ -88,11 +89,15 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         List<CardInstance> overflowCards = new List<CardInstance>(); // 초과 카드 임시 목록
         while (processedCount < requestedCount) // 요청 수까지 반복
         { // 반복 드로우 시작
-            if (drawPile.Count < 1 && !RefillDrawPile()) // 빈 카드 더미 재구성 시도
+            int topIndex = FindTopDrawableIndex(); // 사망 소유자를 건너뛴 맨 위 카드 조회
+            if (topIndex < 0 && RefillDrawPile()) // 드로우 가능 카드 부족 시 버린 더미 재구성
+            { // 재구성 카드 확인 시작
+                topIndex = FindTopDrawableIndex(); // 재구성 후 유효 카드 재조회
+            } // 재구성 카드 확인 종료
+            if (topIndex < 0) // 더 이상 드로우할 생존 카드 확인
             { // 드로우 불가 처리 시작
                 break; // 반복 드로우 중단
             } // 드로우 불가 처리 종료
-            int topIndex = drawPile.Count - 1; // 카드 더미 맨 위 위치 계산
             CardInstance drawnCard = drawPile[topIndex]; // 맨 위 카드 선택
             drawPile.RemoveAt(topIndex); // 뽑을 카드 더미에서 제거
             if (hand.Count < MaxHandSize) // 손패 공간 확인
@@ -121,7 +126,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 후보 없음 처리 시작
             return choices.AsReadOnly(); // 빈 후보 목록 반환
         } // 후보 없음 처리 종료
-        if (drawPile.Count < maximumChoices && discardPile.Count > 0) // 후보 부족과 버린 카드 확인
+        if (CountDrawable(drawPile) < maximumChoices && CountDrawable(discardPile) > 0) // 생존 후보 부족과 버린 카드 확인
         { // 버린 카드 재구성 시작
             List<CardInstance> recycled = new List<CardInstance>(discardPile); // 버린 카드 복사
             ShuffleList(recycled); // 재구성 카드 순서 섞기
@@ -130,9 +135,13 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             EnsureValidState(); // 재구성 후 덱 상태 검증
             StateChanged?.Invoke(); // 카드 영역 변경 알림
         } // 버린 카드 재구성 종료
-        for (int offset = 0; offset < maximumChoices && offset < drawPile.Count; offset++) // 덱 맨 위부터 후보 순회
+        for (int index = drawPile.Count - 1; index >= 0 && choices.Count < maximumChoices; index--) // 덱 맨 위부터 유효 후보 순회
         { // 후보 추가 시작
-            choices.Add(drawPile[drawPile.Count - 1 - offset]); // 맨 위 순서로 후보 추가
+            CardInstance candidate = drawPile[index]; // 현재 덱 후보 조회
+            if (IsDrawable(candidate)) // 카드 소유자의 생존 상태 확인
+            { // 생존 후보 추가 시작
+                choices.Add(candidate); // 유효 카드만 맨 위 순서로 추가
+            } // 생존 후보 추가 종료
         } // 후보 추가 종료
         return choices.AsReadOnly(); // 외부 변경을 막은 후보 목록 반환
     } // 선택 후보 준비 종료
@@ -142,8 +151,23 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 잘못된 선택 처리 시작
             return false; // 선택 실패 반환
         } // 잘못된 선택 처리 종료
-        int index = drawPile.IndexOf(choice); // 선택 카드 위치 조회
-        if (index < 0 || index < drawPile.Count - maximumChoices) // 현재 맨 위 후보 범위 확인
+        int index = -1; // 유효한 선택 카드 위치 초기화
+        int eligibleSeen = 0; // 생존 후보 확인 수 초기화
+        for (int candidateIndex = drawPile.Count - 1; candidateIndex >= 0 && eligibleSeen < maximumChoices; candidateIndex--) // 맨 위 유효 후보 순회
+        { // 유효 후보 검사 시작
+            CardInstance candidate = drawPile[candidateIndex]; // 현재 후보 카드 조회
+            if (!IsDrawable(candidate)) // 소유자 사망 여부 확인
+            { // 사망 카드 건너뛰기 시작
+                continue; // 다음 유효 후보 확인
+            } // 사망 카드 건너뛰기 종료
+            eligibleSeen++; // 유효 후보 확인 수 증가
+            if (candidate == choice) // 선택 카드 일치 확인
+            { // 선택 카드 확인 시작
+                index = candidateIndex; // 선택 카드 위치 기록
+                break; // 후보 검색 종료
+            } // 선택 카드 확인 종료
+        } // 유효 후보 검사 종료
+        if (index < 0) // 현재 유효 후보 범위 확인
         { // 후보 이탈 처리 시작
             return false; // 선택 실패 반환
         } // 후보 이탈 처리 종료
@@ -162,16 +186,22 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 선택 드로우 종료
     public bool TryDiscardDrawTop(CardInstance choice) // 뽑을 더미 맨 위 카드 버리기
     { // 맨 위 카드 버리기 시작
-        if (choice == null || drawPile.Count == 0 || drawPile[drawPile.Count - 1] != choice) // 현재 맨 위 카드 확인
+        int topIndex = FindTopDrawableIndex(); // 사망 카드를 제외한 맨 위 위치 조회
+        if (choice == null || topIndex < 0 || drawPile[topIndex] != choice) // 현재 맨 위 유효 카드 확인
         { // 버리기 불가 처리 시작
             return false; // 버리기 실패 반환
         } // 버리기 불가 처리 종료
-        drawPile.RemoveAt(drawPile.Count - 1); // 뽑을 더미 맨 위 카드 제거
+        drawPile.RemoveAt(topIndex); // 뽑을 더미의 맨 위 유효 카드 제거
         discardPile.Add(choice); // 버린 카드 더미에 추가
         EnsureValidState(); // 카드 영역 상태 검증
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 버리기 성공 반환
     } // 맨 위 카드 버리기 종료
+    public bool IsTopDrawable(CardInstance card) // 현재 맨 위 유효 카드 확인
+    { // 맨 위 유효 카드 확인 시작
+        int index = FindTopDrawableIndex(); // 생존 소유자의 맨 위 카드 위치 조회
+        return card != null && index >= 0 && drawPile[index] == card; // 현재 맨 위 유효 카드 일치 여부 반환
+    } // 맨 위 유효 카드 확인 종료
     public bool TryRecoverDiscard(CardInstance choice) // 버린 카드 한 장 회수 시도
     { // 카드 회수 시작
         if (choice == null || hand.Count >= MaxHandSize || !discardPile.Contains(choice)) // 카드 위치와 손패 공간 확인
@@ -253,15 +283,43 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 상태 검사 종료
     private bool RefillDrawPile() // 버린 카드 더미 재구성
     { // 카드 더미 재구성 시작
-        if (discardPile.Count < 1) // 버린 카드 존재 확인
+        if (CountDrawable(discardPile) < 1) // 버린 더미의 생존 소유자 카드 확인
         { // 버린 카드 없음 처리 시작
             return false; // 재구성 실패 반환
         } // 버린 카드 없음 처리 종료
-        drawPile.AddRange(discardPile); // 버린 카드를 뽑을 더미로 이동
+        List<CardInstance> recycled = new List<CardInstance>(discardPile); // 재구성할 버린 카드 복사
+        ShuffleList(recycled); // 재구성 카드 순서 섞기
+        drawPile.InsertRange(0, recycled); // 기존 사망 카드 아래에 재구성 카드 배치
         discardPile.Clear(); // 버린 카드 더미 비우기
-        ShuffleList(drawPile); // 재구성된 카드 더미 셔플
         return true; // 재구성 성공 반환
     } // 카드 더미 재구성 종료
+    private int FindTopDrawableIndex() // 사망 카드를 제외한 맨 위 카드 위치 조회
+    { // 맨 위 유효 카드 검색 시작
+        for (int index = drawPile.Count - 1; index >= 0; index--) // 덱 맨 위부터 순회
+        { // 덱 카드 확인 시작
+            if (IsDrawable(drawPile[index])) // 카드 소유자 생존 여부 확인
+            { // 유효 카드 반환 시작
+                return index; // 맨 위 유효 카드 위치 반환
+            } // 유효 카드 반환 종료
+        } // 덱 카드 확인 종료
+        return -1; // 유효한 카드 없음 반환
+    } // 맨 위 유효 카드 검색 종료
+    private static int CountDrawable(IReadOnlyList<CardInstance> pile) // 생존 소유자의 카드 수 계산
+    { // 유효 카드 수 계산 시작
+        int count = 0; // 유효 카드 수 초기화
+        foreach (CardInstance candidate in pile) // 카드 더미 순회
+        { // 소유자 생존 확인 시작
+            if (IsDrawable(candidate)) // 유효 카드 여부 확인
+            { // 유효 카드 집계 시작
+                count++; // 유효 카드 수 증가
+            } // 유효 카드 집계 종료
+        } // 소유자 생존 확인 종료
+        return count; // 유효 카드 수 반환
+    } // 유효 카드 수 계산 종료
+    private static bool IsDrawable(CardInstance candidate) // 카드 소유자의 드로우 가능 여부 확인
+    { // 카드 드로우 조건 시작
+        return candidate != null && candidate.OwnerUnit != null && !candidate.OwnerUnit.IsDead; // 카드와 소유자 생존 여부 반환
+    } // 카드 드로우 조건 종료
     private void ShuffleList(List<CardInstance> targetCards) // 카드 목록 셔플
     { // 셔플 시작
         for (int index = targetCards.Count - 1; index > 0; index--) // 뒤에서 앞으로 카드 순회

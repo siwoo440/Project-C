@@ -247,7 +247,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 선택 드로우 종료
         pendingCardChoices = null; // 대기 후보 정리
         drawChoiceView = null; // 닫힌 선택 화면 참조 정리
-        if (processed && pendingFoolPassive && remaining != null && runtimeDeck.DrawPileCount > 0 && runtimeDeck.DrawPile[runtimeDeck.DrawPileCount - 1] == remaining) // 남은 카드 패시브 발동 확인
+        if (processed && pendingFoolPassive && runtimeDeck.IsTopDrawable(remaining)) // 남은 유효 카드 패시브 발동 확인
         { // 남은 카드 처리 선택 시작
             pendingFoolPassive = false; // 대기 패시브 해제
             lastFoolPassiveRound = turnRuntime.CurrentRound; // 이번 턴 패시브 발동 기록
@@ -316,7 +316,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회수 불가 처리 시작
             return false; // 선택 불가 반환
         } // 회수 불가 처리 종료
-        if (cardInstance.EffectType == CardEffectType.ChooseDraw && runtimeDeck.DrawPileCount + runtimeDeck.DiscardPileCount == 0) // 선택할 카드 존재 확인
+        if (cardInstance.EffectType == CardEffectType.ChooseDraw && !runtimeDeck.HasDrawableCards) // 생존 소유자의 선택 가능 카드 확인
         { // 선택 불가 처리 시작
             return false; // 선택 불가 반환
         } // 선택 불가 처리 종료
