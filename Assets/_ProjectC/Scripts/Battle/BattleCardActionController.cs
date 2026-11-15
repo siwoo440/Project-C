@@ -10,6 +10,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
+    private readonly WinterfallBossPhaseRuntime bossPhaseRuntime; // 선택적인 보스 페이즈 관리자
     private readonly LoversPartnerRuntime loversPartner; // 연인 파트너와 행동 기록
     private readonly ChariotConcentrationRuntime chariotConcentration; // 전차 집중 공격과 표식 기록
     private readonly StarRecoveryPassiveRuntime starRecoveryPassive; // 별의 턴당 추가 예약 회복
@@ -32,7 +33,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
     public event Action<CardInstance, IReadOnlyList<BattleUnitRuntime>> CardUsed; // 카드 효과 적용 시작 이벤트
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews, BattleEnemyActionRuntime enemyRuntime) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews, BattleEnemyActionRuntime enemyRuntime, WinterfallBossPhaseRuntime bossPhase = null) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
@@ -41,6 +42,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         actionSequenceRunner = sequenceRunner ?? throw new ArgumentNullException(nameof(sequenceRunner)); // 행동 연출 실행기 저장
         statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
         enemyActions = enemyRuntime ?? throw new ArgumentNullException(nameof(enemyRuntime)); // 적 행동 관리자 저장
+        bossPhaseRuntime = bossPhase; // 선택적인 보스 페이즈 관리자 저장
         loversPartner = new LoversPartnerRuntime(turnRuntime, enemyActions.AllyUnits); // 연인 파트너 관리자 생성
         chariotConcentration = new ChariotConcentrationRuntime(turnRuntime, enemyActions.EnemyUnits); // 전차 집중 공격 관리자 생성
         starRecoveryPassive = new StarRecoveryPassiveRuntime(turnRuntime); // 별 추가 예약 회복 관리자 생성
@@ -241,6 +243,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 일반 효과 처리 시작
             foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
             { // 대상별 효과 적용 시작
+                if (turnRuntime.HasPendingBossPhaseTransition) // 보스 페이즈 전환 예약 확인
+                { // 남은 타격 취소 시작
+                    break; // 미처리 대상 효과 취소
+                } // 남은 타격 취소 종료
                 totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
@@ -260,6 +266,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
     { // 연출 완료 처리 시작
         actionPending = false; // 카드 행동 진행 상태 해제
+        bossPhaseRuntime?.CompletePendingTransition(); // 충돌과 카드 이동 완료 후 보스 페이즈 전환
         ShowPendingCardChoices(); // 대기 중인 드로우 선택 화면 표시
         ShowPendingDebuffChoices(); // 대기 중인 디버프 선택 화면 표시
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
@@ -693,7 +700,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 약화 대상 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
-        if (SunChainAttack.IsChainCard(cardInstance)) // 태양의 서로 다른 적 연속 공격 확인
+        if (SunChainAttack.IsChainCard(cardInstance) && !turnRuntime.HasPendingBossPhaseTransition) // 보스 전환이 예약되지 않은 태양 연속 공격 확인
         { // 태양 추가 공격 시작
             ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용
         } // 태양 추가 공격 종료

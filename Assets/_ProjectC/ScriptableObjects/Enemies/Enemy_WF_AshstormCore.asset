@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_WF_AshstormCore
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_WF_ASHSTORM_CORE
+  displayName: "\uC7AC\uD3ED\uD48D\uC758 \uC2EC\uD575"
+  description: "\uC7AC\uD3ED\uD48D\uC758 \uC911\uC2EC\uC5D0\uC11C \uC815\uC2E0\uB825\uACFC
+    \uC2DC\uC57C\uB97C \uC555\uBC15\uD558\uB294 \uCE68\uC2DD\uD575"
+  portrait: {fileID: 21300000, guid: 97ae0a7400ce69b4b986aa7a5d65c4d0, type: 3}
+  maxHealth: 350
+  physicalDefense: 12
+  magicalResistance: 12
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 18
+  damageType: 1
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 2
+  minimumActionSpeed: 7
+  maximumActionSpeed: 12
+  actionPatterns:
+  - displayName: "\uC7AC \uADE0\uC5F4"
+    actionType: 1
+    attackPower: 18
+    damageType: 1
+    statusEffectType: 0
+    statusEffectValue: 25
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 0
+    mentalChangeOnHit: -4
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\uC7BF\uBE5B \uC7A5\uB9C9"
+    actionType: 1
+    attackPower: 18
+    damageType: 1
+    statusEffectType: 15
+    statusEffectValue: 25
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 100
+    mentalChangeOnHit: -2
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\uD3ED\uD48D \uC2EC\uD654"
+    actionType: 1
+    attackPower: 22
+    damageType: 1
+    statusEffectType: 15
+    statusEffectValue: 25
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 100
+    mentalChangeOnHit: -6
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\uC2EC\uD575 \uB9E5\uB3D9"
+    actionType: 1
+    attackPower: 20
+    damageType: 2
+    statusEffectType: 0
+    statusEffectValue: 25
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 0
+    mentalChangeOnHit: -8
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  secondPhasePatternStartIndex: 2

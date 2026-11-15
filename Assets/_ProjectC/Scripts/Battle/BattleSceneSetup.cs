@@ -48,6 +48,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleEventDebugLogger battleEventLogger; // 전투 공용 이벤트 순서 기록기
     private BattleMentalStateCutInView mentalStateCutInView; // 각성·붕괴 전체 화면 컷인
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
+    private WinterfallBossPhaseRuntime bossPhaseRuntime; // 윈터폴 보스 페이즈 관리자
     private MagicianPassiveRuntime magicianPassive; // 마법사 카드 회수 패시브
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
@@ -110,7 +111,16 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
         enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
-        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews, enemyActionRuntime); // 카드 행동 관리자 생성
+        foreach (BattleUnitRuntime enemy in enemyUnits) // 전투 적 목록 순회
+        { // 보스 페이즈 대상 확인 시작
+            if (enemy.EnemySource != null && enemy.EnemySource.EnemyId == "ENM_WF_ASHSTORM_CORE") // 윈터폴 보스 식별자 확인
+            { // 보스 관리자 생성 시작
+                bossPhaseRuntime = new WinterfallBossPhaseRuntime(enemy, battleTurn, enemyActionRuntime, enemy.EnemySource.SecondPhasePatternStartIndex); // 실제 보스 페이즈 감시 연결
+                bossPhaseRuntime.PhaseTransitioned += HandleBossPhaseTransitioned; // 페이즈 전환 화면 표시 연결
+                break; // 단일 보스 검색 종료
+            } // 보스 관리자 생성 종료
+        } // 보스 페이즈 대상 확인 종료
+        cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews, enemyActionRuntime, bossPhaseRuntime); // 카드 행동과 보스 전환 관리자 연결
         battleEvents = new BattleEventDispatcher(); // 전투 단위 공용 이벤트 발행기 생성
         battleEventController = new BattleEventController(battleEvents, battleTurn, cardActionController, allyUnits, enemyUnits); // 기존 전투 신호 공용 이벤트 연결
         battleEventLogger = new BattleEventDebugLogger(battleEvents); // 공용 이벤트 발행 순서 로그 연결
@@ -586,6 +596,17 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             enemyView.SetEnemyIntent(plannedAction); // 적 행동 예고 적용
         } // 적 행동 예고 갱신 종료
     } // 적 행동 변경 처리 종료
+    private void HandleBossPhaseTransitioned() // 보스 두 번째 페이즈 안내
+    { // 보스 단계 안내 시작
+        foreach (BattleUnitView view in enemyUnitViews) // 실제 적 화면 순회
+        { // 보스 화면 확인 시작
+            if (view != null && view.RuntimeUnit != null && view.RuntimeUnit.EnemySource != null && view.RuntimeUnit.EnemySource.EnemyId == "ENM_WF_ASHSTORM_CORE") // 윈터폴 보스 화면 확인
+            { // 보스 단계 표시 시작
+                view.ShowStatusFeedback("재폭풍 심화 · 2단계", true); // 두 번째 페이즈 전환 표시
+                break; // 단일 보스 표시 종료
+            } // 보스 단계 표시 종료
+        } // 보스 화면 확인 종료
+    } // 보스 단계 안내 종료
     private void HandleAllyStatusEffectsChanged(BattleUnitRuntime allyUnit) // 아군 상태 변경 처리
     { // 아군 상태 변경 시작
         HandleEnemyActionStateChanged(); // 방어력과 면역 포함 적 예고 갱신
@@ -671,7 +692,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         List<BattleEnemyAction> actionSnapshot = new List<BattleEnemyAction>(enemyActionRuntime.PlannedActions); // 실행할 행동 목록 복사
         foreach (BattleEnemyAction enemyAction in actionSnapshot) // 적 행동 목록 순회
         { // 개별 적 행동 시작
-            if (battleTurn == null || battleTurn.CurrentPhase != BattleTurnPhase.EnemyTurn || battleTurn.IsBattleEnded) // 적 턴 지속 여부 확인
+            if (battleTurn == null || battleTurn.CurrentPhase != BattleTurnPhase.EnemyTurn || battleTurn.IsBattleEnded || battleTurn.HasPendingBossPhaseTransition) // 적 턴과 보스 전환 예약 확인
             { // 적 턴 중단 처리 시작
                 break; // 남은 적 행동 중단
             } // 적 턴 중단 처리 종료
@@ -727,7 +748,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 적 턴 완료 실패 처리 시작
             yield break; // 적 턴 실행 종료
         } // 적 턴 완료 실패 처리 종료
-        int preparedActionCount = enemyActionRuntime.PrepareActions(); // 다음 적 행동 준비
+        bool bossTransitioned = bossPhaseRuntime != null && bossPhaseRuntime.CompleteAfterEnemyTurn(); // 적 턴 중 보스 페이즈 전환 처리
+        int preparedActionCount = bossTransitioned ? enemyActionRuntime.PlannedActions.Count : enemyActionRuntime.PrepareActions(); // 새 페이즈 예고 유지 또는 일반 행동 준비
         Debug.Log($"[BattleSceneSetup] 플레이어 턴 시작 - 라운드 {battleTurn.CurrentRound}, 드로우 {battleTurn.LastDrawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}, 적 예고 {preparedActionCount}개", this); // 플레이어 턴 시작 출력
     } // 적 턴 실행 종료
     private static BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit, IReadOnlyList<BattleUnitView> unitViews) // 런타임 유닛 화면 조회
@@ -743,6 +765,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 유닛 화면 조회 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        bossPhaseRuntime?.Dispose(); // 보스 페이즈 감시 연결 해제
+        bossPhaseRuntime = null; // 보스 페이즈 관리자 참조 제거
         foreach (BattleUnitRuntime enemyUnit in enemyUnits) // 생성 적 목록 순회
         { // 결과 기록 이벤트 해제 시작
             if (enemyUnit != null) // 적 런타임 존재 확인
