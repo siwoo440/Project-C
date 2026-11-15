@@ -31,6 +31,10 @@ public static class ExplorationAutoSave // 전투 전후 자동 저장 지점
         { // 진행 중 탐사 저장 시작
             return ExplorationSaveService.Save(explorationFile, position); // 보상과 클리어 상태가 반영된 탐사 저장
         } // 진행 중 탐사 저장 종료
+        if (!CharacterRecoveryManager.EnsureInstance().EnsureCompletedExplorationProcessed()) // 탐사 종료 회복 처리 확인
+        { // 회복 처리 실패 시작
+            return false; // 미반영 회복 상태 저장 방지
+        } // 회복 처리 실패 종료
         if (!LobbySaveService.Save(lobbyPath ?? LobbySaveService.DefaultPath)) // 탐사 종료 후 거점 상태 저장 확인
         { // 거점 저장 실패 처리 시작
             return false; // 기존 탐사 저장 보존
