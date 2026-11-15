@@ -10,6 +10,93 @@ using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
     [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator ContinueButton_ValidSaveRestoresLobby() // 이어하기 정상 저장 복원 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 이어하기 검증 시작
+            SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            { // 메뉴 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 메뉴 대기 종료
+            yield return null; // 메뉴 연결 대기
+            MainMenuController controller = Object.FindFirstObjectByType<MainMenuController>(); // 메뉴 관리자 조회
+            MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
+            System.Reflection.FieldInfo savePath = typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 테스트 경로 필드 조회
+            Assert.IsNotNull(savePath); // 저장 경로 연결 확인
+            savePath.SetValue(controller, path); // 독립 테스트 경로 지정
+            controller.SendMessage("Start"); // 테스트 경로 기준 메뉴 갱신
+            Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
+            Assert.IsFalse(continueButton.interactable); // 파일 없음 비활성 확인
+            System.IO.File.WriteAllText(path, "{\"version\":1}"); // 잘못된 저장 작성
+            controller.SendMessage("Start"); // 손상 저장 기준 메뉴 갱신
+            Assert.IsFalse(continueButton.interactable); // 손상 저장 비활성 확인
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            resources.AddResources(41, 0, 0, 0); // 저장할 자원 설정
+            int savedGold = resources.Gold; // 저장 골드 보관
+            Assert.IsTrue(LobbySaveService.Save(path)); // 유효한 거점 저장 작성
+            resources.ResetResources(); // 현재 자원 초기화
+            ExplorationSessionManager.EnsureInstance().AdvanceFloor(); // 이전 탐사 상태 준비
+            controller.SendMessage("Start"); // 유효 저장 기준 메뉴 갱신
+            Assert.IsTrue(continueButton.interactable); // 유효 저장 활성 확인
+            continueButton.onClick.Invoke(); // 이어하기 실행
+            yield return null; // 거점 씬 전환 대기
+            yield return null; // 거점 초기화 대기
+            Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 복원 진입 확인
+            Assert.AreEqual(savedGold, resources.Gold); // 저장 자원 복원 확인
+            Assert.AreEqual(1, ExplorationSessionManager.Instance.CurrentFloor); // 이전 탐사 상태 제거 확인
+        } // 이어하기 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator ContinueButton_ChangedFileDoesNotReplaceCurrentState() // 클릭 전 저장 손상 처리 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 손상 저장 검증 시작
+            SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            { // 메뉴 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 메뉴 대기 종료
+            yield return null; // 메뉴 연결 대기
+            MainMenuController controller = Object.FindFirstObjectByType<MainMenuController>(); // 메뉴 관리자 조회
+            MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            resources.AddResources(55, 0, 0, 0); // 현재 자원 설정
+            int currentGold = resources.Gold; // 현재 골드 보관
+            Assert.IsTrue(LobbySaveService.Save(path)); // 유효한 저장 파일 작성
+            typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, path); // 독립 테스트 경로 지정
+            controller.SendMessage("Start"); // 저장 기준 메뉴 갱신
+            Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
+            Assert.IsTrue(continueButton.interactable); // 정상 저장 활성 확인
+            System.IO.File.WriteAllText(path, "{\"version\":1}"); // 클릭 전 저장 손상
+            continueButton.onClick.Invoke(); // 손상된 저장 이어하기 시도
+            yield return null; // 씬 전환 여부 대기
+            Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메뉴 유지 확인
+            Assert.AreEqual(currentGold, resources.Gold); // 현재 자원 유지 확인
+            Assert.IsFalse(continueButton.interactable); // 이어하기 비활성 확인
+        } // 손상 저장 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
     public IEnumerator LobbySave_RestoresProgressAndRecovery() // 거점 진행 상태 저장 복원 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
@@ -134,7 +221,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         yield return null; // 메뉴 이벤트 연결 대기
         MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
         Assert.IsNotNull(view); // 새 메뉴 화면 존재 확인
-        Assert.IsFalse(view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 이어하기 비활성 확인
+        Assert.AreEqual(LobbySaveService.CanLoad(LobbySaveService.DefaultPath), view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
         view.transform.Find("SettingsButton").GetComponent<Button>().onClick.Invoke(); // 설정 버튼 실행
         yield return null; // 설정 씬 전환 대기
         Assert.AreEqual("90_Settings", SceneManager.GetActiveScene().name); // 설정 진입 확인
