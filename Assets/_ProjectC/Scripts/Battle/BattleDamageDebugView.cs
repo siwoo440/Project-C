@@ -168,16 +168,14 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
         calculationText.AppendLine(
             $"{defenseName} {result.DefenseValue}"); // 방어값 기록
 
-        calculationText.AppendLine(
-            $"{result.RawDamage} - {result.DefenseValue} = {result.DefenseAdjustedDamage}"); // 방어 계산식 기록
+        calculationText.AppendLine($"방어 적용 : {result.RawDamage} × 100 / (100 + {result.DefenseValue}) → {result.DefenseAdjustedDamage}"); // 방어 비율 계산식 기록
 
         calculationText.AppendLine(
             result.IsWeakness
                 ? $"약점 {GetCardTypeLabel(card.CardType)} : YES ×{result.WeaknessMultiplier:0.00}"
                 : $"약점 {GetCardTypeLabel(card.CardType)} : NO ×1.00"); // 약점 판정 기록
 
-        calculationText.AppendLine(
-            $"최종 Round({result.DefenseAdjustedDamage} × {result.WeaknessMultiplier:0.00}) = {result.FinalDamage}"); // 최종 계산식 기록
+        calculationText.AppendLine($"최종 버림 : {result.RawDamage} × 100 / (100 + {result.DefenseValue}) × {result.WeaknessMultiplier:0.00} = {result.FinalDamage}"); // 약점 포함 최종 계산식 기록
 
         calculationText.AppendLine(
             $"적용 피해 min(현재 HP {target.CurrentHealth}, {result.FinalDamage}) = {predictedAppliedDamage}"); // 실제 적용 피해 기록

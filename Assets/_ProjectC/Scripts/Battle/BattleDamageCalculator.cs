@@ -1,5 +1,4 @@
 using System; // 기본 수학 기능 사용
-using UnityEngine; // 반올림 기능 사용
 
 public static class BattleDamageCalculator // 공통 피해 계산기
 {
@@ -18,10 +17,8 @@ public static class BattleDamageCalculator // 공통 피해 계산기
                 safePhysicalDefense,
                 safeMagicalResistance); // 피해 유형별 방어값 선택
 
-        int defenseAdjustedDamage =
-            safeRawDamage > 0
-                ? Math.Max(1, safeRawDamage - defenseValue)
-                : 0; // 방어 적용 피해 계산
+        double defenseAdjustedValue = (double)safeRawDamage * 100d / (100d + defenseValue); // 확정 방어 비율 적용값 계산
+        int defenseAdjustedDamage = safeRawDamage > 0 ? Math.Max(1, (int)Math.Floor(defenseAdjustedValue)) : 0; // 표시용 방어 적용 피해 계산
 
         CardInstance card; // 카드 피해 문맥 카드
         BattleUnitRuntime target; // 카드 피해 문맥 대상
@@ -43,12 +40,8 @@ public static class BattleDamageCalculator // 공통 피해 계산기
                 ? BattleWeaknessCalculator.WeaknessDamageMultiplier
                 : 1f; // 약점 피해 배율 결정
 
-        int finalDamage =
-            defenseAdjustedDamage > 0
-                ? Mathf.RoundToInt(
-                    defenseAdjustedDamage *
-                    weaknessMultiplier)
-                : 0; // 약점 포함 최종 피해 계산
+        double multipliedDamage = defenseAdjustedValue * weaknessMultiplier; // 반올림 전 약점 배율 적용
+        int finalDamage = safeRawDamage <= 0 ? 0 : multipliedDamage >= int.MaxValue ? int.MaxValue : Math.Max(1, (int)Math.Floor(multipliedDamage)); // 확정 피해식의 최종 버림과 최소 피해 적용
 
         BattleDamageResult result =
             new BattleDamageResult(

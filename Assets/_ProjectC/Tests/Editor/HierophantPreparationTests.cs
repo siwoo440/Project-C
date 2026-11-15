@@ -14,7 +14,7 @@ public sealed class HierophantPreparationTests // 교황 사전 방어 테스트
         ally.TakeDamage(2, BattleDamageType.None); // 공격자가 없는 환경 피해 적용
         Assert.IsNotNull(ally.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 환경 피해에 준비 유지 확인
         BattleDamageResult preview = ally.PreviewDamage(10, BattleDamageType.Physical, enemy); // 첫 적 공격 예상 피해 조회
-        Assert.AreEqual(7, preview.AppliedDamage); // 임시 방어 반영 예상 피해 확인
+        Assert.AreEqual(9, preview.AppliedDamage); // 확정 방어 비율의 예상 피해 확인
         BattleDamageResult first = ally.TakeDamage(10, BattleDamageType.Physical, enemy); // 첫 적 공격 적용
         Assert.AreEqual(preview.AppliedDamage, first.AppliedDamage); // 예상 피해와 실제 피해 일치 확인
         Assert.IsNull(ally.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 발동 후 준비 제거 확인
@@ -59,7 +59,7 @@ public sealed class HierophantPreparationTests // 교황 사전 방어 테스트
         ally.ApplyStatusEffect(BattleStatusEffectType.GuardPreparation, 3, 1, 1); // 방어 준비 적용
         BattleEnemyAction firstAttack = actions.PlannedActions[0]; // 첫 예정 공격 조회
         BattleEnemyAction secondAttack = actions.PlannedActions[1]; // 두 번째 예정 공격 조회
-        Assert.AreEqual(5, firstAttack.PreviewDamage().AppliedDamage); // 첫 공격의 방어 준비 예고 확인
+        Assert.AreEqual(7, firstAttack.PreviewDamage().AppliedDamage); // 첫 공격의 방어 비율 예고 확인
         Assert.AreEqual(8, secondAttack.PreviewDamage().AppliedDamage); // 두 번째 공격의 준비 미적용 예고 확인
         actions.ExecuteAction(firstAttack); // 첫 적 공격 실행
         Assert.AreEqual(8, secondAttack.PreviewDamage().AppliedDamage); // 준비 소모 후 두 번째 공격 예고 확인
