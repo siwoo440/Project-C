@@ -81,6 +81,14 @@ public sealed class CharacterProgressionManager : MonoBehaviour
         return safeAmount;
     }
 
+    public void RestoreProgress(int level, int experience) // 저장 성장 상태 복원
+    { // 성장 복원 시작
+        Level = level; // 저장 레벨 적용
+        CurrentExperience = experience; // 저장 경험치 적용
+        initialized = true; // 성장 초기화 상태 설정
+        ProgressChanged?.Invoke(); // 성장 변경 알림
+    } // 성장 복원 종료
+
     public void ResetProgress()
     {
         Level = StartingLevel;

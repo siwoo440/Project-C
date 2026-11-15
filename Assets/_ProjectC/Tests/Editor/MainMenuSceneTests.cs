@@ -9,6 +9,118 @@ using UnityEngine.TestTools; // 플레이 모드 전환 기능 사용
 using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator LobbySave_RestoresProgressAndRecovery() // 거점 진행 상태 저장 복원 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        System.Type service = typeof(MainMenuController).Assembly.GetType("LobbySaveService"); // 저장 서비스 형식 조회
+        Assert.IsNotNull(service); // 저장 서비스 존재 확인
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 저장 검증 시작
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            FacilityUpgradeManager facilities = FacilityUpgradeManager.EnsureInstance(); // 설비 관리자 준비
+            CharacterProgressionManager progression = CharacterProgressionManager.EnsureInstance(); // 성장 관리자 준비
+            CharacterAffinityManager affinity = CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비
+            BattleResultManager result = BattleResultManager.EnsureInstance(); // 캐릭터 상태 관리자 준비
+            CharacterRecoveryManager recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 관리자 준비
+            resources.AddResources(10000, 500, 500, 500); // 저장할 자원 준비
+            Assert.IsTrue(facilities.TryUpgrade(FacilityType.PowerSupply)); // 저장할 설비 강화
+            int savedGold = resources.Gold; // 강화 후 골드 보관
+            int savedScrew = resources.Screw; // 강화 후 나사 보관
+            progression.AddExperience(100); // 저장할 성장 경험치 준비
+            affinity.GrantExplorationSuccessAffinity(7); // 저장할 호감도 준비
+            int savedLevel = progression.Level; // 현재 레벨 보관
+            int savedExperience = progression.CurrentExperience; // 현재 경험치 보관
+            CharacterData fool = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 테스트 캐릭터 조회
+            BattleUnitRuntime unit = BattleUnitRuntime.CreateAlly(fool); // 전투 캐릭터 생성
+            unit.TakeDamage(100000, BattleDamageType.Physical); // 테스트 캐릭터 사망 처리
+            BattleResultData previous = new BattleResultData(BattleResult.Defeat, BattleType.Normal, 1, new[] { unit }, new string[0]); // 사망 결과 생성
+            Assert.IsTrue(result.StoreResult(previous)); // 사망 상태 기록
+            Assert.IsTrue(recovery.RegisterDeadCharacter(fool, result)); // 사망 캐릭터 회복 등록
+            Assert.IsTrue((bool)service.GetMethod("Save").Invoke(null, new object[] { path })); // 거점 상태 파일 저장
+            Assert.IsTrue((bool)service.GetMethod("Save").Invoke(null, new object[] { path })); // 기존 저장 파일 교체
+            resources.ResetResources(); // 자원 초기화
+            facilities.ResetFacilities(); // 설비 초기화
+            progression.ResetProgress(); // 성장 초기화
+            affinity.ResetAffinity(); // 호감도 초기화
+            result.ResetSavedPartyState(); // 캐릭터 상태 초기화
+            recovery.ResetRecoveryState(); // 회복 상태 초기화
+            Assert.IsTrue((bool)service.GetMethod("Load").Invoke(null, new object[] { path })); // 파일에서 거점 상태 복원
+            Assert.AreEqual(savedGold, resources.Gold); // 골드 복원 확인
+            Assert.AreEqual(savedScrew, resources.Screw); // 나사 복원 확인
+            Assert.AreEqual(1, facilities.GetLevel(FacilityType.PowerSupply)); // 설비 복원 확인
+            Assert.AreEqual(savedLevel, progression.Level); // 성장 레벨 복원 확인
+            Assert.AreEqual(savedExperience, progression.CurrentExperience); // 경험치 복원 확인
+            Assert.AreEqual(7, affinity.Affinity); // 호감도 복원 확인
+            Assert.IsTrue(recovery.IsDead(fool)); // 사망 상태 복원 확인
+            Assert.AreEqual(2, recovery.GetRemainingRecoveryExpeditions(fool)); // 회복 횟수 복원 확인
+            Assert.IsFalse(result.HasPendingResult); // 이전 전투 결과 제거 확인
+        } // 저장 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator LobbySave_RejectsInvalidFileWithoutChangingState() // 잘못된 저장의 상태 보호 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 오류 검증 시작
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            resources.AddResources(37, 4, 0, 0); // 기존 자원 설정
+            int originalGold = resources.Gold; // 기존 골드 보관
+            Assert.IsFalse(LobbySaveService.Load(path)); // 없는 파일 복원 차단 확인
+            System.IO.File.WriteAllText(path, "{\"version\":1,\"gold\":999}"); // 필수 항목이 누락된 저장 생성
+            Assert.IsFalse(LobbySaveService.Load(path)); // 잘못된 저장 복원 차단 확인
+            Assert.AreEqual(originalGold, resources.Gold); // 기존 자원 유지 확인
+        } // 오류 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator LobbySave_WritesAfterResourceChange() // 거점 변경 후 자동 저장 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        System.Type autosaveType = typeof(MainMenuController).Assembly.GetType("LobbyAutosaveController"); // 자동 저장 컴포넌트 조회
+        Assert.IsNotNull(autosaveType); // 자동 저장 컴포넌트 존재 확인
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        GameObject owner = new GameObject("LobbyAutosaveTest"); // 테스트 저장 관리자 생성
+        try // 테스트 파일과 객체 정리 보장
+        { // 자동 저장 검증 시작
+            Component autosave = owner.AddComponent(autosaveType); // 자동 저장 컴포넌트 추가
+            autosaveType.GetMethod("Initialize").Invoke(autosave, new object[] { path }); // 테스트 저장 경로 연결
+            yield return null; // 최초 저장 프레임 대기
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 조회
+            resources.AddResources(41, 0, 0, 0); // 자동 저장 대상 자원 변경
+            int expectedGold = resources.Gold; // 변경 골드 보관
+            yield return null; // 변경 저장 프레임 대기
+            resources.ResetResources(); // 저장 후 자원 변경
+            Assert.IsTrue(LobbySaveService.Load(path)); // 자동 저장 파일 복원
+            Assert.AreEqual(expectedGold, resources.Gold); // 자동 저장 자원 확인
+        } // 자동 저장 검증 종료
+        finally // 테스트 파일과 객체 정리
+        { // 정리 시작
+            Object.Destroy(owner); // 테스트 관리자 제거
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
     [UnityTest] // 실행 흐름 테스트 지정
     public IEnumerator MenuButtons_OpenSettingsReturnAndStartLobby() // 실제 메뉴 이동 확인
     { // 테스트 시작

@@ -279,6 +279,12 @@ public sealed class CharacterRecoveryManager : MonoBehaviour // 사망 캐릭터
             characterData); // 회복 상태 존재 여부 반환
     }
 
+    public void RestoreRecoveryState(CharacterData character, int remaining) // 저장 회복 상태 복원
+    { // 회복 상태 복원 시작
+        recoveryStates[character.CharacterId] = new RecoveryState { Character = character, RemainingExpeditions = remaining }; // 저장 회복 정보 적용
+        RecoveryStateChanged?.Invoke(); // 회복 상태 변경 알림
+    } // 회복 상태 복원 종료
+
     public void ResetRecoveryState() // 회복 상태 전체 초기화
     {
         if (recoveryStates.Count == 0)

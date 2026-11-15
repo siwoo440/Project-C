@@ -106,6 +106,12 @@ public sealed class FacilityUpgradeManager : MonoBehaviour // 세룰리온 설�
         return true; // 강화 성공 반환
     }
 
+    public void RestoreFacilityLevel(FacilityType type, int level) // 저장 설비 단계 복원
+    { // 설비 복원 시작
+        facilityLevels[type] = level; // 저장 설비 단계 적용
+        FacilityChanged?.Invoke(type, level); // 설비 변경 알림
+    } // 설비 복원 종료
+
     public void ResetFacilities() // 모든 설비 강화 초기화
     {
         Array facilityTypes = Enum.GetValues(typeof(FacilityType)); // 전체 설비 종류 목록 조회

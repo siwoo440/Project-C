@@ -450,6 +450,14 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         return true; // 휴식 회복 성공 반환
     }
 
+    public void RestoreSavedAllyState(CharacterData character, int health, int mental, int deaths) // 저장 캐릭터 상태 복원
+    { // 캐릭터 상태 복원 시작
+        savedAllyHealth[character.CharacterId] = health; // 저장 체력 적용
+        savedAllyMental[character.CharacterId] = mental; // 저장 정신력 적용
+        allyDeathCounts[character.CharacterId] = deaths; // 저장 사망 횟수 적용
+        PartyStateChanged?.Invoke(); // 파티 상태 변경 알림
+    } // 캐릭터 상태 복원 종료
+
     public void ResetSavedPartyState() // 저장 아군 상태 전체 초기화
     {
         savedAllyHealth.Clear(); // 저장 아군 체력 비우기
