@@ -51,6 +51,10 @@ public sealed class ExplorationHazardRuntime : MonoBehaviour // 탐사 퇴색 �
 
         sessionManager =
             targetSessionManager; // 탐사 세션 관리자 저장
+        if (sessionManager != null && sessionManager.TryConsumeRestoredHazardExposure(out float restoredExposure)) // 복원 대기 노출도 확인
+        { // 노출도 복원 시작
+            exposure = restoredExposure; // 저장 위험 노출도 적용
+        } // 노출도 복원 종료
     }
 
     public void ResetForCurrentFloor() // 층 변경 시 현재 방 판정 초기화

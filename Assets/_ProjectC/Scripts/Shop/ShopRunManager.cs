@@ -1,4 +1,5 @@
 using System; // 상점 상태 이벤트 사용
+using System.Collections.Generic; // 저장 상품 목록 사용
 using UnityEngine; // 영구 상점 관리자 사용
 
 public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관리자
@@ -58,6 +59,21 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         Changed?.Invoke(); // 상점 상태 변경 알림
     } // 상점 회차 초기화 종료
 
+    internal void RestoreSession(ShopCatalogData catalogData, DeckData deckData, string roomId, IReadOnlyList<string> purchased) // 저장 상점 상태 복원
+    { // 상점 상태 복원 시작
+        ResetSession(); // 이전 상점 상태 제거
+        if (string.IsNullOrEmpty(roomId)) // 저장 상점 방 존재 확인
+        { // 상점 방 없음 처리 시작
+            return; // 상점 상태 복원 종료
+        } // 상점 방 없음 처리 종료
+        Prepare(catalogData, deckData); // 저장 상점 카탈로그 연결
+        BeginRoomVisit(roomId); // 저장 상점 방 연결
+        foreach (string offerId in purchased) // 판매 완료 상품 순회
+        { // 판매 완료 복원 시작
+            transactionService.RestorePurchase(offerId); // 판매 완료 상태 등록
+        } // 판매 완료 복원 종료
+        Changed?.Invoke(); // 복원 상점 상태 알림
+    } // 상점 상태 복원 종료
     public bool Prepare(ShopCatalogData catalogData, DeckData deckData) // 카탈로그와 회차 덱 준비
     { // 상점 준비 시작
         if (catalogData == null || !catalogData.IsValidData() || deckData == null || !deckData.IsValidDeck()) // 필수 데이터 유효성 확인

@@ -129,6 +129,16 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
         return false; // 소유자 없음 반환
     }
 
+    internal void RestoreCards(DeckData deckData, IReadOnlyList<RunDeckCardEntry> restoredCards) // 저장된 회차 덱 복원
+    { // 회차 덱 복원 시작
+        cards.Clear(); // 이전 회차 카드 제거
+        sourceDeck = deckData; // 복원 시작 덱 연결
+        foreach (RunDeckCardEntry entry in restoredCards) // 복원 카드 순회
+        { // 복원 카드 추가 시작
+            cards.Add(entry); // 저장 순서대로 카드 추가
+        } // 복원 카드 추가 종료
+        Changed?.Invoke(); // 회차 덱 변경 알림
+    } // 회차 덱 복원 종료
     public void ResetToSource(DeckData deckData) // 회차 덱 원본 상태 복원
     {
         cards.Clear(); // 기존 회차 카드 제거
@@ -150,7 +160,7 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
 
     private void EnsureInitialized(DeckData deckData) // 원본 덱 기반 초기화 보장
     {
-        if (sourceDeck == deckData && cards.Count > 0) // 동일 원본 초기화 완료 확인
+        if (sourceDeck != null && sourceDeck == deckData) // 동일 원본 초기화 완료 확인
         {
             return; // 재초기화 중단
         }

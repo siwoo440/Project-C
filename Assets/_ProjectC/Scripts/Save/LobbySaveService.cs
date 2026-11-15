@@ -154,15 +154,26 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             { // 파일 없음 처리 시작
                 return false; // 복원 불가 반환
             } // 파일 없음 처리 종료
-            SaveData data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path)); // 저장 파일 읽기
-            CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 전체 캐릭터 목록 조회
-            return IsValid(data, roster); // 저장 정보 유효성 반환
+            return CanLoadJson(File.ReadAllText(path)); // 저장 내용 유효성 반환
         } // 저장 검사 처리 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
         { // 검사 오류 처리 시작
             return false; // 복원 불가 반환
         } // 검사 오류 처리 종료
     } // 저장 검사 종료
+    public static bool CanLoadJson(string json) // 거점 저장 내용 복원 가능 여부 검사
+    { // 저장 내용 검사 시작
+        try // 저장 내용 오류 처리 시작
+        { // 저장 내용 검사 처리 시작
+            SaveData data = JsonUtility.FromJson<SaveData>(json); // 저장 내용 역직렬화
+            CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 전체 캐릭터 목록 조회
+            return IsValid(data, roster); // 저장 내용 유효성 반환
+        } // 저장 내용 검사 처리 종료
+        catch (ArgumentException) // 잘못된 저장 형식 확인
+        { // 저장 형식 오류 처리 시작
+            return false; // 복원 불가 반환
+        } // 저장 형식 오류 처리 종료
+    } // 저장 내용 검사 종료
     public static bool Load(string path) // 저장된 거점 상태 복원
     { // 복원 시작
         try // 파일 오류 처리 시작
@@ -171,7 +182,19 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             { // 파일 없음 시작
                 return false; // 복원 실패 반환
             } // 파일 없음 종료
-            SaveData data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path)); // 저장 파일 읽기
+            return LoadJson(File.ReadAllText(path)); // 저장 내용 복원 결과 반환
+        } // 파일 복원 처리 종료
+        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
+        { // 파일 복원 오류 시작
+            Debug.LogWarning("[LobbySave] 복원 실패: " + exception.Message); // 복원 오류 안내
+            return false; // 복원 실패 반환
+        } // 파일 복원 오류 종료
+    } // 파일 복원 종료
+    public static bool LoadJson(string json) // 거점 저장 내용 복원
+    { // 저장 내용 복원 시작
+        try // 저장 내용 오류 처리 시작
+        { // 저장 내용 복원 처리 시작
+            SaveData data = JsonUtility.FromJson<SaveData>(json); // 저장 내용 읽기
             CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 전체 캐릭터 목록 조회
             if (!IsValid(data, roster)) // 저장 데이터 전체 검증
             { // 유효하지 않은 저장 시작
