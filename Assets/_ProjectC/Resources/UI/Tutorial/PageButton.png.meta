@@ -1,0 +1,1287 @@
+fileFormatVersion: 2
+guid: de331d25c10d829418fd19337b341914
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2434678141480543847
+    second: PageButton_0
+  - first:
+      213: -5015040536985065016
+    second: PageButton_1
+  - first:
+      213: 6579180323452033870
+    second: PageButton_2
+  - first:
+      213: -5612518778297040149
+    second: PageButton_3
+  - first:
+      213: -5572198313753128324
+    second: PageButton_4
+  - first:
+      213: 4301246052699620981
+    second: PageButton_5
+  - first:
+      213: 7543600274784184996
+    second: PageButton_6
+  - first:
+      213: 6587280256889753922
+    second: PageButton_7
+  - first:
+      213: -102504675016084688
+    second: PageButton_8
+  - first:
+      213: 2544180092679177482
+    second: PageButton_9
+  - first:
+      213: -9162440479712733239
+    second: PageButton_10
+  - first:
+      213: -4630195856076863063
+    second: PageButton_11
+  - first:
+      213: -3846204326748257910
+    second: PageButton_12
+  - first:
+      213: -3006935529995206369
+    second: PageButton_13
+  - first:
+      213: -942648377435704852
+    second: PageButton_14
+  - first:
+      213: 8181004718631539383
+    second: PageButton_15
+  - first:
+      213: 8642428227716197390
+    second: PageButton_16
+  - first:
+      213: -2752120730965400439
+    second: PageButton_17
+  - first:
+      213: -7216234743709921495
+    second: PageButton_18
+  - first:
+      213: -5774400677936782717
+    second: PageButton_19
+  - first:
+      213: -5419868849146099983
+    second: PageButton_20
+  - first:
+      213: 7571798604176403149
+    second: PageButton_21
+  - first:
+      213: 4418477284802634763
+    second: PageButton_22
+  - first:
+      213: 5053423642843098973
+    second: PageButton_23
+  - first:
+      213: 2412227022592145766
+    second: PageButton_24
+  - first:
+      213: -2950377055875280105
+    second: PageButton_25
+  - first:
+      213: 1576162607828014922
+    second: PageButton_26
+  - first:
+      213: 3176677748120712316
+    second: PageButton_27
+  - first:
+      213: -480474317991038827
+    second: PageButton_28
+  - first:
+      213: -3714318535370641598
+    second: PageButton_29
+  - first:
+      213: -3175140584739241260
+    second: PageButton_30
+  - first:
+      213: 6079020361912226868
+    second: PageButton_31
+  - first:
+      213: 9008602034501309622
+    second: PageButton_32
+  - first:
+      213: 7192877843018960890
+    second: PageButton_33
+  - first:
+      213: -8902576799741806230
+    second: PageButton_34
+  - first:
+      213: 7154943350955151874
+    second: PageButton_35
+  - first:
+      213: 87860935066345267
+    second: PageButton_36
+  - first:
+      213: -6197890736686006165
+    second: PageButton_37
+  - first:
+      213: -5581091705141282230
+    second: PageButton_38
+  - first:
+      213: -7637668307550207151
+    second: PageButton_39
+  - first:
+      213: -7793360460206313643
+    second: PageButton_40
+  - first:
+      213: -6827275882569976494
+    second: PageButton_41
+  - first:
+      213: -1672542055849383352
+    second: PageButton_42
+  - first:
+      213: -5293156592592584231
+    second: PageButton_43
+  - first:
+      213: 8874604913351778665
+    second: PageButton_44
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: PageButton_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 837
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7662b55ced6b9c120800000000000000
+      internalID: 2434678141480543847
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_1
+      rect:
+        serializedVersion: 2
+        x: 60
+        y: 0
+        width: 1779
+        height: 822
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c922d2d33ff66ab0800000000000000
+      internalID: -5015040536985065016
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_2
+      rect:
+        serializedVersion: 2
+        x: 459
+        y: 812
+        width: 29
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4b199c65a1fd4b50800000000000000
+      internalID: 6579180323452033870
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_3
+      rect:
+        serializedVersion: 2
+        x: 487
+        y: 812
+        width: 15
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be2456458e35c12b0800000000000000
+      internalID: -5612518778297040149
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_4
+      rect:
+        serializedVersion: 2
+        x: 503
+        y: 803
+        width: 33
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c72d6ba08239ba2b0800000000000000
+      internalID: -5572198313753128324
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_5
+      rect:
+        serializedVersion: 2
+        x: 543
+        y: 790
+        width: 28
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57646b6fe7811bb30800000000000000
+      internalID: 4301246052699620981
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_6
+      rect:
+        serializedVersion: 2
+        x: 585
+        y: 741
+        width: 110
+        height: 81
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4aaec027b7040b860800000000000000
+      internalID: 7543600274784184996
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_7
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 802
+        width: 21
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2419bd32e78ba6b50800000000000000
+      internalID: 6587280256889753922
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_8
+      rect:
+        serializedVersion: 2
+        x: 1154
+        y: 814
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03379d98a84d39ef0800000000000000
+      internalID: -102504675016084688
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_9
+      rect:
+        serializedVersion: 2
+        x: 1158
+        y: 814
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a0543cc805ebe4320800000000000000
+      internalID: 2544180092679177482
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_10
+      rect:
+        serializedVersion: 2
+        x: 1161
+        y: 812
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c7101bade878d080800000000000000
+      internalID: -9162440479712733239
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_11
+      rect:
+        serializedVersion: 2
+        x: 1182
+        y: 802
+        width: 22
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9a98d06966d3ebfb0800000000000000
+      internalID: -4630195856076863063
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_12
+      rect:
+        serializedVersion: 2
+        x: 1211
+        y: 810
+        width: 23
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a81899afa898f9ac0800000000000000
+      internalID: -3846204326748257910
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_13
+      rect:
+        serializedVersion: 2
+        x: 1227
+        y: 768
+        width: 57
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f11822021183546d0800000000000000
+      internalID: -3006935529995206369
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_14
+      rect:
+        serializedVersion: 2
+        x: 1262
+        y: 812
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce1b8da8b4a0be2f0800000000000000
+      internalID: -942648377435704852
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_15
+      rect:
+        serializedVersion: 2
+        x: 1321
+        y: 791
+        width: 13
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b2d3df5274c88170800000000000000
+      internalID: 8181004718631539383
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_16
+      rect:
+        serializedVersion: 2
+        x: 1347
+        y: 812
+        width: 19
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0c25ddfea210f770800000000000000
+      internalID: 8642428227716197390
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_17
+      rect:
+        serializedVersion: 2
+        x: 1421
+        y: 795
+        width: 31
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 984a1dbc6c08ec9d0800000000000000
+      internalID: -2752120730965400439
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_18
+      rect:
+        serializedVersion: 2
+        x: 1514
+        y: 802
+        width: 14
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92f865ddbb8cadb90800000000000000
+      internalID: -7216234743709921495
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_19
+      rect:
+        serializedVersion: 2
+        x: 1563
+        y: 797
+        width: 13
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 382adc07d253ddfa0800000000000000
+      internalID: -5774400677936782717
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_20
+      rect:
+        serializedVersion: 2
+        x: 1587
+        y: 796
+        width: 24
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f601755ff1c8c4b0800000000000000
+      internalID: -5419868849146099983
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_21
+      rect:
+        serializedVersion: 2
+        x: 473
+        y: 780
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dcaabb0a6be641960800000000000000
+      internalID: 7571798604176403149
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_22
+      rect:
+        serializedVersion: 2
+        x: 517
+        y: 795
+        width: 21
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b042bc03ea5915d30800000000000000
+      internalID: 4418477284802634763
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_23
+      rect:
+        serializedVersion: 2
+        x: 569
+        y: 792
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5f293b670e512640800000000000000
+      internalID: 5053423642843098973
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_24
+      rect:
+        serializedVersion: 2
+        x: 1529
+        y: 793
+        width: 9
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 669f33f42b3f97120800000000000000
+      internalID: 2412227022592145766
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_25
+      rect:
+        serializedVersion: 2
+        x: 519
+        y: 770
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 713571f03b72e07d0800000000000000
+      internalID: -2950377055875280105
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_26
+      rect:
+        serializedVersion: 2
+        x: 1174
+        y: 762
+        width: 26
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4797db7a87afd510800000000000000
+      internalID: 1576162607828014922
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_27
+      rect:
+        serializedVersion: 2
+        x: 1200
+        y: 753
+        width: 27
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c747f96c493d51c20800000000000000
+      internalID: 3176677748120712316
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_28
+      rect:
+        serializedVersion: 2
+        x: 1353
+        y: 747
+        width: 9
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 590327847230559f0800000000000000
+      internalID: -480474317991038827
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_29
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 751
+        width: 16
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24f659ca8f6147cc0800000000000000
+      internalID: -3714318535370641598
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_30
+      rect:
+        serializedVersion: 2
+        x: 713
+        y: 758
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4d201b6f572afe3d0800000000000000
+      internalID: -3175140584739241260
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_31
+      rect:
+        serializedVersion: 2
+        x: 1218
+        y: 745
+        width: 10
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4341526afc40d5450800000000000000
+      internalID: 6079020361912226868
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_32
+      rect:
+        serializedVersion: 2
+        x: 577
+        y: 739
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b4df4d12dbf40d70800000000000000
+      internalID: 9008602034501309622
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_33
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 72
+        width: 11
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aff4ce9e94c32d360800000000000000
+      internalID: 7192877843018960890
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_34
+      rect:
+        serializedVersion: 2
+        x: 824
+        y: 70
+        width: 21
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6971c98191b37480800000000000000
+      internalID: -8902576799741806230
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_35
+      rect:
+        serializedVersion: 2
+        x: 858
+        y: 62
+        width: 7
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20299b5b1177b4360800000000000000
+      internalID: 7154943350955151874
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_36
+      rect:
+        serializedVersion: 2
+        x: 1364
+        y: 62
+        width: 14
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 33f53401e05283100800000000000000
+      internalID: 87860935066345267
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_37
+      rect:
+        serializedVersion: 2
+        x: 585
+        y: 56
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b60852b763bacf9a0800000000000000
+      internalID: -6197890736686006165
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_38
+      rect:
+        serializedVersion: 2
+        x: 699
+        y: 58
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a4abc200aaafb82b0800000000000000
+      internalID: -5581091705141282230
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_39
+      rect:
+        serializedVersion: 2
+        x: 1026
+        y: 56
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1530630f32d810690800000000000000
+      internalID: -7637668307550207151
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_40
+      rect:
+        serializedVersion: 2
+        x: 1162
+        y: 48
+        width: 22
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 55fe3d2d3fb68d390800000000000000
+      internalID: -7793360460206313643
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_41
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 56
+        width: 16
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25533dbd1c4a041a0800000000000000
+      internalID: -6827275882569976494
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_42
+      rect:
+        serializedVersion: 2
+        x: 1369
+        y: 59
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 84a22399cdfe9c8e0800000000000000
+      internalID: -1672542055849383352
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_43
+      rect:
+        serializedVersion: 2
+        x: 1595
+        y: 50
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d180069f1eea86b0800000000000000
+      internalID: -5293156592592584231
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: PageButton_44
+      rect:
+        serializedVersion: 2
+        x: 1144
+        y: 23
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 961e446262ee82b70800000000000000
+      internalID: 8874604913351778665
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID:
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      PageButton_0: 2434678141480543847
+      PageButton_1: -5015040536985065016
+      PageButton_10: -9162440479712733239
+      PageButton_11: -4630195856076863063
+      PageButton_12: -3846204326748257910
+      PageButton_13: -3006935529995206369
+      PageButton_14: -942648377435704852
+      PageButton_15: 8181004718631539383
+      PageButton_16: 8642428227716197390
+      PageButton_17: -2752120730965400439
+      PageButton_18: -7216234743709921495
+      PageButton_19: -5774400677936782717
+      PageButton_2: 6579180323452033870
+      PageButton_20: -5419868849146099983
+      PageButton_21: 7571798604176403149
+      PageButton_22: 4418477284802634763
+      PageButton_23: 5053423642843098973
+      PageButton_24: 2412227022592145766
+      PageButton_25: -2950377055875280105
+      PageButton_26: 1576162607828014922
+      PageButton_27: 3176677748120712316
+      PageButton_28: -480474317991038827
+      PageButton_29: -3714318535370641598
+      PageButton_3: -5612518778297040149
+      PageButton_30: -3175140584739241260
+      PageButton_31: 6079020361912226868
+      PageButton_32: 9008602034501309622
+      PageButton_33: 7192877843018960890
+      PageButton_34: -8902576799741806230
+      PageButton_35: 7154943350955151874
+      PageButton_36: 87860935066345267
+      PageButton_37: -6197890736686006165
+      PageButton_38: -5581091705141282230
+      PageButton_39: -7637668307550207151
+      PageButton_4: -5572198313753128324
+      PageButton_40: -7793360460206313643
+      PageButton_41: -6827275882569976494
+      PageButton_42: -1672542055849383352
+      PageButton_43: -5293156592592584231
+      PageButton_44: 8874604913351778665
+      PageButton_5: 4301246052699620981
+      PageButton_6: 7543600274784184996
+      PageButton_7: 6587280256889753922
+      PageButton_8: -102504675016084688
+      PageButton_9: 2544180092679177482
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

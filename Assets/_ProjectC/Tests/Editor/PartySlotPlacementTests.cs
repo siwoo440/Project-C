@@ -1,7 +1,10 @@
 using System.Collections; // 실제 저장 코루틴 사용
 using NUnit.Framework; // 슬롯 배치 검증 사용
+using TMPro; // 캐릭터 상세 문구 확인 사용
 using UnityEngine; // 실제 캐릭터 데이터 사용
+using UnityEngine.EventSystems; // 슬롯 클릭 이벤트 확인 사용
 using UnityEngine.TestTools; // 플레이 모드 저장 검사 사용
+using UnityEngine.UI; // 편성 칸 강조 표시 확인 사용
 public sealed class PartySlotPlacementTests // 슬롯별 파티 편성 규칙 검사
 { // 슬롯 규칙 검사 시작
     private sealed class AvailableStatus : IPartyDeploymentStatusProvider // 출전 가능 상태 제공자
@@ -59,6 +62,37 @@ public sealed class PartySlotPlacementTests // 슬롯별 파티 편성 규칙 �
         Assert.IsFalse(PartyPresetStore.IsValid(snapshot, roster)); // 중복 슬롯 저장 차단 확인
         PartyPresetStore.Reset(); // 테스트 편성 상태 정리
     } // 편성 저장 검사 종료
+    [UnityTest] // 실제 편성 칸 선택 검사 지정
+    public IEnumerator OccupiedSlot_ClickShowsCharacterDetailsWithoutChangingParty() // 편성 칸 클릭 상세 정보 확인
+    { // 편성 칸 클릭 검사 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        PartyPresetStore.Reset(); // 독립 편성 초기화
+        CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 캐릭터 목록 조회
+        GameObject canvasObject = new GameObject("FormationCanvas", typeof(RectTransform), typeof(Canvas)); // 편성 화면 캔버스 생성
+        PartyFormationView formation = PartyFormationView.Open(canvasObject.GetComponent<Canvas>()); // 실제 편성 화면 열기
+        Assert.IsNotNull(formation); // 편성 화면 생성 확인
+        formation.DropProfile(roster.Characters[0], 0); // 첫 캐릭터를 왼쪽 칸에 배치
+        formation.DropProfile(roster.Characters[1], 3); // 두 번째 캐릭터를 오른쪽 칸에 배치
+        Transform slot = formation.transform.Find("Slots/Slot_0"); // 첫 번째 물리 편성 칸 조회
+        IPointerClickHandler click = slot.GetComponent<IPointerClickHandler>(); // 실제 슬롯 클릭 처리 조회
+        Assert.IsNotNull(click); // 편성 칸 클릭 기능 확인
+        click.OnPointerClick(null); // 배치된 캐릭터 칸 클릭
+        Assert.AreEqual(roster.Characters[0].DisplayName, formation.transform.Find("DetailPanel/SelectedName").GetComponent<TMP_Text>().text); // 클릭 캐릭터 상세 이름 확인
+        StringAssert.Contains(roster.Characters[0].MaxHealth.ToString(), formation.transform.Find("DetailPanel/Stats").GetComponent<TMP_Text>().text); // 클릭 캐릭터 상세 능력치 확인
+        Assert.IsTrue(slot.GetComponent<Outline>().enabled); // 클릭한 편성 칸 강조 확인
+        Assert.AreEqual(roster.Characters[0].CharacterId, PartyPresetStore.GetSlots(0)[0]); // 클릭 후 기존 편성 유지 확인
+        Assert.AreEqual(roster.Characters[1].CharacterId, PartyPresetStore.GetSlots(0)[3]); // 다른 편성 칸 유지 확인
+        Transform otherSlot = formation.transform.Find("Slots/Slot_3"); // 다른 편성된 캐릭터 칸 조회
+        otherSlot.GetComponent<IPointerClickHandler>().OnPointerClick(null); // 다른 편성 칸 클릭
+        Assert.AreEqual(roster.Characters[1].DisplayName, formation.transform.Find("DetailPanel/SelectedName").GetComponent<TMP_Text>().text); // 다른 캐릭터 상세 정보 갱신 확인
+        Assert.IsFalse(slot.GetComponent<Outline>().enabled); // 이전 선택 칸 강조 해제 확인
+        Assert.IsTrue(otherSlot.GetComponent<Outline>().enabled); // 새 선택 칸 강조 확인
+        formation.transform.Find("Slots/Slot_1").GetComponent<IPointerClickHandler>().OnPointerClick(null); // 빈 편성 칸 클릭
+        Assert.AreEqual(roster.Characters[1].DisplayName, formation.transform.Find("DetailPanel/SelectedName").GetComponent<TMP_Text>().text); // 빈 칸 클릭 시 기존 상세 정보 유지 확인
+        Object.Destroy(canvasObject); // 임시 편성 화면 제거
+        PartyPresetStore.Reset(); // 테스트 편성 정리
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 편성 칸 클릭 검사 종료
     [UnityTest] // 실제 저장과 불러오기 검사 지정
     public IEnumerator SparseSlots_RestoreFromActualLobbySave() // 빈 칸 포함 실제 저장 복원 확인
     { // 실제 저장 복원 검사 시작

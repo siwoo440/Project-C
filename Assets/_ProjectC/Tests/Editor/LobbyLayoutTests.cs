@@ -59,7 +59,12 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
         resources.AddResources(37, 2, 3, 4); // 자원 표시 갱신용 값 변경
         Assert.AreEqual(resources.Gold.ToString(), view.transform.Find("Gold").GetComponent<TMP_Text>().text); // 골드 숫자만 표시 확인
         Transform group = view.transform.Find("Resources"); // 물자 영역 조회
-        Assert.LessOrEqual(group.GetComponent<RectTransform>().sizeDelta.x, 330f); // 물자 전체 영역 폭 축소 확인
+        Assert.Greater(group.GetComponent<RectTransform>().sizeDelta.x, 330f); // 물자 전체 영역 가로 확대 확인
+        Assert.Greater(view.transform.Find("GoldBackdrop").GetComponent<RectTransform>().sizeDelta.x, 130f); // 골드 배경 가로 확대 확인
+        Assert.AreEqual(TextAlignmentOptions.MidlineRight, view.transform.Find("Gold").GetComponent<TMP_Text>().alignment); // 골드 숫자 오른쪽 정렬 확인
+        RectTransform goldIconRect = view.transform.Find("GoldIcon").GetComponent<RectTransform>(); // 골드 아이콘 위치 조회
+        RectTransform goldValueRect = view.transform.Find("Gold").GetComponent<RectTransform>(); // 골드 숫자 위치 조회
+        Assert.Less(goldIconRect.anchoredPosition.x + goldIconRect.sizeDelta.x * 0.5f, goldValueRect.anchoredPosition.x - goldValueRect.sizeDelta.x * 0.5f); // 골드 아이콘과 숫자 간격 확인
         string[] names = { "Screw", "IronPlate", "Wire" }; // 개별 물자 영역 이름
         int[] counts = { resources.Screw, resources.IronPlate, resources.Wire }; // 개별 물자 실제 수량
         for (int index = 0; index < names.Length; index++) // 전체 물자 영역 순회
@@ -70,6 +75,9 @@ public sealed class LobbyLayoutTests // 새 로비 배치 검증
             Image icon = item.Find("Icon").GetComponent<Image>(); // 물자 아이콘 조회
             Assert.IsNotNull(icon.sprite); // 물자 아이콘 이미지 확인
             Assert.AreEqual(icon.rectTransform.sizeDelta.x, icon.rectTransform.sizeDelta.y); // 정사각형 아이콘 크기 확인
+            TMP_Text value = item.Find("Value").GetComponent<TMP_Text>(); // 물자 숫자 영역 조회
+            Assert.AreEqual(TextAlignmentOptions.MidlineRight, value.alignment); // 물자 숫자 오른쪽 정렬 확인
+            Assert.Greater(value.rectTransform.offsetMin.x, icon.rectTransform.anchoredPosition.x + icon.rectTransform.sizeDelta.x * 0.5f); // 숫자와 아이콘 사이 간격 확인
             Assert.AreEqual(counts[index].ToString(), item.Find("Value").GetComponent<TMP_Text>().text); // 물자 이름 없이 수량만 표시 확인
         } // 개별 물자 표시 확인 종료
         view.transform.Find("FacilityButton").GetComponent<Button>().onClick.Invoke(); // 설비 강화 화면 열기

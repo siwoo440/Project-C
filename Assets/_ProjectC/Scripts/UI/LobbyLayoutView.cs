@@ -25,15 +25,15 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
     } // 로비 화면 생성 종료
     private void Build(Action openSettings, Action openFacility, Action openExpedition) // 로비 화면 요소 배치
     { // 화면 요소 배치 시작
-        CreatePlate("GoldBackdrop", new Vector2(0.847f, 0.93f), new Vector2(130f, 76f)); // 축소된 골드 배경 배치
+        CreatePlate("GoldBackdrop", new Vector2(0.832f, 0.93f), new Vector2(180f, 76f)); // 넓어진 골드 배경 배치
         Image goldIcon = CreateIcon("GoldIcon", transform, "Gold"); // 골드 아이콘 생성
-        Place(goldIcon.rectTransform, new Vector2(0.847f, 0.93f), new Vector2(-39f, 0f), new Vector2(46f, 46f)); // 골드 아이콘 위치 설정
+        Place(goldIcon.rectTransform, new Vector2(0.832f, 0.93f), new Vector2(-60f, 0f), new Vector2(46f, 46f)); // 골드 상자 왼쪽 아이콘 배치
         goldText = CreateText("Gold", transform, string.Empty, 28f); // 골드 표시 생성
-        Place(goldText.rectTransform, new Vector2(0.847f, 0.93f), new Vector2(17f, 0f), new Vector2(65f, 70f)); // 골드 숫자 위치 설정
-        goldText.alignment = TextAlignmentOptions.MidlineLeft; // 아이콘 옆 골드 숫자 정렬
+        Place(goldText.rectTransform, new Vector2(0.832f, 0.93f), new Vector2(20f, 0f), new Vector2(100f, 70f)); // 골드 아이콘 오른쪽 숫자 영역 배치
+        goldText.alignment = TextAlignmentOptions.MidlineRight; // 골드 숫자 오른쪽 정렬
         GameObject group = new GameObject("Resources", typeof(RectTransform)); // 물자 표시 전체 영역 생성
         group.transform.SetParent(transform, false); // 로비 화면 자식 배치
-        Place(group.GetComponent<RectTransform>(), new Vector2(0.135f, 0.055f), Vector2.zero, new Vector2(330f, 74f)); // 축소된 물자 하단 위치 설정
+        Place(group.GetComponent<RectTransform>(), new Vector2(0.135f, 0.055f), Vector2.zero, new Vector2(450f, 74f)); // 넓어진 물자 하단 영역 설정
         screwText = CreateResource(group.transform, "Screw", "Screw", 0); // 독립 나사 영역 생성
         ironText = CreateResource(group.transform, "IronPlate", "Iron", 1); // 독립 철판 영역 생성
         wireText = CreateResource(group.transform, "Wire", "Wire", 2); // 독립 전선 영역 생성
@@ -45,7 +45,7 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         CreateButton("FormationButton", "편성", new Vector2(0.88f, 0.55f), new Vector2(300f, 140f), null); // 편성 버튼 배치
         CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), openExpedition); // 탐사 버튼 배치
         CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), () => CodexView.Open(GetComponentInParent<Canvas>())); // 도감 화면 버튼 배치
-        CreateButton("FacilityButton", "설비 강화", new Vector2(0.296f, 0.055f), new Vector2(250f, 68f), openFacility); // 축소된 물자 옆 설비 강화 버튼 배치
+        CreateButton("FacilityButton", "설비 강화", new Vector2(0.345f, 0.055f), new Vector2(250f, 68f), openFacility); // 넓어진 물자 옆 설비 강화 버튼 배치
         resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
         resources.ResourcesChanged += RefreshResources; // 자원 변경 이벤트 연결
         RefreshResources(); // 현재 자원 표시
@@ -91,9 +91,9 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         RectTransform valueRect = value.rectTransform; // 물자 수량 영역 조회
         valueRect.anchorMin = new Vector2(0f, 0f); // 수량 시작 앵커 설정
         valueRect.anchorMax = new Vector2(1f, 1f); // 수량 끝 앵커 설정
-        valueRect.offsetMin = new Vector2(52f, 0f); // 아이콘 옆 숫자 간격 설정
-        valueRect.offsetMax = new Vector2(-6f, 0f); // 수량 오른쪽 여백 설정
-        value.alignment = TextAlignmentOptions.MidlineLeft; // 숫자 왼쪽 정렬
+        valueRect.offsetMin = new Vector2(60f, 0f); // 아이콘과 숫자 사이 간격 설정
+        valueRect.offsetMax = new Vector2(-12f, 0f); // 수량 오른쪽 여백 설정
+        value.alignment = TextAlignmentOptions.MidlineRight; // 숫자 오른쪽 정렬
         return value; // 물자 수량 문구 반환
     } // 개별 물자 생성 종료
     private static Image CreateIcon(string objectName, Transform parent, string imageName) // 정사각형 자원 아이콘 생성

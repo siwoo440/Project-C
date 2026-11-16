@@ -99,14 +99,16 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             int savedSeed = session.CurrentFloorSeed; // 현재 층 시드 보관
             Assert.IsTrue(session.MarkEventResolved("resume-event-test")); // 복원할 이벤트 상태 기록
             PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
-            resources.AddResources(77, 0, 0, 0); // 복원할 골드 설정
-            int savedGold = resources.Gold; // 현재 골드 보관
             resources.ResetResources(); // 오래된 거점 저장용 자원 준비
             resources.AddResources(5, 0, 0, 0); // 오래된 거점 골드 설정
             Assert.IsTrue(LobbySaveService.Save(lobbyPath)); // 오래된 거점 상태 저장
             System.IO.File.SetLastWriteTimeUtc(lobbyPath, System.DateTime.UtcNow.AddMinutes(-1)); // 거점 저장 시간 조정
             resources.ResetResources(); // 탐사 저장용 자원 초기화
-            resources.AddResources(savedGold, 0, 0, 0); // 탐사 저장 골드 복구
+            resources.AddResources(100, 0, 0, 0); // 탐사 전 보유 골드 설정
+            resources.BeginExplorationResourceTracking(); // 저장할 탐사 골드 구분 시작
+            resources.AddResources(60, 0, 0, 0); // 탐사 획득 골드 설정
+            Assert.IsTrue(resources.TrySpend(80, 0, 0, 0)); // 기존 골드부터 80 소비
+            int savedGold = resources.Gold; // 탐사 저장의 남은 골드 보관
             CharacterData presetCharacter = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 저장할 편성 캐릭터 조회
             Assert.IsTrue(PartyPresetStore.SetMembers(2, new[] { presetCharacter })); // 세 번째 편성 저장 상태 설정
             Assert.IsTrue(PartyPresetStore.Select(2)); // 세 번째 편성 선택
@@ -144,9 +146,12 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Assert.AreEqual(savedSeed, session.CurrentFloorSeed); // 저장 시드 복원 확인
             Assert.Less(Vector3.Distance(savedPosition, player.transform.position), 0.1f); // 저장 위치 복원 확인
             Assert.AreEqual(savedGold, resources.Gold); // 저장 골드 복원 확인
+            Assert.AreEqual(60, resources.ExplorationGold); // 실제 이어하기의 탐사 골드 구분 복원 확인
             Assert.AreEqual(2, PartyPresetStore.Selected); // 탐사 저장의 선택 편성 복원 확인
             Assert.AreEqual("ARC_00", PartyPresetStore.GetMembers(2)[0]); // 탐사 저장의 편성 캐릭터 복원 확인
             Assert.IsTrue(session.IsEventResolved("resume-event-test")); // 이벤트 처리 상태 복원 확인
+            Assert.IsTrue(session.CompleteExplorationFailure("이어하기 전멸 검사")); // 이어하기 후 전멸 처리 확인
+            Assert.AreEqual(20, resources.Gold); // 이어하기 전 소비한 기존 골드 잔액 보존 확인
         } // 탐사 이어하기 검증 종료
         finally // 테스트 파일 정리
         { // 정리 시작
