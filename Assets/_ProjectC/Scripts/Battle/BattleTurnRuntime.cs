@@ -17,7 +17,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     public bool HasPendingBossPhaseTransition { get; private set; } // 보스 페이즈 전환 예약 여부
-    public bool CanEscape => !disposed && BattleType == BattleType.Normal && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 현재 도주 가능 여부
+    public bool CanEscape => !disposed && (BattleType == BattleType.Normal || BattleType == BattleType.Elite) && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 일반과 정예 전투의 도주 가능 여부
     public bool HasOtherLivingAlly(BattleUnitRuntime owner) // 본인 외 생존 아군 확인
     { // 생존 동료 확인 시작
         foreach (BattleUnitRuntime ally in allyUnits) // 아군 목록 순회

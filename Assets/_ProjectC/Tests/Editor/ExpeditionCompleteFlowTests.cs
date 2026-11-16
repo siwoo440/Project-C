@@ -5,6 +5,8 @@ using NUnit.Framework; // 통합 흐름 검증 사용
 using TMPro; // 결과 화면 문구 확인 사용
 using UnityEngine; // 씬 객체 조회 사용
 using UnityEngine.SceneManagement; // 실제 씬 이동 확인 사용
+using UnityEngine.EventSystems; // UI 입력 관리자 확인 사용
+using UnityEngine.InputSystem.UI; // 신규 입력 모듈 확인 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 실제 버튼 선택 사용
 
@@ -49,6 +51,8 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
         ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
         ExplorationEncounterView encounter = Object.FindFirstObjectByType<ExplorationEncounterView>(); // 실제 탐사 조우 조회
         Assert.IsNotNull(player); // 탐사 플레이어 존재 확인
+        Assert.AreEqual(1, Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length); // 최초 탐사의 입력 관리자 단일 확인
+        Assert.IsNotNull(EventSystem.current.GetComponent<InputSystemUIInputModule>()); // 탐사 중 신규 입력 모듈 확인
         Assert.IsNotNull(encounter); // 탐사 조우 존재 확인
         encounter.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 실제 조우 접촉 처리
         string normalId = ExplorationSessionManager.Instance.ActiveRuntimeEncounterId; // 일반 조우 식별자 보관
@@ -74,6 +78,8 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
         } // 탐사 복귀 대기 종료
         ExplorationSessionManager session = ExplorationSessionManager.Instance; // 실제 탐사 상태 조회
         Assert.IsTrue(session.IsEncounterCleared(normalId)); // 일반 조우 클리어 확인
+        Assert.AreEqual(1, Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length); // 전투 후 탐사 입력 관리자 단일 확인
+        Assert.IsNotNull(EventSystem.current.GetComponent<InputSystemUIInputModule>()); // 복귀한 탐사의 입력 모듈 확인
         Assert.Greater(PlayerResourceManager.Instance.Gold, 0); // 일반 전투 보상 골드 확인
         int normalGold = PlayerResourceManager.Instance.Gold; // 일반 전투 보상 보관
         while (session.CurrentFloor < 10) // 최종 보스 층 도달 여부 확인
@@ -97,6 +103,14 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
         BattleSceneSetup bossBattle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 실제 보스 전투 조회
         Assert.IsNotNull(bossBattle); // 보스 전투 존재 확인
         Assert.AreEqual("ENM_WF_ASHSTORM_CORE", bossBattle.EnemyUnits[0].EnemySource.EnemyId); // 실제 최종 보스 확인
+        yield return null; // 실제 층과 보스 배율 반영 대기
+        EnemyData bossSource = bossBattle.EnemyUnits[0].EnemySource; // 보스 원본 수치 조회
+        Assert.AreEqual(ExplorationDifficultyCalculator.ScaleHealth(bossSource.MaxHealth, 10, BattleType.Boss), bossBattle.EnemyUnits[0].MaxHealth); // 실제 보스 체력의 층과 등급 배율 확인
+        Assert.AreEqual(ExplorationDifficultyCalculator.ScaleAttack(bossSource.GetActionPattern(0).ActionAmount, 10, BattleType.Boss), bossBattle.EnemyActionRuntime.FindAction(bossBattle.EnemyUnits[0]).Amount); // 실제 첫 예고 공격의 층과 등급 배율 확인
+        CardData basicAttack = Resources.Load<CardData>("StarterCards/Attack"); // 비교용 기본 공격 카드 조회
+        Assert.IsNotNull(basicAttack); // 비교 카드 존재 확인
+        int sampleDamage = BattleDamageCalculator.Calculate(basicAttack.EffectValue, basicAttack.DamageType, bossSource.PhysicalDefense, bossSource.MagicalResistance).FinalDamage; // 보스에 대한 기본 공격 실피해 계산
+        TestContext.WriteLine($"BALANCE_BOSS hp={bossBattle.EnemyUnits[0].MaxHealth} firstAttack={bossBattle.EnemyActionRuntime.FindAction(bossBattle.EnemyUnits[0]).Amount} ap={bossBattle.SharedActionPoints.MaxActionPoints} cardCost={basicAttack.ApCost} damage={sampleDamage}"); // 재현 가능한 비교 수치 기록
         bossBattle.EnemyUnits[0].TakeDamage(100000, BattleDamageType.None); // 검사용 보스 처치
         yield return null; // 보스 전투 결과 표시 대기
         BattleResultView bossResult = Object.FindFirstObjectByType<BattleResultView>(); // 보스 전투 결과 화면 조회
@@ -124,6 +138,12 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
             yield return null; // 다음 프레임 대기
         } // 거점 복귀 대기 종료
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 실제 거점 복귀 확인
+        EventSystem[] eventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None); // 복귀 후 입력 관리자 조회
+        foreach (EventSystem eventSystem in eventSystems) // 실제 입력 관리자 순회
+        { // 입력 관리자 기록 시작
+            TestContext.WriteLine($"EVENT_SYSTEM name={eventSystem.name} scene={eventSystem.gameObject.scene.name} parent={eventSystem.transform.parent?.name}"); // 입력 관리자 출처 기록
+        } // 입력 관리자 기록 종료
+        Assert.AreEqual(1, eventSystems.Length); // 거점 복귀 후 입력 관리자 단일 유지 확인
         Assert.AreEqual(rewardedGold, PlayerResourceManager.Instance.Gold); // 거점 복귀 후 보상 유지 확인
         Assert.IsTrue(LobbySaveService.CanLoad(LobbySaveService.DefaultPath)); // 탐사 성공 후 거점 저장 유효성 확인
         Assert.IsFalse(File.Exists(ExplorationSaveService.DefaultPath)); // 성공 정산 후 이전 탐사 저장 제거 확인
