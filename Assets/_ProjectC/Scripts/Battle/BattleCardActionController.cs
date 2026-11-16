@@ -418,7 +418,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
         } // 회복 불필요 처리 종료
-        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs && !targetUnit.HasDebuff) // 정화 대상 디버프 확인
+        if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasDebuff) // 정화 대상 디버프 확인
         { // 정화 불필요 처리 시작
             return false; // 정화 대상 불가 반환
         } // 정화 불필요 처리 종료
@@ -532,7 +532,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -657,9 +657,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             targetView?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, applyResult); // 상태 이상 적용 결과 표시
             return applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
         } // 상태 이상 처리 종료
-        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
         { // 디버프 해제 처리 시작
-            IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults = statusEffectProcessor.CleanseDebuffs(targetUnit); // 대상 디버프 통합 정화
+            int maximumCount = cardInstance.EffectType == CardEffectType.RemoveOneDebuff ? 1 : int.MaxValue; // 카드별 정화 개수 결정
+            IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults = statusEffectProcessor.CleanseDebuffs(targetUnit, maximumCount); // 지정 개수의 대상 디버프 정화
             int removedCount = cleanseResults.Count; // 제거된 디버프 수 계산
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
             targetView?.ShowStatusFeedback(removedCount > 0 ? $"정화 {removedCount}" : "정화 실패", false); // 정화 결과 플로팅 문구 표시
@@ -783,7 +784,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 상태 이상 문구 처리 시작
             return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
         } // 상태 이상 문구 처리 종료
-        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
         { // 디버프 해제 문구 처리 시작
             return "디버프 해제"; // 디버프 해제 문구 반환
         } // 디버프 해제 문구 처리 종료

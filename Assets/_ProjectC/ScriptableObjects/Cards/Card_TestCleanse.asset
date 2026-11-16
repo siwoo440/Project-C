@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_TEST_CLEANSE
   displayName: "정화"
-  description: "아군에게 적용된 모든 디버프를 제거"
-  artwork: {fileID: 0}
+  description: "아군 하나의 디버프 1개 제거"
+  artwork: {fileID: 21300000, guid: f2a03057e0fc4a468cd194b5d277a7bc, type: 3}
   cardType: 2
   targetType: 1
   apCost: 1
-  effectType: 3
+  effectType: 17
   damageType: 0
   effectValue: 0
   statusEffectType: 0

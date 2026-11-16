@@ -162,6 +162,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
                 effectType == CardEffectType.Heal ||
                 effectType == CardEffectType.RemoveDebuffs ||
+                effectType == CardEffectType.RemoveOneDebuff || // 디버프 하나 해제 지원 연출
                 effectType == CardEffectType.ApplyStatusEffect &&
                 !BattleStatusEffectInstance.IsDebuffType(
                     statusEffectType);
