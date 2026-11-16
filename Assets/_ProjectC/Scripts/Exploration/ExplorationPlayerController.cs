@@ -1,5 +1,6 @@
 using UnityEngine; // 플레이어 이동과 물리 기능 사용
 using UnityEngine.InputSystem; // 키보드 입력 사용
+using System; // 자동 위치 변경 알림 사용
 
 [RequireComponent(typeof(Rigidbody2D))]
 public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레이어 이동 처리
@@ -12,6 +13,7 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
     private Vector2 moveInput; // 현재 이동 입력
 
     public static bool InputBlocked => inputBlocked; // 입력 차단 상태 조회
+    public event Action<Vector2> Teleported; // 탐사 위치 자동 변경 알림
 
     public static void SetInputBlocked(bool isBlocked) // 입력 차단 상태 설정
     {
@@ -112,5 +114,6 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
                 worldPosition.x,
                 worldPosition.y,
                 0f); // Transform 위치 동기화
+        Teleported?.Invoke(worldPosition); // 맵 자동 위치 변경 알림
     }
 }

@@ -14,6 +14,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
     private TMP_Text description; // 단계별 설명 문구
     private Button nextButton; // 다음 설명 버튼
     private Button replayButton; // 안내 다시 보기 버튼
+    private TutorialPanelLayout panelLayout; // 예시 이미지와 설명 공통 배치
     public static BattleTutorialView Create(Canvas canvas, BattleTutorialProgress tutorial, Func<BattleTutorialStep, RectTransform> target) // 전투 화면에 안내 생성
     { // 안내 화면 생성 시작
         if (canvas == null || tutorial == null || target == null) // 필수 연결 확인
@@ -40,22 +41,14 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
         guideImage.raycastTarget = false; // 전체 안내 영역의 전투 입력 차단 해제
         for (int index = 0; index < shades.Length; index++) // 네 방향 주변 영역 순회
         { // 주변 화면 구성 시작
-            shades[index] = CreateOverlayRect("Shade" + index, new Color(0f, 0f, 0f, 0.62f)); // 입력을 막지 않는 어두운 영역 생성
+            shades[index] = CreateOverlayRect("Shade" + index, new Color(0f, 0f, 0f, 0.8f)); // 입력을 막지 않는 어두운 영역 생성
             borders[index] = CreateOverlayRect("Border" + index, new Color(1f, 0.75f, 0.28f, 1f)); // 금색 강조 테두리 생성
         } // 주변 화면 구성 종료
-        RectTransform panel = PreparationUi.CreatePanel("Panel", guide, new Vector2(0.30f, 0.58f), new Vector2(0.70f, 0.86f)); // 화면 중앙 상단의 안내 패널 생성
-        Image panelImage = panel.GetComponent<Image>(); // 안내 패널 배경 조회
-        LobbyUiArt.Apply(panelImage, "Panel"); // 기존 전투 준비 화면 무늬 적용
-        panelImage.raycastTarget = false; // 안내 패널의 전투 입력 차단 해제
-        title = PreparationUi.CreateText("Title", panel, string.Empty, 30f); // 안내 단계 제목 생성
-        PreparationUi.Stretch(title.rectTransform, new Vector2(0.04f, 0.70f), new Vector2(0.75f, 0.95f)); // 제목 위치 설정
-        title.alignment = TextAlignmentOptions.MidlineLeft; // 제목 왼쪽 정렬
-        title.color = new Color(1f, 0.78f, 0.38f, 1f); // 제목 금색 강조
-        description = PreparationUi.CreateText("Description", panel, string.Empty, 25f); // 안내 설명 생성
-        PreparationUi.Stretch(description.rectTransform, new Vector2(0.05f, 0.25f), new Vector2(0.95f, 0.70f)); // 설명 영역 설정
-        description.alignment = TextAlignmentOptions.MidlineLeft; // 설명 왼쪽 정렬
-        PreparationUi.CreateButton("SkipButton", panel, "건너뛰기", new Vector2(0.83f, 0.85f), Vector2.zero, new Vector2(150f, 45f), () => progress.Skip()); // 안내 건너뛰기 버튼 생성
-        nextButton = PreparationUi.CreateButton("NextButton", panel, "다음", new Vector2(0.82f, 0.13f), Vector2.zero, new Vector2(145f, 45f), () => progress.Advance()); // 다음 안내 버튼 생성
+        panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip()); // 왼쪽 예시와 오른쪽 설명 배치 생성
+        panelLayout.SetExample("Battle"); // 실제 전투 화면 예시 표시
+        title = panelLayout.Title; // 오른쪽 안내 제목 연결
+        description = panelLayout.Description; // 오른쪽 안내 설명 연결
+        nextButton = panelLayout.NextButton; // 오른쪽 확인 버튼 연결
     } // 안내 화면 구성 종료
     private RectTransform CreateOverlayRect(string name, Color color) // 입력을 막지 않는 강조 화면 생성
     { // 강조 화면 생성 시작
@@ -111,6 +104,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
                 break; // 적 행동 안내 설정 종료
         } // 단계별 문구 설정 종료
         nextButton.interactable = progress.CanAdvance; // 실제 진행 가능 여부에 맞춘 다음 버튼 설정
+        nextButton.image.raycastTarget = progress.CanAdvance; // 행동 대기 중 비활성 확인 버튼의 전투 입력 통과
         UpdateHighlight(); // 현재 대상 화면 강조 갱신
     } // 안내 화면 갱신 종료
     private void LateUpdate() // 화면 크기와 대상 위치 반영
