@@ -227,6 +227,52 @@ public sealed class CharacterRecoveryManager : MonoBehaviour // 사망 캐릭터
         return true; // 모든 파티원 출전 가능
     }
 
+    public bool CanEmergencyWait(CharacterRosterData roster) // 보유 캐릭터 전원 출전 불가 확인
+    { // 긴급 대기 가능 여부 확인 시작
+        if (roster == null) // 캐릭터 목록 존재 확인
+        { // 캐릭터 목록 없음 처리 시작
+            return false; // 긴급 대기 차단
+        } // 캐릭터 목록 없음 처리 종료
+        bool hasOwnedCharacter = false; // 보유 캐릭터 존재 여부 초기화
+        foreach (CharacterData character in roster.Characters) // 전체 캐릭터 목록 순회
+        { // 보유 캐릭터 상태 확인 시작
+            if (!CharacterUnlockProgress.Shared.IsUnlocked(character)) // 보유 캐릭터 여부 확인
+            { // 잠긴 캐릭터 제외 시작
+                continue; // 다음 캐릭터 확인
+            } // 잠긴 캐릭터 제외 종료
+            hasOwnedCharacter = true; // 보유 캐릭터 존재 기록
+            if (CanDeploy(character)) // 출전 가능한 보유 캐릭터 확인
+            { // 출전 가능 인원 처리 시작
+                return false; // 긴급 대기 차단
+            } // 출전 가능 인원 처리 종료
+        } // 보유 캐릭터 상태 확인 종료
+        return hasOwnedCharacter; // 보유 캐릭터 전원 출전 불가 여부 반환
+    } // 긴급 대기 가능 여부 확인 종료
+
+    public bool TryEmergencyWait(CharacterRosterData roster) // 무료 긴급 대기로 회복 대기 한 회 진행
+    { // 긴급 대기 처리 시작
+        EnsureCompletedExplorationProcessed(); // 이전 탐사 종료 회복 처리 선행
+        if (!CanEmergencyWait(roster)) // 보유 캐릭터 전원 출전 불가 확인
+        { // 긴급 대기 불가 처리 시작
+            return false; // 회복 대기 변경 차단
+        } // 긴급 대기 불가 처리 종료
+        BattleResultManager results = BattleResultManager.EnsureInstance(); // 저장 캐릭터 상태 관리자 준비
+        int changed = 0; // 회복 상태 변경 인원 초기화
+        foreach (CharacterData character in roster.Characters) // 보유 캐릭터 목록 순회
+        { // 누락된 사망 대기 확인 시작
+            if (CharacterUnlockProgress.Shared.IsUnlocked(character) && RegisterDeadCharacterInternal(character, results)) // 보유한 사망 캐릭터 회복 등록 확인
+            { // 누락된 회복 등록 시작
+                changed++; // 새로 등록한 회복 인원 기록
+            } // 누락된 회복 등록 종료
+        } // 누락된 사망 대기 확인 종료
+        changed += AdvanceExistingRecoveries(results); // 현재 부활 대기를 한 회 진행
+        if (changed > 0) // 실제 회복 상태 변경 확인
+        { // 회복 화면 갱신 시작
+            RecoveryStateChanged?.Invoke(); // 회복 상태 변경 알림
+        } // 회복 화면 갱신 종료
+        return changed > 0; // 실제 회복 대기 처리 결과 반환
+    } // 긴급 대기 처리 종료
+
     public int GetRemainingRecoveryExpeditions(
         CharacterData characterData) // 캐릭터 남은 회복 필요 탐사 횟수 조회
     {
