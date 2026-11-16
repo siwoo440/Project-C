@@ -372,6 +372,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             return; // 탐사 출발 중단
         } // 편성 준비 실패 처리 종료
         ExplorationSessionManager.EnsureInstance().ResetExploration(); // 이전 탐사 회차 상태 초기화
+        PlayerResourceManager.EnsureInstance().BeginExplorationResourceTracking(); // 새 탐사 획득 재화 구분 시작
         RunDeckManager.EnsureInstance().ResetToSource(PartyLoadoutRuntime.Active.Deck); // 선택 파티의 시작 덱 적용
         flow.LoadScene("30_Exploration"); // 선택한 파티로 탐사 씬 이동
     } // 탐사 출발 종료

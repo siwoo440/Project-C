@@ -32,6 +32,11 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public int runScrew; // 탐사 획득 나사 합계
         public int runIronPlate; // 탐사 획득 철판 합계
         public int runWire; // 탐사 획득 전선 합계
+        public bool hasResourceLedger; // 탐사 획득 재화 구분 저장 여부
+        public int temporaryGold; // 남은 탐사 획득 골드
+        public int temporaryScrew; // 남은 탐사 획득 나사
+        public int temporaryIronPlate; // 남은 탐사 획득 철판
+        public int temporaryWire; // 남은 탐사 획득 전선
         public string lobbyJson; // 동일 시점 거점 상태
     } // 탐사 저장 정보 종료
     [Serializable] // 회차 카드 직렬화 지정
@@ -168,6 +173,11 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 runScrew = session.RunScrewGained, // 탐사 획득 나사 설정
                 runIronPlate = session.RunIronPlateGained, // 탐사 획득 철판 설정
                 runWire = session.RunWireGained, // 탐사 획득 전선 설정
+                hasResourceLedger = PlayerResourceManager.EnsureInstance().IsTrackingExplorationResources, // 탐사 재화 구분 저장 여부
+                temporaryGold = PlayerResourceManager.EnsureInstance().ExplorationGold, // 남은 탐사 골드 저장
+                temporaryScrew = PlayerResourceManager.EnsureInstance().ExplorationScrew, // 남은 탐사 나사 저장
+                temporaryIronPlate = PlayerResourceManager.EnsureInstance().ExplorationIronPlate, // 남은 탐사 철판 저장
+                temporaryWire = PlayerResourceManager.EnsureInstance().ExplorationWire, // 남은 탐사 전선 저장
                 lobbyJson = lobbyJson // 동일 시점 거점 상태 설정
             }; // 탐사 저장 정보 설정 종료
             return SaveFileStorage.Write(path, JsonUtility.ToJson(snapshot)); // 이전 정상본을 보존하며 탐사 저장
@@ -261,6 +271,15 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             } // 소모품 복원 종료
         } // 소모품 슬롯 복원 종료
         ExplorationSessionManager.EnsureInstance().RestoreRunState(run.snapshot); // 저장 층과 조우 상태 복원
+        PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 저장 자원 관리자 조회
+        if (run.snapshot.hasResourceLedger) // 획득 재화 구분 저장 여부 확인
+        { // 탐사 획득 재화 복원 시작
+            resources.RestoreExplorationResourceTracking(run.snapshot.temporaryGold, run.snapshot.temporaryScrew, run.snapshot.temporaryIronPlate, run.snapshot.temporaryWire); // 검증된 탐사 획득분 복원
+        } // 탐사 획득 재화 복원 종료
+        else // 이전 저장의 획득 구분 누락 확인
+        { // 이전 저장 호환 시작
+            resources.BeginExplorationResourceTracking(); // 기존 잔액을 보존하고 이후 획득분부터 구분
+        } // 이전 저장 호환 종료
         ShopRunManager.EnsureInstance().RestoreSession(run.shopCatalog, sourceDeck, run.snapshot.shopRoom, run.snapshot.purchasedOffers); // 저장 상점 상태 복원
         RestRoomRunManager.EnsureInstance().RestoreSession(sourceDeck, run.snapshot.restUsed); // 저장 휴식 상태 복원
         return true; // 탐사 복원 성공 반환
@@ -304,6 +323,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 탐사 수치 오류 시작
             return false; // 복원 불가 반환
         } // 탐사 수치 오류 종료
+        if (snapshot.hasResourceLedger && !LobbySaveService.ContainsResources(snapshot.lobbyJson, snapshot.temporaryGold, snapshot.temporaryScrew, snapshot.temporaryIronPlate, snapshot.temporaryWire)) // 탐사 획득분과 저장 전체 재화 비교
+        { // 잘못된 탐사 재화 처리 시작
+            return false; // 전체 잔액을 초과하는 획득분 복원 차단
+        } // 잘못된 탐사 재화 처리 종료
         if (snapshot.party == null || snapshot.party.Length < 1 || snapshot.party.Length > PartyData.MaxPartySize || snapshot.sourceCards == null || snapshot.sourceCards.Length < 1 || snapshot.cards == null || snapshot.relics == null || snapshot.consumables == null || snapshot.consumables.Length != ConsumableInventoryRuntime.SlotCount || !ValidIds(snapshot.cleared) || !ValidIds(snapshot.events) || !ValidIds(snapshot.purchasedOffers)) // 필수 목록과 식별자 검사
         { // 목록 오류 시작
             return false; // 복원 불가 반환

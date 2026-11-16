@@ -129,6 +129,18 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             return false; // 복원 불가 반환
         } // 저장 형식 오류 처리 종료
     } // 저장 내용 검사 종료
+    internal static bool ContainsResources(string json, int gold, int screw, int ironPlate, int wire) // 탐사 획득분과 저장 재화 비교
+    { // 저장 재화 비교 시작
+        try // 저장 내용 분석 오류 처리
+        { // 저장 재화 분석 시작
+            SaveData data = JsonUtility.FromJson<SaveData>(json); // 거점 재화 저장 내용 역직렬화
+            return data != null && gold >= 0 && screw >= 0 && ironPlate >= 0 && wire >= 0 && gold <= data.gold && screw <= data.screw && ironPlate <= data.ironPlate && wire <= data.wire; // 획득분이 전체 재화 범위 내인지 반환
+        } // 저장 재화 분석 종료
+        catch (ArgumentException) // 잘못된 저장 형식 확인
+        { // 저장 형식 오류 처리 시작
+            return false; // 잘못된 탐사 획득분 차단
+        } // 저장 형식 오류 처리 종료
+    } // 저장 재화 비교 종료
     public static bool Load(string path) // 저장된 거점 상태 복원
     { // 복원 시작
         return SaveFileStorage.TryRead(path, CanLoadJson, out string json, out string actualPath) && LoadJson(json); // 검증된 원본 또는 이전 정상본 복원
