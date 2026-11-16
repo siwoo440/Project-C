@@ -139,6 +139,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
             backgroundImage = gameObject.AddComponent<Image>(); // 카드 배경 이미지 추가
         } // 카드 배경 추가 종료
         backgroundImage.color = DefaultBackgroundColor; // 카드 배경 색상 설정
+        BattleUiArt.Apply(backgroundImage, "CardFrame"); // 새로 제작한 전투 카드 프레임 적용
         backgroundImage.raycastTarget = false; // 겹친 카드의 독립 입력 영역 사용
         canvasGroup = GetComponent<CanvasGroup>(); // 카드 투명도 컴포넌트 조회
         if (canvasGroup == null) // 카드 투명도 컴포넌트 누락 확인
@@ -166,6 +167,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         ownerText = CreateText("OwnerText", transform, "Owner", 11f, new Color(0.72f, 0.72f, 0.78f, 1f)); // 카드 소유자 생성
         SetCenteredRect(ownerText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -192f), new Vector2(142f, 20f)); // 카드 소유자 위치 설정
         Image costBadgeImage = CreateImage("CostBadge", transform, new Color(0.18f, 0.5f, 0.95f, 1f)); // 카드 비용 배지 생성
+        BattleUiArt.Apply(costBadgeImage, "CostBadge"); // 새로 제작한 정사각형 행동력 배지 적용
         SetCenteredRect(costBadgeImage.rectTransform, new Vector2(0f, 1f), new Vector2(18f, -18f), new Vector2(34f, 34f)); // 카드 비용 배지 위치 설정
         costText = CreateText("CostText", costBadgeImage.transform, "0", 18f, Color.white); // 카드 비용 숫자 생성
         SetStretchRect(costText.rectTransform, 0f, 0f, 0f, 0f); // 카드 비용 숫자 영역 설정
@@ -173,7 +175,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 화면 구조 준비 종료
     private void RefreshVisualState() // 카드 상태 화면 갱신
     { // 화면 상태 갱신 시작
-        backgroundImage.color = selected ? SelectedBackgroundColor : DefaultBackgroundColor; // 선택 상태 배경색 적용
+        backgroundImage.color = backgroundImage.sprite != null ? selected ? new Color(1f, 0.8f, 0.48f, 1f) : Color.white : selected ? SelectedBackgroundColor : DefaultBackgroundColor; // 제작 이미지 또는 기존 색상의 선택 상태 구분
         canvasGroup.alpha = interactable ? 1f : 0.45f; // 사용 가능 상태 투명도 적용
     } // 화면 상태 갱신 종료
     private static Image CreateImage(string objectName, Transform parent, Color imageColor) // 이미지 생성

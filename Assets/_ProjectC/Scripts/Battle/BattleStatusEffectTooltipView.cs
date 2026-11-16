@@ -86,6 +86,7 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
         rootRect.sizeDelta = new Vector2(360f, 180f); // 읽기 쉬운 상세 툴팁 크기
         Image backgroundImage = tooltipRoot.GetComponent<Image>(); // 툴팁 배경 이미지 조회
         backgroundImage.color = new Color(0.025f, 0.035f, 0.06f, 0.98f); // 툴팁 배경색 적용
+        LobbyUiArt.Apply(backgroundImage, "Button"); // 기존 제작 금속 이미지로 상태 상세 배경 적용
         backgroundImage.raycastTarget = false; // 툴팁 입력 차단 해제
         CanvasGroup canvasGroup = tooltipRoot.GetComponent<CanvasGroup>(); // 툴팁 입력 제어 조회
         canvasGroup.interactable = false; // 툴팁 상호작용 해제

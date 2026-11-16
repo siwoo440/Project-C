@@ -382,6 +382,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                     0.2f,
                     0.31f,
                     1f); // 버튼 배경 색상 설정
+            LobbyUiArt.Apply(buttonImage, "Button"); // 기존 제작 금속 이미지로 화살표 버튼 적용
 
             arrowModeButton =
                 buttonObject.GetComponent<Button>(); // 화살표 옵션 Button 조회

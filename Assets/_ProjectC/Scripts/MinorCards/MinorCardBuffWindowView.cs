@@ -57,6 +57,7 @@ public sealed class MinorCardBuffWindowView : MonoBehaviour, IDisposable
     private void CreateToggleButton()
     {
         toggleButton = CreateButton("MinorBuffToggle", transform, new Color(0.13f, 0.13f, 0.17f, 0.97f));
+        LobbyUiArt.Apply(toggleButton.image, "Button"); // 기존 제작 금속 이미지로 강화 버튼 적용
         RectTransform buttonRect = toggleButton.GetComponent<RectTransform>();
         buttonRect.anchorMin = Vector2.one;
         buttonRect.anchorMax = Vector2.one;

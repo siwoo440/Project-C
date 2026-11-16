@@ -101,36 +101,37 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             backgroundImage = gameObject.AddComponent<Image>(); // 카드 영역 배경 추가
         } // 카드 영역 배경 추가 종료
         backgroundImage.color = new Color(0.035f, 0.04f, 0.06f, 0.92f); // 카드 영역 배경 색상 설정
+        BattleUiArt.Apply(backgroundImage, "HandPanel"); // 새로 제작한 손패 배경 이미지 적용
         backgroundImage.raycastTarget = false; // 카드 영역 입력 차단 해제
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
         statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 최소 앵커 설정
         statusRect.anchorMax = new Vector2(0.28f, 1f); // 수량 텍스트 최대 앵커 설정
         statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
-        statusRect.anchoredPosition = new Vector2(0f, -4f); // 수량 텍스트 위치 설정
+        statusRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 수량 텍스트 위치 설정
         statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
         escapeButton = CreateButton("EscapeButton", transform, "도주"); // 전투 도주 버튼 생성
         RectTransform escapeRect = escapeButton.transform as RectTransform; // 도주 RectTransform 조회
         escapeRect.anchorMin = new Vector2(0.29f, 1f); // 도주 최소 앵커 설정
         escapeRect.anchorMax = new Vector2(0.4f, 1f); // 도주 최대 앵커 설정
         escapeRect.pivot = new Vector2(0.5f, 1f); // 도주 위쪽 피벗 설정
-        escapeRect.anchoredPosition = new Vector2(0f, -4f); // 도주 위치 설정
+        escapeRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 도주 위치 설정
         escapeRect.sizeDelta = new Vector2(0f, 34f); // 도주 높이 설정
-        escapeButton.image.color = new Color(0.5f, 0.2f, 0.2f, 1f); // 도주 버튼 배경색 설정
+        escapeButton.image.color = new Color(0.9f, 0.72f, 0.72f, 1f); // 도주 버튼의 부드러운 붉은 구분 적용
         escapeButton.onClick.AddListener(HandleEscapeClicked); // 도주 클릭 이벤트 등록
         turnStatusText = CreateText("TurnStatusText", transform, "전투 준비", 20f, new Color(1f, 0.82f, 0.35f, 1f)); // 턴 상태 텍스트 생성
         RectTransform turnStatusRect = turnStatusText.rectTransform; // 턴 상태 RectTransform 조회
         turnStatusRect.anchorMin = new Vector2(0.42f, 1f); // 턴 상태 최소 앵커 설정
         turnStatusRect.anchorMax = new Vector2(0.62f, 1f); // 턴 상태 최대 앵커 설정
         turnStatusRect.pivot = new Vector2(0.5f, 1f); // 턴 상태 위쪽 피벗 설정
-        turnStatusRect.anchoredPosition = new Vector2(0f, -4f); // 턴 상태 위치 설정
+        turnStatusRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 턴 상태 위치 설정
         turnStatusRect.sizeDelta = new Vector2(0f, 34f); // 턴 상태 높이 설정
         endTurnButton = CreateButton("EndTurnButton", transform, "턴 종료"); // 턴 종료 버튼 생성
         RectTransform endTurnRect = endTurnButton.transform as RectTransform; // 턴 종료 RectTransform 조회
         endTurnRect.anchorMin = new Vector2(0.64f, 1f); // 턴 종료 최소 앵커 설정
         endTurnRect.anchorMax = new Vector2(0.78f, 1f); // 턴 종료 최대 앵커 설정
         endTurnRect.pivot = new Vector2(0.5f, 1f); // 턴 종료 위쪽 피벗 설정
-        endTurnRect.anchoredPosition = new Vector2(0f, -4f); // 턴 종료 위치 설정
+        endTurnRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 턴 종료 위치 설정
         endTurnRect.sizeDelta = new Vector2(0f, 34f); // 턴 종료 높이 설정
         endTurnButton.onClick.AddListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 등록
         actionPointText = CreateText("ActionPointText", transform, "AP -- / --", 24f, new Color(0.45f, 0.8f, 1f, 1f)); // 공용 행동력 텍스트 생성
@@ -138,7 +139,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         actionPointRect.anchorMin = new Vector2(0.8f, 1f); // 행동력 텍스트 최소 앵커 설정
         actionPointRect.anchorMax = new Vector2(1f, 1f); // 행동력 텍스트 최대 앵커 설정
         actionPointRect.pivot = new Vector2(1f, 1f); // 행동력 텍스트 오른쪽 피벗 설정
-        actionPointRect.anchoredPosition = new Vector2(-8f, -4f); // 행동력 텍스트 오른쪽 위치 설정
+        actionPointRect.anchoredPosition = new Vector2(-8f, -18f); // 손패 테두리 안쪽의 행동력 위치 설정
         actionPointRect.sizeDelta = new Vector2(0f, 34f); // 행동력 텍스트 높이 설정
         GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform)); // 손패 배치 오브젝트 생성
         handRootObject.transform.SetParent(transform, false); // 손패 배치 부모 연결
@@ -147,7 +148,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         handLayoutRoot.anchorMax = Vector2.one; // 손패 배치 최대 앵커 설정
         handLayoutRoot.pivot = new Vector2(0.5f, 0.5f); // 손패 배치 중앙 피벗 설정
         handLayoutRoot.offsetMin = new Vector2(8f, 8f); // 손패 배치 왼쪽 아래 여백 설정
-        handLayoutRoot.offsetMax = new Vector2(-8f, -42f); // 손패 배치 오른쪽 위 여백 설정
+        handLayoutRoot.offsetMax = new Vector2(-8f, -58f); // 상단 정보와 겹치지 않는 손패 위 여백 설정
         GameObject hitRootObject = new GameObject("HandHitRoot", typeof(RectTransform)); // 독립 카드 입력 영역 생성
         hitRootObject.transform.SetParent(transform, false); // 손패 화면 자식 배치
         handHitRoot = hitRootObject.GetComponent<RectTransform>(); // 입력 영역 사각형 조회
@@ -507,6 +508,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         buttonObject.transform.SetParent(parent, false); // 버튼 부모 연결
         Image buttonImage = buttonObject.GetComponent<Image>(); // 버튼 배경 이미지 조회
         buttonImage.color = new Color(0.2f, 0.32f, 0.5f, 1f); // 버튼 배경 색상 설정
+        LobbyUiArt.Apply(buttonImage, "Button"); // 기존 제작 금속 버튼 이미지 적용
         Button button = buttonObject.GetComponent<Button>(); // 버튼 컴포넌트 조회
         button.targetGraphic = buttonImage; // 버튼 대상 그래픽 설정
         Navigation navigation = button.navigation; // 버튼 이동 설정 조회

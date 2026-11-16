@@ -101,6 +101,7 @@ public sealed class ConsumableWindowToggleView : MonoBehaviour, IDisposable
 
         Image buttonImage = buttonObject.GetComponent<Image>();
         buttonImage.color = new Color(0.13f, 0.13f, 0.17f, 0.97f);
+        LobbyUiArt.Apply(buttonImage, "Button"); // 기존 제작 금속 이미지로 아이템 버튼 적용
 
         toggleButton = buttonObject.GetComponent<Button>();
         toggleButton.targetGraphic = buttonImage;

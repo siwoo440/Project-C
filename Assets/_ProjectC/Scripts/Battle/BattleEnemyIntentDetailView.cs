@@ -363,6 +363,7 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
                 0.045f,
                 0.07f,
                 0.96f); // 행동 패널 어두운 배경 적용
+        LobbyUiArt.Apply(backgroundImage, "Button"); // 기존 제작 금속 이미지로 적 행동 상세 배경 적용
 
         backgroundImage.raycastTarget = false; // 행동 패널 전투 입력 차단 해제
 
