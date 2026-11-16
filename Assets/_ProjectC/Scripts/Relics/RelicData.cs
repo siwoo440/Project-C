@@ -15,6 +15,8 @@ public sealed class RelicData : ScriptableObject // 유물 원본 데이터
     [SerializeField] private RelicTriggerType triggerType = RelicTriggerType.BattleStarted; // 유물 발동 시점
     [SerializeField] private RelicEffectType effectType = RelicEffectType.None; // 유물 효과 종류
     [SerializeField] private RelicTargetType targetType = RelicTargetType.AllAllies; // 유물 효과 대상
+    [Range(0, 100)] // 발동 확률 범위
+    [SerializeField] private int triggerChancePercent = 100; // 기본 확정 발동 확률
     [Min(0)] // 효과 수치 최소값
     [SerializeField] private int effectValue; // 유물 기본 효과 수치
     [Min(0)] // 턴당 발동 제한 최소값
@@ -44,6 +46,7 @@ public sealed class RelicData : ScriptableObject // 유물 원본 데이터
     public RelicTriggerType TriggerType => triggerType; // 유물 발동 시점 조회
     public RelicEffectType EffectType => effectType; // 유물 효과 종류 조회
     public RelicTargetType TargetType => targetType; // 유물 대상 종류 조회
+    public int TriggerChancePercent => Mathf.Clamp(triggerChancePercent, 0, 100); // 안전한 발동 확률 조회
     public int EffectValue => Mathf.Max(0, effectValue); // 음수 없는 효과 수치 조회
     public int MaximumTriggersPerTurn => Mathf.Max(0, maximumTriggersPerTurn); // 턴당 발동 제한 조회
     public int MaximumTriggersPerBattle => Mathf.Max(0, maximumTriggersPerBattle); // 전투당 발동 제한 조회

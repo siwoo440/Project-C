@@ -118,4 +118,11 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 5ec24581884b4d918d2c4b4659f30f55, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_HANDKERCHIEF
+    offerType: 1
+    price: 280
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 7e685b76374f4c74bb79ef4baa9d564a, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

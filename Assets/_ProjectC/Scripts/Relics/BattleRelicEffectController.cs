@@ -137,6 +137,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         {
             return false; // 유물 실행 실패 반환
         }
+        if (relicData.TriggerChancePercent <= 0 || (relicData.TriggerChancePercent < 100 && UnityEngine.Random.Range(0, 100) >= relicData.TriggerChancePercent)) // 확률형 유물 발동 판정
+        { // 확률 발동 실패 시작
+            if (relicData.TriggerType == RelicTriggerType.BattleStarted && relicData.MaximumTriggersPerBattle > 0) // 전투 시작 단회 판정 확인
+            { // 시작 판정 기록 시작
+                IncreaseTriggerCount(relicData); // 실패한 시작 판정의 재시도 방지
+            } // 시작 판정 기록 종료
+            return false; // 확률 발동 실패 반환
+        } // 확률 발동 실패 종료
 
         ApplyEffect(relicData, eventContext); // 유물 효과 즉시 적용
         IncreaseTriggerCount(relicData); // 유물 발동 횟수 기록
@@ -273,6 +281,20 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                     targets.Add(livingAllies[UnityEngine.Random.Range(0, livingAllies.Count)]); // 생존 아군 한 명 무작위 선택
                 } // 무작위 대상 선택 종료
                 break; // 무작위 아군 처리 종료
+            case RelicTargetType.RandomLivingEnemy: // 무작위 생존 적 대상
+                List<BattleUnitRuntime> livingEnemies = new List<BattleUnitRuntime>(); // 생존 적 후보 목록 생성
+                foreach (BattleUnitRuntime enemy in enemyUnits) // 실제 적 목록 순회
+                { // 적 후보 확인 시작
+                    if (enemy != null && !enemy.IsDead) // 유효한 생존 적 확인
+                    { // 생존 적 추가 시작
+                        livingEnemies.Add(enemy); // 무작위 선택 후보 추가
+                    } // 생존 적 추가 종료
+                } // 적 후보 확인 종료
+                if (livingEnemies.Count > 0) // 생존 적 존재 확인
+                { // 무작위 적 선택 시작
+                    targets.Add(livingEnemies[UnityEngine.Random.Range(0, livingEnemies.Count)]); // 생존 적 한 명 무작위 선택
+                } // 무작위 적 선택 종료
+                break; // 무작위 적 처리 종료
         }
         return targets; // 계산된 대상 목록 반환
     }
