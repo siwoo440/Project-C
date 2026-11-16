@@ -39,6 +39,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 손패 재배치 시작
             LayoutHand(); // 변경된 화면 너비 기준 카드 재배치
         } // 손패 재배치 종료
+        RefreshHoveredTooltip(); // 마우스와 임시 상세 키 상태에 따른 툴팁 갱신
     } // 크기 변경 감지 종료
     public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn) // 전투 런타임 상태 연결
     { // 덱 연결 시작
@@ -373,8 +374,25 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             return; // 마우스 진입 처리 중단
         } // 마우스 진입 불가 처리 종료
         hoveredCardView = cardView; // 현재 마우스 진입 카드 저장
-        tooltipView.Show(cardView.RuntimeCard); // 카드 상세 툴팁 표시
+        tooltipView.Hide(); // 이전 카드의 상세 툴팁 숨김
+        RefreshHoveredTooltip(); // 현재 카드의 상세 표시 조건 적용
     } // 마우스 진입 처리 종료
+    private void RefreshHoveredTooltip() // 카드 마우스와 키 상태에 따른 상세 화면 갱신
+    { // 카드 상세 갱신 시작
+        if (hoveredCardView == null || tooltipView == null) // 현재 카드와 상세 화면 존재 확인
+        { // 상세 갱신 불가 처리 시작
+            return; // 상세 갱신 중단
+        } // 상세 갱신 불가 처리 종료
+        bool visible = !interactionLocked && BattleDisplaySettings.ShowTooltip(GraphicsAudioSettingsRuntime.Current, true, BattleDisplaySettings.IsTooltipKeyPressed()); // 설정과 임시 키를 반영한 상세 표시 여부
+        if (visible && !tooltipView.gameObject.activeSelf) // 상세 표시 필요 확인
+        { // 카드 상세 표시 시작
+            tooltipView.Show(hoveredCardView.RuntimeCard); // 현재 카드의 상세 정보 표시
+        } // 카드 상세 표시 종료
+        else if (!visible && tooltipView.gameObject.activeSelf) // 상세 숨김 필요 확인
+        { // 카드 상세 숨김 시작
+            tooltipView.Hide(); // 마우스 상태는 보존하고 상세 화면만 숨김
+        } // 카드 상세 숨김 종료
+    } // 카드 상세 갱신 종료
     private void HandleCardHoverExited(BattleCardView cardView) // 카드 마우스 이탈 처리
     { // 마우스 이탈 처리 시작
         if (cardView != hoveredCardView) // 현재 마우스 진입 카드 확인

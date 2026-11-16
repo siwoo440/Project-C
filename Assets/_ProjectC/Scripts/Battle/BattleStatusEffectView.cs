@@ -9,6 +9,7 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
     private BattleStatusEffectTooltipView tooltipView; // 상태 이상 상세 툴팁
     private BattleUnitRuntime runtimeUnit; // 연결된 런타임 유닛
     private bool tooltipVisible; // 상세 툴팁 표시 여부
+    public bool IsTooltipVisible => tooltipVisible; // 현재 상세 툴팁 표시 상태 조회
     public void Bind(BattleUnitRuntime unit) // 런타임 유닛 연결
     { // 연결 시작
         Unbind(); // 기존 연결 해제

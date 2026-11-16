@@ -6,6 +6,7 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
 { // 클래스 시작
     private GameObject tooltipRoot; // 툴팁 표시 루트
     private TMP_Text detailText; // 상태 상세 텍스트
+    private readonly Vector3[] canvasCorners = new Vector3[4]; // 화면 위치 검사에 재사용할 꼭짓점
     public void Show(BattleUnitRuntime runtimeUnit) // 상태 이상 상세 표시
     { // 상세 표시 시작
         EnsureVisualStructure(); // 툴팁 화면 구조 준비
@@ -27,6 +28,8 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
         detailText.text = detailBuilder.ToString().TrimEnd(); // 상태 상세 텍스트 적용
         tooltipRoot.SetActive(true); // 툴팁 표시
         tooltipRoot.transform.SetAsLastSibling(); // 툴팁 최상단 배치
+        ((RectTransform)tooltipRoot.transform).anchoredPosition = new Vector2(8f, 0f); // 새 표시 시 유닛 오른쪽 상세 위치 복원
+        KeepWithinCanvas(); // 첫 표시 프레임부터 화면 범위 보정
     } // 상세 표시 종료
     public void Hide() // 상태 이상 상세 숨김
     { // 상세 숨김 시작
@@ -35,6 +38,35 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
             tooltipRoot.SetActive(false); // 툴팁 비활성화
         } // 툴팁 숨김 처리 종료
     } // 상세 숨김 종료
+    private void LateUpdate() // 화면 크기와 유닛 위치에 따른 상세 범위 보정
+    { // 툴팁 위치 갱신 시작
+        if (tooltipRoot != null && tooltipRoot.activeSelf) // 표시 중인 상태 상세 확인
+        { // 상세 위치 보정 시작
+            KeepWithinCanvas(); // 현재 캔버스 안쪽으로 상세 위치 이동
+        } // 상세 위치 보정 종료
+    } // 툴팁 위치 갱신 종료
+    private void KeepWithinCanvas() // 상태 상세창의 화면 잘림 방지
+    { // 화면 범위 보정 시작
+        Canvas canvas = GetComponentInParent<Canvas>(); // 부모 캔버스 조회
+        RectTransform canvasRect = canvas != null ? canvas.rootCanvas.transform as RectTransform : null; // 최상위 화면 영역 조회
+        RectTransform tooltipRect = tooltipRoot.transform as RectTransform; // 상태 상세 영역 조회
+        if (canvasRect == null || tooltipRect == null || tooltipRect.parent == null) // 필수 화면 영역 확인
+        { // 화면 범위 누락 처리 시작
+            return; // 위치 보정 중단
+        } // 화면 범위 누락 처리 종료
+        tooltipRect.GetWorldCorners(canvasCorners); // 상세 영역의 실제 화면 위치 조회
+        Vector3 minimum = canvasRect.InverseTransformPoint(canvasCorners[0]); // 상세 왼쪽 아래 화면 좌표 변환
+        Vector3 maximum = canvasRect.InverseTransformPoint(canvasCorners[2]); // 상세 오른쪽 위 화면 좌표 변환
+        float deltaX = minimum.x < canvasRect.rect.xMin ? canvasRect.rect.xMin - minimum.x : maximum.x > canvasRect.rect.xMax ? canvasRect.rect.xMax - maximum.x : 0f; // 화면 좌우 잘림 보정량 계산
+        float deltaY = minimum.y < canvasRect.rect.yMin ? canvasRect.rect.yMin - minimum.y : maximum.y > canvasRect.rect.yMax ? canvasRect.rect.yMax - maximum.y : 0f; // 화면 상하 잘림 보정량 계산
+        if (Mathf.Approximately(deltaX, 0f) && Mathf.Approximately(deltaY, 0f)) // 화면 안쪽 위치 유지 확인
+        { // 추가 이동 불필요 처리 시작
+            return; // 불필요한 화면 재배치 중단
+        } // 추가 이동 불필요 처리 종료
+        Vector3 worldDelta = canvasRect.TransformVector(new Vector3(deltaX, deltaY, 0f)); // 화면 보정량을 실제 좌표로 변환
+        Vector3 localDelta = tooltipRect.parent.InverseTransformVector(worldDelta); // 실제 보정량을 유닛 기준 좌표로 변환
+        tooltipRect.anchoredPosition += new Vector2(localDelta.x, localDelta.y); // 화면 안쪽으로 상세 위치 이동
+    } // 화면 범위 보정 종료
     private void EnsureVisualStructure() // 툴팁 화면 구조 준비
     { // 화면 구조 준비 시작
         if (tooltipRoot != null) // 기존 화면 구조 확인
@@ -47,11 +79,11 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
         tooltipCanvas.overrideSorting = true; // 상위 Canvas 정렬 순서 분리
         tooltipCanvas.sortingOrder = 100; // 툴팁 최상단 정렬 순서 적용
         RectTransform rootRect = tooltipRoot.GetComponent<RectTransform>(); // 툴팁 배경 사각형 조회
-        rootRect.anchorMin = new Vector2(0.5f, 1f); // 위쪽 중앙 최소 앵커
-        rootRect.anchorMax = new Vector2(0.5f, 1f); // 위쪽 중앙 최대 앵커
-        rootRect.pivot = new Vector2(0.5f, 0f); // 아래 중앙 기준점
-        rootRect.anchoredPosition = new Vector2(0f, 8f); // 유닛 위쪽 위치
-        rootRect.sizeDelta = new Vector2(270f, 180f); // 상세 툴팁 크기
+        rootRect.anchorMin = new Vector2(1f, 0.5f); // 오른쪽 중앙 최소 앵커
+        rootRect.anchorMax = new Vector2(1f, 0.5f); // 오른쪽 중앙 최대 앵커
+        rootRect.pivot = new Vector2(0f, 0.5f); // 왼쪽 중앙 기준점
+        rootRect.anchoredPosition = new Vector2(8f, 0f); // 유닛 오른쪽 위치
+        rootRect.sizeDelta = new Vector2(360f, 180f); // 읽기 쉬운 상세 툴팁 크기
         Image backgroundImage = tooltipRoot.GetComponent<Image>(); // 툴팁 배경 이미지 조회
         backgroundImage.color = new Color(0.025f, 0.035f, 0.06f, 0.98f); // 툴팁 배경색 적용
         backgroundImage.raycastTarget = false; // 툴팁 입력 차단 해제
@@ -67,7 +99,7 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
         textRect.offsetMax = new Vector2(-10f, -8f); // 상세 텍스트 오른쪽 위 여백
         detailText = textObject.GetComponent<TextMeshProUGUI>(); // 상세 텍스트 컴포넌트 조회
         detailText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
-        detailText.fontSize = 12f; // 상세 글자 크기
+        detailText.fontSize = 16f; // 읽기 쉬운 상세 글자 크기
         detailText.color = new Color(0.9f, 0.93f, 1f, 1f); // 상세 기본 글자색 적용
         detailText.alignment = TextAlignmentOptions.TopLeft; // 상세 글자 왼쪽 위 정렬
         detailText.textWrappingMode = TextWrappingModes.Normal; // 상세 자동 줄바꿈 허용

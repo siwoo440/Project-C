@@ -19,7 +19,7 @@ public sealed class BattleCombatFeedbackView : MonoBehaviour // 전투 결과 �
         { // 방어도 흡수 표시 시작
             CreateFloatingText($"방어 -{damageResult.AbsorbedDamage}", new Color(0.55f, 0.85f, 1f, 1f)); // 흡수량 플로팅 문구 생성
         } // 방어도 흡수 표시 종료
-        if (damageResult.HasDamage) // 실제 체력 피해 확인
+        if (damageResult.HasDamage && BattleDisplaySettings.ShowDamageNumbers(GraphicsAudioSettingsRuntime.Current)) // 실제 체력 피해와 숫자 표시 설정 확인
         { // 체력 피해 표시 시작
             CreateFloatingText($"-{damageResult.AppliedDamage}", feedbackColor); // 피해 플로팅 숫자 생성
         } // 체력 피해 표시 종료
