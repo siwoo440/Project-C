@@ -6,8 +6,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public int RemainingTurns { get; private set; } // 남은 발동 횟수
     public int StackCount { get; private set; } // 현재 중첩 수
     public int MaximumStacks { get; private set; } // 최대 중첩 수
-    public int EffectiveValue => Value * StackCount; // 전체 적용 수치
-    public bool IsExpired => RemainingTurns <= 0 || EffectType == BattleStatusEffectType.Burn && Value <= 0; // 지속 종료 또는 화상 수치 소진 여부
+    private int damageDecay; // 전체 지속 피해 수치에서 감소한 누적량
+    private bool skipNextDurationDecrease; // 자신의 턴에 받은 상태의 첫 감소 생략 여부
+    public int EffectiveValue => (int)Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - damageDecay); // 표시 범위와 누적 감소를 반영한 전체 수치
+    public bool IsExpired => RemainingTurns <= 0 || (EffectType == BattleStatusEffectType.Burn || EffectType == BattleStatusEffectType.Poison) && EffectiveValue <= 0; // 지속 종료 또는 지속 피해 수치 소진 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
@@ -30,16 +32,46 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         RemainingTurns = Math.Max(RemainingTurns, Math.Max(1, duration)); // 긴 지속 횟수 유지
         MaximumStacks = Math.Max(MaximumStacks, Math.Max(1, maximumStacks)); // 높은 최대 중첩 유지
         StackCount = Math.Min(MaximumStacks, StackCount + 1); // 최대 범위 중첩 증가
+        if (EffectType == BattleStatusEffectType.Poison || EffectType == BattleStatusEffectType.Burn) // 지속 피해 재부여 여부 확인
+        { // 지속 피해 갱신 처리 시작
+            damageDecay = (int)Math.Min(damageDecay, Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - Math.Max(1, value))); // 새 효과 수치 이상이 되도록 감소량 보정
+        } // 지속 피해 갱신 처리 종료
     } // 재적용 종료
     public void AdvanceDuration() // 지속 횟수 감소
     { // 지속 감소 시작
         RemainingTurns = Math.Max(0, RemainingTurns - 1); // 남은 횟수 한 단계 감소
     } // 지속 감소 종료
+    public void SkipNextDurationDecrease() // 자기 턴의 첫 지속 감소 생략 예약
+    { // 지속 감소 생략 시작
+        skipNextDurationDecrease = true; // 현재 상태의 생략 여부 기록
+    } // 지속 감소 생략 종료
+    public bool ConsumeDurationDecreaseSkip() // 첫 지속 감소 생략 여부 소비
+    { // 생략 여부 소비 시작
+        bool skip = skipNextDurationDecrease; // 현재 생략 여부 저장
+        skipNextDurationDecrease = false; // 사용한 생략 예약 제거
+        return skip; // 이전 생략 여부 반환
+    } // 생략 여부 소비 종료
+    public void DecayPoison() // 전체 중독 수치 한 점 감소
+    { // 중독 감소 시작
+        if (EffectType == BattleStatusEffectType.Poison && EffectiveValue > 0) // 감소 가능한 중독 확인
+        { // 중독 감소 처리 시작
+            damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + 1); // 전체 피해 수치의 감소량 누적
+        } // 중독 감소 처리 종료
+    } // 중독 감소 종료
+    public void MergeTransferredState(BattleStatusEffectInstance transferred) // 이전한 디버프의 감소 상태 병합
+    { // 이전 상태 병합 시작
+        if (transferred == null || transferred.EffectType != EffectType) // 동일 상태 확인
+        { // 병합 불가 처리 시작
+            return; // 상태 병합 중단
+        } // 병합 불가 처리 종료
+        damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + transferred.damageDecay); // 이전한 지속 피해 감소량 보존
+        skipNextDurationDecrease |= transferred.skipNextDurationDecrease; // 이전한 지속 감소 생략 여부 보존
+    } // 이전 상태 병합 종료
     public void DecayBurn() // 화상 수치 한 단계 감소
     { // 화상 감소 시작
-        if (EffectType == BattleStatusEffectType.Burn) // 화상 상태 확인
+        if (EffectType == BattleStatusEffectType.Burn && EffectiveValue > 0) // 감소 가능한 화상 확인
         { // 화상 수치 감소 시작
-            Value = Math.Max(0, Value - 1); // 화상 수치 한 점 감소
+            damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + 1); // 전체 화상 수치의 감소량 누적
         } // 화상 수치 감소 종료
     } // 화상 감소 종료
     public static string GetDisplayName(BattleStatusEffectType effectType) // 상태 이상 표시 이름 조회
@@ -127,7 +159,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         switch (effectType) // 상태 이상 종류 분기
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
-                return $"진영 턴 시작에 방어 무시 피해 {effectiveValue}"; // 중독 설명 반환
+                return $"진영 턴 시작에 피해 {effectiveValue}, 중독 수치 1 감소"; // 중독 피해와 감소 설명 반환
             case BattleStatusEffectType.Burn: // 화상 종류
                 return $"진영 턴 종료에 피해 {effectiveValue}, 화상 수치 1 감소"; // 화상 설명 반환
             case BattleStatusEffectType.Blind: // 실명 종류

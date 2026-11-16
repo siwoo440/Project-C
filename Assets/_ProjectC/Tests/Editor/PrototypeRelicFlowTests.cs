@@ -79,6 +79,8 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
             } // 유물 발동 대기 종료
             Assert.AreEqual(14, battle.AllyUnits[0].CurrentBlock); // 단독 아군의 인장 6과 부유석 8 적용 확인
             Assert.AreEqual(1, battle.AllyUnits[0].GetStatusEffect(BattleStatusEffectType.MagicalResistanceUp).EffectiveValue); // 실제 전투의 청동 향로 저항 확인
+            Assert.IsTrue(battle.BattleTurn.EndPlayerTurn()); // 청동 향로가 적용된 첫 아군 턴 종료
+            Assert.IsNull(battle.AllyUnits[0].GetStatusEffect(BattleStatusEffectType.MagicalResistanceUp)); // 전투 시작 한 턴 저항의 첫 턴 종료 만료 확인
         } // 구매와 저장 복원 검사 종료
         finally // 독립 테스트 파일 정리
         { // 저장 파일 정리 시작

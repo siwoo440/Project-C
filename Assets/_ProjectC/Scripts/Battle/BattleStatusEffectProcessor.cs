@@ -25,6 +25,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 continue; // 턴 시작 지속 감소 생략
             } // 턴 종료 상태 유지 종료
             int previousRemainingTurns = statusEffect.RemainingTurns; // 처리 전 지속 횟수 저장
+            int previousValue = statusEffect.EffectiveValue; // 처리 전 상태 전체 수치 저장
             int appliedAmount = 0; // 실제 적용 수치 초기화
             bool wasTriggered = false; // 발동 여부 초기화
             if (statusEffect.EffectType == BattleStatusEffectType.Poison) // 중독 상태 확인
@@ -32,26 +33,38 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 BattleDamageResult damageResult = runtimeUnit.TakeDamage(statusEffect.EffectiveValue, BattleDamageType.None); // 방어 무시 피해 적용
                 appliedAmount = damageResult.AppliedDamage; // 실제 중독 피해 저장
                 wasTriggered = true; // 중독 발동 저장
+                statusEffect.DecayPoison(); // 전체 중독 수치 한 점 감소
+                statusStateChanged = true; // 중독 수치 변경 알림 예약
             } // 중독 처리 종료
             else if (statusEffect.EffectType == BattleStatusEffectType.Regeneration || statusEffect.EffectType == BattleStatusEffectType.StarReservedHealing || statusEffect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing) // 재생과 두 종류의 예약 회복 확인
             { // 재생 처리 시작
                 appliedAmount = runtimeUnit.RestoreHealth(statusEffect.EffectiveValue); // 실제 재생 회복 저장
                 wasTriggered = true; // 재생 발동 저장
             } // 재생 처리 종료
+            else if (statusEffect.EffectType != BattleStatusEffectType.ChariotMark) // 턴 시작에 처리할 효과 확인
+            { // 턴 종료 지속 상태 처리 시작
+                continue; // 일반 상태의 지속 턴은 턴 종료에 처리
+            } // 턴 종료 지속 상태 처리 종료
             if (runtimeUnit.IsDead) // 상태 피해 사망 확인
             { // 사망 결과 처리 시작
-                processResults.Add(CreateResult(statusEffect, round, appliedAmount, previousRemainingTurns, previousRemainingTurns, wasTriggered, BattleStatusEffectRemovalReason.UnitDied)); // 사망 제거 결과 추가
+                processResults.Add(new BattleStatusEffectProcessResult(statusEffect.EffectType, round, previousValue, appliedAmount, previousRemainingTurns, previousRemainingTurns, statusEffect.StackCount, wasTriggered, BattleStatusEffectRemovalReason.UnitDied)); // 피해 이전 수치의 사망 결과 기록
                 break; // 사망 이후 상태 처리 중단
             } // 사망 결과 처리 종료
-            statusEffect.AdvanceDuration(); // 상태 지속 횟수 감소
-            statusStateChanged = true; // 상태 변경 여부 저장
+            if (statusEffect.EffectType == BattleStatusEffectType.StarReservedHealing || statusEffect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || statusEffect.EffectType == BattleStatusEffectType.ChariotMark) // 다음 시작에 소모하는 전용 상태 확인
+            { // 전용 상태 처리 시작
+                statusEffect.AdvanceDuration(); // 전용 효과의 발동 횟수 감소
+                statusStateChanged = true; // 상태 변경 여부 저장
+            } // 전용 상태 처리 종료
             BattleStatusEffectRemovalReason removalReason = BattleStatusEffectRemovalReason.None; // 기본 제거 원인 생성
             if (statusEffect.IsExpired) // 지속시간 만료 확인
             { // 만료 처리 시작
                 runtimeUnit.RemoveStatusEffectInstance(statusEffect); // 만료 상태 조용히 제거
                 removalReason = BattleStatusEffectRemovalReason.DurationExpired; // 만료 제거 원인 저장
             } // 만료 처리 종료
-            processResults.Add(CreateResult(statusEffect, round, appliedAmount, previousRemainingTurns, statusEffect.RemainingTurns, wasTriggered, removalReason)); // 상태 처리 결과 추가
+            if (wasTriggered || removalReason != BattleStatusEffectRemovalReason.None) // 실제 효과와 만료 결과 확인
+            { // 시작 결과 기록 시작
+                processResults.Add(new BattleStatusEffectProcessResult(statusEffect.EffectType, round, previousValue, appliedAmount, previousRemainingTurns, statusEffect.RemainingTurns, statusEffect.StackCount, wasTriggered, removalReason)); // 처리 전 수치의 결과 기록
+            } // 시작 결과 기록 종료
         } // 개별 상태 처리 종료
         if (statusStateChanged && !runtimeUnit.IsDead) // 상태 일괄 알림 필요 확인
         { // 상태 알림 시작
@@ -73,7 +86,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType != BattleStatusEffectType.Burn && effect.EffectType != BattleStatusEffectType.Blind) // 턴 종료 대상 상태 확인
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark) // 턴 시작 소모 전용 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
@@ -91,7 +104,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 break; // 나머지 상태 처리 중단
             } // 사망 결과 처리 종료
             effect.DecayBurn(); // 화상 수치 한 점 감소
-            effect.AdvanceDuration(); // 남은 지속 턴 감소
+            if (!effect.ConsumeDurationDecreaseSkip()) // 자기 턴 신규 상태의 첫 감소 생략 확인
+            { // 지속 감소 처리 시작
+                effect.AdvanceDuration(); // 남은 지속 턴 감소
+            } // 지속 감소 처리 종료
             BattleStatusEffectRemovalReason reason = BattleStatusEffectRemovalReason.None; // 기본 제거 원인 초기화
             if (effect.IsExpired) // 지속 종료 또는 화상 소진 확인
             { // 상태 만료 처리 시작

@@ -222,6 +222,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             { // 개별 중첩 병합 시작
                 existing.Refresh(effect.Value, effect.RemainingTurns, effect.MaximumStacks); // 기존 상태 규칙대로 중첩과 지속 병합
             } // 개별 중첩 병합 종료
+            existing.MergeTransferredState(effect); // 이전된 수치 감소와 지속 생략 상태 병합
         } // 상태 중첩 병합 종료
         StatusEffectsChanged?.Invoke(this); // 원래 동료의 상태 화면 갱신
         recipient.StatusEffectsChanged?.Invoke(recipient); // 이전받은 동료의 상태 화면 갱신
