@@ -117,6 +117,11 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
         {
             return false; // 소유자 없음 반환
         }
+        BattleLoadoutData active = PartyLoadoutRuntime.Active; // 현재 탐사 출발 편성 조회
+        if (active != null && active.Deck == sourceDeck && active.Party != null) // 현재 탐사 덱과 파티 확인
+        { // 실제 파티원 기준 확인 시작
+            return active.Party.ContainsCharacter(ownerData); // 보유 카드 수와 무관한 파티원 여부 반환
+        } // 실제 파티원 기준 확인 종료
 
         for (int index = 0; index < cards.Count; index++) // 현재 카드 순회
         {

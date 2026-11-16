@@ -113,12 +113,21 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public ShopPurchaseResult TryPurchase(ShopOfferData offer) // 지정 상품 구매 시도
     { // 상품 구매 시작
+        return TryPurchase(offer, null); // 기존 고정 소유자 상품 구매 연결
+    } // 기존 상품 구매 종료
+
+    public ShopPurchaseResult TryPurchase(ShopOfferData offer, CharacterData chosenOwner) // 소유자를 지정한 상품 구매 시도
+    { // 지정 상품 구매 시작
         if (!IsReady || offer == null || !offer.IsValidData() || !catalog.ContainsOffer(offer.OfferId)) // 상점과 상품 유효성 확인
         { // 잘못된 상품 처리 시작
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상품 정보가 올바르지 않습니다."); // 잘못된 상품 완료 반환
         } // 잘못된 상품 처리 종료
-
-        ShopPurchaseResult result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer), () => Deliver(offer)); // 표시 가격으로 원자 상품 거래 실행
+        CharacterData owner = offer.RequiresOwnerChoice ? chosenOwner : offer.CardOwner; // 공용 또는 고정 소유자 결정
+        if (offer.RequiresOwnerChoice && (PartyLoadoutRuntime.Active == null || PartyLoadoutRuntime.Active.Party == null || !PartyLoadoutRuntime.Active.Party.ContainsCharacter(owner))) // 공용 카드 소유 파티원 확인
+        { // 소유자 선택 오류 시작
+            return CompleteTransaction(ShopPurchaseResult.Unavailable, "현재 파티 캐릭터를 선택하세요."); // 소유자 선택 필요 알림
+        } // 소유자 선택 오류 종료
+        ShopPurchaseResult result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 선택 소유자와 표시 가격으로 원자 거래 실행
         string message = BuildPurchaseMessage(result, offer.DisplayName); // 거래 결과 문구 생성
         return CompleteTransaction(result, message); // 거래 결과 알림과 반환
     } // 상품 구매 종료
@@ -213,12 +222,12 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         Changed?.Invoke(); // 상점 골드 변경 알림
     } // 테스트 골드 지급 종료
 
-    private bool CanDeliver(ShopOfferData offer) // 상품 지급 가능 여부 검사
+    private bool CanDeliver(ShopOfferData offer, CharacterData owner) // 상품 지급 가능 여부 검사
     { // 상품 지급 검사 시작
         switch (offer.OfferType) // 상품 종류 분기
         { // 상품 지급 분기 시작
             case ShopOfferType.Card: // 카드 상품 지급 검사
-                return runDeckManager.ContainsOwner(offer.CardOwner); // 출전 소유자 포함 여부 반환
+                return runDeckManager.ContainsOwner(owner); // 출전 소유자 포함 여부 반환
             case ShopOfferType.Relic: // 유물 상품 지급 검사
                 return !RelicRunManager.EnsureInstance().Inventory.ContainsRelic(offer.Relic.RelicId); // 유물 중복 없음 반환
             case ShopOfferType.Potion: // 포션 상품 지급 검사
@@ -228,12 +237,12 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         } // 상품 지급 분기 종료
     } // 상품 지급 검사 종료
 
-    private bool Deliver(ShopOfferData offer) // 상품 실제 지급
+    private bool Deliver(ShopOfferData offer, CharacterData owner) // 상품 실제 지급
     { // 상품 지급 시작
         switch (offer.OfferType) // 상품 종류 분기
         { // 상품 지급 분기 시작
             case ShopOfferType.Card: // 카드 상품 지급
-                return runDeckManager.TryAddCard(offer.Card, offer.CardOwner); // 회차 덱 카드 추가 결과 반환
+                return runDeckManager.TryAddCard(offer.Card, owner); // 선택 소유자의 회차 덱 카드 추가 결과 반환
             case ShopOfferType.Relic: // 유물 상품 지급
                 return RelicRunManager.EnsureInstance().TryAcquire(offer.Relic) == RelicAcquireResult.Acquired; // 신규 유물 획득 결과 반환
             case ShopOfferType.Potion: // 포션 상품 지급

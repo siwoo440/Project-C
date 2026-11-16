@@ -10,6 +10,7 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
     [SerializeField] private int price; // 임시 골드 가격
     [SerializeField] private CardData card; // 카드 상품 원본
     [SerializeField] private CharacterData cardOwner; // 구매 카드 소유자
+    [SerializeField] private bool chooseCardOwner; // 공용 카드 소유자 직접 선택 여부
     [SerializeField] private RelicData relic; // 유물 상품 원본
     [SerializeField] private PotionData potion; // 일반 포션 상품 원본
 
@@ -18,6 +19,7 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
     public int Price => Mathf.Max(0, price); // 안전 가격 조회
     public CardData Card => card; // 카드 원본 조회
     public CharacterData CardOwner => cardOwner; // 카드 소유자 조회
+    public bool RequiresOwnerChoice => offerType == ShopOfferType.Card && chooseCardOwner; // 공용 카드 직접 선택 여부
     public RelicData Relic => relic; // 유물 원본 조회
     public PotionData Potion => potion; // 포션 원본 조회
 
@@ -67,7 +69,7 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
         switch (offerType) // 상품 종류별 원본 검사
         { // 상품 검사 분기 시작
             case ShopOfferType.Card: // 카드 상품 검사
-                return card != null && cardOwner != null; // 카드와 소유자 존재 반환
+                return card != null && (chooseCardOwner || cardOwner != null); // 공용 카드 또는 고정 소유자 확인
             case ShopOfferType.Relic: // 유물 상품 검사
                 return relic != null && relic.IsValidData(); // 유물 유효성 반환
             case ShopOfferType.Potion: // 포션 상품 검사

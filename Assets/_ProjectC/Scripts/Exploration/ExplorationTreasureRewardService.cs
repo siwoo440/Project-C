@@ -261,6 +261,10 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
 
         foreach (ShopOfferData offer in shopManager.Catalog.Offers) // 전체 상점 상품 순회
         {
+            if (offerType == ShopOfferType.Card && offer != null && offer.RequiresOwnerChoice) // 소유자 선택 미구현 공용 보상 확인
+            { // 공용 보상 임시 제외 시작
+                continue; // 직접 선택 경로 구현 전 후보 제외
+            } // 공용 보상 임시 제외 종료
             if (offer != null &&
                 offer.OfferType == offerType &&
                 offer.IsValidData()) // 요청 종류와 데이터 유효성 확인

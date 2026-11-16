@@ -19,6 +19,8 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     private ScrollRect productScrollRect; // 상품 목록 스크롤 구성
     private bool showingCardRemoval; // 카드 제거 목록 표시 여부
     private bool showingRelicSales; // 유물 판매 목록 표시 여부
+    private bool showingCardOwners; // 공용 카드 소유자 선택 여부
+    private ShopOfferData pendingCardOffer; // 소유자 선택 중인 공용 카드
     private float previousTimeScale = 1f; // 상점 열기 전 시간 배율
     private bool pausedByShop; // 상점 시간 정지 적용 여부
 
@@ -138,6 +140,8 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
         showingCardRemoval = false; // 기본 상품 모드 저장
         showingRelicSales = false; // 유물 판매 모드 해제
+        showingCardOwners = false; // 카드 소유자 선택 모드 해제
+        pendingCardOffer = null; // 선택 대기 상품 해제
         ClearContent(); // 기존 목록 제거
         goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 표시
 
@@ -149,7 +153,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             Color cardColor = sold ? new Color(0.12f, 0.12f, 0.13f, 1f) : ButtonColor; // 판매 상태별 카드 색상 결정
             Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, $"{manager.GetOfferPrice(capturedOffer)} Gold", typeLabel, sold, cardColor); // 실제 구매 가격 포함 상품 카드 생성
             offerButton.interactable = !sold; // 판매 완료 상품 비활성화
-            offerButton.onClick.AddListener(() => manager.TryPurchase(capturedOffer)); // 상품 구매 동작 연결
+            offerButton.onClick.AddListener(() => SelectOffer(capturedOffer)); // 상품 선택 동작 연결
         }
 
         Button removalButton = CreateProductCard("CardRemovalService", null, "서비스", "보유 카드 1장 제거", $"{manager.Catalog.CardRemovalPrice} Gold", "카드\n제거", false, new Color(0.30f, 0.18f, 0.20f, 1f)); // 카드 제거 서비스 카드 생성
@@ -159,10 +163,63 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         ResetScrollToTop(); // 상품 목록 시작 위치 복원
     }
 
+    private void SelectOffer(ShopOfferData offer) // 상품 선택 처리
+    { // 상품 선택 시작
+        if (offer != null && offer.RequiresOwnerChoice) // 공용 카드 소유자 선택 확인
+        { // 공용 카드 선택 시작
+            ShowCardOwnerList(offer); // 현재 파티의 소유자 선택 표시
+            if (resultText != null) // 안내 문구 존재 확인
+            { // 카드 소유자 안내 시작
+                resultText.text = $"{offer.DisplayName}의 소유자를 선택하세요."; // 선택 중 카드 안내
+                resultText.color = Color.white; // 기본 안내 색상 적용
+            } // 카드 소유자 안내 종료
+            return; // 소유자 선택까지 구매 보류
+        } // 공용 카드 선택 종료
+        manager.TryPurchase(offer); // 기존 상품 즉시 구매
+    } // 상품 선택 종료
+
+    private void ShowCardOwnerList(ShopOfferData offer) // 공용 카드 소유자 선택 목록
+    { // 소유자 선택 목록 시작
+        showingCardRemoval = false; // 카드 제거 모드 해제
+        showingRelicSales = false; // 유물 판매 모드 해제
+        showingCardOwners = true; // 카드 소유자 선택 모드 저장
+        pendingCardOffer = offer; // 구매 대기 카드 저장
+        ClearContent(); // 기존 상품 목록 제거
+        Button backButton = CreateProductCard("BackToProducts", null, "이동", "상품 목록", "돌아가기", "←", false, AccentColor); // 상품 목록 복귀 카드 생성
+        backButton.onClick.AddListener(CancelCardOwnerSelection); // 구매 없이 상품 목록 복귀 연결
+        PartyData party = PartyLoadoutRuntime.Active != null ? PartyLoadoutRuntime.Active.Party : null; // 현재 탐사 파티 조회
+        if (party != null) // 현재 파티 존재 확인
+        { // 파티 소유자 표시 시작
+            foreach (CharacterData member in party.Members) // 현재 파티 캐릭터 순회
+            { // 개별 캐릭터 표시 시작
+                CharacterData capturedOwner = member; // 버튼용 소유자 저장
+                if (capturedOwner == null) // 빈 파티 슬롯 확인
+                { // 빈 슬롯 처리 시작
+                    continue; // 다음 파티원 확인
+                } // 빈 슬롯 처리 종료
+                Button ownerButton = CreateProductCard($"ChooseCardOwner_{capturedOwner.CharacterId}", capturedOwner.Portrait, "소유자 선택", capturedOwner.DisplayName, $"{manager.GetOfferPrice(offer)} Gold", "캐릭터", false, ButtonColor); // 캐릭터 소유자 선택 카드 생성
+                ownerButton.onClick.AddListener(() => manager.TryPurchase(offer, capturedOwner)); // 선택한 소유자로 구매
+            } // 개별 캐릭터 표시 종료
+        } // 파티 소유자 표시 종료
+        ResetScrollToTop(); // 소유자 목록 시작 위치 복원
+    } // 소유자 선택 목록 종료
+
+    private void CancelCardOwnerSelection() // 소유자 선택 취소
+    { // 소유자 선택 취소 시작
+        if (resultText != null) // 안내 문구 존재 확인
+        { // 기본 안내 복원 시작
+            resultText.text = "상품을 선택하세요."; // 상품 선택 안내 복원
+            resultText.color = Color.white; // 기본 안내 색상 복원
+        } // 기본 안내 복원 종료
+        RefreshMainView(); // 구매 없이 상품 목록 복귀
+    } // 소유자 선택 취소 종료
+
     private void ShowCardRemovalList() // 카드 제거 선택 목록 표시
     {
         showingCardRemoval = true; // 카드 제거 모드 저장
         showingRelicSales = false; // 유물 판매 모드 해제
+        showingCardOwners = false; // 카드 소유자 선택 모드 해제
+        pendingCardOffer = null; // 선택 대기 상품 해제
         ClearContent(); // 기존 상품 목록 제거
         Button backButton = CreateProductCard("BackToProducts", null, "이동", "상품 목록", "돌아가기", "←", false, AccentColor); // 상품 목록 복귀 카드 생성
         backButton.onClick.AddListener(RefreshMainView); // 상품 목록 복귀 연결
@@ -184,6 +241,8 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     { // 유물 판매 목록 시작
         showingCardRemoval = false; // 카드 제거 모드 해제
         showingRelicSales = true; // 유물 판매 모드 저장
+        showingCardOwners = false; // 카드 소유자 선택 모드 해제
+        pendingCardOffer = null; // 선택 대기 상품 해제
         ClearContent(); // 기존 상품 목록 제거
         Button backButton = CreateProductCard("BackToProducts", null, "이동", "상품 목록", "돌아가기", "←", false, AccentColor); // 상품 목록 복귀 카드 생성
         backButton.onClick.AddListener(RefreshMainView); // 상품 목록 복귀 연결
@@ -215,8 +274,27 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         {
             goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 갱신
         }
+        if (!manager.IsReady) // 상점 초기화 또는 저장 복원 중 확인
+        { // 준비 전 상점 처리 시작
+            if (overlayObject != null && overlayObject.activeSelf) // 열린 상점 화면 확인
+            { // 상점 안전 종료 시작
+                CloseShop(); // 준비되지 않은 상점 화면 닫기
+            } // 상점 안전 종료 완료
+            return; // 준비 전 상품 조회 방지
+        } // 준비 전 상점 처리 종료
 
-        if (overlayObject != null && overlayObject.activeSelf && showingRelicSales) // 열린 유물 판매 목록 확인
+        if (overlayObject != null && overlayObject.activeSelf && showingCardOwners) // 열린 카드 소유자 선택 확인
+        { // 카드 소유자 선택 갱신 시작
+            if (pendingCardOffer == null || manager.IsPurchased(pendingCardOffer)) // 선택 상품의 판매 완료 확인
+            { // 구매 완료 처리 시작
+                RefreshMainView(); // 상품 목록으로 복귀
+            } // 구매 완료 처리 종료
+            else // 구매 미완료 처리
+            { // 소유자 선택 유지 시작
+                ShowCardOwnerList(pendingCardOffer); // 현재 파티 선택 목록 유지
+            } // 소유자 선택 유지 종료
+        } // 카드 소유자 선택 갱신 종료
+        else if (overlayObject != null && overlayObject.activeSelf && showingRelicSales) // 열린 유물 판매 목록 확인
         { // 유물 판매 목록 갱신 시작
             ShowRelicSaleList(); // 최신 보유 유물과 가격 갱신
         } // 유물 판매 목록 갱신 종료

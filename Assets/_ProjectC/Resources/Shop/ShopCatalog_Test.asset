@@ -125,4 +125,28 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 7e685b76374f4c74bb79ef4baa9d564a, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_SHEET_HEAVY_STRIKE
+    offerType: 0
+    price: 80
+    card: {fileID: 11400000, guid: 17c6e447cd2a48bf97a1fd63c3ac5d8d, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: SHOP_SHEET_BLADE_STORM
+    offerType: 0
+    price: 120
+    card: {fileID: 11400000, guid: 0f097d2366e94752b0e61f434361f478, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: SHOP_SHEET_CLEANSE
+    offerType: 0
+    price: 100
+    card: {fileID: 11400000, guid: 8d8278f0cdb741a59547c6d9c67d851b, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
