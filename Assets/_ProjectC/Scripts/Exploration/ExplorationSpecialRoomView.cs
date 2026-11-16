@@ -132,13 +132,44 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     private void OpenTreasure() // Prototype 랜덤 보물 보상 지급
     {
         ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
+        if (sessionManager.IsEventResolved(runtimeId)) // 이미 획득한 보물 확인
+        { // 중복 보물 방지 시작
+            return; // 완료된 보물 재지급 차단
+        } // 중복 보물 방지 종료
 
-        if (!ExplorationTreasureRewardService.TryGrantReward(runtimeId, out string message)) // 랜덤 보상 지급 확인
+        if (!ExplorationTreasureRewardService.TryGrantReward(runtimeId, out string message, out ShopOfferData pendingOffer)) // 랜덤 보상 지급 또는 선택 준비 확인
         {
             Debug.LogWarning($"[Exploration][Day57] 보물 보상 지급 실패 - {runtimeId}", this); // 보상 실패 로그
             return; // 실패 시 사용 완료 처리 중단
         }
 
+        if (pendingOffer != null) // 공용 카드 소유자 선택 확인
+        { // 소유자 선택 대기 시작
+            ExplorationRewardOwnerView.Open(transform, pendingOffer, owner => CompleteCardReward(pendingOffer, owner)); // 현재 파티 소유자 선택 표시
+            return; // 선택 전 보물 사용과 저장 보류
+        } // 소유자 선택 대기 종료
+
+        CompleteTreasure(message); // 일반 보상 사용 완료 처리
+    } // 보물 보상 지급 종료
+
+    private bool CompleteCardReward(ShopOfferData offer, CharacterData owner) // 선택한 소유자에게 보물 카드 지급
+    { // 카드 보상 완료 시작
+        PartyData party = PartyLoadoutRuntime.Active != null ? PartyLoadoutRuntime.Active.Party : null; // 현재 탐사 파티 조회
+        if (ExplorationSessionManager.EnsureInstance().IsEventResolved(runtimeId) || party == null || !party.ContainsCharacter(owner)) // 사용 완료와 파티 소유자 확인
+        { // 잘못된 보상 선택 처리 시작
+            return false; // 중복 또는 파티 외 지급 차단
+        } // 잘못된 보상 선택 처리 종료
+        if (!RunDeckManager.EnsureInstance().TryAddCard(offer.Card, owner)) // 실제 회차 덱 카드 추가 확인
+        { // 카드 추가 실패 시작
+            return false; // 보물 보상 미사용 상태 유지
+        } // 카드 추가 실패 종료
+        CompleteTreasure($"보물 획득: 카드 [{offer.DisplayName}] / {owner.DisplayName}"); // 지급 후 보물 사용과 저장
+        return true; // 카드 보상 지급 성공 반환
+    } // 카드 보상 완료 종료
+
+    private void CompleteTreasure(string message) // 보물 사용 완료와 저장 처리
+    { // 보물 사용 완료 시작
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
         sessionManager.MarkEventResolved(runtimeId); // 보물 방 사용 완료 저장
         if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 보물 결과 자동 저장 확인
         { // 보물 저장 실패 처리 시작
@@ -146,7 +177,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
         } // 보물 저장 실패 처리 종료
         Debug.Log($"[Exploration][Day57] {message} / {runtimeId}", this); // 보물 결과 로그
         gameObject.SetActive(false); // 획득 완료 보물 표시 숨김
-    }
+    } // 보물 사용 완료 종료
 
     private void OpenRestRoom() // 실제 생성된 휴식 방 열기
     {

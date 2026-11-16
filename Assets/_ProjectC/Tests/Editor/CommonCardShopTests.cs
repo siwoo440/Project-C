@@ -104,10 +104,7 @@ public sealed class CommonCardShopTests // 공용 카드 상점 검사
             Assert.AreSame(second, added.Owner); // 선택한 캐릭터 소유 확인
             MethodInfo candidates = typeof(ExplorationTreasureRewardService).GetMethod("GetValidOffers", BindingFlags.Static | BindingFlags.NonPublic); // 보물 후보 조회
             List<ShopOfferData> rewardOffers = (List<ShopOfferData>)candidates.Invoke(null, new object[] { ShopOfferType.Card }); // 실제 보물 카드 후보 계산
-            foreach (ShopOfferData rewardOffer in rewardOffers) // 보물 카드 후보 순회
-            { // 미완성 보상 경로 검사 시작
-                Assert.IsFalse(rewardOffer.RequiresOwnerChoice); // 소유자 선택 미구현 후보 제외 확인
-            } // 미완성 보상 경로 검사 종료
+            Assert.IsTrue(rewardOffers.Exists(rewardOffer => rewardOffer.RequiresOwnerChoice)); // 공용 카드 보상 후보 포함 확인
             Assert.IsTrue(ExplorationSaveService.Save(path, player.transform.position)); // 구매 후 독립 저장 확인
             Assert.IsTrue(ExplorationSaveService.Load(path)); // 구매 후 저장 복원 확인
             RunDeckCardEntry restored = RunDeckManager.Instance.Cards[RunDeckManager.Instance.CardCount - 1]; // 복원된 카드 조회

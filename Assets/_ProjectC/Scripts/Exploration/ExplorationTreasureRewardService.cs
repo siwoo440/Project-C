@@ -17,14 +17,25 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
     private const int ResourceRewardAmount = 40; // Prototype 제작 자원 보상
 
     public static bool TryGrantReward(string runtimeId, out string message) // 보물 방 랜덤 보상 지급
+    { // 기존 보물 보상 시작
+        return TryGrantRewardInternal(runtimeId, false, out message, out _); // 직접 선택 없는 기존 보상 처리
+    } // 기존 보물 보상 종료
+
+    public static bool TryGrantReward(string runtimeId, out string message, out ShopOfferData pendingOffer) // 선택 가능한 보물 보상 지급
+    { // 선택 가능한 보물 보상 시작
+        return TryGrantRewardInternal(runtimeId, true, out message, out pendingOffer); // 공용 카드 선택을 포함한 보상 처리
+    } // 선택 가능한 보물 보상 종료
+
+    private static bool TryGrantRewardInternal(string runtimeId, bool allowOwnerChoice, out string message, out ShopOfferData pendingOffer) // 보물 보상 공통 처리
     {
+        pendingOffer = null; // 대기 중 카드 초기화
         int seed = BuildStableHash(runtimeId); // Runtime ID 기반 고정 Seed 생성
         System.Random random = new System.Random(seed); // 보상 전용 난수 준비
         List<ExplorationTreasureRewardType> attempts = BuildRewardAttemptOrder(random); // 가중치 기반 보상 시도 순서 생성
 
         foreach (ExplorationTreasureRewardType rewardType in attempts) // 보상 종류 순차 시도
         {
-            if (TryGrantRewardType(rewardType, random, out message)) // 현재 보상 지급 성공 확인
+            if (TryGrantRewardType(rewardType, random, allowOwnerChoice, out message, out pendingOffer)) // 현재 보상 지급 또는 선택 준비 확인
             {
                 return true; // 지급 성공 반환
             }
@@ -97,8 +108,11 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
     private static bool TryGrantRewardType(
         ExplorationTreasureRewardType rewardType,
         System.Random random,
-        out string message) // 개별 보상 종류 지급 시도
+        bool allowOwnerChoice, // 공용 카드 선택 허용 여부
+        out string message, // 보상 안내 결과
+        out ShopOfferData pendingOffer) // 선택 대기 카드 결과
     {
+        pendingOffer = null; // 대기 카드 기본값 설정
         switch (rewardType) // 보상 종류 분기
         {
             case ExplorationTreasureRewardType.Gold:
@@ -107,7 +121,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
                 return true; // 골드 지급 성공
 
             case ExplorationTreasureRewardType.Card:
-                return TryGrantCard(random, out message); // 카드 보상 지급 시도
+                return TryGrantCard(random, allowOwnerChoice, out message, out pendingOffer); // 카드 보상 지급 또는 선택 준비
 
             case ExplorationTreasureRewardType.Relic:
                 return TryGrantRelic(random, out message); // 유물 보상 지급 시도
@@ -127,9 +141,14 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         }
     }
 
-    private static bool TryGrantCard(System.Random random, out string message) // 상점 카탈로그 카드 기반 보상 지급
+    private static bool TryGrantCard(System.Random random, bool allowOwnerChoice, out string message, out ShopOfferData pendingOffer) // 상점 카탈로그 카드 기반 보상 지급
     {
+        pendingOffer = null; // 대기 카드 기본값 설정
         List<ShopOfferData> offers = GetValidOffers(ShopOfferType.Card); // 카드 상품 후보 조회
+        if (!allowOwnerChoice || PartyLoadoutRuntime.Active == null || PartyLoadoutRuntime.Active.Party == null || PartyLoadoutRuntime.Active.Party.MemberCount == 0) // 직접 선택 불가 상황 확인
+        { // 선택 불가 카드 제외 시작
+            offers.RemoveAll(offer => offer.RequiresOwnerChoice); // 소유자 선택이 필요한 카드 제외
+        } // 선택 불가 카드 제외 종료
         if (offers.Count == 0) // 카드 후보 존재 확인
         {
             message = "지급 가능한 카드 데이터가 없습니다."; // 카드 누락 안내
@@ -137,6 +156,12 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         }
 
         ShopOfferData offer = offers[random.Next(offers.Count)]; // 카드 상품 무작위 선택
+        if (offer.RequiresOwnerChoice) // 공용 카드 소유자 선택 확인
+        { // 공용 카드 보류 시작
+            pendingOffer = offer; // 선택 대기 카드 저장
+            message = $"카드 [{offer.DisplayName}]의 소유자를 선택하세요."; // 선택 안내 준비
+            return true; // 카드 선택 준비 성공 반환
+        } // 공용 카드 보류 종료
         bool added = RunDeckManager.EnsureInstance().TryAddCard(offer.Card, offer.CardOwner); // 회차 덱 카드 추가
 
         message = added
@@ -253,18 +278,19 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
     {
         List<ShopOfferData> result = new List<ShopOfferData>(); // 유효 상품 목록 생성
         ShopRunManager shopManager = ShopRunManager.Instance; // 현재 상점 관리자 조회
+        ShopCatalogData catalog = shopManager != null ? shopManager.Catalog : null; // 준비된 상점 카탈로그 조회
+        if (catalog == null) // 상점 방문 전 또는 복원 직후 확인
+        { // 기본 보상 카탈로그 준비 시작
+            catalog = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 실제 보상 원본 목록 조회
+        } // 기본 보상 카탈로그 준비 종료
 
-        if (shopManager == null || shopManager.Catalog == null) // 상점 카탈로그 준비 여부 확인
+        if (catalog == null || !catalog.IsValidData()) // 보상 카탈로그 유효성 확인
         {
             return result; // 빈 목록 반환
         }
 
-        foreach (ShopOfferData offer in shopManager.Catalog.Offers) // 전체 상점 상품 순회
+        foreach (ShopOfferData offer in catalog.Offers) // 전체 상점 상품 순회
         {
-            if (offerType == ShopOfferType.Card && offer != null && offer.RequiresOwnerChoice) // 소유자 선택 미구현 공용 보상 확인
-            { // 공용 보상 임시 제외 시작
-                continue; // 직접 선택 경로 구현 전 후보 제외
-            } // 공용 보상 임시 제외 종료
             if (offer != null &&
                 offer.OfferType == offerType &&
                 offer.IsValidData()) // 요청 종류와 데이터 유효성 확인
