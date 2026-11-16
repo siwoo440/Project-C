@@ -1,0 +1,42 @@
+using System.Collections.Generic; // 임시 설정 값 목록 사용
+using NUnit.Framework; // 안내 화면 동작 검사 사용
+using TMPro; // 화면 문구 확인 사용
+using UnityEngine; // 안내 화면 객체 사용
+using UnityEngine.UI; // 화면 버튼과 이미지 확인 사용
+public sealed class BattleTutorialViewTests // 전투 안내 화면 검사
+{ // 안내 화면 검사 시작
+    [Test] // 안내 화면 입력과 재시작 검사 지정
+    public void View_AdvancesSkipsAndReopensWithoutBlockingBattle() // 안내 버튼과 전투 입력 유지 확인
+    { // 화면 동작 검사 시작
+        GameObject canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas)); // 독립 전투 캔버스 생성
+        GameObject targetObject = new GameObject("Target", typeof(RectTransform)); // 강조 대상 화면 생성
+        targetObject.transform.SetParent(canvasObject.transform, false); // 강조 대상을 캔버스에 배치
+        BattleTutorialProgress progress = new BattleTutorialProgress(new MemoryTutorialStore()); // 독립 안내 진행 생성
+        BattleTutorialView view = BattleTutorialView.Create(canvasObject.GetComponent<Canvas>(), progress, step => targetObject.GetComponent<RectTransform>()); // 안내 화면 생성
+        progress.StartIfNeeded(true); // 첫 전투 안내 시작
+        Transform overlay = view.transform.Find("Guide"); // 안내 화면 영역 조회
+        Assert.IsTrue(overlay.gameObject.activeSelf); // 안내 화면 표시 확인
+        Assert.IsFalse(overlay.GetComponent<Image>().raycastTarget); // 전체 안내 영역의 전투 입력 차단 해제 확인
+        Assert.IsTrue(overlay.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("카드")); // 첫 안내 한국어 설명 확인
+        overlay.Find("Panel/NextButton").GetComponent<Button>().onClick.Invoke(); // 다음 안내 버튼 클릭
+        Assert.AreEqual(BattleTutorialStep.PlayCard, progress.Step); // 실제 카드 사용 대기 단계 확인
+        Assert.IsFalse(overlay.Find("Panel/NextButton").GetComponent<Button>().interactable); // 카드 사용 전 다음 버튼 비활성 확인
+        overlay.Find("Panel/SkipButton").GetComponent<Button>().onClick.Invoke(); // 안내 건너뛰기 클릭
+        Assert.IsFalse(overlay.gameObject.activeSelf); // 안내 화면 숨김 확인
+        view.transform.Find("ReplayButton").GetComponent<Button>().onClick.Invoke(); // 전투 안내 다시 보기 클릭
+        Assert.AreEqual(BattleTutorialStep.Overview, progress.Step); // 처음부터 다시 보기 확인
+        Object.DestroyImmediate(canvasObject); // 임시 화면 제거
+    } // 화면 동작 검사 종료
+    private sealed class MemoryTutorialStore : ISettingsStore // 안내 화면 검사용 저장소
+    { // 임시 저장소 시작
+        private readonly Dictionary<string, int> values = new Dictionary<string, int>(); // 저장 값 목록
+        public int Read(string key, int fallback) // 임시 설정 값 조회
+        { // 설정 조회 시작
+            return values.TryGetValue(key, out int value) ? value : fallback; // 저장 값 또는 기본값 반환
+        } // 설정 조회 종료
+        public void Write(string key, int value) // 임시 설정 값 기록
+        { // 설정 기록 시작
+            values[key] = value; // 설정 값 저장
+        } // 설정 기록 종료
+    } // 임시 저장소 종료
+} // 안내 화면 검사 종료

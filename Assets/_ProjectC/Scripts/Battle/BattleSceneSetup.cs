@@ -53,6 +53,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
     private BattleResultView resultView; // 전투 종료 결과 화면
+    private BattleTutorialProgress tutorialProgress; // 전투 안내 진행 상태
+    private BattleTutorialView tutorialView; // 전투 안내 화면
     private Coroutine enemyTurnCoroutine; // 실행 중인 적 턴 코루틴
     private bool resultStored; // 전투 결과 저장 여부
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
@@ -149,10 +151,68 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 전투 시작 실패 처리 종료
         int drawnCardCount = battleTurn.LastDrawnCardCount; // 실제 시작 손패 수 조회
         int preparedActionCount = enemyActionRuntime.PrepareActions(); // 첫 적 행동 준비
+        InitializeBattleTutorial(battleCanvas); // 전투 안내 화면과 실제 행동 연결
         Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}", this); // 생성 완료 출력
         Debug.Log($"[BattleSceneSetup] 적 행동 예고 준비 - {preparedActionCount}개", this); // 첫 행동 준비 결과 출력
         LogDeckState(); // 시작 카드 상태 출력
     } // 초기화 종료
+    private void InitializeBattleTutorial(Canvas battleCanvas) // 전투 안내 화면 초기화
+    { // 전투 안내 초기화 시작
+        if (battleCanvas == null) // 전투 캔버스 누락 확인
+        { // 안내 생성 불가 처리 시작
+            return; // 전투 안내 생성 중단
+        } // 안내 생성 불가 처리 종료
+        tutorialProgress = new BattleTutorialProgress(new PlayerPrefsSettingsStore()); // 기기별 완료 기록을 사용하는 안내 생성
+        tutorialView = BattleTutorialView.Create(battleCanvas, tutorialProgress, FindTutorialTarget); // 단계별 강조가 가능한 안내 화면 생성
+        cardActionController.CardUsed += HandleTutorialCardUsed; // 실제 카드 사용 감지 연결
+        battleTurn.PhaseStarted += HandleTutorialPhaseStarted; // 실제 진영 턴 감지 연결
+        battleTurn.BattleCompleted += HandleTutorialBattleCompleted; // 전투 종료 시 안내 숨김 연결
+        tutorialProgress.StartIfNeeded(GraphicsAudioSettingsRuntime.Current.GetIndex("tutorial") == 0); // 사용자 설정에 따른 첫 안내 자동 시작
+    } // 전투 안내 초기화 종료
+    private RectTransform FindTutorialTarget(BattleTutorialStep step) // 단계별 실제 화면 대상 조회
+    { // 안내 대상 조회 시작
+        Transform target = null; // 강조 대상 기본값 초기화
+        switch (step) // 안내 단계 분기
+        { // 안내 대상 분기 시작
+            case BattleTutorialStep.Overview: // 전투 화면 안내
+                target = handView.transform; // 손패 전체 화면 강조
+                break; // 기본 화면 대상 조회 종료
+            case BattleTutorialStep.PlayCard: // 카드 사용 안내
+                target = handView.transform.Find("HandLayoutRoot"); // 실제 손패 카드 영역 강조
+                break; // 손패 대상 조회 종료
+            case BattleTutorialStep.ActionPoints: // 행동력 안내
+                target = handView.transform.Find("ActionPointText"); // 실제 행동력 표시 강조
+                break; // 행동력 대상 조회 종료
+            case BattleTutorialStep.Mental: // 정신력 안내
+                target = allyUnitViews.Count > 0 && allyUnitViews[0] != null ? allyUnitViews[0].transform.Find("MentalView") : null; // 첫 아군 정신력 게이지 강조
+                break; // 정신력 대상 조회 종료
+            case BattleTutorialStep.EnemyIntent: // 적 예고 안내
+                target = enemyUnitViews.Count > 0 && enemyUnitViews[0] != null ? enemyUnitViews[0].transform.Find("EnemyIntent") : null; // 첫 적 행동 예고 강조
+                break; // 행동 예고 대상 조회 종료
+            case BattleTutorialStep.EndTurn: // 턴 종료 안내
+                target = handView.transform.Find("EndTurnButton"); // 실제 턴 종료 버튼 강조
+                break; // 턴 종료 대상 조회 종료
+            case BattleTutorialStep.ObserveEnemy: // 적 행동 관찰 안내
+                target = enemyUnitViews.Count > 0 && enemyUnitViews[0] != null ? enemyUnitViews[0].transform : null; // 첫 적 행동 화면 강조
+                break; // 적 행동 대상 조회 종료
+        } // 안내 대상 분기 종료
+        return target as RectTransform; // 화면 대상 또는 없음 반환
+    } // 안내 대상 조회 종료
+    private void HandleTutorialCardUsed(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets) // 실제 카드 사용 안내 전달
+    { // 카드 사용 안내 전달 시작
+        tutorialProgress?.OnCardUsed(); // 카드 사용 단계 진행
+    } // 카드 사용 안내 전달 종료
+    private void HandleTutorialPhaseStarted(BattleTurnPhase phase, int round) // 실제 진영 턴 안내 전달
+    { // 진영 턴 안내 전달 시작
+        tutorialProgress?.OnPhaseStarted(phase); // 적 턴과 다음 아군 턴 진행 전달
+    } // 진영 턴 안내 전달 종료
+    private void HandleTutorialBattleCompleted(BattleResult result) // 전투 종료 시 안내 화면 처리
+    { // 전투 종료 안내 처리 시작
+        if (tutorialView != null) // 안내 화면 존재 확인
+        { // 안내 화면 숨김 시작
+            tutorialView.gameObject.SetActive(false); // 결과 화면을 가리지 않도록 안내 숨김
+        } // 안내 화면 숨김 종료
+    } // 전투 종료 안내 처리 종료
     private bool ValidateSetup() // 설정 유효성 검사
     { // 유효성 검사 시작
         if (battleLoadout == null) // 전투 편성 누락 확인
@@ -767,6 +827,15 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 유닛 화면 조회 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        if (cardActionController != null) // 카드 행동 관리자 존재 확인
+        { // 안내 카드 연결 해제 시작
+            cardActionController.CardUsed -= HandleTutorialCardUsed; // 카드 사용 안내 연결 해제
+        } // 안내 카드 연결 해제 종료
+        if (battleTurn != null) // 전투 턴 관리자 존재 확인
+        { // 안내 턴 연결 해제 시작
+            battleTurn.PhaseStarted -= HandleTutorialPhaseStarted; // 진영 턴 안내 연결 해제
+            battleTurn.BattleCompleted -= HandleTutorialBattleCompleted; // 전투 종료 안내 연결 해제
+        } // 안내 턴 연결 해제 종료
         bossPhaseRuntime?.Dispose(); // 보스 페이즈 감시 연결 해제
         bossPhaseRuntime = null; // 보스 페이즈 관리자 참조 제거
         foreach (BattleUnitRuntime enemyUnit in enemyUnits) // 생성 적 목록 순회
