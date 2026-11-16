@@ -97,4 +97,25 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 430f6b588edf4cd193ca3b9100cd8294, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_CRACKED_LENS
+    offerType: 1
+    price: 241
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 58fad1685ee847dbb4adcc1c7c6f4b74, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SEALED_ENVELOPE
+    offerType: 1
+    price: 287
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: f3c102c8f7fa4b3e985e57826cdf745e, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FADED_RUNE
+    offerType: 1
+    price: 218
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 5ec24581884b4d918d2c4b4659f30f55, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

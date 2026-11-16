@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: SealedEnvelope
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_SEALED_ENVELOPE
+  displayName: "봉인된 봉투"
+  description: "전투 시작 시 카드 1장 드로우(전투당 1회)"
+  icon: {fileID: 21300000, guid: 89dbc48a7d5943288a808b47b6757d8c, type: 3}
+  rarity: 0
+  triggerType: 2
+  effectType: 9
+  targetType: 0
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

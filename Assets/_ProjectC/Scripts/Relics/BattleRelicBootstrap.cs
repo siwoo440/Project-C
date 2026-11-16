@@ -45,7 +45,8 @@ public sealed class BattleRelicBootstrap : MonoBehaviour
             runManager.Inventory,
             runManager.Gold,
             battleSceneSetup.AllyUnits,
-            battleSceneSetup.EnemyUnits);
+            battleSceneSetup.EnemyUnits, // 실제 적 목록 연결
+            battleSceneSetup.BattleDeck); // 실제 전투 덱 연결
 
         if (runManager.Inventory.Count == 0)
         {
