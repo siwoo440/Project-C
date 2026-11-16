@@ -37,7 +37,7 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
             Assert.IsTrue(shop.Prepare(catalog, PartyLoadoutRuntime.Active.Deck)); // 실제 파티 덱으로 상점 준비
             shop.BeginRoomVisit("prototype_relic_shop_test"); // 독립 테스트 상점 방문
             PlayerResourceManager.EnsureInstance().AddResources(2000, 0, 0, 0); // 독립 테스트 구매 골드 준비
-            string[] ids = { "RLC_ASH_SEAL", "RLC_BROKEN_MUSIC_BOX", "RLC_BRONZE_CENSER", "RLC_FLOATING_STONE" }; // 검사할 실제 유물 식별자
+            string[] ids = { "RLC_ASH_SEAL", "RLC_BROKEN_MUSIC_BOX", "RLC_BRONZE_CENSER", "RLC_FLOATING_STONE", "RLC_GATE_KEY" }; // 검사할 실제 유물 식별자
             foreach (string id in ids) // 실제 유물 식별자 순회
             { // 개별 유물 구매 시작
                 ShopOfferData found = null; // 상품 검색 결과 초기화
@@ -54,7 +54,7 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
                 Assert.AreEqual(ShopPurchaseResult.AlreadyPurchased, shop.TryPurchase(found), id); // 같은 상점 중복 구매 차단 확인
                 Assert.IsTrue(RelicRunManager.Instance.Inventory.ContainsRelic(id), id); // 구매 유물 보관함 등록 확인
             } // 개별 유물 구매 종료
-            Assert.IsTrue(ExplorationSaveService.Save(path, player.transform.position)); // 네 유물 포함 독립 탐사 저장 확인
+            Assert.IsTrue(ExplorationSaveService.Save(path, player.transform.position)); // 다섯 유물 포함 독립 탐사 저장 확인
             foreach (string id in ids) // 저장한 유물 식별자 순회
             { // 기존 보관함 제거 시작
                 Assert.IsTrue(RelicRunManager.Instance.TryRemove(id)); // 실제 유물 제거 확인
@@ -73,11 +73,11 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
             } // 전투 대기 종료
             BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 실제 전투 관리자 조회
             Assert.IsNotNull(battle); // 전투 관리자 존재 확인
-            for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && battle.AllyUnits[0].CurrentBlock < 14;) // 전투 시작 유물 발동 대기
+            for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && battle.AllyUnits[0].CurrentBlock < 20;) // 전투 시작 유물 발동 대기
             { // 유물 발동 대기 시작
                 yield return null; // 다음 프레임 대기
             } // 유물 발동 대기 종료
-            Assert.AreEqual(14, battle.AllyUnits[0].CurrentBlock); // 단독 아군의 인장 6과 부유석 8 적용 확인
+            Assert.AreEqual(20, battle.AllyUnits[0].CurrentBlock); // 인장과 부유석 및 인증키 방어도 합계 확인
             Assert.AreEqual(1, battle.AllyUnits[0].GetStatusEffect(BattleStatusEffectType.MagicalResistanceUp).EffectiveValue); // 실제 전투의 청동 향로 저항 확인
             Assert.IsTrue(battle.BattleTurn.EndPlayerTurn()); // 청동 향로가 적용된 첫 아군 턴 종료
             Assert.IsNull(battle.AllyUnits[0].GetStatusEffect(BattleStatusEffectType.MagicalResistanceUp)); // 전투 시작 한 턴 저항의 첫 턴 종료 만료 확인
