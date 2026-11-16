@@ -2,6 +2,16 @@ public static class RelicShopPricing // 시트 기반 유물 상점 가격 계�
 { // 가격 계산 시작
     public static int Calculate(RelicSheetEntry entry, string roomId, string offerId) // 상점별 유물 가격 계산
     { // 가격 계산 본문 시작
+        return CalculateRange(entry.BuyMin, entry.BuyMax, roomId, offerId); // 시트 구매 범위 가격 반환
+    } // 구매 가격 계산 종료
+
+    public static int CalculateSale(RelicSheetEntry entry, string roomId, string relicId) // 판매 가격 계산
+    { // 판매 가격 계산 시작
+        return CalculateRange(entry.SellMin, entry.SellMax, roomId, "SALE_" + relicId); // 시트 판매 범위 가격 반환
+    } // 판매 가격 계산 종료
+
+    private static int CalculateRange(int minimum, int maximum, string roomId, string offerId) // 상점별 범위 가격 계산
+    { // 범위 가격 계산 시작
         uint hash = 2166136261u; // 안정적인 해시 초기값
         unchecked // 정수 순환 연산 허용
         { // 해시 계산 시작
@@ -15,7 +25,7 @@ public static class RelicShopPricing // 시트 기반 유물 상점 가격 계�
                 hash = (hash ^ character) * 16777619u; // 상품 식별값 반영
             } // 상품 해시 종료
         } // 해시 계산 종료
-        uint range = (uint)(entry.BuyMax - entry.BuyMin + 1); // 양끝을 포함한 가격 개수
-        return entry.BuyMin + (int)(hash % range); // 범위 내 재현 가능한 가격 반환
+        uint range = (uint)(maximum - minimum + 1); // 양끝을 포함한 가격 개수
+        return minimum + (int)(hash % range); // 범위 내 재현 가능한 가격 반환
     } // 가격 계산 본문 종료
 } // 가격 계산 종료

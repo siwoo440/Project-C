@@ -145,6 +145,49 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         return RelicShopPricing.Calculate(entry, activeRoomRuntimeId, offer.OfferId); // 상점별 시트 범위 가격 반환
     } // 상품 가격 조회 종료
 
+    public int GetRelicSellPrice(RelicData relic) // 현재 상점의 유물 판매 가격 조회
+    { // 유물 판매 가격 조회 시작
+        if (!IsReady || relic == null || !relic.IsValidData() || string.IsNullOrWhiteSpace(activeRoomRuntimeId) || relic.TriggerType == RelicTriggerType.OnAcquire) // 판매 지원 조건 확인
+        { // 판매 불가 조건 시작
+            return -1; // 판매 불가 가격 반환
+        } // 판매 불가 조건 종료
+        if (relicSheetCatalog == null) // 시트 가격 목록 미로드 확인
+        { // 시트 목록 로드 시작
+            relicSheetCatalog = RelicSheetCatalog.Load(); // 유물 시트 목록 불러오기
+        } // 시트 목록 로드 종료
+        RelicSheetEntry entry = relicSheetCatalog?.FindByName(relic.DisplayName); // 유물 이름에 맞는 가격 조회
+        if (entry == null || entry.SellMin < 0 || entry.SellMax < entry.SellMin || (long)entry.SellMax - entry.SellMin >= int.MaxValue) // 시트 판매 범위 확인
+        { // 판매 범위 없음 처리 시작
+            return -1; // 판매 불가 가격 반환
+        } // 판매 범위 없음 처리 종료
+        return RelicShopPricing.CalculateSale(entry, activeRoomRuntimeId, relic.RelicId); // 상점별 시트 판매 가격 반환
+    } // 유물 판매 가격 조회 종료
+
+    public ShopPurchaseResult TrySellRelic(RelicData relic) // 보유 유물 판매 시도
+    { // 유물 판매 시작
+        int price = GetRelicSellPrice(relic); // 실제 판매 가격 조회
+        if (price < 0) // 판매 불가 유물 확인
+        { // 판매 불가 처리 시작
+            return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "판매할 수 없는 유물입니다."); // 판매 불가 결과 알림
+        } // 판매 불가 처리 종료
+        RelicRunManager relicManager = RelicRunManager.EnsureInstance(); // 실제 유물 보관함 조회
+        bool owned = false; // 실제 원본 보유 여부 초기화
+        foreach (RelicData item in relicManager.Inventory.OwnedRelics) // 현재 보유 유물 순회
+        { // 소유 원본 확인 시작
+            owned |= ReferenceEquals(item, relic); // 동일 원본 보유 여부 확인
+        } // 소유 원본 확인 종료
+        if (!owned || (long)Gold + price > int.MaxValue) // 보유 여부와 골드 범위 확인
+        { // 판매 조건 미충족 시작
+            return CompleteTransaction(ShopPurchaseResult.Unavailable, "판매할 수 없거나 골드 한도를 초과합니다."); // 판매 조건 실패 알림
+        } // 판매 조건 미충족 종료
+        if (!relicManager.TryRemove(relic.RelicId)) // 유물 제거 결과 확인
+        { // 유물 제거 실패 시작
+            return CompleteTransaction(ShopPurchaseResult.Unavailable, "보유한 유물을 찾을 수 없습니다."); // 제거 실패 알림
+        } // 유물 제거 실패 종료
+        PlayerResourceManager.EnsureInstance().AddResources(price, 0, 0, 0); // 판매 대금을 실제 탐사 골드에 지급
+        return CompleteTransaction(ShopPurchaseResult.Success, $"{relic.DisplayName} 판매 완료"); // 판매 완료 알림
+    } // 유물 판매 종료
+
     public ShopPurchaseResult TryRemoveCard(int cardIndex) // 지정 보유 카드 제거 시도
     { // 카드 제거 시작
         if (!IsReady) // 상점 준비 여부 확인
