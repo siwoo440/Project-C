@@ -37,6 +37,8 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
             Assert.IsTrue(shop.Prepare(catalog, PartyLoadoutRuntime.Active.Deck)); // 실제 파티 덱으로 상점 준비
             shop.BeginRoomVisit("prototype_relic_shop_test"); // 독립 테스트 상점 방문
             PlayerResourceManager.EnsureInstance().AddResources(2000, 0, 0, 0); // 독립 테스트 구매 골드 준비
+            ShopOfferData gateOffer = null; // 인증키 상품 보관
+            int gatePrice = 0; // 인증키 가격 보관
             string[] ids = { "RLC_ASH_SEAL", "RLC_BROKEN_MUSIC_BOX", "RLC_BRONZE_CENSER", "RLC_FLOATING_STONE", "RLC_GATE_KEY" }; // 검사할 실제 유물 식별자
             foreach (string id in ids) // 실제 유물 식별자 순회
             { // 개별 유물 구매 시작
@@ -50,7 +52,17 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
                     } // 상품 발견 처리 종료
                 } // 상품 식별자 확인 종료
                 Assert.IsNotNull(found, id); // 구매 상품 존재 확인
+                int price = shop.GetOfferPrice(found); // 실제 표시 구매 가격 조회
+                int oldGold = shop.Gold; // 구매 전 골드 기록
+                RelicSheetEntry priceEntry = RelicSheetCatalog.Load().FindByName(found.Relic.DisplayName); // 해당 유물 시트 가격 조회
+                Assert.That(price, Is.InRange(priceEntry.BuyMin, priceEntry.BuyMax)); // 실제 시트 구매 범위 확인
                 Assert.AreEqual(ShopPurchaseResult.Success, shop.TryPurchase(found), id); // 실제 골드 지불과 유물 구매 확인
+                Assert.AreEqual(oldGold - price, shop.Gold, id); // 표시 가격과 실제 차감 일치 확인
+                if (id == "RLC_GATE_KEY") // 인증키 구매 확인
+                { // 인증키 가격 저장 시작
+                    gateOffer = found; // 인증키 상품 보관
+                    gatePrice = price; // 인증키 가격 보관
+                } // 인증키 가격 저장 종료
                 Assert.AreEqual(ShopPurchaseResult.AlreadyPurchased, shop.TryPurchase(found), id); // 같은 상점 중복 구매 차단 확인
                 Assert.IsTrue(RelicRunManager.Instance.Inventory.ContainsRelic(id), id); // 구매 유물 보관함 등록 확인
             } // 개별 유물 구매 종료
@@ -60,6 +72,7 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
                 Assert.IsTrue(RelicRunManager.Instance.TryRemove(id)); // 실제 유물 제거 확인
             } // 기존 보관함 제거 종료
             Assert.IsTrue(ExplorationSaveService.Load(path)); // 독립 탐사 저장 복원 확인
+            Assert.AreEqual(gatePrice, ShopRunManager.Instance.GetOfferPrice(gateOffer)); // 저장 복원 후 상점 가격 유지 확인
             foreach (string id in ids) // 복원할 유물 식별자 순회
             { // 유물 복원 확인 시작
                 Assert.IsTrue(RelicRunManager.Instance.Inventory.ContainsRelic(id), id); // 실제 유물 원본 복원 확인

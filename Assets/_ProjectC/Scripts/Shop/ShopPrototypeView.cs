@@ -145,7 +145,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             bool sold = manager.IsPurchased(capturedOffer); // 현재 상품 판매 완료 조회
             string typeLabel = GetOfferTypeLabel(capturedOffer.OfferType); // 상품 종류 한글 문구 생성
             Color cardColor = sold ? new Color(0.12f, 0.12f, 0.13f, 1f) : ButtonColor; // 판매 상태별 카드 색상 결정
-            Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, $"{capturedOffer.Price} Gold", typeLabel, sold, cardColor); // 이미지 포함 상품 카드 생성
+            Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, $"{manager.GetOfferPrice(capturedOffer)} Gold", typeLabel, sold, cardColor); // 실제 구매 가격 포함 상품 카드 생성
             offerButton.interactable = !sold; // 판매 완료 상품 비활성화
             offerButton.onClick.AddListener(() => manager.TryPurchase(capturedOffer)); // 상품 구매 동작 연결
         }
