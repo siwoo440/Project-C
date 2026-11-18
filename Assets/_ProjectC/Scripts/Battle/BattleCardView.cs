@@ -16,12 +16,13 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     private Image artworkImage; // 카드 일러스트 이미지
     private TMP_Text nameText; // 카드 이름 텍스트
     private TMP_Text descriptionText; // 카드 설명 텍스트
-    private TMP_Text typeText; // 카드 종류 텍스트
+    private Image costBadgeImage; // 카드 종류와 비용 배경 아이콘
     private TMP_Text ownerText; // 카드 소유자 텍스트
     private TMP_Text costText; // 카드 비용 텍스트
     private bool selected; // 카드 선택 여부
     private bool interactable = true; // 카드 사용 가능 여부
     private bool hovered; // 카드 마우스 진입 여부
+    private bool pointerInside; // 사용 불가 카드를 포함한 마우스 진입 여부
     private bool visualStructureCreated; // 화면 구조 생성 여부
     private Vector2 layoutPosition; // 손패 안의 기본 카드 위치
     private float layoutScale = 1f; // 화면 크기에 맞춘 기본 배율
@@ -44,10 +45,14 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 카드 누락 처리 종료
         EnsureVisualStructure(); // 카드 내부 UI 확인
         SetHovered(false); // 카드 확대 상태 초기화
+        pointerInside = false; // 이전 카드 마우스 진입 상태 초기화
         RuntimeCard = cardInstance; // 카드 인스턴스 저장
         nameText.text = RuntimeCard.DisplayName; // 카드 이름 적용
         descriptionText.text = RuntimeCard.SourceData.Description; // 카드 설명 적용
-        typeText.text = RuntimeCard.CardType.ToString(); // 카드 종류 적용
+        if (!BattleUiArt.ApplyCardType(costBadgeImage, RuntimeCard.CardType)) // 카드 종류 이미지 누락 확인
+        { // 기본 비용 배경 복원 시작
+            BattleUiArt.Apply(costBadgeImage, "CostBadge"); // 이미지 누락 시 기존 비용 배경 적용
+        } // 기본 비용 배경 복원 종료
         ownerText.text = RuntimeCard.OwnerUnit.DisplayName; // 카드 소유자 적용
         costText.text = RuntimeCard.ApCost.ToString(); // 카드 비용 적용
         artworkImage.sprite = RuntimeCard.Artwork; // 카드 일러스트 적용
@@ -66,6 +71,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         if (!interactable && hovered) // 비활성 카드 확대 여부 확인
         { // 확대 해제 처리 시작
             SetHovered(false); // 카드 확대 상태 해제
+            pointerInside = false; // 이전 카드 마우스 진입 상태 해제
             HoverExited?.Invoke(this); // 카드 마우스 이탈 알림
         } // 확대 해제 처리 종료
         RefreshVisualState(); // 카드 상태 화면 갱신
@@ -87,19 +93,24 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 포인터 클릭 처리 종료
     public void OnPointerEnter(PointerEventData eventData) // 카드 포인터 진입 처리
     { // 포인터 진입 처리 시작
-        if (RuntimeCard == null || !interactable) // 카드 연결과 사용 가능 상태 확인
+        if (RuntimeCard == null) // 카드 연결 상태 확인
         { // 포인터 진입 불가 처리 시작
             return; // 포인터 진입 처리 중단
         } // 포인터 진입 불가 처리 종료
-        SetHovered(true); // 카드 확대 상태 적용
+        pointerInside = true; // 현재 카드 마우스 진입 저장
+        if (interactable) // 실제 사용 가능한 카드 확인
+        { // 사용 가능한 카드 강조 시작
+            SetHovered(true); // 카드 확대 상태 적용
+        } // 사용 가능한 카드 강조 종료
         HoverEntered?.Invoke(this); // 카드 마우스 진입 알림
     } // 포인터 진입 처리 종료
     public void OnPointerExit(PointerEventData eventData) // 카드 포인터 이탈 처리
     { // 포인터 이탈 처리 시작
-        if (!hovered) // 카드 확대 상태 확인
+        if (!hovered && !pointerInside) // 카드 마우스 진입 상태 확인
         { // 확대 없음 처리 시작
             return; // 포인터 이탈 처리 중단
         } // 확대 없음 처리 종료
+        pointerInside = false; // 카드 마우스 진입 상태 해제
         SetHovered(false); // 카드 확대 상태 해제
         HoverExited?.Invoke(this); // 카드 마우스 이탈 알림
     } // 포인터 이탈 처리 종료
@@ -171,14 +182,14 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         SetCenteredRect(nameText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -103f), new Vector2(146f, 24f)); // 카드 이름 위치 설정
         descriptionText = CreateText("DescriptionText", transform, "Card Description", 12f, new Color(0.86f, 0.86f, 0.9f, 1f)); // 카드 설명 생성
         SetCenteredRect(descriptionText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -135f), new Vector2(142f, 40f)); // 카드 설명 위치 설정
-        typeText = CreateText("TypeText", transform, "Type", 12f, new Color(0.45f, 0.8f, 1f, 1f)); // 카드 종류 생성
-        SetCenteredRect(typeText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -164f), new Vector2(142f, 20f)); // 카드 종류 위치 설정
         ownerText = CreateText("OwnerText", transform, "Owner", 11f, new Color(0.72f, 0.72f, 0.78f, 1f)); // 카드 소유자 생성
         SetCenteredRect(ownerText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -192f), new Vector2(142f, 20f)); // 카드 소유자 위치 설정
-        Image costBadgeImage = CreateImage("CostBadge", transform, new Color(0.18f, 0.5f, 0.95f, 1f)); // 카드 비용 배지 생성
+        costBadgeImage = CreateImage("CostBadge", transform, new Color(0.18f, 0.5f, 0.95f, 1f)); // 카드 비용 배지 생성
         BattleUiArt.Apply(costBadgeImage, "CostBadge"); // 새로 제작한 정사각형 행동력 배지 적용
         SetCenteredRect(costBadgeImage.rectTransform, new Vector2(0f, 1f), new Vector2(18f, -18f), new Vector2(34f, 34f)); // 카드 비용 배지 위치 설정
         costText = CreateText("CostText", costBadgeImage.transform, "0", 18f, Color.white); // 카드 비용 숫자 생성
+        costText.outlineWidth = 0.25f; // 밝은 아이콘 위 비용 숫자 외곽선 설정
+        costText.outlineColor = Color.black; // 비용 숫자 어두운 외곽선 설정
         SetStretchRect(costText.rectTransform, 0f, 0f, 0f, 0f); // 카드 비용 숫자 영역 설정
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
     } // 화면 구조 준비 종료
