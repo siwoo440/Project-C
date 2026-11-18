@@ -72,7 +72,11 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
             { // 적 행동 아이콘 경계 검사 시작
                 intentVisible = true; // 실제 적 행동 아이콘 표시 기록
                 (intent as RectTransform).GetWorldCorners(corners); // 적 행동 아이콘 꼭짓점 조회
-                Assert.LessOrEqual(canvas.InverseTransformPoint(corners[1]).y, battlefieldTop + 1f); // 행동 아이콘의 배경 영역 포함 확인
+                RectTransform round = canvas.Find("TurnStatusFrame") as RectTransform; // 실제 상단 라운드 패널 영역 조회
+                Assert.IsNotNull(round); // 실제 라운드 패널 존재 확인
+                float intentTop = canvas.InverseTransformPoint(corners[1]).y; // 행동 아이콘의 위쪽 높이 계산
+                round.GetWorldCorners(corners); // 라운드 패널 화면 꼭짓점 조회
+                Assert.Less(intentTop, canvas.InverseTransformPoint(corners[0]).y); // 행동 아이콘의 라운드 패널 아래 위치 확인
             } // 적 행동 아이콘 경계 검사 종료
         } // 유닛 화면 범위 확인 종료
         Assert.IsTrue(intentVisible); // 실제 적 행동 아이콘 표시 확인
@@ -144,18 +148,36 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
             RectTransform actorPortrait = actor.transform.Find("Portrait") as RectTransform; // 적 캐릭터 그림 영역 조회
             actorPortrait.GetWorldCorners(corners); // 적 그림 화면 꼭짓점 조회
             Assert.Greater(orderBottom, canvas.InverseTransformPoint(corners[1]).y); // 행동 순번이 적 머리 위에 표시되는지 확인
+            RectTransform actorIcon = actor.transform.Find("Day47IntentIcon") as RectTransform; // 실제 적 행동 예고 아이콘 조회
+            Assert.IsNotNull(actorIcon); // 적 행동 예고 아이콘 존재 확인
+            actorIcon.GetWorldCorners(corners); // 행동 예고 아이콘 화면 꼭짓점 조회
+            Assert.Greater(orderBottom, canvas.InverseTransformPoint(corners[1]).y); // 행동 순번이 공격 예고 위에 위치하는지 확인
+            Assert.Less(Mathf.Abs(actorIcon.anchoredPosition.x), 1f); // 적 머리 위 중앙에 공격 예고 배치 확인
             Assert.IsTrue(arrows.TryGetArrow(index, out Vector2 start, out Vector2 end)); // 실제 행동 대상 화살표 좌표 조회 확인
             Rect bounds = arrows.rectTransform.rect; // 전투 화면 화살표 영역 조회
             Assert.IsTrue(bounds.Contains(start)); // 화살표 시작점 화면 내부 확인
             Assert.IsTrue(bounds.Contains(end)); // 화살표 종료점 화면 내부 확인
             Assert.Greater(Vector2.Distance(start, end), 1f); // 실제 적과 대상 사이 화살표 길이 확인
+            Vector3 iconWorld = actorIcon.TransformPoint(new Vector3(actorIcon.rect.xMin, actorIcon.rect.center.y, 0f)); // 행동 아이콘 왼쪽 가장자리 실제 좌표 계산
+            Vector2 expectedStart = arrows.rectTransform.InverseTransformPoint(iconWorld); // 화살표 화면 기준 실제 행동 아이콘 위치 계산
+            Assert.Less(Vector2.Distance(expectedStart, start), 1f); // 화살표 시작점과 실제 행동 아이콘 연결 확인
             Assert.IsTrue(arrows.TryGetCurvePoint(index, 0.5f, out Vector2 middle)); // 실제 곡선 화살표 중간점 조회
             Assert.Greater(middle.y, (start.y + end.y) * 0.5f + 1f); // 직선보다 위로 휘어진 포물선 확인
+            float highest = float.MinValue; // 실제 곡선의 최고 높이 초기화
+            float roundBottom = float.MinValue; // 라운드 패널 아래쪽 높이 초기화
             for (int sample = 0; sample <= 10; sample++) // 곡선 화살표 전체 위치 검사
             { // 곡선 높이 제한 검사 시작
                 Assert.IsTrue(arrows.TryGetCurvePoint(index, sample / 10f, out Vector2 point)); // 실제 곡선 위치 조회
-                Assert.LessOrEqual(point.y, bounds.yMax - Mathf.Max(48f, bounds.height * 0.1f) + 1f); // 곡선 전체의 화면 위쪽 높이 제한 확인
+                RectTransform round = canvas.Find("TurnStatusFrame") as RectTransform; // 실제 상단 라운드 패널 영역 조회
+                round.GetWorldCorners(corners); // 라운드 패널 화면 꼭짓점 조회
+                roundBottom = arrows.rectTransform.InverseTransformPoint(corners[0]).y; // 화살표 화면 기준 라운드 패널 아래쪽 높이
+                highest = Mathf.Max(highest, point.y); // 곡선에서 가장 높은 위치 저장
+                Assert.Less(point.y, roundBottom); // 곡선 전체가 라운드 패널 아래에 있는지 확인
             } // 곡선 높이 제한 검사 종료
+            if (index == 0) // 첫 번째 곡선 화살표 확인
+            { // 라운드 패널 부근 곡선 검사 시작
+                Assert.Greater(highest, roundBottom - 35f); // 곡선 최고점이 라운드 패널 바로 아래에 위치하는지 확인
+            } // 라운드 패널 부근 곡선 검사 종료
         } // 적 행동과 화살표 검사 종료
         Button arrowButton = null; // 실제 화살표 표시 방식 버튼 초기화
         foreach (Button button in Object.FindObjectsByType<Button>(FindObjectsSortMode.None)) // 전투 화면 버튼 순회

@@ -18,7 +18,7 @@ public sealed class BattleEnemyActionOrderView : MonoBehaviour // 적 머리 위
         area.anchorMin = new Vector2(0.5f, 1f); // 적 위쪽 중앙 최소 앵커
         area.anchorMax = new Vector2(0.5f, 1f); // 적 위쪽 중앙 최대 앵커
         area.pivot = new Vector2(0.5f, 0.5f); // 순번 중앙 기준점 설정
-        area.anchoredPosition = new Vector2(0f, -62f); // 캐릭터 머리 위 행동 순번 위치
+        area.anchoredPosition = new Vector2(0f, -15f); // 행동 예고 바로 위의 행동 순번 위치
         area.sizeDelta = new Vector2(100f, 27f); // 행동 순번 화면 크기 설정
         Image background = root.GetComponent<Image>(); // 행동 순번 배경 조회
         background.color = new Color(0.04f, 0.04f, 0.05f, 0.8f); // 숫자 가독성을 위한 어두운 배경
