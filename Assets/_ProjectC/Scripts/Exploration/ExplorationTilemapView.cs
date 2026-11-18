@@ -60,6 +60,8 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
     private Tile floorTile; // 런타임 Floor Tile
     private Tile wallTile; // 런타임 Wall Tile
     private Sprite runtimeSquareSprite; // 런타임 타일 Sprite
+    private Sprite runtimeFloorSprite; // 제작한 던전 바닥 스프라이트
+    private Sprite runtimeWallSprite; // 제작한 던전 벽 스프라이트
 
     public int FloorTileCount => floorCells.Count; // 현재 Floor 타일 개수
     public int WallTileCount => wallCells.Count; // 현재 Wall 타일 개수
@@ -940,21 +942,17 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
                     1f); // 런타임 1x1 흰색 Sprite 생성
         }
 
+        runtimeFloorSprite = CreateDungeonSprite("DungeonFloor"); // 제작한 바닥 이미지의 한 칸 스프라이트 생성
+        runtimeWallSprite = CreateDungeonSprite("DungeonWall"); // 제작한 벽 이미지의 한 칸 스프라이트 생성
+
         floorTile =
             ScriptableObject.CreateInstance<Tile>(); // Floor Tile 생성
 
         floorTile.name =
             "RuntimeExplorationFloorTile"; // Floor Tile 이름 지정
 
-        floorTile.sprite =
-            runtimeSquareSprite; // Floor Sprite 지정
-
-        floorTile.color =
-            new Color(
-                0.12f,
-                0.20f,
-                0.28f,
-                1f); // Floor 임시 색상 지정
+        floorTile.sprite = runtimeFloorSprite != null ? runtimeFloorSprite : runtimeSquareSprite; // 바닥 이미지 또는 기존 단색 대체
+        floorTile.color = runtimeFloorSprite != null ? Color.white : new Color(0.12f, 0.20f, 0.28f, 1f); // 이미지 원본 색상 또는 기존 바닥 색상
 
         floorTile.colliderType =
             Tile.ColliderType.None; // Floor 자체는 충돌하지 않음
@@ -965,19 +963,24 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
         wallTile.name =
             "RuntimeExplorationWallTile"; // Wall Tile 이름 지정
 
-        wallTile.sprite =
-            runtimeSquareSprite; // Wall Sprite 지정
-
-        wallTile.color =
-            new Color(
-                0.05f,
-                0.07f,
-                0.10f,
-                1f); // 실제 Wall 임시 색상 지정
+        wallTile.sprite = runtimeWallSprite != null ? runtimeWallSprite : runtimeSquareSprite; // 벽 이미지 또는 기존 단색 대체
+        wallTile.color = runtimeWallSprite != null ? Color.white : new Color(0.05f, 0.07f, 0.10f, 1f); // 이미지 원본 색상 또는 기존 벽 색상
 
         wallTile.colliderType =
             Tile.ColliderType.Grid; // Grid 셀 전체를 실제 벽 충돌로 사용
     }
+
+    private static Sprite CreateDungeonSprite(string imageName) // 던전 이미지의 정사각형 타일 생성
+    { // 던전 스프라이트 생성 시작
+        Texture2D texture = Resources.Load<Texture2D>("Exploration/" + imageName); // 제작한 탐사 이미지 조회
+        if (texture == null || texture.width != texture.height) // 이미지 누락과 정사각형 크기 확인
+        { // 이미지 대체 처리 시작
+            return null; // 기존 단색 타일 사용 요청
+        } // 이미지 대체 처리 종료
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), texture.width, 0, SpriteMeshType.FullRect); // 한 칸 크기의 전체 이미지 타일 생성
+        sprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 스프라이트 저장 제외
+        return sprite; // 생성한 던전 타일 이미지 반환
+    } // 던전 스프라이트 생성 종료
 
     private void RefreshWallCollider() // Wall Tile 변경 사항을 물리에 즉시 반영
     {
@@ -1008,5 +1011,13 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
         {
             Destroy(runtimeSquareSprite); // 런타임 Sprite 제거
         }
+        if (runtimeFloorSprite != null) // 제작한 바닥 스프라이트 존재 확인
+        { // 바닥 스프라이트 정리 시작
+            Destroy(runtimeFloorSprite); // 런타임 바닥 스프라이트 제거
+        } // 바닥 스프라이트 정리 종료
+        if (runtimeWallSprite != null) // 제작한 벽 스프라이트 존재 확인
+        { // 벽 스프라이트 정리 시작
+            Destroy(runtimeWallSprite); // 런타임 벽 스프라이트 제거
+        } // 벽 스프라이트 정리 종료
     }
 }
