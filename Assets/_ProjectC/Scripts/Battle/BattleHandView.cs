@@ -13,7 +13,6 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private float lastLayoutWidth = -1f; // 최근 손패 배치 너비
     private float lastPanelWidth = -1f; // 최근 손패 패널 너비
     private float lastPanelHeight = -1f; // 최근 손패 패널 높이
-    private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
     private RectTransform turnStatusFrame; // 화면 위쪽 턴 상태 프레임
     private Button endTurnButton; // 플레이어 턴 종료 버튼
@@ -23,6 +22,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private RectTransform actionPointOrb; // 행동력 구체 배치 영역
     private Image drawPileImage; // 왼쪽 뽑기 카드 더미 이미지
     private Image discardPileImage; // 오른쪽 버리기 카드 더미 이미지
+    private TMP_Text drawPileCountText; // 뽑기 더미 카드 수 표시
+    private TMP_Text discardPileCountText; // 버리기 더미 카드 수 표시
     private static Sprite actionPointFrameSprite; // 공용 행동력 테두리 이미지
     private static Sprite actionPointFillSprite; // 공용 행동력 구체 이미지
     private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
@@ -135,16 +136,6 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         backgroundImage.color = new Color(0.035f, 0.04f, 0.06f, 0.92f); // 카드 영역 배경 색상 설정
         BattleUiArt.Apply(backgroundImage, "HandPanel"); // 새로 제작한 손패 배경 이미지 적용
         backgroundImage.raycastTarget = false; // 카드 영역 입력 차단 해제
-        deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
-        RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
-        statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 최대 앵커 설정
-        statusRect.pivot = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 기준점 설정
-        statusRect.anchoredPosition = new Vector2(160f, -42f); // 행동력 구체 오른쪽에 카드 수량 배치
-        statusRect.sizeDelta = new Vector2(260f, 34f); // 수량 텍스트 기본 크기 설정
-        deckStatusText.enableAutoSizing = true; // 좁은 화면의 수량 글자 자동 크기 조정
-        deckStatusText.fontSizeMin = 8f; // 카드 수량 글자 최소 크기 설정
-        deckStatusText.fontSizeMax = 20f; // 카드 수량 글자 최대 크기 설정
         escapeButton = CreateButton("EscapeButton", transform, "도주"); // 전투 도주 버튼 생성
         RectTransform escapeRect = escapeButton.transform as RectTransform; // 도주 RectTransform 조회
         escapeRect.anchorMin = new Vector2(0.75f, 1f); // 도주 최소 앵커 설정
@@ -213,12 +204,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         RefreshPileImages(); // 실제 덱 상태에 맞춘 카드 더미 표시 갱신
         if (runtimeDeck == null) // 런타임 덱 연결 확인
         { // 덱 미연결 처리 시작
-            deckStatusText.text = "Waiting for deck"; // 덱 미연결 상태 표시
             RefreshActionPointStatus(); // 행동력 미연결 상태 표시
             RefreshTurnStatus(); // 전투 준비 상태 표시
             return; // 화면 갱신 중단
         } // 덱 미연결 처리 종료
-        deckStatusText.text = $"Deck {runtimeDeck.DrawPileCount} | Hand {runtimeDeck.HandCount}/{runtimeDeck.MaxHandSize} | Discard {runtimeDeck.DiscardPileCount}"; // 카드 영역 수량 표시
         RefreshActionPointStatus(); // 공용 행동력 수량 표시
         RefreshTurnStatus(); // 라운드와 턴 상태 표시
         foreach (CardInstance cardInstance in runtimeDeck.Hand) // 현재 손패 카드 순회
@@ -706,6 +695,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     { // 카드 더미 화면 생성 시작
         drawPileImage = CreatePileImage("DrawPile", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 20f), new Vector2(170f, 170f)); // 왼쪽 아래 확대 뽑기 더미 생성
         discardPileImage = CreatePileImage("DiscardPile", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-20f, 20f), new Vector2(170f, 170f)); // 같은 높이의 오른쪽 묘지 더미 생성
+        drawPileCountText = CreatePileCount(drawPileImage.transform); // 뽑기 더미의 실제 카드 수 표시 생성
+        discardPileCountText = CreatePileCount(discardPileImage.transform); // 버리기 더미의 실제 카드 수 표시 생성
     } // 카드 더미 화면 생성 종료
     private void RefreshPileLayout() // 화면 크기에 따른 카드 더미와 손패 여백 조정
     { // 카드 더미 여백 조정 시작
@@ -731,8 +722,31 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         handLayoutRoot.offsetMax = new Vector2(-inset, -92f); // 손패 오른쪽 여백 적용
         handHitRoot.offsetMin = handLayoutRoot.offsetMin; // 입력 영역 왼쪽 여백 동기화
         handHitRoot.offsetMax = handLayoutRoot.offsetMax; // 입력 영역 오른쪽 여백 동기화
-        deckStatusText.rectTransform.sizeDelta = new Vector2(Mathf.Clamp(width * 0.3f - 160f, 70f, 260f), 34f); // 남은 너비에 맞춘 카드 수량 글자 영역
     } // 카드 더미 여백 조정 종료
+    private TMP_Text CreatePileCount(Transform pile) // 카드 더미 위 숫자 배경과 글자 생성
+    { // 카드 더미 숫자 생성 시작
+        GameObject countObject = new GameObject("Count", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 카드 수 표시 배경 생성
+        countObject.transform.SetParent(pile, false); // 실제 카드 더미에 수량 연결
+        Image background = countObject.GetComponent<Image>(); // 카드 수 배경 이미지 조회
+        background.color = new Color(0.015f, 0.025f, 0.03f, 0.9f); // 숫자 가독성용 어두운 배경
+        background.raycastTarget = false; // 카드 수 배경의 입력 차단 방지
+        RectTransform countRect = countObject.GetComponent<RectTransform>(); // 카드 수 배경 영역 조회
+        countRect.anchorMin = new Vector2(1f, 0f); // 카드 더미 오른쪽 아래 최소 앵커
+        countRect.anchorMax = new Vector2(1f, 0f); // 카드 더미 오른쪽 아래 최대 앵커
+        countRect.pivot = new Vector2(1f, 0f); // 카드 수 오른쪽 아래 기준점
+        countRect.anchoredPosition = new Vector2(-4f, 4f); // 카드 더미 안쪽의 수량 위치
+        countRect.sizeDelta = new Vector2(42f, 32f); // 카드 수 배경 크기 설정
+        TMP_Text count = CreateText("CountText", countObject.transform, "0", 24f, Color.white); // 실제 카드 수 글자 생성
+        RectTransform textRect = count.rectTransform; // 카드 수 글자 영역 조회
+        textRect.anchorMin = Vector2.zero; // 카드 수 글자 최소 앵커
+        textRect.anchorMax = Vector2.one; // 카드 수 글자 최대 앵커
+        textRect.offsetMin = Vector2.zero; // 카드 수 글자 왼쪽 아래 여백 제거
+        textRect.offsetMax = Vector2.zero; // 카드 수 글자 오른쪽 위 여백 제거
+        count.enableAutoSizing = true; // 카드 수 자릿수에 따른 자동 크기 설정
+        count.fontSizeMin = 14f; // 카드 수 글자 최소 크기
+        count.fontSizeMax = 24f; // 카드 수 글자 최대 크기
+        return count; // 생성한 카드 수 글자 반환
+    } // 카드 더미 숫자 생성 종료
     private Image CreatePileImage(string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size) // 실제 카드 더미 이미지 생성
     { // 카드 더미 이미지 생성 시작
         GameObject pile = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 카드 더미 이미지 객체 생성
@@ -755,6 +769,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         Color empty = new Color(0.6f, 0.6f, 0.6f, 0.65f); // 카드가 없는 더미의 흐린 표시 색상
         drawPileImage.color = runtimeDeck != null && runtimeDeck.DrawPileCount > 0 ? Color.white : empty; // 실제 뽑을 카드 존재 여부 반영
         discardPileImage.color = runtimeDeck != null && runtimeDeck.DiscardPileCount > 0 ? Color.white : empty; // 실제 버린 카드 존재 여부 반영
+        drawPileCountText.text = runtimeDeck != null ? runtimeDeck.DrawPileCount.ToString() : "0"; // 실제 뽑기 더미 카드 수 표시
+        discardPileCountText.text = runtimeDeck != null ? runtimeDeck.DiscardPileCount.ToString() : "0"; // 실제 버리기 더미 카드 수 표시
     } // 카드 더미 표시 갱신 종료
     private static Sprite LoadActionPointSprite(string imageName) // 생성한 행동력 이미지 조회
     { // 행동력 이미지 조회 시작
