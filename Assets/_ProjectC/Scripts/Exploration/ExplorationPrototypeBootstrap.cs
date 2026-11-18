@@ -130,9 +130,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
 
         scaler.matchWidthOrHeight = 0.5f; // 가로세로 중간 비율 설정
 
-        CreateInstructionText(
-            canvasObject.transform,
-            sessionManager); // 조작 안내 생성
+        ExplorationInventoryView.Create(canvas, ConsumableRunManager.EnsureInstance().Inventory); // 실제 보유 아이템 다섯 칸 두 줄 표시
 
         CreateProgressText(
             canvasObject.transform); // 영구 진행 HUD 생성
@@ -150,44 +148,6 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
         WorldTutorialView tutorialView = WorldTutorialView.Create(canvas, tutorial, () => tutorialPlayer != null ? (Vector2)tutorialPlayer.transform.position : Vector2.zero, step => null, true); // 실제 이동을 확인하는 탐사 안내 화면 생성
         tutorialView.BindPlayer(tutorialPlayer); // 맵 자동 배치와 직접 이동 구분 연결
         tutorial.StartIfNeeded(GraphicsAudioSettingsRuntime.Current.GetIndex("tutorial") == 0, tutorialPlayer != null ? (Vector2)tutorialPlayer.transform.position : Vector2.zero); // 사용자 설정에 따른 탐사 안내 자동 시작
-    }
-
-    private static void CreateInstructionText(
-        Transform parent,
-        ExplorationSessionManager sessionManager) // 탐사 안내 텍스트 생성
-    {
-        TMP_Text instructionText =
-            CreateText(
-                "Instructions",
-                parent,
-                24f,
-                TextAlignmentOptions.TopLeft); // 안내 텍스트 생성
-
-        RectTransform instructionRect =
-            instructionText.rectTransform; // 안내 RectTransform 조회
-
-        instructionRect.anchorMin =
-            new Vector2(0f, 1f); // 왼쪽 위 최소 앵커 설정
-
-        instructionRect.anchorMax =
-            new Vector2(0f, 1f); // 왼쪽 위 최대 앵커 설정
-
-        instructionRect.pivot =
-            new Vector2(0f, 1f); // 왼쪽 위 Pivot 설정
-
-        instructionRect.sizeDelta =
-            new Vector2(980f, 220f); // 안내 영역 크기 설정
-
-        instructionRect.anchoredPosition =
-            new Vector2(24f, -24f); // 안내 위치 설정
-
-        instructionText.text =
-            "44일차 탐사 성공·호감도 연동 테스트\n" +
-            "Normal / Elite 승리: 조우 보상 후 탐사 계속\n" +
-            "Boss 승리: 탐사 성공 확정 · 호감도 +1\n" +
-            "탐사 성공 후 새 조우와 다음 층 이동 차단\n" +
-            "F9: 진행 중일 때만 같은 층 새 Seed\n" +
-            "F8: 실제 탐사 성공 처리 흐름 강제 테스트"; // 탐사 안내 문구 지정
     }
 
     private void CreateProgressText(
