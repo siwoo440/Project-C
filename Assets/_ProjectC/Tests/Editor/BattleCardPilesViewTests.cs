@@ -41,7 +41,7 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         Canvas.ForceUpdateCanvases(); // 실제 손패 화면 배치 갱신
         RectTransform draw = hand.transform.Find("DrawPile") as RectTransform; // 왼쪽 뽑기 더미 영역 조회
         RectTransform discard = hand.transform.Find("DiscardPile") as RectTransform; // 오른쪽 버리기 더미 영역 조회
-        RectTransform orb = hand.transform.Find("ActionPointOrb") as RectTransform; // 실제 행동력 구체 영역 조회
+        RectTransform orb = hand.transform.Find("ActionPointOrb") as RectTransform; // 손패 왼쪽 위 행동력 구체 영역 조회
         RectTransform layout = hand.transform.Find("HandLayoutRoot") as RectTransform; // 실제 가운데 손패 영역 조회
         Assert.IsNotNull(draw); // 왼쪽 뽑기 더미 존재 확인
         Assert.IsNotNull(discard); // 오른쪽 버리기 더미 존재 확인
@@ -50,6 +50,9 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         Assert.IsFalse(draw.GetComponent<Image>().raycastTarget); // 뽑기 더미의 카드 입력 차단 방지 확인
         Assert.IsFalse(discard.GetComponent<Image>().raycastTarget); // 버리기 더미의 카드 입력 차단 방지 확인
         Assert.IsTrue(hand.DrawPileAnchor == draw && hand.DiscardPileAnchor == discard); // 카드 이동 연출용 실제 더미 위치 연결 확인
+        Assert.IsNotNull(orb); // 손패 패널 왼쪽 위 행동력 구체 확인
+        Assert.GreaterOrEqual(draw.rect.width, 170f); // 확대된 뽑기 더미 너비 확인
+        Assert.GreaterOrEqual(discard.rect.width, 170f); // 확대된 묘지 더미 너비 확인
         AssertPileLayout(handRect, draw, discard, orb, layout); // 실제 크기에서 더미와 손패 구분 확인
         handRect.sizeDelta = new Vector2(600f, 350f); // 좁은 화면 손패 크기 설정
         Canvas.ForceUpdateCanvases(); // 좁은 화면 손패 배치 갱신
@@ -72,16 +75,19 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         Vector3[] corners = new Vector3[4]; // 실제 화면 꼭짓점 계산 배열
         draw.GetWorldCorners(corners); // 왼쪽 뽑기 더미 꼭짓점 조회
         float drawRight = hand.InverseTransformPoint(corners[2]).x; // 뽑기 더미 오른쪽 경계
-        float drawBottom = hand.InverseTransformPoint(corners[0]).y; // 뽑기 더미 아래쪽 경계
+        float drawCenter = hand.InverseTransformPoint(draw.TransformPoint(draw.rect.center)).y; // 뽑기 더미 세로 중앙 위치
+        float drawTop = hand.InverseTransformPoint(corners[1]).y; // 뽑기 더미 위쪽 경계
         discard.GetWorldCorners(corners); // 오른쪽 버리기 더미 꼭짓점 조회
         float discardLeft = hand.InverseTransformPoint(corners[0]).x; // 버리기 더미 왼쪽 경계
-        orb.GetWorldCorners(corners); // 실제 행동력 구체 꼭짓점 조회
-        float orbTop = hand.InverseTransformPoint(corners[1]).y; // 행동력 구체 위쪽 경계
+        float discardCenter = hand.InverseTransformPoint(discard.TransformPoint(discard.rect.center)).y; // 묘지 더미 세로 중앙 위치
+        orb.GetWorldCorners(corners); // 손패 왼쪽 위 행동력 구체 꼭짓점 조회
+        float orbBottom = hand.InverseTransformPoint(corners[0]).y; // 행동력 구체 아래쪽 경계
         layout.GetWorldCorners(corners); // 실제 가운데 손패 영역 꼭짓점 조회
         float layoutLeft = hand.InverseTransformPoint(corners[0]).x; // 손패 영역 왼쪽 경계
         float layoutRight = hand.InverseTransformPoint(corners[2]).x; // 손패 영역 오른쪽 경계
         Assert.LessOrEqual(drawRight, layoutLeft); // 뽑기 더미와 손패 가로 겹침 방지 확인
         Assert.GreaterOrEqual(discardLeft, layoutRight); // 버리기 더미와 손패 가로 겹침 방지 확인
-        Assert.GreaterOrEqual(drawBottom, orbTop); // 뽑기 더미와 행동력 구체 세로 겹침 방지 확인
+        Assert.AreEqual(drawCenter, discardCenter, 0.01f); // 양쪽 카드 더미의 같은 높이 확인
+        Assert.GreaterOrEqual(orbBottom, drawTop); // 행동력 구체와 뽑기 더미 세로 겹침 방지 확인
     } // 카드 더미 경계 검사 종료
 } // 카드 더미 화면 검사 종료

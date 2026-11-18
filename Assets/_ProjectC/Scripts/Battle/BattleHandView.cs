@@ -11,6 +11,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
     private RectTransform handHitRoot; // 손패 입력 영역 배치
     private float lastLayoutWidth = -1f; // 최근 손패 배치 너비
+    private float lastPanelWidth = -1f; // 최근 손패 패널 너비
+    private float lastPanelHeight = -1f; // 최근 손패 패널 높이
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
     private RectTransform turnStatusFrame; // 화면 위쪽 턴 상태 프레임
@@ -18,6 +20,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private Button escapeButton; // 전투 도주 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
     private Image actionPointFill; // 행동력 충전 구체 이미지
+    private RectTransform actionPointOrb; // 행동력 구체 배치 영역
     private Image drawPileImage; // 왼쪽 뽑기 카드 더미 이미지
     private Image discardPileImage; // 오른쪽 버리기 카드 더미 이미지
     private static Sprite actionPointFrameSprite; // 공용 행동력 테두리 이미지
@@ -46,6 +49,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 화면 준비 종료
     private void LateUpdate() // 화면 크기 변경 감지
     { // 크기 변경 감지 시작
+        RefreshPileLayout(); // 화면 너비에 맞춘 카드 더미와 여백 갱신
         if (turnStatusFrame == null) // 턴 상태 프레임 연결 확인
         { // 턴 상태 프레임 연결 시작
             EnsureTurnStatusAtTop(); // 화면 상단에 턴 상태 배치
@@ -57,6 +61,14 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 손패 재배치 종료
         RefreshHoveredTooltip(); // 마우스와 임시 상세 키 상태에 따른 툴팁 갱신
     } // 크기 변경 감지 종료
+    private void OnRectTransformDimensionsChange() // 손패 패널 크기 변경 처리
+    { // 패널 크기 변경 처리 시작
+        if (visualStructureCreated) // 카드 영역 생성 완료 확인
+        { // 패널 크기 반영 시작
+            RefreshPileLayout(); // 변경된 크기의 더미와 손패 여백 갱신
+            LayoutHand(); // 변경된 너비의 카드 배치 갱신
+        } // 패널 크기 반영 종료
+    } // 패널 크기 변경 처리 종료
     public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn) // 전투 런타임 상태 연결
     { // 덱 연결 시작
         if (battleDeck == null) // 런타임 덱 누락 확인
@@ -125,11 +137,14 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         backgroundImage.raycastTarget = false; // 카드 영역 입력 차단 해제
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
-        statusRect.anchorMin = new Vector2(0.05f, 1f); // 수량 텍스트 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(0.23f, 1f); // 수량 텍스트 최대 앵커 설정
-        statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
-        statusRect.anchoredPosition = new Vector2(0f, -42f); // 손패 테두리 안쪽의 수량 텍스트 위치 설정
-        statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
+        statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 최소 앵커 설정
+        statusRect.anchorMax = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 최대 앵커 설정
+        statusRect.pivot = new Vector2(0f, 1f); // 수량 텍스트 왼쪽 위 기준점 설정
+        statusRect.anchoredPosition = new Vector2(160f, -42f); // 행동력 구체 오른쪽에 카드 수량 배치
+        statusRect.sizeDelta = new Vector2(260f, 34f); // 수량 텍스트 기본 크기 설정
+        deckStatusText.enableAutoSizing = true; // 좁은 화면의 수량 글자 자동 크기 조정
+        deckStatusText.fontSizeMin = 8f; // 카드 수량 글자 최소 크기 설정
+        deckStatusText.fontSizeMax = 20f; // 카드 수량 글자 최대 크기 설정
         escapeButton = CreateButton("EscapeButton", transform, "도주"); // 전투 도주 버튼 생성
         RectTransform escapeRect = escapeButton.transform as RectTransform; // 도주 RectTransform 조회
         escapeRect.anchorMin = new Vector2(0.75f, 1f); // 도주 최소 앵커 설정
@@ -189,6 +204,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         escapeButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 도주 버튼 우선 배치
         endTurnButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 턴 종료 버튼 우선 배치
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
+        RefreshPileLayout(); // 현재 패널 크기의 양쪽 카드 더미 배치
     } // 화면 구조 준비 종료
     private void Refresh() // 손패 화면 갱신
     { // 화면 갱신 시작
@@ -653,12 +669,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         GameObject orb = new GameObject("ActionPointOrb", typeof(RectTransform)); // 행동력 구체 영역 생성
         orb.transform.SetParent(transform, false); // 손패 화면에 구체 연결
         RectTransform orbRect = orb.GetComponent<RectTransform>(); // 구체 영역 조회
-        orbRect.anchorMin = Vector2.zero; // 구체 왼쪽 아래 최소 앵커 설정
-        orbRect.anchorMax = Vector2.zero; // 구체 왼쪽 아래 최대 앵커 설정
-        orbRect.pivot = Vector2.zero; // 구체 왼쪽 아래 기준점 설정
-        orbRect.anchoredPosition = new Vector2(20f, 10f); // 왼쪽 카드 더미 아래 구체 위치 설정
+        actionPointOrb = orbRect; // 패널 높이에 따른 구체 배율 조정용 영역 저장
+        orbRect.anchorMin = new Vector2(0f, 1f); // 손패 왼쪽 위 최소 앵커 설정
+        orbRect.anchorMax = new Vector2(0f, 1f); // 손패 왼쪽 위 최대 앵커 설정
+        orbRect.pivot = new Vector2(0f, 1f); // 손패 왼쪽 위 기준점 설정
+        orbRect.anchoredPosition = new Vector2(20f, -30f); // 뽑기 더미 위쪽에 구체 배치
         orbRect.sizeDelta = new Vector2(190f, 190f); // 구체 크기 설정
-        orbRect.localScale = Vector3.one * 0.75f; // 카드 더미와 겹치지 않는 구체 배율 설정
+        orbRect.localScale = Vector3.one * 0.65f; // 읽기 쉬운 행동력 구체 기본 배율 설정
         if (actionPointFillSprite == null) // 행동력 충전 이미지 준비 확인
         { // 충전 이미지 준비 시작
             actionPointFillSprite = LoadActionPointSprite("ActionPointFill"); // 생성한 파란 구체 이미지 조회
@@ -687,9 +704,35 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 행동력 구체 생성 종료
     private void CreateCardPiles() // 손패 양쪽의 카드 더미 이미지 생성
     { // 카드 더미 화면 생성 시작
-        drawPileImage = CreatePileImage("DrawPile", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 160f), new Vector2(140f, 100f)); // 왼쪽 행동력 구체 위 뽑기 더미 생성
-        discardPileImage = CreatePileImage("DiscardPile", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-20f, 20f), new Vector2(150f, 150f)); // 오른쪽 아래 묘지 카드 더미 생성
+        drawPileImage = CreatePileImage("DrawPile", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 20f), new Vector2(170f, 170f)); // 왼쪽 아래 확대 뽑기 더미 생성
+        discardPileImage = CreatePileImage("DiscardPile", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-20f, 20f), new Vector2(170f, 170f)); // 같은 높이의 오른쪽 묘지 더미 생성
     } // 카드 더미 화면 생성 종료
+    private void RefreshPileLayout() // 화면 크기에 따른 카드 더미와 손패 여백 조정
+    { // 카드 더미 여백 조정 시작
+        if (drawPileImage == null || discardPileImage == null || handLayoutRoot == null || handHitRoot == null) // 카드 화면 구성 확인
+        { // 카드 화면 미준비 처리 시작
+            return; // 카드 더미 배치 중단
+        } // 카드 화면 미준비 처리 종료
+        float width = (transform as RectTransform).rect.width; // 현재 손패 패널 너비 조회
+        float height = (transform as RectTransform).rect.height; // 현재 손패 패널 높이 조회
+        if (Mathf.Approximately(lastPanelWidth, width) && Mathf.Approximately(lastPanelHeight, height)) // 이전과 같은 패널 크기 확인
+        { // 동일 너비 처리 시작
+            return; // 불필요한 배치 갱신 중단
+        } // 동일 너비 처리 종료
+        lastPanelWidth = width; // 현재 패널 너비 기록
+        lastPanelHeight = height; // 현재 패널 높이 기록
+        float scale = Mathf.Clamp01((width - 80f) / 380f); // 좁은 패널에서 손패 공간을 확보할 더미 배율
+        float inset = 20f + 170f * scale; // 카드 더미와 겹치지 않는 양쪽 여백
+        drawPileImage.rectTransform.localScale = Vector3.one * scale; // 왼쪽 카드 더미 배율 적용
+        discardPileImage.rectTransform.localScale = Vector3.one * scale; // 오른쪽 카드 더미 동일 배율 적용
+        float orbScale = Mathf.Clamp((height - 56f - 170f * scale) / 190f, 0.2f, 0.65f); // 카드 더미와 겹치지 않는 구체 배율 계산
+        actionPointOrb.localScale = Vector3.one * orbScale; // 패널 높이에 맞춘 행동력 구체 배율 적용
+        handLayoutRoot.offsetMin = new Vector2(inset, 8f); // 손패 왼쪽 여백 적용
+        handLayoutRoot.offsetMax = new Vector2(-inset, -92f); // 손패 오른쪽 여백 적용
+        handHitRoot.offsetMin = handLayoutRoot.offsetMin; // 입력 영역 왼쪽 여백 동기화
+        handHitRoot.offsetMax = handLayoutRoot.offsetMax; // 입력 영역 오른쪽 여백 동기화
+        deckStatusText.rectTransform.sizeDelta = new Vector2(Mathf.Clamp(width * 0.3f - 160f, 70f, 260f), 34f); // 남은 너비에 맞춘 카드 수량 글자 영역
+    } // 카드 더미 여백 조정 종료
     private Image CreatePileImage(string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size) // 실제 카드 더미 이미지 생성
     { // 카드 더미 이미지 생성 시작
         GameObject pile = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 카드 더미 이미지 객체 생성
