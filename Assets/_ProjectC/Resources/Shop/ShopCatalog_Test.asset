@@ -149,4 +149,31 @@ MonoBehaviour:
     chooseCardOwner: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SMALL_HEAL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 86450bcfc46148dc9e8e2c966c0167c0, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FIREBALL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a9bb0fe20bd94a38ab7a008dfaecfd05, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_MAGIC_MISSILE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 801b441e3b5c4f02860eddaec7c66c5e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
