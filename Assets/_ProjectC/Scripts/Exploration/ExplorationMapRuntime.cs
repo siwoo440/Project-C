@@ -69,7 +69,6 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         EnsureCameraFollow(); // 확장된 탐사 공간 카메라 추적 준비
         EnsureHazardComponents(); // 퇴색 환경 위험 런타임과 UI 준비
         RestoreOrCreateCurrentFloor(); // 현재 층 Seed 복원 또는 신규 생성
-        EnsureDebugView(); // 절차 맵 디버그 화면 준비
         ExplorationEventPanelView.EnsureInstance(); // 탐사 이벤트 패널 준비
     }
 
@@ -1291,14 +1290,6 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         if (explorationCamera.GetComponent<ExplorationCameraFollow>() == null)
         {
             explorationCamera.gameObject.AddComponent<ExplorationCameraFollow>(); // 플레이어 카메라 추적 추가
-        }
-    }
-
-    private void EnsureDebugView() // 임시 절차 맵 UI 존재 보장
-    {
-        if (GetComponent<ExplorationMapDebugView>() == null)
-        {
-            gameObject.AddComponent<ExplorationMapDebugView>(); // 절차 맵 디버그 화면 추가
         }
     }
 
