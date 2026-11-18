@@ -91,7 +91,7 @@
     {
       "sourceRow": 10,
       "name": "세룰리온 배지",
-      "description": "상점 가격 10% 할인",
+      "description": "상점 가격 10% 할인\n(임시: 상품 구매·카드 제거 적용, 할인액 소수점 버림, 판매 대금 제외)",
       "buyMin": 214,
       "buyMax": 259,
       "buyVariance": 45,

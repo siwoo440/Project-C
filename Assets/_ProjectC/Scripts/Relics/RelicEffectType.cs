@@ -9,5 +9,6 @@ public enum RelicEffectType // 유물 효과 종류
     DistributeBlock, // 생존 대상에게 고정 방어도 배분
     GainBlock, // 개별 대상의 방어도 획득
     ChangeMental, // 개별 대상의 정신력 증가
-    DrawCards // 전투 덱 카드 드로우
+    DrawCards, // 전투 덱 카드 드로우
+    ShopDiscount // 상점 구매와 서비스 할인
 }

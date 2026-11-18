@@ -176,4 +176,11 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_CERULLION_BADGE
+    offerType: 1
+    price: 230
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: ed88735725f840b4b11ea19dea71fc02, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
