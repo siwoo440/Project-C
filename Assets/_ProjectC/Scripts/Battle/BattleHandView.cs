@@ -12,9 +12,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private float lastLayoutWidth = -1f; // 최근 손패 배치 너비
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
+    private RectTransform turnStatusFrame; // 화면 위쪽 턴 상태 프레임
     private Button endTurnButton; // 플레이어 턴 종료 버튼
     private Button escapeButton; // 전투 도주 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
+    private Image actionPointFill; // 행동력 충전 구체 이미지
+    private static Sprite actionPointFrameSprite; // 공용 행동력 테두리 이미지
+    private static Sprite actionPointFillSprite; // 공용 행동력 구체 이미지
     private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
     private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
@@ -35,6 +39,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 화면 준비 종료
     private void LateUpdate() // 화면 크기 변경 감지
     { // 크기 변경 감지 시작
+        if (turnStatusFrame == null) // 턴 상태 프레임 연결 확인
+        { // 턴 상태 프레임 연결 시작
+            EnsureTurnStatusAtTop(); // 화면 상단에 턴 상태 배치
+        } // 턴 상태 프레임 연결 종료
         if (handLayoutRoot != null && !Mathf.Approximately(lastLayoutWidth, handLayoutRoot.rect.width)) // 손패 너비 변경 확인
         { // 손패 재배치 시작
             LayoutHand(); // 변경된 화면 너비 기준 카드 재배치
@@ -59,6 +67,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             return false; // 화면 연결 실패 반환
         } // 턴 관리자 누락 처리 종료
         Unbind(); // 기존 런타임 덱 연결 해제
+        EnsureTurnStatusAtTop(); // 화면 상단 턴 상태 프레임 연결
         runtimeDeck = battleDeck; // 새 런타임 덱 저장
         sharedActionPoints = actionPoints; // 새 공용 행동력 저장
         turnRuntime = battleTurn; // 새 전투 턴 관리자 저장
@@ -105,18 +114,18 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         backgroundImage.raycastTarget = false; // 카드 영역 입력 차단 해제
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
-        statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(0.28f, 1f); // 수량 텍스트 최대 앵커 설정
+        statusRect.anchorMin = new Vector2(0.05f, 1f); // 수량 텍스트 최소 앵커 설정
+        statusRect.anchorMax = new Vector2(0.23f, 1f); // 수량 텍스트 최대 앵커 설정
         statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
-        statusRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 수량 텍스트 위치 설정
+        statusRect.anchoredPosition = new Vector2(0f, -42f); // 손패 테두리 안쪽의 수량 텍스트 위치 설정
         statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
         escapeButton = CreateButton("EscapeButton", transform, "도주"); // 전투 도주 버튼 생성
         RectTransform escapeRect = escapeButton.transform as RectTransform; // 도주 RectTransform 조회
-        escapeRect.anchorMin = new Vector2(0.29f, 1f); // 도주 최소 앵커 설정
-        escapeRect.anchorMax = new Vector2(0.4f, 1f); // 도주 최대 앵커 설정
+        escapeRect.anchorMin = new Vector2(0.75f, 1f); // 도주 최소 앵커 설정
+        escapeRect.anchorMax = new Vector2(0.85f, 1f); // 도주 최대 앵커 설정
         escapeRect.pivot = new Vector2(0.5f, 1f); // 도주 위쪽 피벗 설정
-        escapeRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 도주 위치 설정
-        escapeRect.sizeDelta = new Vector2(0f, 34f); // 도주 높이 설정
+        escapeRect.anchoredPosition = new Vector2(0f, -42f); // 손패 테두리 안쪽의 도주 위치 설정
+        escapeRect.sizeDelta = new Vector2(0f, 44f); // 도주 높이 설정
         escapeButton.image.color = new Color(0.9f, 0.72f, 0.72f, 1f); // 도주 버튼의 부드러운 붉은 구분 적용
         escapeButton.onClick.AddListener(HandleEscapeClicked); // 도주 클릭 이벤트 등록
         turnStatusText = CreateText("TurnStatusText", transform, "전투 준비", 20f, new Color(1f, 0.82f, 0.35f, 1f)); // 턴 상태 텍스트 생성
@@ -128,27 +137,21 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         turnStatusRect.sizeDelta = new Vector2(0f, 34f); // 턴 상태 높이 설정
         endTurnButton = CreateButton("EndTurnButton", transform, "턴 종료"); // 턴 종료 버튼 생성
         RectTransform endTurnRect = endTurnButton.transform as RectTransform; // 턴 종료 RectTransform 조회
-        endTurnRect.anchorMin = new Vector2(0.64f, 1f); // 턴 종료 최소 앵커 설정
-        endTurnRect.anchorMax = new Vector2(0.78f, 1f); // 턴 종료 최대 앵커 설정
+        endTurnRect.anchorMin = new Vector2(0.86f, 1f); // 턴 종료 최소 앵커 설정
+        endTurnRect.anchorMax = new Vector2(0.97f, 1f); // 턴 종료 최대 앵커 설정
         endTurnRect.pivot = new Vector2(0.5f, 1f); // 턴 종료 위쪽 피벗 설정
-        endTurnRect.anchoredPosition = new Vector2(0f, -18f); // 손패 테두리 안쪽의 턴 종료 위치 설정
-        endTurnRect.sizeDelta = new Vector2(0f, 34f); // 턴 종료 높이 설정
+        endTurnRect.anchoredPosition = new Vector2(0f, -42f); // 손패 테두리 안쪽의 턴 종료 위치 설정
+        endTurnRect.sizeDelta = new Vector2(0f, 44f); // 턴 종료 높이 설정
         endTurnButton.onClick.AddListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 등록
-        actionPointText = CreateText("ActionPointText", transform, "AP -- / --", 24f, new Color(0.45f, 0.8f, 1f, 1f)); // 공용 행동력 텍스트 생성
-        RectTransform actionPointRect = actionPointText.rectTransform; // 행동력 텍스트 RectTransform 조회
-        actionPointRect.anchorMin = new Vector2(0.8f, 1f); // 행동력 텍스트 최소 앵커 설정
-        actionPointRect.anchorMax = new Vector2(1f, 1f); // 행동력 텍스트 최대 앵커 설정
-        actionPointRect.pivot = new Vector2(1f, 1f); // 행동력 텍스트 오른쪽 피벗 설정
-        actionPointRect.anchoredPosition = new Vector2(-8f, -18f); // 손패 테두리 안쪽의 행동력 위치 설정
-        actionPointRect.sizeDelta = new Vector2(0f, 34f); // 행동력 텍스트 높이 설정
+        CreateActionPointOrb(); // 행동력 구체와 중앙 수치 생성
         GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform)); // 손패 배치 오브젝트 생성
         handRootObject.transform.SetParent(transform, false); // 손패 배치 부모 연결
         handLayoutRoot = handRootObject.GetComponent<RectTransform>(); // 손패 배치 RectTransform 조회
         handLayoutRoot.anchorMin = Vector2.zero; // 손패 배치 최소 앵커 설정
         handLayoutRoot.anchorMax = Vector2.one; // 손패 배치 최대 앵커 설정
         handLayoutRoot.pivot = new Vector2(0.5f, 0.5f); // 손패 배치 중앙 피벗 설정
-        handLayoutRoot.offsetMin = new Vector2(8f, 8f); // 손패 배치 왼쪽 아래 여백 설정
-        handLayoutRoot.offsetMax = new Vector2(-8f, -58f); // 상단 정보와 겹치지 않는 손패 위 여백 설정
+        handLayoutRoot.offsetMin = new Vector2(190f, 8f); // 행동력 구체와 겹치지 않는 왼쪽 여백 설정
+        handLayoutRoot.offsetMax = new Vector2(-8f, -92f); // 상단 정보와 겹치지 않는 손패 위 여백 설정
         GameObject hitRootObject = new GameObject("HandHitRoot", typeof(RectTransform)); // 독립 카드 입력 영역 생성
         hitRootObject.transform.SetParent(transform, false); // 손패 화면 자식 배치
         handHitRoot = hitRootObject.GetComponent<RectTransform>(); // 입력 영역 사각형 조회
@@ -176,7 +179,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (runtimeDeck == null) // 런타임 덱 연결 확인
         { // 덱 미연결 처리 시작
             deckStatusText.text = "Waiting for deck"; // 덱 미연결 상태 표시
-            actionPointText.text = "AP -- / --"; // 행동력 미연결 상태 표시
+            RefreshActionPointStatus(); // 행동력 미연결 상태 표시
             RefreshTurnStatus(); // 전투 준비 상태 표시
             return; // 화면 갱신 중단
         } // 덱 미연결 처리 종료
@@ -487,8 +490,98 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 텍스트 누락 처리 시작
             return; // 행동력 수량 갱신 중단
         } // 텍스트 누락 처리 종료
-        actionPointText.text = sharedActionPoints == null ? "AP -- / --" : $"AP {sharedActionPoints.CurrentActionPoints} / {sharedActionPoints.MaxActionPoints}"; // 공용 행동력 수량 표시
+        actionPointText.text = sharedActionPoints == null ? "AP --/--" : $"AP {sharedActionPoints.CurrentActionPoints}/{sharedActionPoints.MaxActionPoints}"; // 공용 행동력 수량 표시
+        if (actionPointFill != null) // 행동력 구체 존재 확인
+        { // 행동력 충전량 갱신 시작
+            actionPointFill.fillAmount = sharedActionPoints == null ? 0f : (float)sharedActionPoints.CurrentActionPoints / sharedActionPoints.MaxActionPoints; // 실제 행동력 비율 반영
+        } // 행동력 충전량 갱신 종료
     } // 행동력 수량 갱신 종료
+    private void EnsureTurnStatusAtTop() // 턴 상태를 화면 상단에 배치
+    { // 턴 상태 배치 시작
+        Canvas canvas = GetComponentInParent<Canvas>(); // 실제 전투 캔버스 조회
+        if (canvas == null || turnStatusText == null || turnStatusFrame != null) // 상단 배치 가능 여부 확인
+        { // 상단 배치 불가 처리 시작
+            return; // 기존 턴 상태 위치 유지
+        } // 상단 배치 불가 처리 종료
+        GameObject frameObject = new GameObject("TurnStatusFrame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 턴 상태 배경 생성
+        frameObject.transform.SetParent(canvas.transform, false); // 전투 화면 상단에 프레임 연결
+        turnStatusFrame = frameObject.GetComponent<RectTransform>(); // 턴 상태 프레임 영역 조회
+        turnStatusFrame.anchorMin = new Vector2(0.5f, 1f); // 화면 위 중앙 최소 앵커 설정
+        turnStatusFrame.anchorMax = new Vector2(0.5f, 1f); // 화면 위 중앙 최대 앵커 설정
+        turnStatusFrame.pivot = new Vector2(0.5f, 1f); // 화면 위 중앙 기준점 설정
+        turnStatusFrame.anchoredPosition = new Vector2(0f, -16f); // 기존 레벨 표시 위치 적용
+        turnStatusFrame.sizeDelta = new Vector2(360f, 48f); // 기존 레벨 표시 크기 적용
+        Image frameImage = frameObject.GetComponent<Image>(); // 턴 상태 프레임 이미지 조회
+        LobbyUiArt.Apply(frameImage, "Button"); // 기존 금속 프레임 이미지 적용
+        frameImage.raycastTarget = false; // 전투 화면 입력 차단 방지
+        turnStatusText.transform.SetParent(frameObject.transform, false); // 실제 턴 상태 텍스트 이동
+        RectTransform textRect = turnStatusText.rectTransform; // 턴 상태 글자 영역 조회
+        textRect.anchorMin = Vector2.zero; // 턴 글자 최소 앵커 설정
+        textRect.anchorMax = Vector2.one; // 턴 글자 최대 앵커 설정
+        textRect.offsetMin = Vector2.zero; // 턴 글자 왼쪽 아래 여백 제거
+        textRect.offsetMax = Vector2.zero; // 턴 글자 오른쪽 위 여백 제거
+    } // 턴 상태 배치 종료
+    private void CreateActionPointOrb() // 행동력 구체 화면 생성
+    { // 행동력 구체 생성 시작
+        GameObject orb = new GameObject("ActionPointOrb", typeof(RectTransform)); // 행동력 구체 영역 생성
+        orb.transform.SetParent(transform, false); // 손패 화면에 구체 연결
+        RectTransform orbRect = orb.GetComponent<RectTransform>(); // 구체 영역 조회
+        orbRect.anchorMin = Vector2.zero; // 구체 왼쪽 아래 최소 앵커 설정
+        orbRect.anchorMax = Vector2.zero; // 구체 왼쪽 아래 최대 앵커 설정
+        orbRect.pivot = Vector2.zero; // 구체 왼쪽 아래 기준점 설정
+        orbRect.anchoredPosition = new Vector2(5f, 5f); // 구체 위치 설정
+        orbRect.sizeDelta = new Vector2(190f, 190f); // 구체 크기 설정
+        if (actionPointFillSprite == null) // 행동력 충전 이미지 준비 확인
+        { // 충전 이미지 준비 시작
+            actionPointFillSprite = LoadActionPointSprite("ActionPointFill"); // 생성한 파란 구체 이미지 조회
+        } // 충전 이미지 준비 종료
+        if (actionPointFrameSprite == null) // 행동력 테두리 준비 확인
+        { // 테두리 이미지 준비 시작
+            actionPointFrameSprite = LoadActionPointSprite("ActionPointFrame"); // 생성한 금속 테두리 이미지 조회
+        } // 테두리 이미지 준비 종료
+        Image empty = CreateOrbImage("APEmpty", orb.transform, actionPointFillSprite, 0.83f); // 비어 있는 구체 배경 생성
+        empty.color = new Color(0.12f, 0.16f, 0.2f, 1f); // 비어 있는 행동력의 어두운 색상
+        actionPointFill = CreateOrbImage("APFill", orb.transform, actionPointFillSprite, 0.83f); // 행동력 충전 구체 생성
+        actionPointFill.type = Image.Type.Filled; // 충전량에 따른 이미지 표시 설정
+        actionPointFill.fillMethod = Image.FillMethod.Vertical; // 아래에서 위로 충전 설정
+        actionPointFill.fillOrigin = 0; // 아래쪽 충전 시작 설정
+        CreateOrbImage("APFrame", orb.transform, actionPointFrameSprite, 1f); // 구체 위쪽 금속 테두리 생성
+        actionPointText = CreateText("ActionPointText", orb.transform, "AP -- / --", 24f, Color.white); // 중앙 행동력 글자 생성
+        RectTransform textRect = actionPointText.rectTransform; // 행동력 글자 영역 조회
+        textRect.anchorMin = Vector2.zero; // 글자 최소 앵커 설정
+        textRect.anchorMax = Vector2.one; // 글자 최대 앵커 설정
+        textRect.offsetMin = Vector2.zero; // 글자 왼쪽 아래 여백 제거
+        textRect.offsetMax = Vector2.zero; // 글자 오른쪽 위 여백 제거
+        actionPointText.enableAutoSizing = true; // 긴 행동력 글자의 자동 크기 조정
+        actionPointText.fontSizeMin = 14f; // 행동력 글자의 최소 크기 설정
+        actionPointText.fontSizeMax = 24f; // 행동력 글자의 최대 크기 설정
+        actionPointText.outlineWidth = 0.25f; // 밝은 구체 위 글자 구분
+    } // 행동력 구체 생성 종료
+    private static Sprite LoadActionPointSprite(string imageName) // 생성한 행동력 이미지 조회
+    { // 행동력 이미지 조회 시작
+        Texture2D texture = Resources.Load<Texture2D>("UI/Battle/" + imageName); // 행동력 텍스처 조회
+        if (texture == null) // 행동력 이미지 누락 확인
+        { // 이미지 누락 처리 시작
+            return null; // 이미지 없는 상태 반환
+        } // 이미지 누락 처리 종료
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f)); // 전체 이미지 스프라이트 생성
+        sprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 공용 이미지 저장 제외
+        return sprite; // 생성한 스프라이트 반환
+    } // 행동력 이미지 조회 종료
+    private static Image CreateOrbImage(string objectName, Transform parent, Sprite sprite, float scale) // 행동력 구체 이미지 생성
+    { // 구체 이미지 생성 시작
+        GameObject imageObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 구체 이미지 객체 생성
+        imageObject.transform.SetParent(parent, false); // 구체 이미지 부모 연결
+        Image image = imageObject.GetComponent<Image>(); // 구체 이미지 조회
+        image.sprite = sprite; // 구체 스프라이트 적용
+        image.raycastTarget = false; // 카드와 버튼 입력 차단 방지
+        RectTransform rect = image.rectTransform; // 구체 이미지 영역 조회
+        rect.anchorMin = new Vector2(0.5f, 0.5f); // 구체 중앙 최소 앵커 설정
+        rect.anchorMax = new Vector2(0.5f, 0.5f); // 구체 중앙 최대 앵커 설정
+        rect.sizeDelta = new Vector2(190f * scale, 190f * scale); // 구체 이미지 크기 설정
+        rect.anchoredPosition = Vector2.zero; // 구체 중앙 정렬
+        return image; // 생성한 구체 이미지 반환
+    } // 구체 이미지 생성 종료
     private static TMP_Text CreateText(string objectName, Transform parent, string initialText, float fontSize, Color textColor) // 텍스트 생성
     { // 텍스트 생성 시작
         GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 텍스트 오브젝트 생성
@@ -525,6 +618,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 버튼 생성 종료
     private void OnDestroy() // 손패 화면 제거 처리
     { // 제거 처리 시작
+        if (turnStatusFrame != null) // 별도 턴 상태 프레임 확인
+        { // 별도 턴 상태 프레임 제거 시작
+            Destroy(turnStatusFrame.gameObject); // 손패 제거 시 상단 프레임 정리
+        } // 별도 턴 상태 프레임 제거 종료
         if (runtimeDeck != null) // 연결된 런타임 덱 확인
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
