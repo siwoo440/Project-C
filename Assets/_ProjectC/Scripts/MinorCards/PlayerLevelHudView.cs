@@ -24,7 +24,7 @@ public sealed class PlayerLevelHudView : MonoBehaviour, IDisposable // 전투 �
         rootRect.anchorMax = hand != null ? new Vector2(0.62f, 1f) : new Vector2(0.5f, 1f); // 손패 중앙 최대 앵커
         rootRect.pivot = new Vector2(0.5f, 1f); // 상단 중앙 피벗
         rootRect.sizeDelta = hand != null ? new Vector2(0f, 34f) : new Vector2(360f, 48f); // 손패 중앙 HUD 크기
-        rootRect.anchoredPosition = new Vector2(0f, -18f); // 손패 상단 여백
+        rootRect.anchoredPosition = new Vector2(0f, hand != null ? -32f : -18f); // 손패 패널 위쪽 중앙의 레벨 위치
 
         Canvas hudCanvas = rootObject.GetComponent<Canvas>(); // HUD Canvas 조회
         hudCanvas.overrideSorting = true; // 부모 정렬과 분리

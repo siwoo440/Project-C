@@ -17,6 +17,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private Button escapeButton; // 전투 도주 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
     private Image actionPointFill; // 행동력 충전 구체 이미지
+    private Image drawPileImage; // 왼쪽 뽑기 카드 더미 이미지
+    private Image discardPileImage; // 오른쪽 버리기 카드 더미 이미지
     private static Sprite actionPointFrameSprite; // 공용 행동력 테두리 이미지
     private static Sprite actionPointFillSprite; // 공용 행동력 구체 이미지
     private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
@@ -32,6 +34,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
     public BattleTurnRuntime TurnRuntime => turnRuntime; // 연결된 전투 턴 관리자 조회
+    public RectTransform DrawPileAnchor => drawPileImage != null ? drawPileImage.rectTransform : null; // 카드 뽑기 연출 시작 위치 조회
+    public RectTransform DiscardPileAnchor => discardPileImage != null ? discardPileImage.rectTransform : null; // 카드 버리기 연출 도착 위치 조회
     public event Action<CardInstance> CardClicked; // 손패 카드 클릭 이벤트
     public event Action EscapeClicked; // 전투 도주 클릭 이벤트
     private void Awake() // 손패 화면 준비
@@ -147,14 +151,15 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         endTurnRect.sizeDelta = new Vector2(0f, 44f); // 턴 종료 높이 설정
         endTurnButton.onClick.AddListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 등록
         CreateActionPointOrb(); // 행동력 구체와 중앙 수치 생성
+        CreateCardPiles(); // 양쪽 카드 더미 이미지 생성
         GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform)); // 손패 배치 오브젝트 생성
         handRootObject.transform.SetParent(transform, false); // 손패 배치 부모 연결
         handLayoutRoot = handRootObject.GetComponent<RectTransform>(); // 손패 배치 RectTransform 조회
         handLayoutRoot.anchorMin = Vector2.zero; // 손패 배치 최소 앵커 설정
         handLayoutRoot.anchorMax = Vector2.one; // 손패 배치 최대 앵커 설정
         handLayoutRoot.pivot = new Vector2(0.5f, 0.5f); // 손패 배치 중앙 피벗 설정
-        handLayoutRoot.offsetMin = new Vector2(190f, 8f); // 행동력 구체와 겹치지 않는 왼쪽 여백 설정
-        handLayoutRoot.offsetMax = new Vector2(-8f, -92f); // 상단 정보와 겹치지 않는 손패 위 여백 설정
+        handLayoutRoot.offsetMin = new Vector2(170f, 8f); // 행동력 구체와 겹치지 않는 왼쪽 여백 설정
+        handLayoutRoot.offsetMax = new Vector2(-170f, -92f); // 오른쪽 카드 더미와 겹치지 않는 손패 여백 설정
         GameObject hitRootObject = new GameObject("HandHitRoot", typeof(RectTransform)); // 독립 카드 입력 영역 생성
         hitRootObject.transform.SetParent(transform, false); // 손패 화면 자식 배치
         handHitRoot = hitRootObject.GetComponent<RectTransform>(); // 입력 영역 사각형 조회
@@ -185,6 +190,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     { // 화면 갱신 시작
         EnsureVisualStructure(); // 손패 내부 UI 확인
         ClearSpawnedCardViews(); // 기존 카드 화면 제거
+        RefreshPileImages(); // 실제 덱 상태에 맞춘 카드 더미 표시 갱신
         if (runtimeDeck == null) // 런타임 덱 연결 확인
         { // 덱 미연결 처리 시작
             deckStatusText.text = "Waiting for deck"; // 덱 미연결 상태 표시
@@ -606,8 +612,9 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         orbRect.anchorMin = Vector2.zero; // 구체 왼쪽 아래 최소 앵커 설정
         orbRect.anchorMax = Vector2.zero; // 구체 왼쪽 아래 최대 앵커 설정
         orbRect.pivot = Vector2.zero; // 구체 왼쪽 아래 기준점 설정
-        orbRect.anchoredPosition = new Vector2(5f, 5f); // 구체 위치 설정
+        orbRect.anchoredPosition = new Vector2(20f, 10f); // 왼쪽 카드 더미 아래 구체 위치 설정
         orbRect.sizeDelta = new Vector2(190f, 190f); // 구체 크기 설정
+        orbRect.localScale = Vector3.one * 0.75f; // 카드 더미와 겹치지 않는 구체 배율 설정
         if (actionPointFillSprite == null) // 행동력 충전 이미지 준비 확인
         { // 충전 이미지 준비 시작
             actionPointFillSprite = LoadActionPointSprite("ActionPointFill"); // 생성한 파란 구체 이미지 조회
@@ -634,6 +641,34 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         actionPointText.fontSizeMax = 24f; // 행동력 글자의 최대 크기 설정
         actionPointText.outlineWidth = 0.25f; // 밝은 구체 위 글자 구분
     } // 행동력 구체 생성 종료
+    private void CreateCardPiles() // 손패 양쪽의 카드 더미 이미지 생성
+    { // 카드 더미 화면 생성 시작
+        drawPileImage = CreatePileImage("DrawPile", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 160f), new Vector2(140f, 100f)); // 왼쪽 행동력 구체 위 뽑기 더미 생성
+        discardPileImage = CreatePileImage("DiscardPile", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-20f, 20f), new Vector2(150f, 150f)); // 오른쪽 아래 묘지 카드 더미 생성
+    } // 카드 더미 화면 생성 종료
+    private Image CreatePileImage(string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size) // 실제 카드 더미 이미지 생성
+    { // 카드 더미 이미지 생성 시작
+        GameObject pile = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 카드 더미 이미지 객체 생성
+        pile.transform.SetParent(transform, false); // 실제 손패 패널에 카드 더미 연결
+        Image image = pile.GetComponent<Image>(); // 카드 더미 이미지 조회
+        image.color = new Color(0.15f, 0.18f, 0.2f, 1f); // 이미지 누락 시 대체 색상
+        BattleUiArt.Apply(image, name); // 제작한 카드 더미 이미지 적용
+        image.preserveAspect = true; // 카드 더미 원본 비율 유지
+        image.raycastTarget = false; // 카드 더미의 손패 입력 차단 방지
+        RectTransform area = image.rectTransform; // 카드 더미 위치 영역 조회
+        area.anchorMin = anchor; // 카드 더미 최소 앵커 설정
+        area.anchorMax = anchor; // 카드 더미 최대 앵커 설정
+        area.pivot = pivot; // 카드 더미 위치 기준점 설정
+        area.anchoredPosition = position; // 카드 더미의 실제 위치 설정
+        area.sizeDelta = size; // 카드 더미 이미지 크기 설정
+        return image; // 생성한 카드 더미 이미지 반환
+    } // 카드 더미 이미지 생성 종료
+    private void RefreshPileImages() // 실제 카드 수에 따른 더미 표시 갱신
+    { // 카드 더미 표시 갱신 시작
+        Color empty = new Color(0.6f, 0.6f, 0.6f, 0.65f); // 카드가 없는 더미의 흐린 표시 색상
+        drawPileImage.color = runtimeDeck != null && runtimeDeck.DrawPileCount > 0 ? Color.white : empty; // 실제 뽑을 카드 존재 여부 반영
+        discardPileImage.color = runtimeDeck != null && runtimeDeck.DiscardPileCount > 0 ? Color.white : empty; // 실제 버린 카드 존재 여부 반영
+    } // 카드 더미 표시 갱신 종료
     private static Sprite LoadActionPointSprite(string imageName) // 생성한 행동력 이미지 조회
     { // 행동력 이미지 조회 시작
         Texture2D texture = Resources.Load<Texture2D>("UI/Battle/" + imageName); // 행동력 텍스처 조회
