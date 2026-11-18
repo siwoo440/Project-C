@@ -3,6 +3,7 @@ using System.Collections.Generic; // 목록 자료형 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 이벤트 시스템 사용
 using UnityEngine.InputSystem.UI; // 유니티 입력 시스템 UI 사용
+using UnityEngine.UI; // 전투 배경 이미지 사용
 public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
 { // 클래스 시작
     private const int MaximumEnemyCount = 4; // 최대 동시 적 수
@@ -67,8 +68,37 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
+        InstallBattleBackground(); // 캐릭터와 카드 뒤 석상 배경 배치
         InitializeBattle(); // 전투 전체 초기화
     } // 시작 처리 종료
+
+    private void InstallBattleBackground() // 전투 화면 석상 배경 준비
+    { // 전투 배경 준비 시작
+        Canvas canvas = handView != null ? handView.GetComponentInParent<Canvas>() : null; // 실제 전투 캔버스 조회
+        Texture2D texture = Resources.Load<Texture2D>("UI/Battle/StatueBackground"); // 제작한 석상 배경 이미지 조회
+        if (canvas == null || texture == null) // 캔버스와 배경 원본 확인
+        { // 배경 연결 불가 처리 시작
+            Debug.LogWarning("[Battle] 석상 배경을 표시할 수 없습니다."); // 배경 원본 누락 안내
+            return; // 배경 연결 중단
+        } // 배경 연결 불가 처리 종료
+        Transform existing = canvas.transform.Find("BattleStatueBackground"); // 기존 전투 배경 조회
+        if (existing != null) // 기존 배경 존재 확인
+        { // 중복 배경 방지 시작
+            existing.SetAsFirstSibling(); // 기존 배경을 화면 맨 뒤로 이동
+            return; // 중복 배경 생성 방지
+        } // 중복 배경 방지 종료
+        GameObject background = new GameObject("BattleStatueBackground", typeof(RectTransform), typeof(RawImage)); // 전투 배경 객체 생성
+        RectTransform rect = background.GetComponent<RectTransform>(); // 배경 화면 위치 조회
+        rect.SetParent(canvas.transform, false); // 전투 캔버스에 배경 연결
+        rect.SetAsFirstSibling(); // 캐릭터와 카드 뒤 배치
+        rect.anchorMin = Vector2.zero; // 화면 왼쪽 아래 고정
+        rect.anchorMax = Vector2.one; // 화면 오른쪽 위 고정
+        rect.offsetMin = Vector2.zero; // 화면 왼쪽 아래 여백 제거
+        rect.offsetMax = Vector2.zero; // 화면 오른쪽 위 여백 제거
+        RawImage image = background.GetComponent<RawImage>(); // 배경 이미지 구성 조회
+        image.texture = texture; // 석상 배경 이미지 연결
+        image.raycastTarget = false; // 카드와 버튼 입력 방해 방지
+    } // 전투 배경 준비 종료
     public void InitializeBattle() // 전투 초기화
     { // 초기화 시작
         if (PartyLoadoutRuntime.Active != null) // 탐사 출발 편성 존재 확인
