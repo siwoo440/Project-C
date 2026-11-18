@@ -418,7 +418,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
         } // 회복 불필요 처리 종료
-        if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasDebuff) // 정화 대상 디버프 확인
+        if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasRemovableDebuff) // 실제 정화 가능한 디버프 확인
         { // 정화 불필요 처리 시작
             return false; // 정화 대상 불가 반환
         } // 정화 불필요 처리 종료

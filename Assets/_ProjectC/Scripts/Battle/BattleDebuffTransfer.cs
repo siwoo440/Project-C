@@ -20,7 +20,7 @@ public static class BattleDebuffTransfer // 아군 사이의 단일 디버프 �
     } // 이전 후보 조회 종료
     public static bool CanTransfer(BattleUnitRuntime source, BattleUnitRuntime recipient, BattleStatusEffectInstance effect) // 지정 디버프의 이전 가능 여부 확인
     { // 이전 가능 확인 시작
-        if (source == null || recipient == null || source == recipient || source.IsDead || recipient.IsDead || source.Team != BattleTeam.Ally || recipient.Team != BattleTeam.Ally || recipient.HasStatusImmunity || effect == null || !effect.IsDebuff || !source.ContainsStatusEffectInstance(effect)) // 생존한 서로 다른 아군과 실제 디버프 확인
+        if (source == null || recipient == null || source == recipient || source.IsDead || recipient.IsDead || source.Team != BattleTeam.Ally || recipient.Team != BattleTeam.Ally || recipient.HasStatusImmunity || effect == null || !effect.IsDebuff || effect.IsProtectedMentalState || !source.ContainsStatusEffectInstance(effect)) // 생존 아군과 이전 가능한 디버프 확인
         { // 이전 불가 처리 시작
             return false; // 이전 불가 반환
         } // 이전 불가 처리 종료

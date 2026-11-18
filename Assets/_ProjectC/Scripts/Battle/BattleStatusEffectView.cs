@@ -130,7 +130,7 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
         rootRect.anchorMin = new Vector2(0f, 0f); // 왼쪽 아래 최소 앵커
         rootRect.anchorMax = new Vector2(1f, 0f); // 오른쪽 아래 최대 앵커
         rootRect.pivot = new Vector2(0.5f, 1f); // 위쪽 중앙 기준점
-        rootRect.anchoredPosition = new Vector2(0f, 27f); // 정신력 아래에서 아이콘이 내려가는 위치
+        rootRect.anchoredPosition = new Vector2(0f, 72f); // 정신력 바 바로 아래 아이콘 위치
         rootRect.sizeDelta = new Vector2(-8f, 34f); // 기본 상태 아이콘 영역 크기
         Image backgroundImage = statusRoot.GetComponent<Image>(); // 상태 배경 이미지 조회
         backgroundImage.color = Color.clear; // 개별 아이콘만 표시하는 투명 배경

@@ -1,8 +1,10 @@
 using System; // 전체 상태 종류 순회 사용
 using System.Collections; // 실제 전투 화면 대기 사용
 using System.Collections.Generic; // 상태 아이콘 중복 검사 사용
+using System.IO; // 투명 아이콘 원본 읽기 사용
 using NUnit.Framework; // 상태 아이콘 검사 사용
 using TMPro; // 상태 수치 글자 검사 사용
+using UnityEditor; // 아이콘 원본 경로 조회 사용
 using UnityEngine; // 전투 유닛과 화면 객체 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 상태 아이콘 이미지 검사 사용
@@ -12,7 +14,7 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
     [Test] // 상태 종류별 이미지 검사 지정
     public void EveryStatus_UsesItsOwnSquareGeneratedIcon() // 모든 상태의 개별 정사각형 이미지 확인
     { // 상태 아이콘 종류 검사 시작
-        HashSet<Rect> areas = new HashSet<Rect>(); // 이미 사용한 아이콘 영역 목록
+        HashSet<string> areas = new HashSet<string>(); // 이미지와 영역별 상태 아이콘 목록
         foreach (BattleStatusEffectType effect in Enum.GetValues(typeof(BattleStatusEffectType))) // 모든 상태 종류 순회
         { // 개별 상태 아이콘 검사 시작
             if (effect == BattleStatusEffectType.None) // 상태 없음 항목 확인
@@ -21,11 +23,22 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
             } // 상태 없음 제외 종료
             Sprite icon = BattleStatusIconArt.Get(effect); // 생성한 상태 이미지 조회
             Assert.IsNotNull(icon, effect.ToString()); // 각 상태 이미지 존재 확인
-            Assert.AreEqual("StatusIcons", icon.texture.name); // 실제 생성 상태 이미지 사용 확인
-            Assert.AreEqual(icon.rect.width, icon.rect.height, 0.01f); // 상태 이미지의 정사각형 비율 확인
-            Assert.IsTrue(areas.Add(icon.rect), effect.ToString()); // 서로 다른 상태의 독립 이미지 확인
+            bool mental = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse; // 별도 투명 정신 상태 아이콘 확인
+            Assert.AreEqual(mental ? effect + "StatusIcon" : "StatusIcons", icon.texture.name); // 상태별 생성 이미지 사용 확인
+            if (!mental) // 기존 상태 아이콘 시트 확인
+            { // 기존 정사각형 이미지 검사 시작
+                Assert.AreEqual(icon.rect.width, icon.rect.height, 0.01f); // 기존 상태 이미지의 정사각형 비율 확인
+            } // 기존 정사각형 이미지 검사 종료
+            else // 별도 투명 정신 상태 아이콘 확인
+            { // 투명 이미지 검사 시작
+                Texture2D raw = new Texture2D(2, 2); // 원본 투명도 검사 이미지 생성
+                Assert.IsTrue(raw.LoadImage(File.ReadAllBytes(AssetDatabase.GetAssetPath(icon.texture)))); // 실제 아이콘 파일 읽기 확인
+                Assert.Less(raw.GetPixel(0, 0).a, 0.01f); // 아이콘 바깥 배경 투명 확인
+                Object.DestroyImmediate(raw); // 원본 검사 이미지 정리
+            } // 투명 이미지 검사 종료
+            Assert.IsTrue(areas.Add(icon.texture.name + icon.rect), effect.ToString()); // 서로 다른 상태의 독립 이미지 확인
         } // 개별 상태 아이콘 검사 종료
-        Assert.AreEqual(15, areas.Count); // 실제 상태 열다섯 종류 확인
+        Assert.AreEqual(17, areas.Count); // 실제 상태 열일곱 종류 확인
     } // 상태 아이콘 종류 검사 종료
     [UnityTest] // 실제 상태 아이콘 화면 검사 지정
     public IEnumerator StatusView_ShowsIconsAndCornerValuesAndUpdates() // 상태 아이콘과 구석 수치의 실제 갱신 확인
