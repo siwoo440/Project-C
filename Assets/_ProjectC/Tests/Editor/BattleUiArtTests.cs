@@ -1,10 +1,25 @@
 using System.Collections; // 실제 전투 화면 대기 사용
+using System.Collections.Generic; // 이미지 식별자 중복 검사 사용
 using NUnit.Framework; // 전투 이미지 검사 사용
+using UnityEditor; // 실제 이미지 에셋 식별자 조회 사용
 using UnityEngine; // 전투 화면과 이미지 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 전투 배경과 버튼 검사 사용
 public sealed class BattleUiArtTests // 전투 화면 이미지 적용 검사
 { // 이미지 검사 시작
+    [Test] // 생성 아이콘 식별자 검사 지정
+    public void CardTypeIcons_UseDistinctAssetGuids() // 카드 종류 아이콘과 기존 이미지 식별자 분리 확인
+    { // 이미지 식별자 검사 시작
+        string[] names = { "MentalStateBacklight", "CardTypeSword", "CardTypeWand", "CardTypeCup", "CardTypePentacle", "CardTypeShield" }; // 기존 이미지와 다섯 카드 아이콘 목록
+        HashSet<string> guids = new HashSet<string>(); // 중복 없는 이미지 식별자 목록
+        foreach (string name in names) // 전투 이미지 순회
+        { // 개별 이미지 식별자 검사 시작
+            string path = "Assets/_ProjectC/Resources/UI/Battle/" + name + ".png"; // 실제 전투 이미지 경로 생성
+            string guid = AssetDatabase.AssetPathToGUID(path); // Unity 이미지 식별자 조회
+            Assert.IsFalse(string.IsNullOrEmpty(guid), name + " 이미지 식별자"); // 실제 이미지 식별자 존재 확인
+            Assert.IsTrue(guids.Add(guid), name + " 중복 이미지 식별자"); // 다른 이미지와 식별자 중복 방지 확인
+        } // 개별 이미지 식별자 검사 종료
+    } // 이미지 식별자 검사 종료
     [Test] // 생성 이미지와 모서리 배치 검사 지정
     public void GeneratedFrames_UseSlicedSpritesAndPreserveExistingOnMissing() // 실제 생성 이미지와 누락 시 기존 배경 유지 확인
     { // 이미지 적용 검사 시작
