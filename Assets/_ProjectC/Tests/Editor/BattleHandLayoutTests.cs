@@ -68,6 +68,7 @@ public sealed class BattleHandLayoutTests // 손패 배치와 마우스 강조 �
         yield return null; // 크기 변경 반영 대기
         yield return null; // 손패 재배치 반영 대기
         AssertCardsWithinWidth(layout, cards); // 화면 크기 변경 후 내부 배치 확인
+        Vector2 resizedPosition = cardRect.anchoredPosition; // 크기 변경 후 카드 기본 위치 저장
         Assert.IsNotNull(hand, "크기 변경 후 손패 화면"); // 손패 화면 유지 확인
         Assert.IsNotNull(hit, "크기 변경 후 입력 영역"); // 카드 입력 영역 유지 확인
         Assert.IsNotNull(hovered, "크기 변경 후 카드 화면"); // 카드 화면 유지 확인
@@ -77,7 +78,7 @@ public sealed class BattleHandLayoutTests // 손패 배치와 마우스 강조 �
         hit.OnPointerClick(null); // 강조 카드 입력 영역 클릭 처리
         Assert.AreEqual(1, clickedCount); // 강조 카드 클릭 유지 확인
         hovered.SetInteractable(false); // 카드 사용 잠금 적용
-        Assert.AreEqual(originalPosition.y, cardRect.anchoredPosition.y); // 사용 잠금 시 강조 위치 해제 확인
+        Assert.AreEqual(resizedPosition.y, cardRect.anchoredPosition.y); // 사용 잠금 시 변경된 기본 위치 복원 확인
         Assert.AreEqual(originalOrder, hovered.transform.GetSiblingIndex()); // 사용 잠금 시 원래 순서 복원 확인
         hand.Unbind(); // 손패 이벤트 연결 해제
         turns.Dispose(); // 턴 관리자 정리
@@ -98,6 +99,14 @@ public sealed class BattleHandLayoutTests // 손패 배치와 마우스 강조 �
             RectTransform rect = card.GetComponent<RectTransform>(); // 카드 사각형 조회
             float halfWidth = rect.rect.width * rect.localScale.x * 0.5f; // 현재 카드 절반 너비 계산
             Assert.LessOrEqual(Mathf.Abs(rect.anchoredPosition.x) + halfWidth, layout.rect.width * 0.5f + 0.1f); // 손패 내부 가로 범위 확인
+            Vector3[] corners = new Vector3[4]; // 회전한 카드 꼭짓점 배열 생성
+            rect.GetWorldCorners(corners); // 실제 화면 카드 꼭짓점 조회
+            foreach (Vector3 corner in corners) // 회전한 카드 꼭짓점 순회
+            { // 실제 카드 가로 경계 검사 시작
+                float localX = layout.InverseTransformPoint(corner).x; // 손패 기준 카드 꼭짓점 좌표 계산
+                Assert.GreaterOrEqual(localX, layout.rect.xMin - 0.1f); // 왼쪽 화면 이탈 방지 확인
+                Assert.LessOrEqual(localX, layout.rect.xMax + 0.1f); // 오른쪽 화면 이탈 방지 확인
+            } // 실제 카드 가로 경계 검사 종료
         } // 카드 범위 검사 종료
     } // 가로 범위 검사 종료
     private static void AssertRaycastHits(GraphicRaycaster raycaster, EventSystem eventSystem, RectTransform target) // 실제 포인터 적중 검사

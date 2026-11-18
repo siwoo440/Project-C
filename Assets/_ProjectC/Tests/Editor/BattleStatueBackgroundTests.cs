@@ -2,6 +2,7 @@ using System.Collections; // 플레이 모드 대기 사용
 using System.Reflection; // 배경 재연결 검사 사용
 using NUnit.Framework; // 실제 전투 배경 검사 사용
 using UnityEngine; // 전투 화면과 리소스 사용
+using UnityEngine.EventSystems; // 실제 카드 드래그 입력 사용
 using UnityEngine.SceneManagement; // 실제 씬 이동 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 배경과 손패 화면 사용
@@ -71,6 +72,33 @@ public sealed class BattleStatueBackgroundTests // 전투 석상 배경 검사
         Assert.Greater(battle.AllyUnits.Count, 0); // 실제 아군 표시 대상 유지 확인
         Assert.Greater(battle.EnemyUnits.Count, 0); // 실제 적 표시 대상 유지 확인
         Assert.Greater(battle.BattleDeck.HandCount, 0); // 실제 손패 표시 데이터 유지 확인
+        yield return null; // 실제 카드 드래그 처리기 연결 대기
+        Transform hitRoot = hand.transform.Find("HandHitRoot"); // 실제 손패 입력 영역 조회
+        BattleCardHitRegion selectedHit = null; // 드래그할 카드 입력 초기화
+        BattleCardHitRegion leftHit = null; // 선택 카드 왼쪽 입력 초기화
+        for (int index = 1; index < hitRoot.childCount; index++) // 왼쪽 이웃 카드가 있는 손패 순회
+        { // 드래그 가능한 카드 탐색 시작
+            BattleCardHitRegion candidate = hitRoot.GetChild(index).GetComponent<BattleCardHitRegion>(); // 현재 입력 카드 조회
+            if (candidate.CardView.GetComponent<CanvasGroup>().alpha > 0.9f && candidate.CardView.GetComponent<BattleCardDragHandler>() != null) // 사용 가능한 실제 드래그 카드 확인
+            { // 드래그 카드 저장 시작
+                selectedHit = candidate; // 선택 카드 입력 저장
+                leftHit = hitRoot.GetChild(index - 1).GetComponent<BattleCardHitRegion>(); // 왼쪽 이웃 카드 입력 저장
+                break; // 드래그 카드 탐색 종료
+            } // 드래그 카드 저장 종료
+        } // 드래그 가능한 카드 탐색 종료
+        Assert.IsNotNull(selectedHit); // 실제 드래그 가능한 손패 확인
+        float leftBefore = ((RectTransform)leftHit.CardView.transform).anchoredPosition.x; // 왼쪽 카드 기본 위치 저장
+        EventSystem eventSystem = Object.FindFirstObjectByType<EventSystem>(); // 실제 포인터 입력 시스템 조회
+        Assert.IsNotNull(eventSystem); // 실제 포인터 입력 시스템 확인
+        PointerEventData pointer = new PointerEventData(eventSystem); // 카드 드래그 포인터 생성
+        pointer.button = PointerEventData.InputButton.Left; // 왼쪽 마우스 입력 설정
+        pointer.position = RectTransformUtility.WorldToScreenPoint(null, selectedHit.transform.position); // 카드 입력 위치 설정
+        selectedHit.OnPointerEnter(pointer); // 카드 마우스 진입 처리
+        selectedHit.OnBeginDrag(pointer); // 실제 카드 드래그 시작 처리
+        Assert.IsNotNull(GameObject.Find("Day47CardDragGhost")); // 실제 드래그 카드 복제 확인
+        Assert.Less(((RectTransform)leftHit.CardView.transform).anchoredPosition.x, leftBefore); // 드래그 중 이웃 카드 간격 유지 확인
+        selectedHit.OnEndDrag(null); // 유효 대상 없는 드래그 취소
+        Assert.AreEqual(leftBefore, ((RectTransform)leftHit.CardView.transform).anchoredPosition.x, 0.01f); // 드래그 취소 후 간격 복원 확인
         int beforeChildren = canvas.transform.childCount; // 전투 캔버스 자식 수 보관
         typeof(BattleSceneSetup).GetMethod("InstallBattleBackground", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(battle, null); // 배경 연결 재실행
         battle.InitializeBattle(); // 전투 중복 초기화 시도
