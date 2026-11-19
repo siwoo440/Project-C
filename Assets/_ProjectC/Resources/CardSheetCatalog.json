@@ -556,7 +556,7 @@
       "attribute": "검",
       "rarity": "전설",
       "cost": "4",
-      "description": "적 하나와 자신에게 표식(3턴), 대상에게 주는 피해 +40%",
+      "description": "시전자와 선택한 적에게 결투 표식을 부여한다. 이번 턴부터 아군 3턴 동안 시전자가 그 적에게 주는 직접 카드 피해가 40% 증가한다. 새 결투는 양쪽의 기존 결투를 끝낸다.",
       "area": "단일",
       "targets": "적/아군",
       "imageFileName": "피로 물든 결투.png"
@@ -567,7 +567,7 @@
       "attribute": "검",
       "rarity": "전설",
       "cost": "3",
-      "description": "자신의 검 카드 코스트 -1, 피해 +4 (3턴)",
+      "description": "이번 턴부터 3턴 동안 자신의 고정 비용 검 카드가 행동력을 1 적게 쓰고, 검 카드 피해가 타격마다 4 증가한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "검성의 자세.png"
@@ -578,7 +578,7 @@
       "attribute": "검",
       "rarity": "전설",
       "cost": "5",
-      "description": "적에게 35 피해, 처치 시 한 번 더 행동",
+      "description": "적 하나에게 물리 피해 35. 이 타격으로 직접 처치하면 전투 배치에서 다음 생존 적에게 비용 없이 같은 타격을 한 번 더 가한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "최후 돌파.png"
@@ -589,7 +589,7 @@
       "attribute": "검",
       "rarity": "전설",
       "cost": "5",
-      "description": "무작위 적에게 7 피해를 7회 준다",
+      "description": "물리 피해 7을 7회 준다. 타격마다 무작위로 생존한 적 하나를 고르며 같은 적을 다시 고를 수 있다.",
       "area": "무작위",
       "targets": "적",
       "imageFileName": "천검 난무.png"
@@ -600,7 +600,7 @@
       "attribute": "검",
       "rarity": "전설",
       "cost": "6",
-      "description": "적 하나에게 50 피해, 자신 HP -15",
+      "description": "자신의 체력 15를 지불해 적 하나에게 물리 피해 50을 준다. 체력이 15 이하라면 사용할 수 없다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "파멸 절단.png"

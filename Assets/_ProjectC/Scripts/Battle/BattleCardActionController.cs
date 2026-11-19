@@ -785,9 +785,25 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
             return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
         } // 회복 효과 처리 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodstainedDuel) // 시전자와 적 한 명의 결투 확인
+        { // 결투 표식 처리 시작
+            var source = cardInstance.OwnerUnit; // 선택한 카드의 실제 소유자
+            var result = BattleDuelRuntime.Start(source, targetUnit, cardInstance.EffectValue, cardInstance.StatusDuration); // 양쪽 표식과 연결 수치 등록
+            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.DuelMark, result); // 적의 표식 적용 여부 표시
+            if (result == BattleStatusEffectApplyResult.Applied) // 두 표식이 모두 붙은 경우 확인
+            { // 시전자 표식 표시 시작
+                FindUnitView(source)?.ShowStatusApplyFeedback(BattleStatusEffectType.DuelMark, result); // 결투를 시작한 아군 표시
+                return cardInstance.EffectValue; // 실제 결투 피해 가산량 반환
+            } // 시전자 표식 표시 종료
+            return 0; // 면역 또는 불가 시 효과 미적용
+        } // 결투 표식 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 처리 시작
             BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 상태 이상 적용
+            if (cardInstance.StatusEffectType == BattleStatusEffectType.SwordSaintStance && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 시전 턴을 포함하는 검성의 자세 적용 확인
+            { // 시전 턴부터 차감 시작
+                targetUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance).ConsumeDurationDecreaseSkip(); // 이번 시전 턴도 지속 시간에 포함
+            } // 시전 턴부터 차감 종료
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
             targetView?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, applyResult); // 상태 이상 적용 결과 표시
             return applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
@@ -822,7 +838,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         int hitCount = cardInstance.SourceData.DamageHitCount; // 카드 원본의 타격 수 조회
         if (hitCount == 1) // 기존 단일 공격 확인
         { // 단일 타격 시작
-            return ApplyDamageHit(cardInstance, targetUnit); // 현재 대상의 명중과 피해 판정
+            int healthBefore = targetUnit.CurrentHealth; // 단일 공격 직전의 대상 체력
+            int dealt = ApplyDamageHit(cardInstance, targetUnit); // 현재 대상의 명중과 피해 판정
+            if (cardInstance.SourceData.SwordRule == SwordCardRule.LastBreakthrough && healthBefore > 0 && dealt == healthBefore && targetUnit.IsDead) // 첫 직접 타격으로만 처치 조건 확인
+            { // 처치 후 추가 타격 시작
+                dealt += ApplyBreakthroughFollowUp(cardInstance, targetUnit); // 다음 생존 적 한 번 더 타격
+            } // 처치 후 추가 타격 종료
+            return dealt; // 첫 타격과 가능한 후속 타격의 적용량
         } // 단일 타격 종료
         var target = new[] { targetUnit }; // 연타 대상의 약점 판정 준비
         int applied = 0; // 실제 체력 피해 합계
@@ -864,6 +886,33 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 정리 종료
         return damage; // 실제 체력 피해 합계 반환
     } // 무작위 연타 종료
+    private int ApplyBreakthroughFollowUp(CardInstance card, BattleUnitRuntime defeated) // 처치 뒤 다음 생존 적을 고르는 추가 타격
+    { // 후속 타격 시작
+        if (turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition || card.OwnerUnit.IsDead) // 전투와 시전자의 진행 가능 여부 확인
+        { // 후속 타격 불가 시작
+            return 0; // 전투 종료와 보스 전환 및 사망 시 추가 공격 중단
+        } // 후속 타격 불가 종료
+        var enemies = enemyActions.EnemyUnits; // 실제 전투 배치 목록
+        int defeatedIndex = 0; // 쓰러진 적의 배치 위치 초기값
+        while (defeatedIndex < enemies.Count && enemies[defeatedIndex] != defeated) // 쓰러진 적의 정확한 배치 위치 확인
+        { // 배치 검색 시작
+            defeatedIndex++; // 다음 칸 확인
+        } // 배치 검색 종료
+        if (defeatedIndex == enemies.Count) // 전투 배치에 해당 대상이 있는지 확인
+        { // 배치에 없는 대상 처리 시작
+            return 0; // 다음 적을 결정할 수 없는 경우 종료
+        } // 배치에 없는 대상 처리 종료
+        for (int offset = 1; offset < enemies.Count; offset++) // 다음 칸부터 마지막을 지나 처음까지 순회
+        { // 이후 배치 적 확인 시작
+            var next = enemies[(defeatedIndex + offset) % enemies.Count]; // 실제 배치의 다음 칸
+            if (next != null && !next.IsDead) // 한 번 더 타격할 생존 적 확인
+            { // 생존 적 추가 타격 시작
+                return ApplyIsolatedDamageHit(card, next); // 원래 비용으로 이미 처리된 카드의 독립 추가 타격
+            } // 생존 적 추가 타격 종료
+        } // 이후 배치 적 확인 종료
+        return 0; // 남은 적이 없으면 추가 피해 없음
+    } // 후속 타격 종료
+
     private int ApplyKingsSecondHit(CardInstance card) // 전체 타격 뒤 최대 체력 기준으로 추가 대상 결정
     { // 추가 공격 시작
         BattleUnitRuntime strongest = null; // 현재 가장 높은 최대 체력의 생존 적
@@ -878,10 +927,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 추가 타격 없음 시작
             return 0; // 타격 대상 없는 경우 종료
         } // 추가 타격 없음 종료
-        BattleCardDamageContext.Begin(card, new[] { strongest }); // 다시 고른 적의 약점 문맥 준비
+        return ApplyIsolatedDamageHit(card, strongest, card.SourceData.SecondaryEffectValue); // 추가 피해 수치를 사용하는 독립 타격
+    } // 추가 공격 종료
+
+    private int ApplyIsolatedDamageHit(CardInstance card, BattleUnitRuntime target, int? additionalBase = null) // 후속 타격의 개별 명중과 약점 적용
+    { // 독립 피해 문맥 시작
+        BattleCardDamageContext.Begin(card, new[] { target }); // 다시 고른 대상의 약점 문맥 준비
         try // 후속 타격 뒤 문맥 정리 보장
         { // 독립 후속 타격 시작
-            return ApplyDamageHit(card, strongest, card.SourceData.SecondaryEffectValue); // 명중과 방어 및 약점을 적용한 추가 물리 타격
+            return ApplyDamageHit(card, target, additionalBase); // 명중과 방어 및 약점을 적용한 후속 타격
         } // 독립 후속 타격 종료
         finally // 추가 공격 정리
         { // 약점 문맥 정리 시작

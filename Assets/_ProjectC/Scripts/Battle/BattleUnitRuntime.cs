@@ -39,6 +39,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime> BlockChanged; // 방어도 변경 이벤트
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
+    internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
     public event Action<BattleUnitRuntime, BattleMentalChangeResult> MentalChanged; // 정신력 변화 이벤트

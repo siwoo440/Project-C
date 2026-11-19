@@ -326,6 +326,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 기존 진영 종료 효과 전달
         if (endCharge) // 돌진의 한 차례 아군 공격 기회 종료 확인
         { // 돌진 효과 해제 시작
+            foreach (var ally in allyUnits) // 결투를 시작한 아군 확인
+            { // 결투 기간 처리 시작
+                ally?.ActiveDuel?.AdvancePlayerTurn(); // 양쪽 표식의 남은 턴을 함께 감소
+            } // 결투 기간 처리 종료
             foreach (var enemy in enemyUnits) // 적별 활성 약화 확인
             { // 개별 약화 해제 시작
                 enemy?.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 해당 아군 턴이 끝나면 공명 표식 해제

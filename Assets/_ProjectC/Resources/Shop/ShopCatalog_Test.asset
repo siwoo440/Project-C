@@ -599,6 +599,51 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOODSTAINED_DUEL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 212b2e1e9291537aa9dede90e7079804, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SWORD_SAINT_STANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 3e6896508d105c9db1c2e2f027728c3f, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_LAST_BREAKTHROUGH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: cb9e6704de925e10a072ea2e16d10747, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HEAVENLY_SWORD_FLURRY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: f5112aeabbaa5827ad239f71483027a8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DOOM_SEVERANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 25f3add386eb57b69906a9dff42bd2d9, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_KINGS_SLASH
     offerType: 0
     price: 0

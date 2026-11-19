@@ -33,7 +33,9 @@ public enum SwordCardRule // 검 카드 공격별 추가 규칙
     BattlefieldResolve, // 사용 직후와 다음 아군 턴 시작 방어도 지급
     BloodBackflow, // 출혈이 있는 생존 적 전체 즉시 공격
     JudgmentSlash, // 강화가 있는 적 공격과 강화 하나 해제
-    KingsSlash // 전체 적 타격 후 최대 체력이 가장 높은 생존 적 재공격
+    KingsSlash, // 전체 적 타격 후 최대 체력이 가장 높은 생존 적 재공격
+    BloodstainedDuel, // 시전자와 지정 적의 결투 표식
+    LastBreakthrough // 직접 처치 후 다음 생존 적 한 번 공격
 } // 규칙 목록 종료
 
 internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 타격 계산
@@ -111,6 +113,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         long amount = damage; // 원래 카드의 타격 수치 보관
         if (card.CardType == CardType.Sword) // 검 카드 타격 확인
         { // 피의 맹세 계산 시작
+            amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance)?.EffectiveValue ?? 0; // 검성의 자세의 타격당 검 피해 증가
             amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BladeFrenzy)?.EffectiveValue ?? 0; // 이번 턴 소유자의 검 피해에 폭주 수치 가산
             amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BloodOath)?.EffectiveValue ?? 0; // 보유한 검 강화 수치 가산
         } // 피의 맹세 계산 종료
@@ -119,6 +122,8 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 마무리 보정 시작
             amount = Math.Min(int.MaxValue, amount) * (100L + stance.EffectiveValue) / 100; // 체력 조건을 만족한 카드 타격의 비율 가산과 내림
         } // 마무리 보정 종료
+        int duelPercent = card.OwnerUnit.ActiveDuel?.GetDamageBonus(card.OwnerUnit, target) ?? 0; // 실제 결투 상대에게만 적용할 피해 비율
+        amount = Math.Min(int.MaxValue, amount) * (100L + duelPercent) / 100; // 직접 피해 비율 적용과 소수점 내림
         return (int)Math.Min(int.MaxValue, amount); // 정수 범위의 원본 카드 피해 반환
     } // 공격 자세 계산 종료
 

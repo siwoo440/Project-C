@@ -22,7 +22,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount - RelicApDiscount); // 강화와 카드별 할인 및 유물 할인 포함 비용
+    public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount - RelicApDiscount - SwordSaintDiscount); // 카드와 유물 및 자세를 반영한 실제 행동력 비용
+    private int SwordSaintDiscount => CardType == CardType.Sword && OwnerUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance) != null ? 1 : 0; // 검성 상태 소유자의 검 카드 비용 감소
     public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용
     { // 할인 적용 시작
         temporaryApDiscount = Mathf.Max(temporaryApDiscount, Mathf.Max(0, amount)); // 높은 할인값 유지
@@ -41,7 +42,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
 
     public int EffectValue =>
-        StatusEffectType == BattleStatusEffectType.BladeFrenzy || StatusEffectType == BattleStatusEffectType.BloodOath || StatusEffectType == BattleStatusEffectType.FinishingStance || StatusEffectType == BattleStatusEffectType.BladeMaintenance || StatusEffectType == BattleStatusEffectType.PhysicalRiposte // 원문 고정 보너스와 효과 비율 확인
+        StatusEffectType == BattleStatusEffectType.SwordSaintStance || StatusEffectType == BattleStatusEffectType.DuelMark || StatusEffectType == BattleStatusEffectType.BladeFrenzy || StatusEffectType == BattleStatusEffectType.BloodOath || StatusEffectType == BattleStatusEffectType.FinishingStance || StatusEffectType == BattleStatusEffectType.BladeMaintenance || StatusEffectType == BattleStatusEffectType.PhysicalRiposte // 원문 고정 보너스와 효과 비율 확인
             ? SourceData.EffectValue // 고정된 준비 수치와 반격 비율 유지
             : CardUpgradeProfileCatalog.CalculateEffectValue(SourceData, SourceData.EffectValue, UpgradeLevel); // 일반 카드의 강화 효과 수치
 

@@ -68,6 +68,10 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     public void SetInteractable(bool interactable) // 카드 사용 가능 표시 설정
     { // 사용 가능 표시 시작
         EnsureVisualStructure(); // 카드 내부 UI 확인
+        if (RuntimeCard != null) // 연결한 카드의 현재 비용 조회 가능 여부
+        { // 행동력 배지 갱신 시작
+            costText.text = RuntimeCard.CostLabel; // 조건부 비용이 적용된 손패 배지 갱신
+        } // 행동력 배지 갱신 종료
         this.interactable = interactable; // 카드 사용 가능 상태 저장
         if (!interactable && hovered) // 비활성 카드 확대 여부 확인
         { // 확대 해제 처리 시작
