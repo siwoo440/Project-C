@@ -101,6 +101,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e01, type: 2}
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e02, type: 2}
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e03, type: 2}
+  - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c82301, type: 2}
+  - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c82302, type: 2}
   consumables:
   - {fileID: 11400000, guid: 45f2df39a8eb4ba1950ca04e30ca71cc, type: 2}
   - {fileID: 11400000, guid: 2516d23cf829422d92957bc7f2aabdd9, type: 2}
