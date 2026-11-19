@@ -28,5 +28,9 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     NextAttackDown, // 다음 공격의 원본 피해 감소
     AttackPowerDown, // 해당 적 턴의 직접 공격 피해 감소
     BladeMaintenance, // 이번 턴 다음 검 피해 카드의 타격 강화
-    PhysicalRiposte // 직접 받은 첫 물리 체력 피해 반사
+    PhysicalRiposte, // 직접 받은 첫 물리 체력 피해 반사
+    BloodOath, // 소유자의 모든 검 피해 증가
+    Fear, // 공격 대상의 회피 보정 무효
+    FinishingStance, // 체력이 절반 이하인 적에게 카드 피해 증가
+    HealingReceivedDown // 대상이 받는 체력 회복량 감소
 } // 열거형 종료

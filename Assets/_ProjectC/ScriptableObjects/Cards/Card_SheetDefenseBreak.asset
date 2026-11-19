@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetDefenseBreak
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_DEFENSE_BREAK
+  displayName: "방어 붕괴"
+  description: "적에게 10 피해, 방어력 -3 (2턴)"
+  artwork: {fileID: 21300000, guid: 4cf5a8f4031658cb96c643a980a94940, type: 3}
+  cardType: 0
+  targetType: 3
+  apCost: 2
+  effectType: 0
+  damageType: 1
+  effectValue: 10
+  damageHitCount: 1
+  secondaryEffectValue: 3
+  swordRule: 13
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 2
+  statusMaximumStacks: 1

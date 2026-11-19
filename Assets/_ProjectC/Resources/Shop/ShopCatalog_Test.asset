@@ -464,6 +464,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOOD_OATH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 158fd7916a6657daa3cc385d80396ebf, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DEFENSE_BREAK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c5b8aa21cffe584baf5a03911788ec74, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_INTIMIDATING_CHARGE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 93dd0d835bf2570fb67e4c804e4e60f6, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLADE_WHIRLWIND
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a4c5d88bc5b150f1a26d1b2862666638, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FINISHING_STANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: d5220e30302d564fa48894f787c37126, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOOD_TRAIL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 93c9bd8631e4585789c0ee21ff146f46, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SEVERING_STRIKE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5e43d67607a6533e954a12106ef2bfdb, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BREAKTHROUGH_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 337bd9c5e9b35933b26aaba0f0da1e17, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_THRUST
     offerType: 0
     price: 0

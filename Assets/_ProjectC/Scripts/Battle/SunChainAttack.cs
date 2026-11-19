@@ -33,12 +33,13 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
             return null; // 연속 공격 생략 반환
         } // 추가 대상 없음 처리 종료
         BattleUnitRuntime target = candidates[RelicRandomCardTarget.PickIndex(candidates.Count, count => UnityEngine.Random.Range(0, count))]; // 태양의 추가 대상 추첨에 보유 주사위 반영
-        if (!BattleHitChance.Roll(card.OwnerUnit)) // 두 번째 공격의 독립 명중 판정
+        if (!BattleHitChance.Roll(card.OwnerUnit, target)) // 두 번째 공격의 독립 명중 판정
         { // 추가 공격 빗나감 처리 시작
             missed = true; // 빗나감 결과 저장
             return target; // 빗나간 추가 대상 반환
         } // 추가 공격 빗나감 처리 종료
         int baseDamage = (int)Math.Min(int.MaxValue, (long)card.SourceData.SecondaryEffectValue + card.OwnerUnit.AttackPowerBonus + preparedSwordDamage); // 두 번째 기본 피해와 공격력 증가 계산
+        baseDamage = SwordCardCombat.ApplyAttackStances(card, target, baseDamage); // 독립적인 둘째 대상의 체력과 검 강화 적용
         int damage = card.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 공격자의 현재 정신 상태 피해 보정
         damage = applyHitBonus?.Invoke(damage) ?? damage; // 첫 타격 빗나감 뒤 연속 공격 첫 적중 보너스 적용
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정

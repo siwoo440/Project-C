@@ -502,6 +502,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 무효 회복 처리 시작
             return 0; // 적용 회복 없음
         } // 무효 회복 처리 종료
+        var reduction = GetStatusEffect(BattleStatusEffectType.HealingReceivedDown); // 회복 대상이 보유한 받는 회복 감소 조회
+        if (reduction != null) // 회복 감쇠 상태 적용 확인
+        { // 받는 회복 감소 시작
+            healAmount = (int)((long)healAmount * (100 - Math.Min(100, reduction.EffectiveValue)) / 100); // 최종 받을 회복량 감소 후 내림
+            if (healAmount == 0) // 실제 회복이 없는 경우 확인
+            { // 미회복 처리 시작
+                return 0; // 회복 정신력과 알림 미발동
+            } // 미회복 처리 종료
+        } // 받는 회복 감소 종료
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
         CurrentHealth += Mathf.Min(healAmount, MaxHealth - CurrentHealth); // 남은 체력만큼만 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
@@ -537,7 +546,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 피해 정신력 처리 종료
     private void ApplyDisruptMental(BattleStatusEffectType effectType, BattleUnitRuntime sourceUnit) // 교란 정신력 변화 적용
     { // 교란 정신력 처리 시작
-        if (effectType != BattleStatusEffectType.Disrupt) // 교란 상태 확인
+        if (effectType != BattleStatusEffectType.Disrupt && effectType != BattleStatusEffectType.Fear) // 교란 분류와 공포 상태 확인
         { // 교란 아님 처리 시작
             return; // 정신력 처리 중단
         } // 교란 아님 처리 종료

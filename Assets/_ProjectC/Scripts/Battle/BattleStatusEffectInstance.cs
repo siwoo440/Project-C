@@ -105,6 +105,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "행동 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "기절"; // 기절 표시
+            case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
+                return "피의 맹세"; // 피의 맹세 표시
+            case BattleStatusEffectType.Fear: // 공포 종류
+                return "공포"; // 공포 표시
+            case BattleStatusEffectType.FinishingStance: // 마무리 자세 종류
+                return "마무리 자세"; // 마무리 자세 표시
+            case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
+                return "회복량 감소"; // 회복량 감소 표시
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return "칼날 정비"; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
@@ -157,7 +165,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -173,6 +181,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "취"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "절"; // 기절 표시
+            case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
+                return "맹"; // 피의 맹세 표시
+            case BattleStatusEffectType.Fear: // 공포 종류
+                return "공"; // 공포 표시
+            case BattleStatusEffectType.FinishingStance: // 마무리 자세 종류
+                return "마"; // 마무리 자세 표시
+            case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
+                return "감"; // 회복량 감소 표시
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return "정"; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
@@ -241,6 +257,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "다음 예고 행동 한 번 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "남은 턴 동안 적의 모든 행동 취소"; // 기절 표시
+            case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
+                return $"검 카드의 모든 타격에 피해 +{effectiveValue}"; // 피의 맹세 표시
+            case BattleStatusEffectType.Fear: // 공포 종류
+                return "대상의 회피율 보정 무효. 공격자의 실명은 유지."; // 공포 표시
+            case BattleStatusEffectType.FinishingStance: // 마무리 자세 종류
+                return $"이번 턴 체력 절반 이하인 적에게 주는 카드 피해 +{effectiveValue}%"; // 마무리 자세 표시
+            case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
+                return $"받는 체력 회복량 −{effectiveValue}% · 소수점 이하 내림"; // 회복량 감소 표시
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return $"이번 턴 다음 검 피해 카드의 모든 타격에 피해 +{effectiveValue}. 사용 시 소모."; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류

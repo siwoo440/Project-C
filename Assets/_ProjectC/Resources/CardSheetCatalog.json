@@ -391,7 +391,7 @@
       "attribute": "검",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 9 피해, 공포(1턴) 35%",
+      "description": "적에게 물리 피해 9. 명중하면 35% 확률로 공포를 1턴 부여한다. 공포 상태인 대상은 공격을 회피할 수 없다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "위협 돌진.png"
@@ -402,7 +402,7 @@
       "attribute": "검",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 3명에게 7 피해",
+      "description": "선택한 적과 바로 양옆 칸의 생존 적에게 각각 물리 피해 7.",
       "area": "3",
       "targets": "적",
       "imageFileName": "칼날 소용돌이.png"
@@ -413,7 +413,7 @@
       "attribute": "검",
       "rarity": "희귀",
       "cost": "1",
-      "description": "이번 턴 체력 낮은 적에게 주는 피해 +30%",
+      "description": "이번 턴에 카드 사용자가 최대 체력의 50% 이하인 적에게 주는 카드 피해 +30%.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "마무리 자세.png"
@@ -446,7 +446,7 @@
       "attribute": "검",
       "rarity": "특수",
       "cost": "3",
-      "description": "일렬의 적에게 14 피해",
+      "description": "현재 가로열의 모든 생존 적에게 물리 피해 14.",
       "area": "열",
       "targets": "적",
       "imageFileName": "돌파 참격.png"

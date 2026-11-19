@@ -184,6 +184,18 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         SetBattleResult(BattleResult.Escape); // 도주 결과 확정
         return true; // 도주 성공 반환
     } // 도주 요청 종료
+    internal bool HasBleedingTarget() // 출혈을 가진 생존 적 확인
+    { // 추적 후보 검색 시작
+        foreach (var enemy in enemyUnits) // 현재 전투 배치 순회
+        { // 생존 적 확인 시작
+            if (enemy != null && !enemy.IsDead && enemy.GetStatusEffect(BattleStatusEffectType.Bleed) != null) // 실제 출혈이 남은 대상 확인
+            { // 출혈 발견 시작
+                return true; // 피의 추적 사용 가능
+            } // 출혈 발견 종료
+        } // 생존 적 확인 종료
+        return false; // 출혈 대상 없음
+    } // 추적 후보 검색 종료
+
     internal bool HasFinisherTarget(int healthDivisor = 5) // 처형 가능한 생존 적 확인
     { // 처형 후보 확인 시작
         foreach (var enemy in enemyUnits) // 현재 배치한 적 순회
