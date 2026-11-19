@@ -140,9 +140,9 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
         foreach (ShopOfferData offer in manager.Catalog.Offers) // 카탈로그 상품 순회
         {
-            if (offer.RewardOnly) // 보상 전용 카드 확인
+            if (offer.RewardOnly || !offer.CanOfferToDeck(manager.RunDeck)) // 보상 전용 또는 지급 불가능한 상품 확인
             { // 상점 표시 제외 시작
-                continue; // 가격 미정 상품 판매 방지
+                continue; // 현재 파티에 판매할 수 없는 상품 제외
             } // 상점 표시 제외 종료
             ShopOfferData capturedOffer = offer; // 버튼용 현재 상품 보관
             bool sold = manager.IsPurchased(capturedOffer); // 현재 상품 판매 완료 조회
