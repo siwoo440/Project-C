@@ -1054,7 +1054,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         illustrationFrameImage =
             frameObject.GetComponent<Image>(); // 일러스트 프레임 이미지 저장
 
-        LobbyUiArt.Apply(illustrationFrameImage, "FormationPanel"); // 삽화에 금속 테두리와 청록색 배경 적용
+        ApplyEventPanel(illustrationFrameImage); // 삽화에 금속 테두리와 청록색 배경 적용
 
         GameObject illustrationObject =
             new GameObject(
@@ -1096,7 +1096,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         illustrationFallbackText.alignment = TextAlignmentOptions.Center; // 대체 문자 정렬 지정
 
         storyBackground = PreparationUi.CreatePanel("StoryBackground", contentRect, new Vector2(0.32f, 0f), Vector2.one); // 본문 전용 배경 생성
-        LobbyUiArt.Apply(storyBackground.GetComponent<Image>(), "FormationPanel"); // 설명 패널 테두리와 질감 적용
+        ApplyEventPanel(storyBackground.GetComponent<Image>()); // 설명 패널 테두리와 질감 적용
         storyBackground.GetComponent<Image>().raycastTarget = false; // 장식의 입력 가로채기 방지
         GameObject bodyObject =
             new GameObject(
@@ -1126,11 +1126,18 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         bodyText.lineSpacing = 8f; // 본문 줄 간격 설정
     }
 
+    private static void ApplyEventPanel(Image target) // 이벤트 전용 직각 배경 적용
+    { // 배경 설정 시작
+        target.sprite = Resources.Load<Sprite>("UI/EventPanel"); // 무광 청록색 직사각형 원화 연결
+        target.type = Image.Type.Sliced; // 패널 크기와 무관하게 네 변의 두께 유지
+        target.color = Color.white; // 원본 색상 표시
+    } // 배경 설정 종료
+
     private void CreateChoiceArea(Transform parent) // 하단 선택지 영역 생성
     {
         var list = PreparationUi.CreatePanel("Choices", parent, Vector2.zero, Vector2.right); // 하단 목록 패널 생성
         list.offsetMin = new Vector2(48f, ChoiceBottom - 8f); // 목록 좌하단 여백
-        LobbyUiArt.Apply(list.GetComponent<Image>(), "FormationPanel"); // 목록 뒤 금속 테두리 배경 적용
+        ApplyEventPanel(list.GetComponent<Image>()); // 목록 뒤 금속 테두리 배경 적용
         choiceScroll = list.gameObject.AddComponent<ScrollRect>(); // 휠과 드래그 입력 연결
         choiceScroll.horizontal = false; // 수평 이동 차단
         choiceScroll.movementType = ScrollRect.MovementType.Clamped; // 첫 줄과 끝 줄에서 이동 제한
