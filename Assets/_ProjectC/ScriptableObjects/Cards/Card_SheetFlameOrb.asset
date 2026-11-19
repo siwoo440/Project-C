@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetFlameOrb
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_FLAME_ORB
+  displayName: "화염구"
+  description: "적 전체에게 피해 10"
+  artwork: {fileID: 21300000, guid: 7366476f15164285b85c64cb21ddb3a8, type: 3}
+  cardType: 1
+  targetType: 4
+  apCost: 2
+  effectType: 0
+  damageType: 2
+  effectValue: 10
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

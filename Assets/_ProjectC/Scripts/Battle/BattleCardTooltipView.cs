@@ -130,6 +130,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.Heal && cardInstance.SourceData.StatusRemovedByHealing != BattleStatusEffectType.None) // 지정 상태를 제거하는 회복 확인
+        { // 복합 회복 상세 시작
+            return $"{BattleStatusEffectInstance.GetDisplayName(cardInstance.SourceData.StatusRemovedByHealing)} 해제 · 체력 {cardInstance.EffectValue} 회복"; // 해제 상태와 실제 회복 수치 반환
+        } // 복합 회복 상세 종료
         if (cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE") // 심판의 위기 아군 회복 확인
         { // 심판 회복 상세 시작
             return $"체력 {cardInstance.EffectValue} 회복 · 체력 50% 이하에서 {cardInstance.SourceData.SecondaryEffectValue} 추가 회복"; // 회복량과 위험 구간 상세 반환

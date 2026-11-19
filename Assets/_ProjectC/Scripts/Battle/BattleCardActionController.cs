@@ -414,7 +414,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
         } // 체력 비용 지불 불가 종료
-        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth) // 회복 대상 체력 확인
+        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth && targetUnit.GetStatusEffect(cardInstance.SourceData.StatusRemovedByHealing) == null) // 회복과 지정 상태 제거의 필요 여부 확인
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
         } // 회복 불필요 처리 종료
@@ -646,6 +646,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 황제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
+            BattleStatusEffectType removed = cardInstance.SourceData.StatusRemovedByHealing; // 회복 전에 제거할 상태 조회
+            if (removed != BattleStatusEffectType.None && targetUnit.RemoveStatusEffect(removed)) // 지정된 상태가 실제로 제거된 경우 확인
+            { // 상태 해제 표시 시작
+                FindUnitView(targetUnit)?.ShowStatusFeedback(BattleStatusEffectInstance.GetDisplayName(removed) + " 해제", false); // 지정한 상태 해제 표시
+            } // 상태 해제 표시 종료
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
             int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(baseHealing); // 정신 상태 포함 회복량 계산
             return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
