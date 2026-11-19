@@ -105,6 +105,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "행동 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "기절"; // 기절 표시
+            case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
+                return "칼날 정비"; // 칼날 정비 표시
+            case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
+                return "검격 반사"; // 검격 반사 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "다음 공격 약화"; // 다음 공격 약화 표시
             case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
@@ -169,6 +173,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "취"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "절"; // 기절 표시
+            case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
+                return "정"; // 칼날 정비 표시
+            case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
+                return "반"; // 검격 반사 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "약"; // 다음 공격 약화 표시
             case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
@@ -233,6 +241,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "다음 예고 행동 한 번 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "남은 턴 동안 적의 모든 행동 취소"; // 기절 표시
+            case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
+                return $"이번 턴 다음 검 피해 카드의 모든 타격에 피해 +{effectiveValue}. 사용 시 소모."; // 칼날 정비 표시
+            case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
+                return $"적의 첫 직접 물리 체력 피해를 받고 생존하면 잃은 체력의 {effectiveValue}%를 고정 반격. 다음 아군 턴 시작에 해제."; // 검격 반사 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return $"다음 공격 한 번의 피해 {effectiveValue} 감소"; // 다음 공격 약화 표시
             case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화

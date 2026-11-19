@@ -19,14 +19,17 @@ public enum SwordCardRule // 검 카드 공격별 추가 규칙
     BloodEdge, // 출혈 중인 적 추가 피해
     ShieldSplitter, // 대상의 물리 방어 감소
     InterceptSlash, // 대상의 다음 공격 약화
-    CheckSlash // 소유자의 한 턴 회피
+    CheckSlash, // 소유자의 한 턴 회피
+    ExecutionSlash, // 체력 절반 이하의 적에게만 사용하는 검
+    PiercingLunge, // 대상의 임시 방어도 일부를 건너뛰는 검
+    TwinBladeFlurry // 모든 생존 적에서 네 번 재추첨하는 검
 } // 규칙 목록 종료
 
 internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 타격 계산
 { // 검 카드 전투 규칙 시작
-    internal static bool IsFinisherTarget(BattleUnitRuntime target) // 남은 체력 오분의 일 이하의 적 확인
+    internal static bool IsFinisherTarget(BattleUnitRuntime target, int healthDivisor = 5) // 남은 체력 오분의 일 이하의 적 확인
     { // 처형 대상 검사 시작
-        return target != null && !target.IsDead && target.Team == BattleTeam.Enemy && (long)target.CurrentHealth * 5 <= target.MaxHealth; // 반올림 없는 정확한 이십 퍼센트 이하 확인
+        return target != null && !target.IsDead && target.Team == BattleTeam.Enemy && (long)target.CurrentHealth * healthDivisor <= target.MaxHealth; // 반올림 없는 정확한 이십 퍼센트 이하 확인
     } // 처형 대상 검사 종료
 
     internal static bool CanUse(CardInstance card, BattleActionPointRuntime points, BattleTurnRuntime turn) // 검 카드 행동력과 체력 대가 확인
@@ -35,6 +38,10 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 처형 조건 검사 시작
             return points.CurrentActionPoints > 0 && turn.HasFinisherTarget(); // 행동력과 생존한 저체력 적 확인
         } // 처형 조건 검사 종료
+        if (card.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 체력 절반 이하 적에게만 사용하는 검 확인
+        { // 처형 베기 사용 검사 시작
+            return points.CanSpend(card.ApCost) && turn.HasFinisherTarget(2); // 행동력과 체력 절반 이하 적 확인
+        } // 처형 베기 사용 검사 종료
         return points.CanSpend(card.ApCost) && (card.SourceData.SwordRule != SwordCardRule.DoomBlade || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 일반 비용과 파멸의 검 생존 비용 확인
     } // 사용 가능 검사 종료
 
@@ -60,15 +67,20 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
 
     internal static BattleUnitRuntime PickDanceTarget(IReadOnlyList<BattleUnitRuntime> area) // 매 타격 직전 생존 대상 추첨
     { // 실제 타격 대상 결정 시작
-        var first = area.Count > 0 && !area[0].IsDead ? area[0] : null; // 첫 칸의 현재 생존 여부 확인
-        var second = area.Count > 1 && !area[1].IsDead ? area[1] : null; // 둘째 칸의 현재 생존 여부 확인
-        int count = (first == null ? 0 : 1) + (second == null ? 0 : 1); // 살아 있는 실제 후보 수 계산
-        if (count == 0) // 공격 가능한 적 없음 확인
-        { // 타격 종료 시작
+        var living = new List<BattleUnitRuntime>(area.Count); // 이번 타격에서 선택할 수 있는 생존 적
+        foreach (var enemy in area) // 카드에서 지정한 전체 대상 범위 확인
+        { // 생존 후보 수집 시작
+            if (enemy != null && !enemy.IsDead) // 실제로 공격할 생존 대상 확인
+            { // 대상 추가 시작
+                living.Add(enemy); // 기존 전투 위치 순서로 후보 수집
+            } // 대상 추가 종료
+        } // 생존 후보 수집 종료
+        if (living.Count == 0) // 타격 사이에 후보가 모두 쓰러졌는지 확인
+        { // 공격 종료 시작
             return null; // 범위 밖 추가 공격 차단
-        } // 타격 종료 종료
-        int selected = RelicRandomCardTarget.PickIndex(count, size => UnityEngine.Random.Range(0, size)); // 매 타격의 기본 추첨과 낡은 주사위 처리
-        return selected == 0 ? first ?? second : second; // 방금 사망한 적을 제외한 실제 대상 반환
+        } // 공격 종료 종료
+        int selected = RelicRandomCardTarget.PickIndex(living.Count, size => UnityEngine.Random.Range(0, size)); // 유물 재추첨을 포함한 한 번의 대상 선택
+        return living[selected]; // 이번 타격을 받을 생존 적 반환
     } // 실제 타격 대상 결정 종료
 
     internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 각 검 공격의 방어 전 피해 계산

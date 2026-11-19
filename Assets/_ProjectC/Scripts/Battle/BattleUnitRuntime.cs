@@ -395,14 +395,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null) // 직접 공격의 선택적 분담과 최초 체력 손실 방어 처리
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
             return BattleDamageResult.Empty(damageType); // 적용 피해 없음
         } // 무효 처리 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
-        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit); // 최종 피해 계산
+        int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
+        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock); // 방어도 관통을 반영한 피해 계산
         int sharedDamage = 0; // 동료에게 분담할 피해 초기화
         if (sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead) // 생존한 다른 아군 분담자 확인
         { // 피해 분담 계산 시작
@@ -444,6 +445,16 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 분담 피해 적용 시작
             sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit); // 추가 방어 계산 없이 분담 피해 적용
         } // 분담 피해 적용 종료
+        if (!IsDead && damageResult.AppliedDamage > 0 && damageType == BattleDamageType.Physical && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 직접 물리 공격의 실제 생존 피해 확인
+        { // 검격 반사 시작
+            var riposte = GetStatusEffect(BattleStatusEffectType.PhysicalRiposte); // 피해를 직접 받은 아군의 반사 상태 조회
+            if (riposte != null) // 첫 유효 피해를 기다리는 상태 확인
+            { // 반사 확정 시작
+                int reflected = (int)((long)damageResult.AppliedDamage * riposte.EffectiveValue / 100); // 직접 잃은 체력 비율 내림
+                RemoveStatusEffect(BattleStatusEffectType.PhysicalRiposte); // 반격 피해가 영이어도 첫 기회 소모
+                sourceUnit.TakeUnblockedDamage(reflected, BattleDamageType.None, this); // 공격자 방어와 방어도를 건너뛴 고정 피해
+            } // 반사 확정 종료
+        } // 검격 반사 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
     internal int TakeUnblockedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 분담과 출혈의 방어도 없는 실제 체력 피해

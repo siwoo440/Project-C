@@ -392,6 +392,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_VITAL_AIM
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 25e1f0c2e9745b2b85328ae2415bdd93, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLADE_MAINTENANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 0e4cc25ee4365a309ca2a7b5b9fa2b4e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FRONTLINE_ORDER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 7df3bb3940585b428a1c7dd70f7f74cf, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_EXECUTION_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 090b03ace0da5e3f8ea8b08ae66caedf, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOOD_GALE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 733a52d193055da19dfcdcd97eb671c1, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PHYSICAL_RIPOSTE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 768498d54b515bc1aa216355f0e752f3, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PIERCING_LUNGE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: b7c370ea506b58589f73c9a021a14c10, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_TWIN_BLADE_FLURRY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 7407404a4fde5360a6b71901570a6dd4, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_THRUST
     offerType: 0
     price: 0
