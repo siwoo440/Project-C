@@ -114,10 +114,10 @@ public sealed class RestRoomRunManager : MonoBehaviour // 57일차 휴식 방 �
         }
 
         isUsed = true; // 현재 휴식 방 사용 완료 기록
-        int recoveryPercent = RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel); // 위험도별 회복률 조회
+        string recoveryLabel = RestRoomRecoveryService.HealthRecoveryLabel(hazardLevel); // 위험도별 기본 회복과 보유 식량팩 보정 조회
 
         message =
-            $"휴식 완료: 생존 {recoveredMemberCount}명 HP +{recoveryPercent}% / " +
+            $"휴식 완료: 생존 {recoveredMemberCount}명 HP +{recoveryLabel} / " +
             $"정신력 +{RestRoomRecoveryService.MentalRecoveryAmount} / 카드 1장 강화"; // 휴식 결과 메시지
 
         Debug.Log(

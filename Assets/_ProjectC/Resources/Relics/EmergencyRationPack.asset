@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: EmergencyRationPack
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_EMERGENCY_RATION_PACK
+  displayName: 비상 식량팩
+  description: 캠프에서 생존 아군의 체력 회복량 +30%. 캐릭터별 회복량의 소수점 이하는 버리고 최대 체력까지만 회복한다.
+  icon: {fileID: 21300000, guid: c77514c4d1cd485faff6630fda0eda9c, type: 3}
+  rarity: 0
+  triggerType: 16
+  effectType: 18
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 30
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

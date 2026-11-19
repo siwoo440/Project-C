@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement; // 탐사 씬 복원
 using UnityEngine.TestTools; // 실제 플레이 검사
 using Object = UnityEngine.Object; // 게임 객체 검색
 
-public sealed class WinterfallRelicEffectsTests // 나침반과 전투 유물 네 종 검사
+public sealed class WinterfallRelicEffectsTests // 윈터폴 유물 등록과 발동 규칙 검사
 { // 유물 검사 시작
     private static RelicData Relic(string name) // 실제 유물 원본 조회
     { // 유물 조회 시작
@@ -15,22 +15,27 @@ public sealed class WinterfallRelicEffectsTests // 나침반과 전투 유물 �
     } // 유물 조회 종료
 
     [Test] // 원본과 시트 및 상점 등록 검사
-    public void FourRelicsHaveSheetPricesSavedIdsAndDistinctArtwork() // 저장과 상점 및 도감 원화 확인
+    public void RelicsHaveSheetPricesSavedIdsAndDistinctArtwork() // 저장과 상점 및 도감 원화 확인
     { // 등록 검사 시작
-        var names = new[] { "CrackedCompass", "BloodstainedSyringe", "WornDie", "SealedDagger" }; // 검사할 네 유물 원본
+        string[] names = // 검사할 유물 자원 이름
+        { // 원본 목록 시작
+            "CrackedCompass", "BloodstainedSyringe", "WornDie", "SealedDagger", // 나침반부터 단도까지
+            "FragmentedMirror", "ErosionEchoBottle", "EmergencyRationPack", "BlackSpool", // 거울부터 실타래까지
+            "GoldenExchangeVoucher", "RedRemnantCharm", "FadedDogTag", "BrokenMedal" // 교환권부터 메달까지
+        }; // 원본 목록 종료
         var relics = names.Select(Relic).ToArray(); // 실제 원본 목록 조회
         var shop = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 실제 상점 원본
         var save = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 저장 복원용 원본
-        foreach (var relic in relics) // 네 유물 등록 상태 검사
+        foreach (var relic in relics) // 유물별 등록 상태 검사
         { // 개별 등록 검사 시작
             Assert.IsNotNull(relic); // 원본 존재 확인
             Assert.IsNotNull(relic.Icon); // 실제 표시 그림 연결 확인
-            CollectionAssert.Contains(save.Relics, relic); // 복원할 원본 등록 확인
+            Assert.AreSame(relic, save.Relics.Single(item => item.RelicId == relic.RelicId)); // 같은 저장 번호에 연결된 원본 하나 확인
             var offer = shop.Offers.Single(row => row.Relic == relic); // 유물마다 실제 상품 하나 확인
             var sheet = RelicSheetCatalog.Load().Entries.Single(row => row.Name == relic.DisplayName); // 실제 시트 이름 연결 확인
             Assert.That(offer.Price, Is.InRange(sheet.BuyMin, sheet.BuyMax)); // 기본 가격의 시트 구매 범위 확인
         } // 개별 등록 검사 종료
-        Assert.AreEqual(4, relics.Select(item => item.Icon).Distinct().Count()); // 유물별 고유 그림 확인
+        Assert.AreEqual(names.Length, relics.Select(item => item.Icon).Distinct().Count()); // 유물별 고유 그림 확인
     } // 등록 검사 종료
 
     [Test] // 나침반 첫 방과 재추첨 방지 검사

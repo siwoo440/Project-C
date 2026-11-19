@@ -64,6 +64,17 @@ public sealed class RelicInventoryRuntime // 획득 순서 기반 유물 보관�
         return false; // 일치 유물 없음 반환
     }
 
+    public RelicData FindEffect(RelicEffectType effect) // 현재 실제 보유한 효과의 원본 조회
+    { // 유물 효과 조회 시작
+        foreach (var relic in ownedRelics) // 회차 보관함의 획득 순서 확인
+        { // 개별 원본 검사 시작
+            if (relic != null && relic.EffectType == effect) // 요청한 유물 효과 확인
+            { // 일치 효과 처리 시작
+                return relic; // 보유한 효과와 수치 반환
+            } // 일치 효과 처리 종료
+        } // 개별 원본 검사 종료
+        return null; // 보유한 효과 없음
+    } // 유물 효과 조회 종료
     public bool ContainsRelic(string relicId) // 동일 유물 보유 여부 확인
     {
         if (string.IsNullOrWhiteSpace(relicId)) // 조회 ID 유효성 확인

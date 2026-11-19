@@ -12,6 +12,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
+    internal BattleDeckRuntime Deck => runtimeDeck; // 손패 버림 신호를 발행하는 현재 전투 덱
     public BattleTurnPhase CurrentPhase { get; private set; } = BattleTurnPhase.NotStarted; // 현재 턴 단계
     public BattleType BattleType { get; } // 현재 전투 유형 조회
     public BattleResult Result { get; private set; } = BattleResult.None; // 현재 전투 결과 조회
@@ -67,7 +68,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return true; // 선제 전투 시작 완료
         } // 적의 첫 행동 종료
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
-        LastDrawnCardCount = runtimeDeck.DrawCards(initialHandSize); // 시작 손패 드로우
+        LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(initialHandSize); // 실제 첫 아군 턴의 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         NotifyPhaseStarted(); // 첫 플레이어 턴 시작 알림
         StateChanged?.Invoke(); // 턴 상태 변경 알림
@@ -130,7 +131,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (!IsBattleEnded) // 시작 효과 처리 후 전투 지속 확인
         { // 다음 턴 준비 시작
             sharedActionPoints.Restore(); // 공용 행동력 회복
-            LastDrawnCardCount = runtimeDeck.DrawCards(cardsPerPlayerTurn); // 다음 턴 손패 뽑기
+            LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(cardsPerPlayerTurn); // 다음 턴의 기본 및 예약 손패 드로우
             StateChanged?.Invoke(); // 전투 화면 갱신 알림
         } // 다음 턴 준비 종료
         return true; // 강제 턴 전환 성공 반환
@@ -139,6 +140,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 플레이어 턴 정리 시작
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
         sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
+        sharedActionPoints.ClearTurnCapacity(); // 끝난 아군 턴의 임시 행동력 상한 회수
     } // 플레이어 턴 정리 종료
     public bool CompleteEnemyTurn() // 적 턴 완료
     { // 적 턴 완료 처리 시작
@@ -168,7 +170,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
-            LastDrawnCardCount = runtimeDeck.DrawCards(drawCount); // 선제 뒤 시작 손패 또는 새 라운드 손패 지급
+            LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(drawCount); // 선제 뒤 시작 손패 또는 새 라운드와 예약 손패 지급
             StateChanged?.Invoke(); // 턴 상태 변경 알림
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
@@ -268,6 +270,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 결과 확정 시작
         Result = battleResult; // 최종 전투 결과 저장
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
+        runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
+        sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
         StateChanged?.Invoke(); // 전투 종료 알림
         BattleCompleted?.Invoke(Result); // 후속 상태 정리 이후 전투 종료 완료 알림
     } // 결과 확정 종료

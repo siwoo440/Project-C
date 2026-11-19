@@ -50,6 +50,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.TurnStarted, HandleBattleEvent)); // 턴 시작 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.TurnEnded, HandleBattleEvent)); // 턴 종료 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.CardUsed, HandleBattleEvent)); // 카드 사용 이벤트 구독
+        subscriptions.Add(dispatcher.Subscribe(BattleEventType.BeforeHandDiscard, HandleBattleEvent)); // 손패 버림 직전 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.DamageApplied, HandleBattleEvent)); // 피해 적용 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.HealingApplied, HandleBattleEvent)); // 회복 적용 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.StatusApplied, HandleBattleEvent)); // 상태 적용 이벤트 구독
@@ -158,12 +159,42 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             return false; // 확률 발동 실패 반환
         } // 확률 발동 실패 종료
 
-        ApplyEffect(relicData, eventContext); // 유물 효과 즉시 적용
+        if (!TryApplyTriggeredEffect(relicData, eventContext)) // 손패 빈자리와 턴 조건을 포함한 실제 발동 확인
+        { // 유물 발동 보류 시작
+            return false; // 유효한 다음 기회까지 횟수 보존
+        } // 유물 발동 보류 종료
         IncreaseTriggerCount(relicData); // 유물 발동 횟수 기록
         Debug.Log($"[Relic] #{orderNumber} {relicData.DisplayName} 발동 / {relicData.TriggerType} / {relicData.EffectType} {relicData.EffectValue}"); // 유물 발동 순서 로그 출력
         return true; // 유물 실행 성공 반환
     }
 
+    private bool TryApplyTriggeredEffect(RelicData relic, BattleEventContext context) // 조건을 충족한 카드와 행동력 유물 반영
+    { // 조건부 효과 시작
+        switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
+        { // 효과 선택 시작
+            case RelicEffectType.CopyPlayedCard: // 첫 사용 카드 복사
+                return context?.Phase == BattleTurnPhase.PlayerTurn && battleDeck != null && battleDeck.TryAddBattleCopy(context.Card); // 손패가 가득 차면 복사 기회 보존
+            case RelicEffectType.QueueNextTurnDraw: // 종료 전 손패에 따른 다음 턴 드로우
+                if (context?.Phase != BattleTurnPhase.PlayerTurn || battleDeck == null || battleDeck.HandCountBeforeCleanup == 0) // 자동 버림 전 손패와 아군 턴 확인
+                { // 드로우 없음 시작
+                    return false; // 빈 손패나 적 턴의 예약 제외
+                } // 드로우 없음 종료
+                battleDeck.QueuePlayerTurnDraw(relic.EffectValue); // 다음 아군 턴의 기본 드로우에 한 장 추가
+                return true; // 보너스 드로우 예약 완료
+            case RelicEffectType.RetainDiscardedHandCard: // 효과나 턴 종료로 버릴 첫 손패 유지
+                return context?.Phase == BattleTurnPhase.PlayerTurn && battleDeck != null && battleDeck.RetainHandCard(context.Card); // 실제 버리려는 카드 한 장 유지
+            case RelicEffectType.GainFirstTurnCapacity: // 첫 아군 턴에만 최대 및 현재 행동력 증가
+                if (context?.Phase != BattleTurnPhase.PlayerTurn || context.Round != 1 || actionPoints == null) // 첫 아군 턴과 행동력 지갑 확인
+                { // 행동력 지급 보류 시작
+                    return false; // 적 선제 중 첫 아군 턴까지 보존
+                } // 행동력 지급 보류 종료
+                actionPoints.AddTurnCapacity(relic.EffectValue); // 첫 아군 턴에 행동력 상한과 현재 수치 증가
+                return true; // 한 전투의 최초 행동력 지급 완료
+            default: // 기존 전투 유물 경로
+                ApplyEffect(relic, context); // 원래 효과 그대로 적용
+                return true; // 기존 유물 발동 완료
+        } // 효과 선택 종료
+    } // 조건부 효과 종료
     private bool CanTrigger(RelicData relicData) // 유물 발동 제한 검사
     {
         if (relicData == null || !relicData.IsValidData()) // 유물 데이터 유효성 확인
@@ -381,6 +412,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return RelicTriggerType.TurnEnded; // 턴 종료 유물 시점 반환
             case BattleEventType.CardUsed: // 카드 사용 이벤트
                 return RelicTriggerType.CardUsed; // 카드 사용 유물 시점 반환
+            case BattleEventType.BeforeHandDiscard: // 손패 버림 직전 이벤트
+                return RelicTriggerType.BeforeHandDiscard; // 효과와 턴 종료의 버림 직전 반환
             case BattleEventType.DamageApplied: // 피해 적용 이벤트
                 return RelicTriggerType.DamageApplied; // 피해 유물 시점 반환
             case BattleEventType.HealingApplied: // 회복 적용 이벤트

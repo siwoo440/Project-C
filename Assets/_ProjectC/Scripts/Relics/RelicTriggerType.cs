@@ -14,5 +14,9 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BattleEnded, // 전투 종료 시점
     BattleVictory, // 전투 승리 결과 저장 직전
     FirstNormalRoom, // 탐사 출발 뒤 첫 일반 방 진입
-    CardRandomTarget // 카드의 무작위 대상 추첨
+    CardRandomTarget, // 카드의 무작위 대상 추첨
+    BeforeHandDiscard, // 손패 한 장이 버린 더미로 이동하기 직전
+    CampRecovery, // 캠프 회복 선택 시점
+    ShopCardRemoval, // 상점 카드 제거 확정 시점
+    BeforeHealthDamage // 방어도 처리 후 체력 피해 직전
 }
