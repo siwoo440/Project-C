@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetExecutionerSword
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_EXECUTIONER_SWORD
+  displayName: "처단의 검"
+  description: "적에게 물리 피해 20. 이 공격으로 적을 직접 처치하면 공용 행동력 1을 최대치까지 회복한다."
+  artwork: {fileID: 21300000, guid: c59a2f72a63f5e428389c8173a0118e2, type: 3}
+  cardType: 0
+  targetType: 3
+  apCost: 3
+  effectType: 0
+  damageType: 1
+  effectValue: 20
+  damageHitCount: 1
+  secondaryEffectValue: 1
+  swordRule: 25
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

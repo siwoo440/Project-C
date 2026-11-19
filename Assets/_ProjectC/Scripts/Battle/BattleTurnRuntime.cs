@@ -184,6 +184,18 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         SetBattleResult(BattleResult.Escape); // 도주 결과 확정
         return true; // 도주 성공 반환
     } // 도주 요청 종료
+    internal bool HasBuffedTarget() // 단죄가 제거할 강화 소유 적 확인
+    { // 강화 대상 탐색 시작
+        foreach (var enemy in enemyUnits) // 현재 적 전투 배치 순회
+        { // 적 상태 확인 시작
+            if (enemy != null && !enemy.IsDead && enemy.FirstRemovableBuff() != null) // 살아 있고 일반 강화가 있는 적 확인
+            { // 유효 대상 시작
+                return true; // 단죄 베기 사용 가능
+            } // 유효 대상 종료
+        } // 적 상태 확인 종료
+        return false; // 제거 가능한 적 강화 없음
+    } // 강화 대상 탐색 종료
+
     internal bool HasBleedingTarget() // 출혈을 가진 생존 적 확인
     { // 추적 후보 검색 시작
         foreach (var enemy in enemyUnits) // 현재 전투 배치 순회

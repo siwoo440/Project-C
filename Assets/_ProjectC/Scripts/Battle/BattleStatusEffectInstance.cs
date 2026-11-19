@@ -105,6 +105,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "행동 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "기절"; // 기절 표시
+            case BattleStatusEffectType.BattlefieldResolve: // 전장의 결의 종류
+                return "전장의 결의"; // 다음 턴 방어 예약 표시
+            case BattleStatusEffectType.BladeFrenzy: // 칼날 폭주 종류
+                return "칼날 폭주"; // 이번 턴 검 피해 강화 표시
             case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
                 return "피의 맹세"; // 피의 맹세 표시
             case BattleStatusEffectType.Fear: // 공포 종류
@@ -183,6 +187,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "취"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "절"; // 기절 표시
+            case BattleStatusEffectType.BattlefieldResolve: // 전장의 결의 종류
+                return "결"; // 다음 턴 방어 예약 표시
+            case BattleStatusEffectType.BladeFrenzy: // 칼날 폭주 종류
+                return "폭"; // 이번 턴 검 피해 강화 표시
             case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
                 return "맹"; // 피의 맹세 표시
             case BattleStatusEffectType.Fear: // 공포 종류
@@ -261,6 +269,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "다음 예고 행동 한 번 취소"; // 행동 취소 표시
             case BattleStatusEffectType.Stun: // 기절 종류
                 return "남은 턴 동안 적의 모든 행동 취소"; // 기절 표시
+            case BattleStatusEffectType.BattlefieldResolve: // 전장의 결의 종류
+                return $"다음 아군 턴 시작에 방어도 {effectiveValue} 획득"; // 다음 턴 방어 예약 표시
+            case BattleStatusEffectType.BladeFrenzy: // 칼날 폭주 종류
+                return $"이번 턴 소유자의 검 피해 카드 모든 타격에 피해 +{effectiveValue}"; // 이번 턴 검 피해 강화 표시
             case BattleStatusEffectType.BloodOath: // 피의 맹세 종류
                 return $"검 카드의 모든 타격에 피해 +{effectiveValue}"; // 피의 맹세 표시
             case BattleStatusEffectType.Fear: // 공포 종류

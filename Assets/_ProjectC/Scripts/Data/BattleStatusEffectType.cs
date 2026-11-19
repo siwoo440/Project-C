@@ -33,5 +33,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Fear, // 공격 대상의 회피 보정 무효
     FinishingStance, // 체력이 절반 이하인 적에게 카드 피해 증가
     HealingReceivedDown, // 대상이 받는 체력 회복량 감소
-    PublicMark // 첫 아군 턴이 끝날 때까지 유지하는 공명 표식
+    PublicMark, // 첫 아군 턴이 끝날 때까지 유지하는 공명 표식
+    BattlefieldResolve, // 다음 아군 턴 시작 방어도 예약
+    BladeFrenzy // 이번 턴 소유자의 모든 검 타격 강화
 } // 열거형 종료

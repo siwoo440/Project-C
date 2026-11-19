@@ -23,7 +23,7 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
             } // 상태 없음 제외 종료
             Sprite icon = BattleStatusIconArt.Get(effect); // 생성한 상태 이미지 조회
             Assert.IsNotNull(icon, effect.ToString()); // 각 상태 이미지 존재 확인
-            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion || effect == BattleStatusEffectType.Disorientation || effect == BattleStatusEffectType.CriticalChanceUp || effect == BattleStatusEffectType.ChargeDefenseDown || effect == BattleStatusEffectType.Bleed || effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun || effect == BattleStatusEffectType.NextAttackDown || effect == BattleStatusEffectType.AttackPowerDown || effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte || effect == BattleStatusEffectType.BloodOath || effect == BattleStatusEffectType.Fear || effect == BattleStatusEffectType.FinishingStance || effect == BattleStatusEffectType.HealingReceivedDown || effect == BattleStatusEffectType.PublicMark; // 개별 투명 원화 상태 확인
+            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion || effect == BattleStatusEffectType.Disorientation || effect == BattleStatusEffectType.CriticalChanceUp || effect == BattleStatusEffectType.ChargeDefenseDown || effect == BattleStatusEffectType.Bleed || effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun || effect == BattleStatusEffectType.NextAttackDown || effect == BattleStatusEffectType.AttackPowerDown || effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte || effect == BattleStatusEffectType.BloodOath || effect == BattleStatusEffectType.Fear || effect == BattleStatusEffectType.FinishingStance || effect == BattleStatusEffectType.HealingReceivedDown || effect == BattleStatusEffectType.BattlefieldResolve || effect == BattleStatusEffectType.BladeFrenzy || effect == BattleStatusEffectType.PublicMark; // 개별 투명 원화 상태 확인
             Assert.AreEqual(separate ? effect + "StatusIcon" : "StatusIcons", icon.texture.name); // 상태별 생성 이미지 사용 확인
             if (!separate) // 공용 아이콘 시트 상태 확인
             { // 기존 정사각형 이미지 검사 시작
@@ -40,6 +40,28 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
         } // 개별 상태 아이콘 검사 종료
         Assert.AreEqual(Enum.GetValues(typeof(BattleStatusEffectType)).Length - 1, areas.Count); // 상태 없음 이외의 모든 고유 아이콘 수 확인
     } // 상태 아이콘 종류 검사 종료
+    [UnityTest] // 제한 없는 예약 상태의 툴팁 검사 지정
+    public IEnumerator StatusTooltip_ShowsUnboundedStacksWithoutAFalseLimit() // 예약 중첩과 일반 상태의 제한 표시 비교
+    { // 툴팁 검사 시작
+        yield return new EnterPlayMode(); // 실제 화면 플레이 시작
+        GameObject canvas = new GameObject("StatusCanvas", typeof(RectTransform), typeof(Canvas)); // 독립 전투 캔버스 생성
+        Object.DontDestroyOnLoad(canvas); // 씬 전환 중 캔버스 유지
+        GameObject target = new GameObject("Unit", typeof(RectTransform), typeof(BattleStatusEffectTooltipView)); // 실제 툴팁 대상 생성
+        target.transform.SetParent(canvas.transform, false); // 캔버스에 대상 연결
+        CharacterData data = ScriptableObject.CreateInstance<CharacterData>(); // 임시 아군 원본 생성
+        BattleUnitRuntime unit = BattleUnitRuntime.CreateAlly(data); // 실제 아군 생성
+        unit.ApplyStatusEffect(BattleStatusEffectType.BattlefieldResolve, 4, 1, int.MaxValue); // 다음 턴 방어 예약
+        unit.ApplyStatusEffect(BattleStatusEffectType.BattlefieldResolve, 4, 1, int.MaxValue); // 두 번째 방어 예약
+        unit.ApplyStatusEffect(BattleStatusEffectType.Poison, 1, 2, 3); // 제한 있는 일반 상태 적용
+        target.GetComponent<BattleStatusEffectTooltipView>().Show(unit); // 실제 상세 툴팁 표시
+        string text = target.transform.Find("StatusEffectTooltip/DetailText").GetComponent<TMP_Text>().text; // 표시된 실제 문구 조회
+        StringAssert.Contains("2중첩", text); // 예약 횟수 표시 확인
+        StringAssert.DoesNotContain("2147483647", text); // 내부 숫자 노출 방지 확인
+        StringAssert.Contains("1/3중첩", text); // 제한 있는 상태의 기존 표시 확인
+        Object.DestroyImmediate(canvas); // 임시 캔버스 정리
+        Object.DestroyImmediate(data); // 임시 아군 원본 정리
+        yield return new ExitPlayMode(); // 실제 화면 플레이 종료
+    } // 툴팁 검사 종료
     [UnityTest] // 실제 상태 아이콘 화면 검사 지정
     public IEnumerator StatusView_ShowsIconsAndCornerValuesAndUpdates() // 상태 아이콘과 구석 수치의 실제 갱신 확인
     { // 실제 상태 화면 검사 시작

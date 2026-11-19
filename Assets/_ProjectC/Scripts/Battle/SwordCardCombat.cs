@@ -27,7 +27,13 @@ public enum SwordCardRule // 검 카드 공격별 추가 규칙
     IntimidatingCharge, // 명중 후 확률로 공포를 주는 공격
     BladeWhirlwind, // 선택한 적과 좌우 한 칸 공격
     BloodTrail, // 출혈이 있는 적에게만 쓰는 공격
-    SeveringStrike // 대상이 받는 회복량 감소
+    SeveringStrike, // 대상이 받는 회복량 감소
+    RageRelease, // 공격력 강화와 자신의 물리 방어 감소
+    ExecutionerSword, // 직접 처치 뒤 공용 행동력 회복
+    BattlefieldResolve, // 사용 직후와 다음 아군 턴 시작 방어도 지급
+    BloodBackflow, // 출혈이 있는 생존 적 전체 즉시 공격
+    JudgmentSlash, // 강화가 있는 적 공격과 강화 하나 해제
+    KingsSlash // 전체 적 타격 후 최대 체력이 가장 높은 생존 적 재공격
 } // 규칙 목록 종료
 
 internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 타격 계산
@@ -47,10 +53,14 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 처형 베기 사용 검사 시작
             return points.CanSpend(card.ApCost) && turn.HasFinisherTarget(2); // 행동력과 체력 절반 이하 적 확인
         } // 처형 베기 사용 검사 종료
-        if (card.SourceData.SwordRule == SwordCardRule.BloodTrail && !turn.HasBleedingTarget()) // 추적할 출혈 적 존재 여부 확인
+        if ((card.SourceData.SwordRule == SwordCardRule.BloodTrail || card.SourceData.SwordRule == SwordCardRule.BloodBackflow) && !turn.HasBleedingTarget()) // 추적할 출혈 적 존재 여부 확인
         { // 추적 대상 없음 시작
             return false; // 카드 사용과 행동력 지불 차단
         } // 추적 대상 없음 종료
+        if (card.SourceData.SwordRule == SwordCardRule.JudgmentSlash && !turn.HasBuffedTarget()) // 제거할 강화가 있는 생존 적 확인
+        { // 단죄 대상 확인 시작
+            return false; // 강화 없는 전투에서 카드 소비 차단
+        } // 단죄 대상 확인 종료
         bool healthCost = card.SourceData.SwordRule == SwordCardRule.DoomBlade || card.SourceData.SwordRule == SwordCardRule.BloodOath; // 생존 체력을 지불할 검 확인
         return points.CanSpend(card.ApCost) && (!healthCost || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 소유자 체력 비용 확인
     } // 사용 가능 검사 종료
@@ -101,6 +111,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         long amount = damage; // 원래 카드의 타격 수치 보관
         if (card.CardType == CardType.Sword) // 검 카드 타격 확인
         { // 피의 맹세 계산 시작
+            amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BladeFrenzy)?.EffectiveValue ?? 0; // 이번 턴 소유자의 검 피해에 폭주 수치 가산
             amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BloodOath)?.EffectiveValue ?? 0; // 보유한 검 강화 수치 가산
         } // 피의 맹세 계산 종료
         var stance = card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.FinishingStance); // 해당 카드 소유자의 마무리 자세 조회
