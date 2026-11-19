@@ -195,6 +195,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "다음 일반 전투 40% 회피 · 1회", "정신력 +2 · 나사 +1", "변화 없음" }; // 선택 전 확인할 실제 효과
                 label += "   " + effects[index]; // 기획 행동과 결과 요약 표시
             } // 지도 조각 효과 표시 종료
+            else if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 비용과 다음 전투 효과 안내
+            { // 들판 선택 안내 시작
+                string[] effects = { "체력 -6 · 희귀 또는 저주 각 50%", "아군 회피 +10%p · 2턴", "아군 명중 -15%p · 1턴" }; // 행동별 비용과 적용 기간
+                label += "   " + effects[index]; // 행동 확정 전에 결과 안내
+            } // 들판 선택 안내 종료
             else if (currentEventData.EventId == BurntScarecrowEvent.Id) // 허수아비 조사와 소각 비용 안내
             { // 허수아비 효과 표시 시작
                 string[] effects = { "정신력 -4 · 희귀 카드 50% / 잿빛 저주 50%", "체력 -4 · 자신의 잿빛 저주 1장 제거", "변화 없음" }; // 원문 선택 비용과 획득 확률
@@ -219,6 +224,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return; // 잘못된 클릭 또는 중복 선택 차단
         }
 
+        if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 원문 선택 확인
+        { // 들판 선택 시작
+            string hint = choiceIndex == GlassFieldEvent.BreakGlass ? "체력 6을 잃고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 깨기 행동자 안내
+            SelectActorEventChoice(choiceIndex, hint, GlassFieldEvent.TryResolve); // 대상 또는 다음 전투 효과 확정
+            return; // 일반 자원 선택 처리 제외
+        } // 들판 선택 종료
         if (currentEventData.EventId == BurntScarecrowEvent.Id) // 타버린 허수아비 원본 확인
         { // 허수아비 선택 시작
             string hint = choiceIndex == BurntScarecrowEvent.Investigate ? "정신력 4를 잃고 카드 한 장을 받을 생존자를 선택하세요." : choiceIndex == BurntScarecrowEvent.Burn ? "체력 4를 잃고 자신의 잿빛 저주 한 장을 제거할 생존자를 선택하세요." : null; // 허수아비 비용에 맞는 대상 선택 안내

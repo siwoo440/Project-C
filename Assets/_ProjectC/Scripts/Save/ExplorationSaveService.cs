@@ -21,6 +21,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string[] cleared; // 클리어 조우 목록
         public string[] events; // 처리한 이벤트와 특수 방 목록
         public string pendingMapFragment; // 사용 대기 중인 지도 조각의 원본 이벤트
+        public GlassFieldEffect glassFieldEffects; // 다음 교전의 회피와 실명 보관
         public string[] avoidedEncounters; // 승리 보상 없이 회피한 조우 목록
         public string[] relics; // 획득 순서 유물 목록
         public string[] consumables; // 소모품 슬롯 목록
@@ -167,6 +168,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 cleared = cleared.ToArray(), // 클리어 조우 설정
                 events = events.ToArray(), // 처리 이벤트 설정
                 pendingMapFragment = session.PendingMapFragmentId, // 보관 중인 일회성 지도 조각 저장
+                glassFieldEffects = session.PendingGlassFieldEffects, // 들판 선택의 미사용 전투 효과 저장
                 avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
@@ -325,6 +327,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 미지원 목록 버전 처리 시작
             return false; // 알 수 없는 조우 구성의 복원 차단
         } // 미지원 목록 버전 처리 종료
+        if ((snapshot.glassFieldEffects & ~(GlassFieldEffect.Evasion | GlassFieldEffect.Blind)) != 0) // 지원하지 않는 들판 효과 확인
+        { // 잘못된 효과 처리 시작
+            return false; // 알 수 없는 효과 복원 차단
+        } // 잘못된 효과 처리 종료
         if (snapshot.eventPoolVersion < 0 || snapshot.eventPoolVersion > ExplorationEventCatalog.CurrentVersion) // 지원 이벤트 목록 버전 확인
         { // 잘못된 이벤트 버전 처리 시작
             return false; // 복원할 수 없는 이벤트 구성 차단

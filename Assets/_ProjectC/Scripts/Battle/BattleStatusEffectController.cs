@@ -131,6 +131,19 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             if (ally != null) // 아군 존재 확인
             { // 준비 제거 시작
                 ally.RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 사용하지 않은 방어 준비 만료
+                BattleStatusEffectInstance evasion = ally.GetStatusEffect(BattleStatusEffectType.Evasion); // 방금 끝난 적 턴에 적용된 회피 확인
+                if (evasion != null) // 회피가 남은 아군 확인
+                { // 회피 기간 처리 시작
+                    evasion.AdvanceDuration(); // 적이 모두 행동한 뒤 남은 기간 한 턴 감소
+                    if (evasion.IsExpired) // 두 번째 적 턴 종료 확인
+                    { // 기간 만료 시작
+                        ally.RemoveStatusEffect(BattleStatusEffectType.Evasion); // 만료된 회피 제거
+                    } // 기간 만료 종료
+                    else // 남은 기간 표시
+                    { // 아이콘 갱신 시작
+                        ally.NotifyStatusEffectsChanged(); // 회피 아이콘의 남은 턴 변경 알림
+                    } // 아이콘 갱신 종료
+                } // 회피 기간 처리 종료
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료

@@ -17,6 +17,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private readonly HashSet<string> avoidedEncounterIds = new HashSet<string>(); // 승리와 보상을 제외한 지도 조각 회피 기록
     private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
+    public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
 
     private EncounterData activeEncounter; // 현재 전투 조우 데이터
@@ -546,6 +547,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.UnionWith(snapshot.cleared); // 클리어 조우 목록 복원
         resolvedEventIds.UnionWith(snapshot.events); // 처리 이벤트 목록 복원
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
+        PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
         if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
         { // 회피 목록 복원 시작
             avoidedEncounterIds.UnionWith(snapshot.avoidedEncounters); // 회피 조우 재등장 방지 기록 복원
@@ -573,6 +575,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
+        PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화
         activeRuntimeEncounterId = null; // 런타임 조우 초기화

@@ -250,9 +250,10 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
 
             builder.AppendLine(
                 $"예상 피해 : {modifiedDamage} → {previewResult.AppliedDamage}"); // 예상 실제 피해 표시
-            if (currentAction.Actor.GetStatusEffect(BattleStatusEffectType.Blind) != null) // 공격자의 실명 여부 확인
+            int hitChance = BattleHitChance.GetPercent(currentAction.Actor, currentAction.Target); // 공격 대상과 실명을 반영한 실제 명중률
+            if (hitChance < 100) // 빗나갈 수 있는 공격 확인
             { // 명중률 안내 시작
-                builder.AppendLine($"명중률 : {BattleHitChance.GetPercent(currentAction.Actor)}%"); // 보정된 공격 명중률 표시
+                builder.AppendLine($"명중률 : {hitChance}%"); // 실제 적 행동에 쓰이는 명중률 표시
             } // 명중률 안내 종료
             if (currentAction.StatusEffectType != BattleStatusEffectType.None && currentAction.AdditionalStatusChancePercent > 0) // 공격 후 추가 상태 존재 확인
             { // 추가 상태 안내 시작

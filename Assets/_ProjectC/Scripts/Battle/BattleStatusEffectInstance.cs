@@ -100,6 +100,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "화상"; // 화상 이름 반환
             case BattleStatusEffectType.Blind: // 실명 종류
                 return "실명"; // 실명 이름 반환
+            case BattleStatusEffectType.Evasion: // 회피 종류
+                return "회피"; // 회피 이름 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재생"; // 재생 이름 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격력 증가 종류
@@ -146,6 +148,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "화"; // 화상 아이콘 반환
             case BattleStatusEffectType.Blind: // 실명 종류
                 return "암"; // 실명 아이콘 반환
+            case BattleStatusEffectType.Evasion: // 회피 종류
+                return "회"; // 회피 아이콘 문구
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재"; // 재생 아이콘 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
@@ -192,6 +196,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"진영 턴 종료에 피해 {effectiveValue}, 화상 수치 1 감소"; // 화상 설명 반환
             case BattleStatusEffectType.Blind: // 실명 종류
                 return $"공격 명중률 {effectiveValue}%p 감소"; // 실명 설명 반환
+            case BattleStatusEffectType.Evasion: // 회피 종류
+                return $"적 공격 회피율 {effectiveValue}%p 증가 · 적 턴 종료에 지속 감소"; // 회피 설명 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
