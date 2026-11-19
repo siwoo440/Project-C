@@ -9,6 +9,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     private ExplorationRoomType roomType; // 현재 특수 방 역할
     private string runtimeId; // 현재 특수 방 런타임 ID
     private bool waitingForRestUse; // 휴식 UI 사용 완료 감시 여부
+    private bool waitingForMarkedPurchase; // 미사용 표식 상점 재방문 표시
 
     public void Initialize(
         ExplorationMapRuntime runtime,
@@ -65,6 +66,12 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
 
     private void Update() // 휴식 사용 완료 상태 감시
     {
+        if (waitingForMarkedPurchase && !ExplorationSessionManager.EnsureInstance().Cart.IsMarkedShop(runtimeId)) // 표식 상점 첫 결제 완료 확인
+        { // 재방문 표시 해제 시작
+            waitingForMarkedPurchase = false; // 결제 감시 종료
+            gameObject.SetActive(false); // 구매한 일회성 상점 숨김
+            return; // 이 방의 상태 갱신 종료
+        } // 재방문 표시 해제 종료
         if (!waitingForRestUse) // 휴식 사용 감시 여부 확인
         {
             return; // 감시 불필요 처리
@@ -231,7 +238,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     {
         ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 상점 사용 상태 관리자 준비
 
-        if (sessionManager.IsEventResolved(runtimeId)) // 현재 상점 방문 완료 여부 확인
+        if (sessionManager.IsEventResolved(runtimeId) && !sessionManager.Cart.IsMarkedShop(runtimeId)) // 미사용 표식 상점의 재입장 허용
         {
             return; // 같은 상점 재방문 차단
         }
@@ -248,6 +255,15 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
         if (shopView.TryOpenFromRoom(runtimeId)) // 실제 상점 열림 확인
         { // 방문 완료 처리 시작
             sessionManager.MarkEventResolved(runtimeId); // 열린 상점 방문 기록
+            waitingForMarkedPurchase = sessionManager.Cart.IsMarkedShop(runtimeId); // 첫 구매 전 재방문 가능 여부 확인
+            if (waitingForMarkedPurchase) // 취소하거나 골드가 부족한 표식 상점 유지
+            { // 표식 상점 저장 시작
+                if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 최초 방문 상점과 미사용 할인 저장 확인
+                { // 저장 실패 안내 시작
+                    Debug.LogWarning("[ExplorationAutoSave] 표식 상점 방문을 저장하지 못했습니다."); // 기존 저장 보존 안내
+                } // 저장 실패 안내 종료
+                return; // 첫 상품 결제 전 상점 표식 유지
+            } // 표식 상점 저장 종료
             gameObject.SetActive(false); // 이미 방문한 상점 표시 숨김
         } // 방문 완료 처리 종료
     }

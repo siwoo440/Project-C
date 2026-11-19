@@ -8,6 +8,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     private ShopCatalogData catalog; // 현재 상점 카탈로그
     private RunDeckManager runDeckManager; // 탐사 회차 덱 관리자
     private ShopTransactionService transactionService; // 상점 거래 서비스
+    private bool purchasing; // 지갑과 보관함 알림 중 상품 재구매 방지
     private string activeRoomRuntimeId; // 57일차 현재 상점 방 런타임 ID
     private RelicSheetCatalog relicSheetCatalog; // 시트 유물 가격 목록
 
@@ -68,7 +69,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             return; // 상점 상태 복원 종료
         } // 상점 방 없음 처리 종료
         Prepare(catalogData, deckData); // 저장 상점 카탈로그 연결
-        BeginRoomVisit(roomId); // 저장 상점 방 연결
+        SetRoom(roomId); // 실제 방문 처리 없이 저장 상점 복원
         foreach (string offerId in purchased) // 판매 완료 상품 순회
         { // 판매 완료 복원 시작
             transactionService.RestorePurchase(offerId); // 판매 완료 상태 등록
@@ -96,6 +97,12 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     } // 상점 준비 종료
 
     public void BeginRoomVisit(string roomRuntimeId) // 57일차 생성된 상점 방 최초 방문 준비
+    { // 실제 상점 방문 시작
+        ExplorationSessionManager.Instance?.Cart.VisitShop(roomRuntimeId); // 표식 획득 후 첫 실제 방문 방 지정
+        SetRoom(roomRuntimeId); // 해당 방의 판매 상태 준비
+    } // 실제 상점 방문 종료
+
+    private void SetRoom(string roomRuntimeId) // 신규 또는 저장 상점 방 준비
     {
         if (string.IsNullOrWhiteSpace(roomRuntimeId) ||
             activeRoomRuntimeId == roomRuntimeId) // 잘못된 ID 또는 동일 상점 재호출 확인
@@ -127,12 +134,35 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         { // 소유자 선택 오류 시작
             return CompleteTransaction(ShopPurchaseResult.Unavailable, "현재 파티 캐릭터를 선택하세요."); // 소유자 선택 필요 알림
         } // 소유자 선택 오류 종료
-        ShopPurchaseResult result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 선택 소유자와 표시 가격으로 원자 거래 실행
+        if (purchasing) // 같은 거래의 알림 중 재진입 확인
+        { // 중복 거래 방지 시작
+            return ShopPurchaseResult.Unavailable; // 진행 중인 구매 완료 대기
+        } // 중복 거래 방지 종료
+        ShopPurchaseResult result; // 실제 거래 결과 보관
+        purchasing = true; // 상품 지급과 할인 소모까지 거래 잠금
+        try // 외부 보관함 알림에도 거래 잠금 정리
+        { // 원자 구매 시작
+            result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 현재 표시 가격으로 거래 실행
+            if (result == ShopPurchaseResult.Success) // 실제 첫 상품 구매 성공 확인
+            { // 할인 소모 시작
+                ExplorationSessionManager.Instance?.Cart.FinishPurchase(activeRoomRuntimeId); // 자동 저장과 표시 갱신 전에 할인 소모
+            } // 할인 소모 종료
+        } // 원자 구매 종료
+        finally // 구매 잠금 해제
+        { // 잠금 정리 시작
+            purchasing = false; // 다음 정상 거래 허용
+        } // 잠금 정리 종료
         string message = BuildPurchaseMessage(result, offer.DisplayName); // 거래 결과 문구 생성
         return CompleteTransaction(result, message); // 거래 결과 알림과 반환
     } // 상품 구매 종료
 
     public int GetOfferPrice(ShopOfferData offer) // 현재 상점의 상품 가격 조회
+    { // 표식 포함 가격 조회 시작
+        int price = GetPriceBeforeMark(offer); // 시트 가격과 영구 유물 할인 적용
+        return ExplorationSessionManager.Instance?.Cart.OfferPrice(activeRoomRuntimeId, price) ?? price; // 다음 상점의 첫 상품만 추가 할인
+    } // 표식 포함 가격 조회 종료
+
+    private int GetPriceBeforeMark(ShopOfferData offer) // 기존 상품 가격과 유물 할인 계산
     { // 상품 가격 조회 시작
         if (offer == null) // 빈 상품 확인
         { // 빈 상품 처리 시작

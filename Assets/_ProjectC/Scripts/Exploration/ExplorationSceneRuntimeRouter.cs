@@ -67,6 +67,10 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
             runtimeRoot.AddComponent<ExplorationBattleResultReceiver>();
         }
 
+        if (!string.IsNullOrEmpty(ExplorationSessionManager.Instance.Cart.AmbushRoom)) // 불러온 저장에 미완료 수레 매복 확인
+        { // 저장 매복 재개 시작
+            runtimeRoot.GetComponent<ExplorationBattleResultReceiver>().StartCoroutine(BurntCartEvent.ResumeAmbush()); // 탐사 준비 후 같은 조우 재개
+        } // 저장 매복 재개 종료
         if (runtimeRoot.GetComponent<ExplorationPrototypeBootstrap>() == null)
         {
             runtimeRoot.AddComponent<ExplorationPrototypeBootstrap>();
@@ -138,6 +142,11 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
             }
         }
 
+        if (sessionManager.Cart.AmbushBattleId != null && sessionManager.Cart.AmbushBattleId == sessionManager.ActiveRuntimeEncounterId) // 수레 매복 편성 확인
+        { // 사냥꾼 추가 시작
+            battleSceneSetup.HasCartAmbushSlot = true; // 정상 초기 편성에 매복 한 자리만 추가 허용
+            encounterEnemies.Add(BurntCartEvent.Hunter); // 일반 조우 복사본에 사냥꾼 한 마리 추가
+        } // 사냥꾼 추가 종료
         enemiesField.SetValue(
             battleSceneSetup,
             encounterEnemies);

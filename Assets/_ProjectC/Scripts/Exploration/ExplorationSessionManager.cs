@@ -16,6 +16,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         new HashSet<string>(); // 처리 완료 이벤트 ID 목록
     private readonly HashSet<string> avoidedEncounterIds = new HashSet<string>(); // 승리와 보상을 제외한 지도 조각 회피 기록
     private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
+    public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
@@ -120,7 +121,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
     public bool CanBeginEncounter(string runtimeEncounterId, EncounterData encounterData) // 전투 조우 시작 가능 여부 확인
     { // 조우 시작 가능 여부 확인 시작
-        return !string.IsNullOrWhiteSpace(runtimeEncounterId) && encounterData != null && encounterData.IsValidData() && activeEncounter == null && !isExplorationCompleted && !IsEncounterRemoved(runtimeEncounterId); // 승리하거나 회피한 조우의 재진입 차단
+        return !string.IsNullOrWhiteSpace(runtimeEncounterId) && encounterData != null && encounterData.IsValidData() && activeEncounter == null && !isExplorationCompleted && !IsEncounterRemoved(runtimeEncounterId) && (Cart.AmbushRoom == null || runtimeEncounterId == Cart.AmbushBattleId); // 미완료 매복 우선 처리와 완료 조우 재진입 차단
     } // 조우 시작 가능 여부 확인 종료
 
     public bool IsEncounterRemoved(string runtimeEncounterId) // 현재 층에서 제거할 조우 여부 확인
@@ -228,6 +229,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         string runtimeEncounterId =
             activeRuntimeEncounterId; // 현재 런타임 조우 ID 보관
+        Cart.FinishAmbush(runtimeEncounterId); // 해결한 매복의 저장 재진입 해제
 
         string encounterName =
             activeEncounter.DisplayName; // 현재 조우 이름 보관
@@ -521,6 +523,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         currentFloor += 1; // 현재 층 증가
+        Cart.LeaveFloor(); // 미구매 할인을 다음 층 첫 상점으로 이월
         activeEncounter = null; // 진행 중 조우 초기화
         activeRuntimeEncounterId = null; // 진행 중 런타임 조우 초기화
         returnPosition = Vector3.zero; // 이전 층 복귀 위치 초기화
@@ -547,6 +550,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.UnionWith(snapshot.cleared); // 클리어 조우 목록 복원
         resolvedEventIds.UnionWith(snapshot.events); // 처리 이벤트 목록 복원
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
+        Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
         if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
         { // 회피 목록 복원 시작
@@ -575,6 +579,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
+        Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화
