@@ -221,6 +221,33 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: d8c23a8156f344f48eb3e472759c92ff, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DOUBLE_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: b8d2ba8166e941f2add3ff6e58fff658, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_TWIN_CUT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: b0f4a22117464b5a830d305f28630282, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: SHOP_RLC_CERULLION_BADGE
     offerType: 1
     price: 230

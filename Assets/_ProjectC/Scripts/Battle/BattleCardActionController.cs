@@ -684,6 +684,30 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 체력 비용 실패 처리 종료
             FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 실제 체력 비용 표시
         } // 체력 비용 지불 종료
+        int hitCount = cardInstance.SourceData.DamageHitCount; // 카드 원본의 타격 수 조회
+        if (hitCount == 1) // 기존 단일 공격 확인
+        { // 단일 타격 시작
+            return ApplyDamageHit(cardInstance, targetUnit); // 현재 대상의 명중과 피해 판정
+        } // 단일 타격 종료
+        var target = new[] { targetUnit }; // 연타 대상의 약점 판정 준비
+        int applied = 0; // 실제 체력 피해 합계
+        try // 도중 중단 시 약점 판정 정리 보장
+        { // 연타 시작
+            for (int i = 0; i < hitCount && !targetUnit.IsDead && !cardInstance.OwnerUnit.IsDead && !turnRuntime.HasPendingBossPhaseTransition; i++) // 생존과 보스 전환을 확인하며 타격
+            { // 개별 타격 시작
+                BattleCardDamageContext.Begin(cardInstance, target); // 현재 타격의 검 약점 판정 준비
+                applied += ApplyDamageHit(cardInstance, targetUnit); // 독립 명중과 방어 적용
+            } // 개별 타격 종료
+        } // 연타 종료
+        finally // 종료된 타격 상태 정리
+        { // 정리 시작
+            BattleCardDamageContext.Clear(); // 남은 타격의 약점 판정 제거
+        } // 정리 종료
+        return applied; // 타격별 체력 피해 합계 반환
+    } // 단일 효과 적용 종료
+
+    private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 공격 한 타격 적용
+    { // 타격 판정 시작
         if (!BattleHitChance.Roll(cardInstance.OwnerUnit)) // 실명 상태의 공격 명중 확인
         { // 카드 공격 빗나감 처리 시작
             BattleCardDamageContext.TryConsume(out _, out _); // 빗나간 대상의 카드 피해 문맥 소비
@@ -709,7 +733,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
-    } // 단일 효과 적용 종료
+    } // 타격 판정 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
         BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed); // 다른 적의 독립 명중과 피해 처리

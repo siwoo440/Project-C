@@ -197,6 +197,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             string sign = cardInstance.MentalChangeValue > 0 ? "+" : string.Empty; // 양수 부호 문구 계산
             return $"정신력 {sign}{cardInstance.MentalChangeValue}"; // 정신력 상세 반환
         } // 정신력 상세 처리 종료
+        if (cardInstance.SourceData.DamageHitCount > 1) // 동일 대상 연속 공격 확인
+        { // 연타 상세 시작
+            return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue} × {cardInstance.SourceData.DamageHitCount}회"; // 타격당 피해와 반복 횟수 반환
+        } // 연타 상세 종료
         return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue}"; // 피해와 회복 상세 반환
     } // 효과 상세 조회 종료
     private static TMP_Text CreateText(string objectName, Transform parent, float fontSize, Color textColor, TextAlignmentOptions alignment) // 공용 텍스트 생성

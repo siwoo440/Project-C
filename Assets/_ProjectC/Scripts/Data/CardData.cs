@@ -20,6 +20,8 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private BattleDamageType damageType = BattleDamageType.Physical; // 카드 피해 종류
     [Min(0)]
     [SerializeField] private int effectValue = 10; // 카드 효과 수치
+    [Min(1)] // 최소 타격 횟수
+    [SerializeField] private int damageHitCount = 1; // 같은 대상에 대한 공격 횟수
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
 
     [Header("정신력 규칙")]
@@ -44,6 +46,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
     public int EffectValue => effectValue; // 카드 효과 수치 조회
+    public int DamageHitCount => effectType == CardEffectType.Damage ? Mathf.Max(1, damageHitCount) : 1; // 이전 원본을 포함한 실제 타격 수
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
