@@ -22,7 +22,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     private RawImage blurBackgroundImage; // 블러 배경 이미지
     private Image dimOverlayImage; // 어두운 오버레이 이미지
     private RectTransform panelRoot; // 이벤트 패널 루트
-    private RectTransform contentRect; // 선택지 수에 따라 늘어나는 본문 영역
+    private RectTransform contentRect; // 삽화와 본문이 공유하는 기준 영역
     private TMP_Text titleText; // 이벤트 제목 텍스트
     private TMP_Text bodyText; // 이벤트 설명 텍스트
     private Image illustrationFrameImage; // 그림 프레임 이미지
@@ -810,8 +810,10 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         buttonText.textWrappingMode = TextWrappingModes.Normal; // 버튼 줄바꿈 모드 설정
 
         choiceButtons.Add(button); // 버튼 목록에 현재 버튼 등록
-        float choicesHeight = choiceButtons.Count * ChoiceHeight + (choiceButtons.Count - 1) * ChoiceGap; // 현재 선택지의 전체 높이 계산
-        contentRect.offsetMin = new Vector2(56f, ChoiceBottom + choicesHeight + 22f); // 선택지 위에 본문과 삽화 배치
+        int reservedRows = Mathf.Max(3, currentEventData?.Choices?.Count ?? 0); // 원래 선택지를 기준으로 고정할 하단 줄 수
+        float rowHeight = ChoiceHeight + ChoiceGap; // 버튼 한 줄과 위쪽 간격
+        contentRect.offsetMin = new Vector2(56f, ChoiceBottom + reservedRows * rowHeight - ChoiceGap + 22f); // 원래 선택지 위에 삽화 영역 고정
+        bodyText.rectTransform.offsetMin = new Vector2(34f, (choiceButtons.Count - reservedRows) * rowHeight); // 줄어든 버튼 공간을 설명문에만 배정
     }
 
     private void EnsureEventSystem() // New Input System 기반 UI 클릭 이벤트 시스템 보장
@@ -999,18 +1001,23 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         contentRect.offsetMin = new Vector2(56f, ChoiceBottom); // 선택지 생성 전 좌하단 여백 지정
         contentRect.offsetMax = new Vector2(-56f, -100f); // 제목 아래 본문 여백 지정
 
+        var artColumn = new GameObject("IllustrationColumn", typeof(RectTransform)).GetComponent<RectTransform>(); // 삽화를 배치할 왼쪽 열 생성
+        artColumn.SetParent(contentRect, false); // 고정된 본문 기준 영역에 배치
+        PreparationUi.Stretch(artColumn, Vector2.zero, new Vector2(0.32f, 1f)); // 기존 왼쪽 열 너비와 여백 유지
         GameObject frameObject =
             new GameObject(
                 "IllustrationFrame",
                 typeof(RectTransform),
                 typeof(Image)); // 일러스트 프레임 생성
 
-        frameObject.transform.SetParent(contentObject.transform, false); // 프레임을 내용 영역 하위에 배치
+        frameObject.transform.SetParent(artColumn, false); // 삽화 프레임을 왼쪽 열에 배치
 
         RectTransform frameRect =
             frameObject.GetComponent<RectTransform>(); // 프레임 RectTransform 조회
 
-        PreparationUi.Stretch(frameRect, Vector2.zero, new Vector2(0.32f, 1f)); // 왼쪽 삽화 열에 프레임 맞춤
+        var square = frameRect.gameObject.AddComponent<AspectRatioFitter>(); // 화면 크기에 맞는 정사각형 배치
+        square.aspectRatio = 1f; // 삽화 프레임 가로세로 비율 고정
+        square.aspectMode = AspectRatioFitter.AspectMode.FitInParent; // 가로와 세로 중 작은 길이에 맞춰 중앙 정렬
 
         illustrationFrameImage =
             frameObject.GetComponent<Image>(); // 일러스트 프레임 이미지 저장
