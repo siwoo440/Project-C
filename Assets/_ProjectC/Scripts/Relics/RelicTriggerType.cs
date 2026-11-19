@@ -21,5 +21,10 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforeHealthDamage, // 방어도 처리 후 체력 피해 직전
     WhileOwned, // 회차 동안 보유할 때
     PotionUsed, // 포션을 마시는 시점
-    CardAttackHit // 카드 직접 공격이 명중한 시점
+    CardAttackHit, // 카드 직접 공격이 명중한 시점
+    EventRelicReward, // 탐사 이벤트의 미보유 유물 보상 확정 직전
+    InspectionDraw, // 확인 효과로 고른 카드가 손으로 들어온 시점
+    DecisionDraw, // 확인으로 고른 카드의 결정 추가 효과가 성공한 시점
+    DirectCardHealing, // 직접 카드가 체력을 회복하는 시점
+    ExplorationRouteChoice // 플레이어가 탐사 경로를 다시 고르는 시점
 }

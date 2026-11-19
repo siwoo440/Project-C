@@ -42,6 +42,10 @@ public static class AshPileEvent // 윈터폴 잿더미 조사 이벤트
     } // 원문 선택 종료
 
     public static bool TryResolve(string runtimeId, int choice, CharacterData actor, out string story, out string summary) // 행동 확정과 일회성 보상 지급
+    { // 기본 행동 처리 시작
+        return TryResolve(runtimeId, choice, actor, null, out story, out summary); // 단일 후보의 기존 조사와 덮기 처리
+    } // 기본 행동 처리 종료
+    public static bool TryResolve(string runtimeId, int choice, CharacterData actor, RelicData selected, out string story, out string summary) // 선택한 후보 검증과 일회성 지급
     { // 결과 처리 시작
         story = string.Empty; // 미확정 원문 초기화
         summary = string.Empty; // 미확정 결과 초기화
@@ -73,14 +77,18 @@ public static class AshPileEvent // 윈터폴 잿더미 조사 이벤트
                     summary = "도구를 사용하려면 철판 1개가 필요합니다."; // 미확정 선택 안내
                     return false; // 다른 행동을 선택할 수 있도록 유지
                 } // 철판 부족 안내 종료
-                var random = new System.Random(ExplorationTreasureRewardService.BuildStableHash(runtimeId)); // 저장 복원과 재시도에 같은 방 추첨 사용
-                found = random.Next(100) < (choice == BareHands ? 40 : 70); // 맨손 사십 퍼센트와 도구 칠십 퍼센트 추첨
-                RelicData candidate = SelectUnownedSheetRelic(random); // 실제 미보유 시트 유물 원본 선택
-                if (candidate == null) // 모든 지급 후보 소진 여부 확인
+                var options = GetRewardChoices(runtimeId, choice, out found); // 같은 방의 기존 추첨과 추가 후보 조회
+                if (options.Count == 0) // 모든 지급 후보 소진 여부 확인
                 { // 유물 없음 안내 시작
                     summary = "발견할 수 있는 새 유물이 없습니다. 잿더미를 덮을 수 있습니다."; // 비용 없는 선택 복귀 안내
                     return false; // 지급 후보 없는 조사 비용과 판정 보존
                 } // 유물 없음 안내 종료
+                if (selected != null && !options.Contains(selected) || selected == null && options.Count > 1) // 선택 누락 또는 이미 바뀐 후보 확인
+                { // 잘못된 보상 선택 시작
+                    summary = "현재 후보 중에서 받을 유물을 하나 선택하세요."; // 재선택 안내
+                    return false; // 철판과 체력 및 방 완료 기록 보존
+                } // 잘못된 보상 선택 종료
+                RelicData candidate = selected != null ? selected : options[0]; // 지급 직전 실제로 선택한 후보 확정
                 int temporaryIron = resources.ExplorationIronPlate; // 지급 실패 시 기존 철판과 탐사 획득분 구분 보존
                 if (choice == UseTool && !resources.TrySpend(0, 0, 1, 0)) // 도구 비용 실제 지불 확인
                 { // 자원 지불 실패 시작
@@ -129,13 +137,21 @@ public static class AshPileEvent // 윈터폴 잿더미 조사 이벤트
         } // 잠금 복구 종료
     } // 결과 처리 종료
 
-    private static RelicData SelectUnownedSheetRelic(System.Random random) // 기존 보물 후보에서 실제 시트 미보유 유물 선택
+    public static List<RelicData> GetRewardChoices(string runtimeId, int choice, out bool found) // 미보유 유물의 고정된 방별 선택 목록
     { // 유물 추첨 시작
+        var result = new List<RelicData>(); // 실제 지급 가능한 선택 후보
+        found = false; // 조사 성공 여부 초기화
+        if (string.IsNullOrWhiteSpace(runtimeId) || choice != BareHands && choice != UseTool) // 유물을 찾는 유효한 방과 행동 확인
+        { // 조사 대상 확인 시작
+            return result; // 덮기와 잘못된 방에는 추첨 없음
+        } // 조사 대상 확인 종료
+        var random = new System.Random(ExplorationTreasureRewardService.BuildStableHash(runtimeId)); // 기존 방의 성공과 첫 후보 추첨 순서 유지
+        found = random.Next(100) < (choice == BareHands ? 40 : 70); // 맨손 또는 도구 성공 추첨
         var sheet = RelicSheetCatalog.Load(); // 기획 시트 원본 조회
         var saved = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 저장 가능한 원본 조회
         if (sheet == null || saved == null) // 유물 원본 목록 확인
         { // 원본 누락 처리 시작
-            return null; // 지급 가능한 원본 없음 반환
+            return result; // 지급 가능한 원본 없음 반환
         } // 원본 누락 처리 종료
         var inventory = RelicRunManager.EnsureInstance().Inventory; // 현재 보유 유물 조회
         var candidates = new List<RelicData>(); // 실제 미보유 유물 목록
@@ -148,6 +164,17 @@ public static class AshPileEvent // 윈터폴 잿더미 조사 이벤트
             } // 미보유 유물 추가 종료
         } // 유물 후보 확인 종료
         candidates.Sort((left, right) => string.CompareOrdinal(left.RelicId, right.RelicId)); // 같은 저장에서 보상 순서 고정
-        return candidates.Count > 0 ? candidates[random.Next(candidates.Count)] : null; // 미보유 유물 한 개 또는 후보 소진 반환
+        if (candidates.Count > 0) // 첫 보물 후보 확인
+        { // 후보 선택 시작
+            int first = random.Next(candidates.Count); // 기존 단일 보상의 고정 순서 유지
+            result.Add(candidates[first]); // 기본 보상 한 개 등록
+            candidates.RemoveAt(first); // 같은 유물의 중복 선택 방지
+            var tweezers = inventory.FindEffect(RelicEffectType.ExtraEventRelicChoice); // 탐사 중 실제 보유한 핀셋 확인
+            if (found && tweezers != null && candidates.Count > 0 && random.Next(100) < tweezers.TriggerChancePercent) // 유물 발견 성공 후 삼십 퍼센트 추가 추첨
+            { // 대안 유물 추가 시작
+                result.Add(candidates[random.Next(candidates.Count)]); // 다른 미보유 유물 한 개 추가
+            } // 대안 유물 추가 종료
+        } // 후보 선택 종료
+        return result; // 실제로 받을 수 있는 선택 후보 반환
     } // 유물 추첨 종료
 } // 이벤트 종료

@@ -148,7 +148,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 행동 연출 실행기 생성 종료
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         statusEffectProcessor = new BattleStatusEffectProcessor(); // 공통 상태 처리기 생성
-        enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
+        enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits, battleTurn); // 적 행동 관리자 생성
         foreach (BattleUnitRuntime enemy in enemyUnits) // 전투 적 목록 순회
         { // 보스 페이즈 대상 확인 시작
             if (enemy.EnemySource != null && enemy.EnemySource.EnemyId == "ENM_WF_ASHSTORM_CORE") // 윈터폴 보스 식별자 확인

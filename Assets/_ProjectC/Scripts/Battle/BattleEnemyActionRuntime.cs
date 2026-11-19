@@ -9,16 +9,23 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly Dictionary<BattleUnitRuntime, int> phasePatternStarts = new Dictionary<BattleUnitRuntime, int>(); // 적별 현재 페이즈 시작 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
     private BattleEnemyAction executingAction; // 현재 실행 행동
+    private readonly BattleTurnRuntime turns; // 실제 아군 턴 시작과 장화 횟수 초기화 연결
+    private int bootUses; // 이번 턴 파티가 사용한 철제 장화 횟수
     private bool dogTagUsed; // 이번 전투에서 파티가 군번줄을 사용한 여부
     private bool disposed; // 연결 해제 여부
     public IReadOnlyList<BattleEnemyAction> PlannedActions => plannedActions; // 예정 행동 목록 조회
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 전투 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 전투 적 목록 조회
     public event Action StateChanged; // 예정 행동 변경 이벤트
-    public BattleEnemyActionRuntime(IReadOnlyList<BattleUnitRuntime> enemies, IReadOnlyList<BattleUnitRuntime> allies) // 적 행동 관리자 생성
+    public BattleEnemyActionRuntime(IReadOnlyList<BattleUnitRuntime> enemies, IReadOnlyList<BattleUnitRuntime> allies, BattleTurnRuntime battleTurns = null) // 적 행동 관리자 생성
     { // 생성자 시작
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
         allyUnits = allies ?? throw new ArgumentNullException(nameof(allies)); // 아군 목록 저장
+        turns = battleTurns; // 현재 전투의 턴 원본 저장
+        if (turns != null) // 실제 턴 관리자를 받은 전투 확인
+        { // 장화 횟수 연결 시작
+            turns.PhaseStarted += ResetBootUses; // 새 아군 턴부터 파티 공용 횟수 복구
+        } // 장화 횟수 연결 종료
         RegisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 등록
         RegisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 등록
     } // 생성자 종료
@@ -61,6 +68,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             if (action != null) // 생성 행동 확인
             { // 유효 행동 처리 시작
                 action.SetPreparationPreviewRule(IsFirstAttackAgainstTarget); // 방어 준비 예고 순서 연결
+                action.SetBootPreviewRule(GetBootPreviewReduction); // 남은 장화 횟수와 예고된 순서 반영
                 action.SetBlockPreviewRule(GetBlockBeforeAttack); // 방어도 예고 순서 연결
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
@@ -96,7 +104,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             } // 결과 반환 종료
             if (candidate != executingAction && candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
             { // 방어도 소모 예측 시작
-                BattleDamageResult preview = candidate.PreviewDamageWithBlock(block); // 앞선 공격의 준비와 흡수 결과 계산
+                BattleDamageResult preview = candidate.PreviewDamageBeforeShare(block); // 장화 경감과 무관한 앞선 방어도 흡수량
                 block = block + preview.PreparedBlock - preview.AbsorbedDamage; // 준비 획득과 흡수 후 예상 방어도 계산
             } // 방어도 소모 예측 종료
         } // 앞선 공격 검사 종료
@@ -127,7 +135,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
         executingAction = action; // 현재 실행 행동 저장
-        BattleEnemyActionResult actionResult = action.Execute(TryPreventFirstHealthDamage); // 적 직접 공격에만 파티 공용 군번줄 연결
+        BattleEnemyActionResult actionResult = action.Execute(TryPreventFirstHealthDamage, ReduceBootHealthDamage); // 적 직접 공격에만 파티 공용 군번줄 연결
         executingAction = null; // 현재 실행 행동 제거
         plannedActions.Remove(action); // 실행 완료 행동 제거
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
@@ -325,6 +333,59 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         patternCount = 1; // 호환 행동 전체 순번 적용
         return null; // 유효 패턴 없음 반환
     } // 패턴 선택 종료
+    private void ResetBootUses(BattleTurnPhase phase, int round) // 새 아군 턴의 파티 공용 횟수 복원
+    { // 장화 초기화 시작
+        if (phase == BattleTurnPhase.PlayerTurn) // 적 선제 뒤의 첫 아군 턴 포함
+        { // 횟수 복원 시작
+            bootUses = 0; // 다음 적 직접 공격 세 번까지 경감 가능
+        } // 횟수 복원 종료
+    } // 장화 초기화 종료
+    private int ReduceBootHealthDamage(int incoming) // 적의 실제 체력 피해 경감
+    { // 경감 정산 시작
+        var boots = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ReduceIncomingAttack); // 현재 파티가 보유한 철제 장화 확인
+        if (boots == null || bootUses >= boots.MaximumTriggersPerTurn || incoming < 1) // 실제 소유와 잔여 횟수 및 체력 손실 확인
+        { // 경감 제외 시작
+            return incoming; // 방어도 흡수나 한도 소진 시 추가 경감 없음
+        } // 경감 제외 종료
+        bootUses++; // 주 대상의 실제 체력 피해 한 건에만 기회 소모
+        return Math.Max(0, incoming - boots.EffectValue); // 영 미만으로 내려가지 않는 피해 반환
+    } // 경감 정산 종료
+    private int GetBootPreviewReduction(BattleEnemyAction current) // 앞선 적 공격들이 사용할 장화 횟수 계산
+    { // 장화 예고 계산 시작
+        var inventory = RelicRunManager.Instance?.Inventory; // 현재 실제 유물 보관함
+        var boots = inventory?.FindEffect(RelicEffectType.ReduceIncomingAttack); // 현재 경감 원본
+        if (boots == null || bootUses >= boots.MaximumTriggersPerTurn) // 횟수와 보유 여부 확인
+        { // 예고 경감 없음 시작
+            return 0; // 기존 적 행동 예고 유지
+        } // 예고 경감 없음 종료
+        int available = boots.MaximumTriggersPerTurn - bootUses; // 앞으로 사용할 파티 공용 횟수
+        bool dogTag = !dogTagUsed && inventory.FindEffect(RelicEffectType.PreventFirstHealthDamage) != null; // 먼저 발동할 군번줄의 남은 보호
+        foreach (var action in plannedActions) // 실제로 예정된 적 행동 순서 순회
+        { // 앞선 소모 예상 시작
+            if (action == executingAction || !action.IsExecutable || action.ActionType != EnemyActionType.Attack) // 이미 실행 중인 행동과 비공격 제외
+            { // 수치 미소모 시작
+                continue; // 다음 예고 행동 확인
+            } // 수치 미소모 종료
+            var preview = action.PreviewDamageBeforeShare(GetBlockBeforeAttack(action)); // 앞선 공격 뒤의 방어도를 반영한 예정 손실
+            if (action.GetPrimaryHealthDamage(preview) <= 0) // 주 대상의 체력 피해 발생 여부 확인
+            { // 방어도 전량 흡수 시작
+                continue; // 유물 횟수 보존
+            } // 방어도 전량 흡수 종료
+            if (action == current) // 표시 대상 순서 도착
+            { // 현재 공격 예고 시작
+                return dogTag ? preview.FinalDamage : available > 0 ? boots.EffectValue : 0; // 군번줄 우선 또는 남은 장화 경감
+            } // 현재 공격 예고 종료
+            if (dogTag) // 앞선 공격에서 군번줄이 먼저 보호하는 경우
+            { // 군번줄 예고 시작
+                dogTag = false; // 장화 기회는 보존하고 군번줄만 소진
+            } // 군번줄 예고 종료
+            else // 장화 경감 대상 공격 확인
+            { // 잔여 횟수 예측 시작
+                available--; // 실제 보유 상태에는 영향을 주지 않는 예정 차감
+            } // 잔여 횟수 예측 종료
+        } // 앞선 소모 예상 종료
+        return 0; // 아직 연결되지 않은 예정 행동
+    } // 장화 예고 계산 종료
     private bool TryPreventFirstHealthDamage() // 전투 중 처음 발생한 적 직접 체력 피해 차단
     { // 군번줄 소비 검사 시작
         if (dogTagUsed || RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.PreventFirstHealthDamage) == null) // 이번 전투의 잔여 횟수와 실제 보유 확인
@@ -479,6 +540,10 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return; // 연결 해제 중단
         } // 중복 해제 처리 종료
         disposed = true; // 연결 해제 상태 저장
+        if (turns != null) // 실제 턴 이벤트 연결 확인
+        { // 장화 횟수 해제 시작
+            turns.PhaseStarted -= ResetBootUses; // 끝난 전투의 공용 횟수 연결 해제
+        } // 장화 횟수 해제 종료
         UnregisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 해제
         UnregisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 해제
         plannedActions.Clear(); // 예정 행동 목록 비우기

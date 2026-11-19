@@ -203,7 +203,7 @@ public sealed class AshPileEventTests // 잿더미 탐사 선택 검사
         throw new AssertionException("확률 경계에 해당하는 방을 찾지 못했습니다."); // 검증 입력 누락 표시
     } // 검증 방 검색 종료
 
-    private static ExplorationSessionManager PrepareParty() // 생존 파티 두 명과 회차 덱 준비
+    internal static ExplorationSessionManager PrepareParty() // 생존 파티 두 명과 회차 덱 준비
     { // 탐사 준비 시작
         var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 캐릭터 명단 조회
         var selection = new PartySelection(new CharacterRecoveryDeploymentStatusProvider(CharacterRecoveryManager.EnsureInstance())); // 정상 출전 조건 적용

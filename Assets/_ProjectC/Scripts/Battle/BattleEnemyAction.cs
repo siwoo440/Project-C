@@ -3,6 +3,7 @@ using System; // 기본 예외 기능 사용
 public sealed class BattleEnemyAction // 적 예정 행동 정보
 {
     private Func<BattleEnemyAction, bool> canPreviewPreparation; // 방어 준비 예고 순서 확인
+    private Func<BattleEnemyAction, int> getBootReduction; // 현재 예고 순서에서 사용할 수 있는 장화 경감량
     private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
     private readonly Func<int> rollPercent; // 명중과 추가 상태 확률 난수
     private readonly int statusChancePercent; // 공격 후 상태 부여 확률
@@ -148,6 +149,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     { // 방어도 규칙 연결 시작
         getPreviewBlock = rule; // 방어도 예측 규칙 저장
     } // 방어도 규칙 연결 종료
+    internal void SetBootPreviewRule(Func<BattleEnemyAction, int> rule) // 장화 잔여 횟수를 반영한 예고 연결
+    { // 경감 예고 연결 시작
+        getBootReduction = rule; // 현재 파티의 이번 턴 경감 기회 조회
+    } // 경감 예고 연결 종료
     public BattleDamageResult PreviewDamage() // 예정 피해 계산
     { // 예정 피해 계산 시작
         return PreviewDamageWithBlock(Target == null ? 0 : getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this)); // 공격 순서별 방어도 반영
@@ -165,15 +170,17 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     } // 분담 피해 예고 종료
     internal BattleDamageResult PreviewDamageWithBlock(int block) // 지정 방어도 기준 예정 피해 계산
     { // 분담을 포함한 피해 예고 시작
-        BattleDamageResult preview = PreviewDamageBeforeShare(block); // 대상 방어를 적용한 기본 예고 계산
-        if (Target != null && SharedDamageRecipient != null && !SharedDamageRecipient.IsDead) // 생존한 피해 분담자 확인
-        { // 분담 예고 계산 시작
-            int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 대상 방어 적용 후 남은 피해 계산
-            return preview.WithAppliedDamage(Math.Min(Target.CurrentHealth, remaining - remaining / 2)); // 홀수는 원래 대상에 배정한 예고 반환
-        } // 분담 예고 계산 종료
-        return preview; // 일반 공격 예고 반환
+        var preview = PreviewDamageBeforeShare(block); // 방어도와 물리·마법 방어를 적용한 예정 결과
+        int primary = GetPrimaryHealthDamage(preview); // 분담 후 주 대상에게 남는 체력 피해
+        int reduction = primary > 0 && getBootReduction != null ? getBootReduction(this) : 0; // 이번 순서의 장화 경감량
+        return preview.WithAppliedDamage(Math.Min(Target?.CurrentHealth ?? 0, Math.Max(0, primary - reduction))); // 대상 유무와 현재 체력 및 장화를 적용한 예고
+    } // 지정 방어도 예고 종료
+    internal int GetPrimaryHealthDamage(BattleDamageResult preview) // 방어도와 분담 뒤 주 대상에게 남은 피해
+    { // 주 대상 체력 피해 계산 시작
+        int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 방어도 흡수 뒤 남은 피해
+        return SharedDamageRecipient != null && !SharedDamageRecipient.IsDead ? remaining - remaining / 2 : remaining; // 분담 시 홀수 한 점은 원래 대상 몫
     } // 분담을 포함한 피해 예고 종료
-    private BattleDamageResult PreviewDamageBeforeShare(int block) // 지정 방어도 기준 분담 전 예정 피해 계산
+    internal BattleDamageResult PreviewDamageBeforeShare(int block) // 지정 방어도 기준 분담 전 예정 피해 계산
     { // 분담 전 피해 예고 시작
         if (BlockingStatus != BattleStatusEffectType.None || Target == null || // 행동 차단 또는 대상 누락 확인
             Target.IsDead)
@@ -191,7 +198,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             block); // 예상 잔여 방어도 전달
     }
 
-    public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null) // 예정 행동 실행
+    public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null, Func<int, int> reduceHealthDamage = null) // 예정 행동 실행
     {
         if (BlockingStatus == BattleStatusEffectType.Stagger) // 다음 행동 한 번을 취소하는 상태 확인
         { // 행동 한 번 취소 시작
@@ -227,7 +234,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료
 
-        BattleDamageResult damageResult = Target.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage); // 실제 명중 뒤 분담과 체력 피해 방어 판정
+        BattleDamageResult damageResult = Target.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage); // 실제 명중 뒤 분담과 체력 피해 방어 판정
 
         bool applyAdditionalStatus = !Target.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 생존 대상의 공격 후 상태 부여 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? Target.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 공격 후 상태 적용 결과 계산

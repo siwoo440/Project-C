@@ -385,13 +385,28 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, currentEventData.Choices[choice].ChoiceText, hint, "선택 취소", allies.IsLivingPartyMember, actor => CommitAshPileChoice(runtimeId, choice, actor)); // 대상 확정 전 비용과 추첨 보류
     } // 잿더미 행동 종료
 
-    private bool CommitAshPileChoice(string runtimeId, int choice, CharacterData actor) // 잿더미 비용과 보상 처리
+    private bool CommitAshPileChoice(string runtimeId, int choice, CharacterData actor, RelicData selected = null) // 잿더미 비용과 보상 처리
     { // 잿더미 확정 시작
         if (choiceCommitted || currentEventData == null || currentEventData.EventId != AshPileEvent.Id || currentRuntimeEventId != runtimeId) // 오래된 선택 창과 중복 입력 확인
         { // 이전 입력 처리 시작
             return false; // 현재 방 이외의 결과 적용 차단
         } // 이전 입력 처리 종료
-        if (!AshPileEvent.TryResolve(runtimeId, choice, actor, out string story, out string summary)) // 실제 비용과 보상 확정 여부 확인
+        if (selected == null && choice != AshPileEvent.Cover && RelicRunManager.Instance?.Inventory.FindEffect(RelicEffectType.ExtraEventRelicChoice) != null && (choice != AshPileEvent.UseTool || PlayerResourceManager.EnsureInstance().CanAfford(0, 0, 1, 0))) // 지급 가능한 조사에서 핀셋 보유 확인
+        { // 지급 전 유물 선택 시작
+            var options = AshPileEvent.GetRewardChoices(runtimeId, choice, out _); // 현재 방과 일치하는 후보 조회
+            if (options.Count > 1) // 두 후보 중 하나를 고르는 경우 확인
+            { // 선택 화면 표시 시작
+                ClearChoiceButtons(); // 이전 조사 행동 정리
+                bodyText.text = "핀셋으로 유물 두 개를 발견했습니다. 하나를 선택하세요.\n\n" + options[0].DisplayName + " · " + options[0].Description + "\n\n" + options[1].DisplayName + " · " + options[1].Description; // 실제 후보의 이름과 효과 안내
+                foreach (var relic in options) // 실제 미보유 후보 순회
+                { // 후보 버튼 생성 시작
+                    CreateChoiceButton(relic.DisplayName, () => CommitAshPileChoice(runtimeId, choice, actor, relic)); // 누른 후보만 지급
+                } // 후보 버튼 생성 종료
+                CreateChoiceButton("[선택 취소]", PopulateEventContent); // 비용 없이 원래 세 행동으로 복귀
+                return true; // 행동자 선택 창 닫기
+            } // 선택 화면 표시 종료
+        } // 지급 전 유물 선택 종료
+        if (!AshPileEvent.TryResolve(runtimeId, choice, actor, selected, out string story, out string summary)) // 실제 비용과 선택 유물 검증
         { // 비용 또는 보상 누락 처리 시작
             if (!string.IsNullOrEmpty(summary)) // 미확정 사유 확인
             { // 재선택 안내 시작

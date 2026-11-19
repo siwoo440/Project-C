@@ -40,7 +40,7 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
             enemyData = ScriptableObject.CreateInstance<EnemyData>(); // 저항과 약점이 없는 검사 적 생성
             JsonUtility.FromJsonOverwrite("{\"maxHealth\":200}", enemyData); // 반복 타격 측정용 체력 설정
             Enemies = Enumerable.Range(0, 4).Select(index => BattleUnitRuntime.CreateEnemy(enemyData)).ToArray(); // 실제 순서의 네 칸 생성
-            var cards = ids.Select(id => offers.Single(offer => offer.OfferId == "REWARD_SHEET_" + id).Card).ToArray(); // 보상에 연결된 실제 여덟 원본 조회
+            var cards = ids.Select(id => id.Contains("/") ? Resources.Load<CardData>(id) : offers.Single(offer => offer.OfferId == "REWARD_SHEET_" + id).Card).ToArray(); // 지정한 시작 카드나 보물 카드 원본 조회
             source = DeckData.CreateRuntime(cards.Select(card => new DeckCardEntry(card, Allies[0].CharacterSource)).ToArray()); // 같은 소유자의 독립 비교 덱 생성
             Deck = BattleDeckRuntime.Create(source, Allies, cards.Length, 224); // 손패 순서 고정
             canvas = new GameObject("SwordCombat", typeof(RectTransform), typeof(Canvas)); // 전투 화면 생성

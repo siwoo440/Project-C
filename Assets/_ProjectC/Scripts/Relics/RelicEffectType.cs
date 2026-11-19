@@ -27,5 +27,13 @@ public enum RelicEffectType // 유물 효과 종류
     HealingCardBlock, // 회복 카드 사용자의 방어도 획득
     ChaliceCardHealing, // 성배 카드 사용자의 체력 회복
     FirstSwordDamage, // 첫 검 공격의 명중 보너스
-    FirstWandDamage // 첫 지팡이 마법 명중 보너스
+    FirstWandDamage, // 첫 지팡이 마법 명중 보너스
+    VictoryGoldPercent, // 승리 보상 골드 비율 증가
+    ExtraEventRelicChoice, // 이벤트의 유물 선택 후보 추가
+    InspectCardDraw, // 덱 위 카드 확인 성공 후 추가 드로우
+    DecisionActionPoint, // 결정 추가 효과 성공 시 행동력 증가
+    ReduceIncomingAttack, // 적 직접 공격의 체력 피해 경감
+    HighMentalCardHealing, // 높은 정신력의 직접 카드 회복 추가
+    LowMentalCardDamage, // 낮은 정신력의 첫 직접 명중 피해 추가
+    ReselectExplorationRoute // 소모하여 탐사 경로 재선택
 }

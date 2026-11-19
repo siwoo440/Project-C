@@ -12,6 +12,7 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
     private TMP_Text detailName; // 선택한 유물 이름
     private TMP_Text detailDescription; // 선택한 유물 효과 설명
     private TMP_Text detailRarity; // 선택한 유물 희귀도
+    private Button returnButton; // 봉인된 지도의 출발 방 이동 버튼
     private TMP_Text emptyIcon; // 이미지가 없는 유물 안내
     private RelicData selected; // 현재 선택한 실제 유물
     private bool previousInputBlocked; // 화면 열기 전 탐사 입력 상태
@@ -64,6 +65,9 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
         Stretch(title.rectTransform, new Vector2(0.05f, 0.89f), new Vector2(0.95f, 0.98f), Vector2.zero, Vector2.zero); // 유물 창 위쪽 제목 배치
         CreateDetail(frame.transform); // 왼쪽 유물 상세 화면 생성
         CreateGrid(frame.transform); // 오른쪽 유물 격자 화면 생성
+        returnButton = CreateButton("UseSealedMap", frame.transform, "출발 방으로 이동", 21f); // 실제 지도 사용 버튼 생성
+        Stretch(returnButton.GetComponent<RectTransform>(), new Vector2(0.05f, 0.025f), new Vector2(0.34f, 0.105f), Vector2.zero, Vector2.zero); // 유물 상세 아래 왼쪽에 배치
+        returnButton.onClick.AddListener(UseSealedMap); // 실제 이동과 지도 소모 연결
         Button close = CreateButton("Close", frame.transform, "확인", 24f); // 유물 창 닫기 버튼 생성
         Stretch(close.GetComponent<RectTransform>(), new Vector2(0.4f, 0.025f), new Vector2(0.6f, 0.105f), Vector2.zero, Vector2.zero); // 창 아래 중앙 닫기 버튼 배치
         close.onClick.AddListener(Close); // 유물 창 닫기 연결
@@ -133,6 +137,7 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
         { // 유물 목록 갱신 시작
             Refresh(); // 실제 보유 유물 목록 표시
         } // 유물 목록 갱신 종료
+        RefreshDetail(); // 직전 이동과 차단 상태에 맞게 사용 버튼 갱신
     } // 유물 목록 열기 종료
     private void Close() // 유물 목록 닫기
     { // 유물 목록 닫기 시작
@@ -216,7 +221,26 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
         detailIcon.enabled = selected != null && selected.Icon != null; // 실제 유물 이미지 존재 시 표시
         emptyIcon.gameObject.SetActive(selected != null && selected.Icon == null); // 이미지 누락 유물의 기호 표시
         detailRarity.text = selected != null ? GetRarityName(selected.Rarity) : ""; // 실제 유물 희귀도 표시
+        bool mapSelected = selected != null && selected.EffectType == RelicEffectType.ReselectExplorationRoute; // 봉인된 지도 선택 여부
+        returnButton.gameObject.SetActive(mapSelected); // 해당 유물의 상세에서만 이동 허용
+        returnButton.interactable = mapSelected && !previousInputBlocked && ExplorationSessionManager.Instance?.CanUseSealedMap(FindFirstObjectByType<ExplorationMapRuntime>()) == true; // 출발 방이나 전투 전환 중 중복 이동 차단
     } // 유물 상세 갱신 종료
+    private void UseSealedMap() // 목록에서 봉인된 지도 사용
+    { // 지도 버튼 처리 시작
+        if (!isOpen || !returnButton.interactable || selected?.EffectType != RelicEffectType.ReselectExplorationRoute) // 오래된 버튼 클릭과 미보유 차단
+        { // 사용 중단 시작
+            return; // 유물과 위치 보존
+        } // 사용 중단 종료
+        if (ExplorationSessionManager.Instance.TryUseSealedMap(FindFirstObjectByType<ExplorationMapRuntime>())) // 현재 층으로 귀환 성공 여부
+        { // 귀환 성공 처리 시작
+            Close(); // 이동이 끝난 탐사 화면으로 복귀
+        } // 귀환 성공 처리 종료
+        else // 저장 실패 또는 위치 변경
+        { // 귀환 실패 처리 시작
+            RefreshDetail(); // 재시도 가능 여부 표시
+            detailDescription.text += "\n이동하지 못했습니다. 현재 위치와 지도를 유지합니다."; // 지도 보존 결과 안내
+        } // 귀환 실패 처리 종료
+    } // 지도 버튼 처리 종료
     private static string GetRarityName(RelicRarity rarity) // 유물 희귀도 한글 이름 조회
     { // 희귀도 이름 조회 시작
         switch (rarity) // 실제 유물 희귀도 구분
