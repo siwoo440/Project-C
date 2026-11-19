@@ -5,9 +5,10 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public const int CurrentVersion = 3; // 지도 조각까지 포함하는 최신 이벤트 버전
+    public const int CurrentVersion = 4; // 타버린 허수아비까지 포함하는 최신 이벤트 버전
     private static List<ExplorationEventData> ashstormEvents; // 재폭풍의 눈까지 포함한 이전 목록
     private static List<ExplorationEventData> ashPileEvents; // 잿더미 조사까지 포함한 이전 목록
+    private static List<ExplorationEventData> mapFragmentEvents; // 지도 조각까지 포함한 이전 목록
     private static List<ExplorationEventData> currentEvents; // 최신 층의 이벤트 목록
 
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
@@ -37,10 +38,20 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 층 보존 시작
             return ashPileEvents; // 같은 층의 다섯 후보 고정
         } // 이전 층 보존 종료
+        if (mapFragmentEvents == null) // 이전 지도 조각 목록 생성 여부 확인
+        { // 이전 지도 목록 생성 시작
+            mapFragmentEvents = new List<ExplorationEventData>(ashPileEvents); // 잿더미까지의 후보 복사
+            mapFragmentEvents.Add(AshMapFragmentEvent.Create()); // 윈터폴 지도 조각 추가
+            mapFragmentEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 208일차 층의 기존 배치 순서 유지
+        } // 이전 지도 목록 생성 종료
+        if (version == 3) // 지도 조각 버전의 탐사 층 확인
+        { // 이전 층 반환 시작
+            return mapFragmentEvents; // 기존 여섯 후보 반환
+        } // 이전 층 반환 종료
         if (currentEvents == null) // 최신 목록 최초 생성 여부 확인
         { // 새 목록 생성 시작
-            currentEvents = new List<ExplorationEventData>(ashPileEvents); // 잿더미까지의 후보 복사
-            currentEvents.Add(AshMapFragmentEvent.Create()); // 윈터폴 지도 조각 추가
+            currentEvents = new List<ExplorationEventData>(mapFragmentEvents); // 지도 조각까지의 후보 복사
+            currentEvents.Add(BurntScarecrowEvent.Create()); // 타버린 허수아비 추가
             currentEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 고정 시드용 ID 순서 정렬
         } // 새 목록 생성 종료
         return currentEvents; // 새 층의 이벤트 목록 반환

@@ -93,6 +93,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a64d070b893445ffb58fd3550daa6ecd, type: 2}
   - {fileID: 11400000, guid: 398490cce70d4a3c8668434bea6aee00, type: 2}
   - {fileID: 11400000, guid: f01d58a210d7413885c978faf73d92fc, type: 2}
+  - {fileID: 11400000, guid: 533f408175a24f29b8ea20c451481706, type: 2}
   relics:
   - {fileID: 11400000, guid: cec1f3a823e63e8448c2f157b7c29f5f, type: 2}
   - {fileID: 11400000, guid: 79860748c75407742b43320a0dce0cee, type: 2}

@@ -63,7 +63,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 플레이어 턴 아님 처리 시작
             return; // 카드 클릭 처리 중단
         } // 플레이어 턴 아님 처리 종료
-        if (cardInstance == null || !ContainsHandCard(cardInstance)) // 유효한 손패 카드 확인
+        if (cardInstance == null || cardInstance.EffectType == CardEffectType.Unplayable || !ContainsHandCard(cardInstance)) // 사용할 수 있는 손패 카드 확인
         { // 잘못된 카드 처리 시작
             return; // 카드 클릭 처리 중단
         } // 잘못된 카드 처리 종료

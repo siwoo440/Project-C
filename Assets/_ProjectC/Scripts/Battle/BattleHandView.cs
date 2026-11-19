@@ -346,7 +346,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 카드 연결 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 연결 오류 처리 종료
-        if (cardInstance.OwnerUnit.IsDead || sharedActionPoints == null || turnRuntime == null) // 카드 사용 기본 조건 확인
+        if (cardInstance.EffectType == CardEffectType.Unplayable || cardInstance.OwnerUnit.IsDead || sharedActionPoints == null || turnRuntime == null) // 사용 불가 효과와 기본 전투 조건 확인
         { // 카드 사용 조건 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 사용 조건 오류 처리 종료

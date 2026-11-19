@@ -57,6 +57,10 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
 
     private CardTag InferDefaultTags() // 기존 카드용 기본 태그 추론
     {
+        if (effectType == CardEffectType.Unplayable) // 사용 효과가 없는 저주 확인
+        { // 행동 분류 제외 시작
+            return CardTag.None; // 공격과 스킬 분류 제외
+        } // 행동 분류 제외 종료
         CardTag inferredTags = CardTag.None; // 기본 태그 초기화
 
         if (effectType == CardEffectType.Damage)
