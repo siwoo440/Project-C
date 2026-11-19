@@ -77,7 +77,7 @@ public sealed class ShopDiscountRelicTests // 상점 할인 유물 검사
             { // 상점 화면 생성 시작
                 view = ShopPrototypeView.Create(shop); // 실제 상점 화면 생성
             } // 상점 화면 생성 종료
-            view.transform.Find("OpenShopButton").GetComponent<Button>().onClick.Invoke(); // 실제 상점 열기
+            Assert.IsTrue(view.TryOpenFromRoom(shop.ActiveRoomRuntimeId)); // 상점 방 방문 성공 확인
             Transform content = view.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 실제 상품 목록 조회
             Assert.AreEqual("80 Gold", content.Find("Offer_SHOP_SHEET_HEAVY_STRIKE/Price").GetComponent<TMP_Text>().text); // 할인 전 카드 표시 가격 확인
             Assert.AreEqual(ShopPurchaseResult.Success, shop.TryPurchase(badgeOffer)); // 실제 배지 구매 확인

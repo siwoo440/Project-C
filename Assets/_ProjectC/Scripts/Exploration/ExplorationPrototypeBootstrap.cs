@@ -130,6 +130,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
 
         scaler.matchWidthOrHeight = 0.5f; // 가로세로 중간 비율 설정
 
+        ExplorationResourceHud.Create(canvas, PlayerResourceManager.EnsureInstance()); // 오른쪽 위 재화 아이콘과 숫자 연결
         ExplorationInventoryView.Create(canvas, ConsumableRunManager.EnsureInstance().Inventory); // 실제 보유 아이템 다섯 칸 두 줄 표시
         ExplorationRelicWindow.Create(canvas, RelicRunManager.EnsureInstance().Inventory); // 실제 보유 유물 버튼과 목록 표시
 
@@ -173,10 +174,10 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             new Vector2(1f, 1f); // 오른쪽 위 Pivot 설정
 
         progressRect.sizeDelta =
-            new Vector2(700f, 240f); // 진행 영역 크기 설정
+            new Vector2(460f, 76f); // 두 줄 진행 정보 영역
 
         progressRect.anchoredPosition =
-            new Vector2(-24f, -24f); // 진행 텍스트 위치 설정
+            new Vector2(-24f, -86f); // 재화 패널 아래 진행 정보 배치
 
         RefreshProgressText(); // 진행 정보 최초 갱신
     }
@@ -191,12 +192,6 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
         CharacterProgressionManager progressionManager =
             CharacterProgressionManager.EnsureInstance(); // 캐릭터 성장 관리자 준비
 
-        CharacterAffinityManager affinityManager =
-            CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비
-
-        PlayerResourceManager resourceManager =
-            PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
-
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
@@ -209,13 +204,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             $"탐사 {sessionManager.CurrentFloor}F · {explorationState}\n" +
             $"캐릭터 Lv.{progressionManager.Level}  " +
             $"EXP {progressionManager.CurrentExperience}" +
-            $"/{progressionManager.RequiredExperience}\n" +
-            $"호감도 {affinityManager.Affinity}\n" +
-            $"Gold {resourceManager.Gold}\n" +
-            $"나사 {resourceManager.Screw}  " +
-            $"철판 {resourceManager.IronPlate}  " +
-            $"전선 {resourceManager.Wire}\n" +
-            $"이번 탐사 클리어 조우 {sessionManager.ClearedEncounterIds.Count}"; // 영구 진행 상태 출력
+            $"/{progressionManager.RequiredExperience}"; // 현재 레벨 경험치 표시
 
         lastDisplayedFloor =
             sessionManager.CurrentFloor; // 현재 HUD 표시 층 저장

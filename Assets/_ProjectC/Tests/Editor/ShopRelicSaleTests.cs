@@ -56,7 +56,7 @@ public sealed class ShopRelicSaleTests // 상점 유물 판매 검사
             { // 상점 화면 생성 시작
                 view = ShopPrototypeView.Create(shop); // 실제 상점 화면 생성
             } // 상점 화면 생성 종료
-            view.transform.Find("OpenShopButton").GetComponent<Button>().onClick.Invoke(); // 상점 화면 열기
+            Assert.IsTrue(view.TryOpenFromRoom(shop.ActiveRoomRuntimeId)); // 상점 방 방문 성공 확인
             Transform content = view.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 실제 상품 목록 조회
             Assert.IsNotNull(content); // 상품 목록 확인
             content.Find("RelicSellService").GetComponent<Button>().onClick.Invoke(); // 유물 판매 목록 열기

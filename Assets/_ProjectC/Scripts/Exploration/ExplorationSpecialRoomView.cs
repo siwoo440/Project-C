@@ -1,5 +1,4 @@
 using UnityEngine; // Trigger와 런타임 표시 기능 사용
-using UnityEngine.UI; // 기존 상점 열기 버튼 호출 사용
 
 public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보물·휴식·상점 방 상호작용
 {
@@ -246,27 +245,11 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
             return; // 상점 열기 중단
         }
 
-        ShopRunManager shopManager = ShopRunManager.Instance; // 현재 상점 회차 관리자 조회
-        if (shopManager != null) // 상점 관리자 준비 여부 확인
-        {
-            shopManager.BeginRoomVisit(runtimeId); // 현재 방 전용 판매 상태 준비
-        }
-
-        Button[] buttons = shopView.GetComponentsInChildren<Button>(true); // 상점 UI 전체 버튼 조회
-
-        foreach (Button button in buttons) // 상점 버튼 순회
-        {
-            if (button != null &&
-                button.gameObject.name == "OpenShopButton") // 기존 상점 열기 버튼 확인
-            {
-                button.onClick.Invoke(); // 기존 상점 열기 흐름 실행
-                sessionManager.MarkEventResolved(runtimeId); // 최초 방문 즉시 상점 사용 완료 처리
-                gameObject.SetActive(false); // 재방문 방지 상점 표시 숨김
-                return; // 상점 열기 완료
-            }
-        }
-
-        Debug.LogWarning("[Exploration][Day57] 기존 상점 열기 버튼을 찾지 못했습니다.", this); // 상점 연결 실패 안내
+        if (shopView.TryOpenFromRoom(runtimeId)) // 실제 상점 열림 확인
+        { // 방문 완료 처리 시작
+            sessionManager.MarkEventResolved(runtimeId); // 열린 상점 방문 기록
+            gameObject.SetActive(false); // 이미 방문한 상점 표시 숨김
+        } // 방문 완료 처리 종료
     }
 
     private void CreateRoomLabel() // 특수 방 역할 문자 표시 생성

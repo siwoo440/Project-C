@@ -81,7 +81,7 @@ public sealed class CommonCardShopTests // 공용 카드 상점 검사
             { // 상점 화면 생성 시작
                 view = ShopPrototypeView.Create(shop); // 실제 상점 화면 생성
             } // 상점 화면 생성 종료
-            view.transform.Find("OpenShopButton").GetComponent<Button>().onClick.Invoke(); // 실제 상점 열기
+            Assert.IsTrue(view.TryOpenFromRoom(shop.ActiveRoomRuntimeId)); // 상점 방 방문 성공 확인
             Transform content = view.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 실제 상품 목록 조회
             content.Find("Offer_SHOP_SHEET_HEAVY_STRIKE").GetComponent<Button>().onClick.Invoke(); // 공용 카드 선택
             TMP_Text resultText = view.transform.Find("ShopOverlay/ShopPanel/ResultText").GetComponent<TMP_Text>(); // 실제 안내 문구 조회

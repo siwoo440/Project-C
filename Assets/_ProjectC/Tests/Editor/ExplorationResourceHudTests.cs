@@ -5,10 +5,10 @@ using UnityEngine.UI; // 실제 상점 닫기 버튼 사용
 using UnityEngine; // 실제 탐사 화면 객체 사용
 using UnityEngine.SceneManagement; // 실제 씬 전환 사용
 using UnityEngine.TestTools; // 실제 플레이 모드 검사 사용
-public sealed class ExplorationResourceHudTests // 탐사 화면 우측 하단 정리 검사
+public sealed class ExplorationResourceHudTests // 탐사 재화 표시와 상점 방문 검사
 { // 탐사 화면 정리 검사 시작
     [UnityTest] // 실제 탐사 화면 검사 지정
-    public IEnumerator ResourcesUpdateAndShopRoomRemainsAccessible() // 시험 정보와 저장 버튼 제거 및 탐사 유지 확인
+    public IEnumerator ResourcesUpdateAndShopRoomRemainsAccessible() // 재화 획득·소비와 상점 방 방문 확인
     { // 실제 탐사 화면 검사 시작
         yield return new EnterPlayMode(); // 실제 게임 플레이 시작
         SceneManager.LoadScene("00_Boot"); // 실제 게임 시작 씬 진입
@@ -67,6 +67,8 @@ public sealed class ExplorationResourceHudTests // 탐사 화면 우측 하단 �
         ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
         room.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 실제 플레이어의 상점 방 진입 처리
         Assert.IsTrue(shop.transform.Find("ShopOverlay").gameObject.activeSelf); // 상점 방을 통한 실제 상점 열기 확인
+        Assert.IsFalse(shop.TryOpenFromRoom("different_room")); // 열린 상점의 중복 방문 거절 확인
+        Assert.AreEqual("resource_hud_test_shop", ShopRunManager.Instance.ActiveRoomRuntimeId); // 원래 상점 재고 유지 확인
         Assert.IsTrue(ExplorationSessionManager.Instance.IsEventResolved("resource_hud_test_shop")); // 실제 상점 방 방문 처리 확인
         shop.transform.Find("ShopOverlay/ShopPanel/CloseButton").GetComponent<Button>().onClick.Invoke(); // 실제 상점 닫기
         Object.DestroyImmediate(roomObject); // 임시 상점 방 정리

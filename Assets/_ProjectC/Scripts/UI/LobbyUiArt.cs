@@ -62,6 +62,10 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
         { // 편성 칸 여백 조정 시작
             return new Rect(texture.width * 0.08f, texture.height * 0.035f, texture.width * 0.84f, texture.height * 0.93f); // 편성 칸 외부 투명 여백 제외
         } // 편성 칸 여백 조정 종료
+        if (name == "ExplorationResourceFrame") // 탐사 재화 네 칸 테두리 확인
+        { // 배경 투명 여백 제외 시작
+            return new Rect(texture.width * 0.015f, texture.height * 0.363f, texture.width * 0.98f, texture.height * 0.268f); // 네 칸 테두리 영역 선택
+        } // 배경 투명 여백 제외 종료
         if (name == "Gold") // 골드 아이콘 확인
         { // 골드 여백 조정 시작
             return new Rect(texture.width * 0.24f, texture.height * 0.18f, texture.width * 0.52f, texture.height * 0.64f); // 골드 외부 투명 여백 제외
