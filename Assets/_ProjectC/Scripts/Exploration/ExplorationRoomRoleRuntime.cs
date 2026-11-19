@@ -258,7 +258,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
 
     private static List<ExplorationEventData> LoadValidEvents() // 유효 이벤트 데이터 로드
     {
-        IReadOnlyList<ExplorationEventData> loadedData = ExplorationEventCatalog.LoadEvents(); // 기존 이벤트 카탈로그 로드
+        IReadOnlyList<ExplorationEventData> loadedData = ExplorationEventCatalog.LoadEvents(ExplorationSessionManager.EnsureInstance().EventPoolVersion); // 현재 층의 고정 이벤트 조회
         List<ExplorationEventData> result = new List<ExplorationEventData>(); // 유효 이벤트 목록 생성
 
         if (loadedData == null) // 이벤트 카탈로그 존재 확인

@@ -301,7 +301,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         return result; // 유효 보상 후보 반환
     }
 
-    private static int BuildStableHash(string text) // 문자열 기반 고정 Seed 생성
+    internal static int BuildStableHash(string text) // 탐사 보상용 문자열 고정 시드 계산
     {
         unchecked
         {

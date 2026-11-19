@@ -96,6 +96,8 @@
 
 이벤트·휴식·상점 안내도 게임에서 읽을 수 있다. [탐사 튜토리얼 다섯 화면](Devlogs/Day200/README.md) · [회복 유물 세 종류](Devlogs/Day198/HealingRelics.png) · [성배 카드 다섯 장](Devlogs/Day197/CupCards.png)
 
+윈터폴의 ‘재폭풍의 눈’에서는 행동할 생존자와 획득한 희귀 카드를 받을 파티원을 각각 고른다. [세 가지 선택과 결과 화면](Devlogs/Day201/README.md) · [체력·정신력과 보상 처리 코드](Assets/_ProjectC/Scripts/Exploration/AshstormEyeEvent.cs)
+
 162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png) · [네 명을 편성한 탐사 화면 · 195일차](Devlogs/Day195/Exploration.png)
 
 </details>

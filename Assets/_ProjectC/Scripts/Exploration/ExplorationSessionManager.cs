@@ -46,6 +46,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
     public int CurrentFloor => currentFloor; // 현재 층 조회
     public int EncounterPoolVersion => encounterPoolVersion; // 저장된 탐사 조우 목록 버전 조회
+    public int EventPoolVersion { get; private set; } = ExplorationEventCatalog.CurrentVersion; // 현재 층의 고정 이벤트 목록 버전
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
     public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
     public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
@@ -461,6 +462,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private void ClearCurrentFloorSeed() // 현재 층 Seed 초기화
     {
         currentFloorSeed = 0; // Seed 값 초기화
+        EventPoolVersion = ExplorationEventCatalog.CurrentVersion; // 다음 층에 최신 이벤트 목록 배정
         hasCurrentFloorSeed = false; // Seed 존재 상태 해제
     }
 
@@ -493,6 +495,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     { // 탐사 상태 복원 시작
         ResetExploration(); // 이전 탐사 상태 제거
         encounterPoolVersion = snapshot.encounterPoolVersion; // 저장 당시 조우 목록 버전 복원
+        EventPoolVersion = snapshot.eventPoolVersion; // 저장 당시 층의 이벤트 목록 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
         currentFloorSeed = snapshot.seed; // 저장 맵 시드 적용
         hasCurrentFloorSeed = true; // 저장 시드 존재 표시

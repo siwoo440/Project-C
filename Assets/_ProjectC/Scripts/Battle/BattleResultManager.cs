@@ -192,63 +192,38 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
             return -1; // 등록 파티 없음 반환
         }
 
-        int safeHealthDamage =
-            Mathf.Max(
-                0,
-                healthDamage); // 체력 피해 음수 방지
-
-        int safeMentalDamage =
-            Mathf.Max(
-                0,
-                mentalDamage); // 정신력 피해 음수 방지
-
-        foreach (CharacterData member in ActiveParty.Members)
-        {
-            if (member == null ||
-                string.IsNullOrWhiteSpace(member.CharacterId))
-            {
-                continue;
-            }
-
-            InitializeMemberState(
-                member); // 현재 파티원 저장 상태 보장
-
-            int previousHealth =
-                savedAllyHealth[member.CharacterId]; // 피해 전 현재 체력 저장
-
-            if (previousHealth <= 0)
-            {
-                continue; // 이미 사망한 캐릭터 추가 환경 피해 제외
-            }
-
-            int nextHealth =
-                Mathf.Max(
-                    0,
-                    previousHealth -
-                    safeHealthDamage); // 환경 피해로 HP 0까지 허용
-
-            int nextMental =
-                Mathf.Clamp(
-                    savedAllyMental[member.CharacterId] -
-                    safeMentalDamage,
-                    BattleMentalRuntime.MinimumMental,
-                    BattleMentalRuntime.MaximumMental); // 환경 정신력 피해 적용
-
-            savedAllyHealth[member.CharacterId] =
-                nextHealth; // 환경 피해 체력 저장
-
-            savedAllyMental[member.CharacterId] =
-                nextMental; // 환경 피해 정신력 저장
-
-            RegisterDeathTransition(
-                member.CharacterId,
-                previousHealth,
-                nextHealth); // 환경 피해 사망 기록
-        }
+        foreach (CharacterData member in ActiveParty.Members) // 출전 파티원 순회
+        { // 환경 피해 적용 시작
+            ApplyExplorationChange(member, Mathf.Max(0, healthDamage), -Mathf.Max(0, mentalDamage)); // 생존 파티원 환경 피해 반영
+        } // 환경 피해 적용 종료
 
         PartyStateChanged?.Invoke(); // 탐사 파티 HUD 즉시 갱신
         return GetLivingAllyCount(); // 환경 피해 후 생존 인원 반환
     }
+
+    private void ApplyExplorationChange(CharacterData member, int healthDamage, int mentalChange) // 탐사 중 생존자 체력과 정신력 변경
+    { // 생존자 상태 변경 시작
+        if (!TryGetSavedAllyState(member, out int health, out int mental, out _) || health <= 0) // 생존 여부 확인
+        { // 사망 파티원 제외 시작
+            return; // 사망 중 추가 피해와 회복 방지
+        } // 사망 파티원 제외 종료
+        string id = member.CharacterId; // 파티원 식별자 조회
+        int nextHealth = Mathf.Max(0, health - healthDamage); // 체력 영점까지 피해 허용
+        savedAllyHealth[id] = nextHealth; // 변경 체력 저장
+        savedAllyMental[id] = Mathf.Clamp(mental + mentalChange, BattleMentalRuntime.MinimumMental, BattleMentalRuntime.MaximumMental); // 허용 범위의 정신력 저장
+        RegisterDeathTransition(id, health, nextHealth); // 첫 사망과 누적 사망 횟수 반영
+    } // 생존자 상태 변경 종료
+
+    public bool IsLivingPartyMember(CharacterData member) // 행동할 수 있는 출전 생존자 확인
+    { // 출전 생존자 확인 시작
+        return ActiveParty != null && ActiveParty.ContainsCharacter(member) && TryGetSavedAllyState(member, out int health, out _, out _) && health > 0; // 파티 소속과 현재 체력 확인
+    } // 출전 생존자 확인 종료
+
+    internal void ApplyEventChange(CharacterData member, int healthDamage, int mentalChange) // 선택한 출전자의 탐사 이벤트 상태 반영
+    { // 이벤트 상태 변경 시작
+        ApplyExplorationChange(member, healthDamage, mentalChange); // 행동자의 체력과 정신력 갱신
+        PartyStateChanged?.Invoke(); // 변경된 파티 상태 표시
+    } // 이벤트 상태 변경 종료
 
     public bool TryGetSavedAllyState(
         CharacterData characterData,

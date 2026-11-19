@@ -11,6 +11,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
     { // 탐사 저장 정보 시작
         public int version; // 탐사 저장 형식 버전
         public int encounterPoolVersion; // 탐사 중 고정된 조우 목록 버전
+        public int eventPoolVersion; // 현재 층 이벤트 목록 버전과 이전 저장의 기본값 영
         public int floor; // 현재 탐사 층
         public int seed; // 현재 층 생성 시드
         public Vector3 position; // 플레이어 위치
@@ -154,6 +155,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 encounterPoolVersion = session.EncounterPoolVersion, // 현재 탐사의 고정 조우 목록 버전 저장
                 floor = session.CurrentFloor, // 현재 탐사 층 설정
                 seed = session.CurrentFloorSeed, // 현재 층 시드 설정
+                eventPoolVersion = session.EventPoolVersion, // 현재 층 이벤트 구성 저장
                 position = position, // 플레이어 위치 설정
                 party = party.ToArray(), // 출전 파티 설정
                 sourceCards = sourceCards.ToArray(), // 탐사 시작 덱 설정
@@ -246,6 +248,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             return false; // 탐사 복원 실패 반환
         } // 거점 상태 복원 실패 종료
         ExplorationRewardOwnerView.ClosePending(); // 복원 전 대기 중 보물 선택 종료
+        ExplorationEventPanelView.CloseForLoad(); // 복원 전 이전 이벤트 선택과 이동 잠금 해제
         ShopRunManager.Instance?.ResetSession(); // 이전 상점 상태 제거
         RestRoomRunManager.Instance?.ResetSession(); // 이전 휴식 상태 제거
         RunDeckManager deck = RunDeckManager.EnsureInstance(); // 회차 덱 관리자 준비
@@ -316,6 +319,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 미지원 목록 버전 처리 시작
             return false; // 알 수 없는 조우 구성의 복원 차단
         } // 미지원 목록 버전 처리 종료
+        if (snapshot.eventPoolVersion < 0 || snapshot.eventPoolVersion > ExplorationEventCatalog.CurrentVersion) // 지원 이벤트 목록 버전 확인
+        { // 잘못된 이벤트 버전 처리 시작
+            return false; // 복원할 수 없는 이벤트 구성 차단
+        } // 잘못된 이벤트 버전 처리 종료
         if (snapshot.floor < 1 || snapshot.floor > ExplorationFloorRules.TotalFloorCount || !IsFinite(snapshot.position.x) || !IsFinite(snapshot.position.y) || !IsFinite(snapshot.position.z) || !IsFinite(snapshot.hazardExposure) || snapshot.hazardExposure < 0f || snapshot.hazardExposure >= 100f) // 층과 위치 및 위험 노출도 검사
         { // 위치 정보 오류 시작
             return false; // 복원 불가 반환

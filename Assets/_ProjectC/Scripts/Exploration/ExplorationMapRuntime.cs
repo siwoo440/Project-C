@@ -524,7 +524,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
 
         IReadOnlyList<ExplorationEventData> loadedEvents =
-            ExplorationEventCatalog.LoadEvents(); // 탐사 이벤트 데이터 로드
+            ExplorationEventCatalog.LoadEvents(sessionManager.EventPoolVersion); // 저장 당시 층의 이벤트 목록 조회
 
         if (loadedEvents == null ||
             loadedEvents.Count == 0)

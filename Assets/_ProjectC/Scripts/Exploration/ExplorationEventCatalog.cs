@@ -5,8 +5,27 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public static IReadOnlyList<ExplorationEventData> LoadEvents() // 탐사 이벤트 목록 로드
-    {
+    public const int CurrentVersion = 1; // 재폭풍의 눈을 포함한 이벤트 목록 버전
+    private static List<ExplorationEventData> currentEvents; // 새 층의 이벤트 목록
+
+    public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
+    { // 버전별 이벤트 조회 시작
+        IReadOnlyList<ExplorationEventData> original = LoadOriginalEvents(); // 기존 세 이벤트의 순서 유지
+        if (version == 0) // 이전 탐사 저장 여부 확인
+        { // 이전 목록 선택 시작
+            return original; // 기존 층의 이벤트 배치 유지
+        } // 이전 목록 선택 종료
+        if (currentEvents == null) // 새 목록 최초 생성 여부 확인
+        { // 새 목록 생성 시작
+            currentEvents = new List<ExplorationEventData>(original); // 기존 이벤트 복사
+            currentEvents.Add(AshstormEyeEvent.Create()); // 윈터폴 재폭풍의 눈 추가
+            currentEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 고정 시드용 ID 순서 정렬
+        } // 새 목록 생성 종료
+        return currentEvents; // 새 층의 이벤트 목록 반환
+    } // 버전별 이벤트 조회 종료
+
+    private static IReadOnlyList<ExplorationEventData> LoadOriginalEvents() // 이전 버전 이벤트 목록 구성
+    { // 기존 이벤트 구성 시작
         if (cachedEvents != null)
         {
             return cachedEvents; // 기존 이벤트 캐시 반환
