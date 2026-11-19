@@ -43,7 +43,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정
         try // 피해 판정 문맥 정리 보장
         { // 두 번째 공격 적용 시작
-            target.TakeDamage(damage, card.DamageType, card.OwnerUnit); // 다른 적의 방어도와 약점을 반영한 피해 적용
+            target.TakeDamage(SwordCardCombat.RollCritical(card, damage, out _), card.DamageType, card.OwnerUnit); // 다른 적의 방어도와 약점을 반영한 피해 적용
         } // 두 번째 공격 적용 종료
         finally // 카드 피해 문맥 정리
         { // 피해 문맥 정리 시작

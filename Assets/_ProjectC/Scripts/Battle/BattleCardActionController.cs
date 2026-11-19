@@ -9,6 +9,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
+    private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly WinterfallBossPhaseRuntime bossPhaseRuntime; // 선택적인 보스 페이즈 관리자
     private readonly LoversPartnerRuntime loversPartner; // 연인 파트너와 행동 기록
@@ -72,9 +73,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] 사망한 소유자의 카드는 사용할 수 없습니다: {cardInstance.OwnerUnit.DisplayName}"); // 사용 불가 출력
             return; // 카드 클릭 처리 중단
         } // 사망 소유자 처리 종료
-        if (!sharedActionPoints.CanSpend(cardInstance.ApCost)) // 카드 비용 지불 가능 확인
+        if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime)) // 카드 비용 지불 가능 확인
         { // 행동력 부족 처리 시작
-            Debug.LogWarning($"[BattleCardActionController] 공용 AP가 부족합니다: 현재 {sharedActionPoints.CurrentActionPoints} / 필요 {cardInstance.ApCost}"); // 행동력 부족 출력
+            Debug.LogWarning($"[BattleCardActionController] 카드 사용 조건 부족: {cardInstance.DisplayName} / 현재 AP {sharedActionPoints.CurrentActionPoints}"); // 행동력 부족 출력
             handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
             return; // 카드 클릭 처리 중단
         } // 행동력 부족 처리 종료
@@ -124,7 +125,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] {runtimeUnit.DisplayName}은 {selectedCard.DisplayName}의 대상이 아닙니다."); // 잘못된 대상 출력
             return; // 유닛 클릭 처리 중단
         } // 잘못된 대상 처리 종료
-        ExecuteCard(selectedCard, CreateSingleTargetList(runtimeUnit)); // 선택 대상에게 카드 사용
+        var targets = selectedCard.SourceData.SwordRule == SwordCardRule.SwordDance ? SwordCardCombat.GetDanceArea(runtimeUnit, enemyActions.EnemyUnits) : CreateSingleTargetList(runtimeUnit); // 범위 공격은 선택 위치의 두 칸으로 고정
+        ExecuteCard(selectedCard, targets); // 선택 대상에게 카드 사용
     } // 유닛 클릭 처리 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
@@ -160,12 +162,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 상태 초기화
         } // 소유자 사망 처리 종료
     } // 유닛 사망 처리 종료
-    private void HandleAllyHealthChanged(BattleUnitRuntime runtimeUnit) // 아군 체력 변경 시 카드 사용 상태 갱신
+    private void HandleUnitHealthChanged(BattleUnitRuntime runtimeUnit) // 체력 대가와 처형 대상에 따른 손패 갱신
     { // 아군 체력 변경 처리 시작
-        if (selectedCard != null && selectedCard.OwnerUnit == runtimeUnit && DevilBloodPrice.IsBloodPriceCard(selectedCard) && !DevilBloodPrice.CanPay(selectedCard)) // 선택된 체력 비용 카드의 지불 가능 여부 확인
+        if (selectedCard != null && (!SwordCardCombat.CanUse(selectedCard, sharedActionPoints, turnRuntime) || selectedCard.OwnerUnit == runtimeUnit && DevilBloodPrice.IsBloodPriceCard(selectedCard) && !DevilBloodPrice.CanPay(selectedCard))) // 선택된 체력 비용 카드의 지불 가능 여부 확인
         { // 선택 취소 처리 시작
             CancelSelection(); // 체력 부족 카드 선택 해제
         } // 선택 취소 처리 종료
+        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher) // 처형 카드 선택 중 체력 변화 확인
+        { // 대상 범위 갱신 시작
+            UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
+        } // 대상 범위 갱신 종료
         handView.RefreshCardAvailability(); // 변경된 체력 기준 손패 사용 가능 상태 갱신
     } // 아군 체력 변경 처리 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
@@ -194,12 +200,19 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 연출 시작 불가 처리 종료
-        if (!sharedActionPoints.Spend(cardInstance.ApCost)) // 카드 비용 차감 확인
+        int cost = cardInstance.SourceData.SwordRule == SwordCardRule.Finisher ? sharedActionPoints.CurrentActionPoints : cardInstance.ApCost; // 실제 사용 순간의 행동력 비용 결정
+        if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime) || !sharedActionPoints.Spend(cost)) // 현재 대상 및 비용 재확인 후 한 번 지불
         { // 비용 차감 실패 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 카드 비용 차감에 실패했습니다: {cardInstance.DisplayName}"); // 비용 차감 실패 출력
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        paidActionPoints = cost; // 충돌 시점에 사용할 실제 지불 비용 보관
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.DoomBlade) // 파멸의 검 체력 대가 확인
+        { // 체력 대가 지불 시작
+            cardInstance.OwnerUnit.TrySpendHealth(cardInstance.SourceData.SecondaryEffectValue); // 방어도를 건너뛰고 생존 가능한 체력 대가 지불
+            actorView.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 소유자에게 체력 소모 표시
+        } // 체력 대가 지불 종료
         List<BattleUnitRuntime> targetSnapshot = new List<BattleUnitRuntime>(targetUnits); // 연출 중 유지할 대상 목록 복사
         actionPending = true; // 카드 행동 진행 상태 저장
         CancelSelection(); // 카드 선택과 대상 강조 해제
@@ -239,6 +252,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
         } // 효과 적용 종료
+        else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance) // 두 칸 안에서 독립 세 타격 확인
+        { // 무작위 연속 공격 시작
+            totalAppliedAmount = ApplyDanceHits(cardInstance, targetUnits); // 매 타격 직전 같은 두 칸에서 재추첨
+        } // 무작위 연속 공격 종료
         else // 일반 카드 효과 분기
         { // 일반 효과 처리 시작
             foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
@@ -436,6 +453,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher && !SwordCardCombat.IsFinisherTarget(targetUnit)) // 선택한 적의 현재 체력 재검사
+        { // 처형 대상 제한 시작
+            return false; // 체력 오분의 일을 넘는 적 선택 차단
+        } // 처형 대상 제한 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
@@ -733,6 +754,29 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         return applied; // 타격별 체력 피해 합계 반환
     } // 단일 효과 적용 종료
 
+    private int ApplyDanceHits(CardInstance card, IReadOnlyList<BattleUnitRuntime> area) // 선택 범위 안에서 독립 타격 처리
+    { // 무작위 연타 시작
+        int damage = 0; // 이번 카드가 입힌 체력 피해 합계
+        var hit = new BattleUnitRuntime[1]; // 타격마다 사용할 약점 판정 대상
+        try // 조기 종료 시 피해 문맥 정리 보장
+        { // 각 타격 처리 시작
+            for (int index = 0; index < card.SourceData.DamageHitCount && !card.OwnerUnit.IsDead && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition; index++) // 남은 타격과 전투 상태 검사
+            { // 생존 대상 추첨 시작
+                hit[0] = SwordCardCombat.PickDanceTarget(area); // 같은 두 칸 안에서 생존자 재선택
+                if (hit[0] == null) // 범위 안의 적 전멸 확인
+                { // 범위 소진 처리 시작
+                    break; // 다른 칸으로 넘어가는 공격 방지
+                } // 범위 소진 처리 종료
+                BattleCardDamageContext.Begin(card, hit); // 실제 선택된 한 적의 약점 판정 준비
+                damage += ApplyDamageHit(card, hit[0]); // 독립 명중과 피해 계산
+            } // 생존 대상 추첨 종료
+        } // 각 타격 처리 종료
+        finally // 타격 문맥 정리
+        { // 정리 시작
+            BattleCardDamageContext.Clear(); // 다음 공격을 위한 피해 문맥 해제
+        } // 정리 종료
+        return damage; // 실제 체력 피해 합계 반환
+    } // 무작위 연타 종료
     private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 공격 한 타격 적용
     { // 타격 판정 시작
         if (!BattleHitChance.Roll(cardInstance.OwnerUnit)) // 실명 상태의 공격 명중 확인
@@ -745,13 +789,27 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
-        int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
+        int baseDamage = SwordCardCombat.BaseDamage(cardInstance, paidActionPoints); // 표기 수치와 실제 지불 비용 및 체력 손실 반영
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
         } // 약화 대상 추가 피해 종료
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
+        modifiedDamage = SwordCardCombat.RollCritical(cardInstance, modifiedDamage, out bool critical); // 명중한 카드 타격에 치명타 확률 적용
+        if (critical) // 치명타 발동 확인
+        { // 치명타 표시 시작
+            FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
+        } // 치명타 표시 종료
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
+        if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
+        { // 돌진 후속 효과 시작
+            targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 피격 대상의 다음 턴 물리 방어 약화 예약
+        } // 돌진 후속 효과 종료
+        if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.FlameSlash) // 명중한 화염 참격과 생존 대상 확인
+        { // 화상 부여 시작
+            var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 기존 면역과 지속 피해 처리에 화상 전달
+            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
+        } // 화상 부여 종료
         if (SunChainAttack.IsChainCard(cardInstance) && !turnRuntime.HasPendingBossPhaseTransition) // 보스 전환이 예약되지 않은 태양 연속 공격 확인
         { // 태양 추가 공격 시작
             ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용
@@ -887,10 +945,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 등록 시작
                     unitView.RuntimeUnit.Died += HandleUnitDied; // 유닛 사망 이벤트 등록
-                    if (unitView.RuntimeUnit.Team == BattleTeam.Ally) // 아군 체력 이벤트 연결 확인
-                    { // 아군 체력 연결 시작
-                        unitView.RuntimeUnit.HealthChanged += HandleAllyHealthChanged; // 체력 비용 카드 갱신 이벤트 등록
-                    } // 아군 체력 연결 종료
+                    unitView.RuntimeUnit.HealthChanged += HandleUnitHealthChanged; // 체력 비용과 처형 대상 갱신 이벤트 등록
                 } // 런타임 이벤트 등록 종료
             } // 유닛 화면 연결 종료
         } // 이벤트 등록 처리 종료
@@ -905,10 +960,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 해제 시작
                     unitView.RuntimeUnit.Died -= HandleUnitDied; // 유닛 사망 이벤트 해제
-                    if (unitView.RuntimeUnit.Team == BattleTeam.Ally) // 아군 체력 이벤트 연결 확인
-                    { // 아군 체력 연결 해제 시작
-                        unitView.RuntimeUnit.HealthChanged -= HandleAllyHealthChanged; // 체력 비용 카드 갱신 이벤트 해제
-                    } // 아군 체력 연결 해제 종료
+                    unitView.RuntimeUnit.HealthChanged -= HandleUnitHealthChanged; // 체력 비용과 처형 대상 갱신 이벤트 해제
                 } // 런타임 이벤트 해제 종료
             } // 유닛 화면 연결 해제 종료
         } // 이벤트 해제 처리 종료

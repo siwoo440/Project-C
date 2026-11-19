@@ -71,7 +71,7 @@ public sealed class BattleCardPreviewView : MonoBehaviour // 선택 카드 확�
         { // 기본 비용 배경 복원 시작
             BattleUiArt.Apply(costBadge, "CostBadge"); // 이미지 누락 시 기존 비용 배경 적용
         } // 기본 비용 배경 복원 종료
-        cost.text = card.ApCost.ToString(); // 실제 행동력 비용 표시
+        cost.text = card.CostLabel; // 실제 행동력 비용 표시
         artwork.sprite = card.Artwork; // 실제 카드 일러스트 표시
         artwork.color = card.Artwork != null ? Color.white : new Color(0.2f, 0.2f, 0.22f, 1f); // 일러스트 누락 시 대체 배경 설정
         gameObject.SetActive(true); // 확대 카드 표시

@@ -35,7 +35,8 @@ public static class WandererCryRewardView // 승리 결과 위의 카드와 소�
             art.sprite = card.Artwork; // 실제 카드의 제작 원화 연결
             art.preserveAspect = true; // 카드 원화 가로세로 비율 유지
             art.raycastTarget = false; // 버튼이 그림 위의 입력 수신
-            var details = PreparationUi.CreateText("Details", button.transform, $"AP {card.ApCost}\n{card.Description}", 22f); // 실제 비용과 사용 효과 안내
+            string cost = card.SwordRule == SwordCardRule.Finisher ? "X" : card.ApCost.ToString(); // 가변 비용 카드의 보상 표기
+            var details = PreparationUi.CreateText("Details", button.transform, $"AP {cost}\n{card.Description}", 22f); // 실제 비용과 사용 효과 안내
             PreparationUi.Stretch(details.rectTransform, new Vector2(0.05f, 0.04f), new Vector2(0.95f, 0.33f)); // 아래쪽 카드 설명 영역 지정
         } // 개별 카드 표시 종료
     } // 화면 생성 종료

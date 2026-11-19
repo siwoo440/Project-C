@@ -54,7 +54,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
             BattleUiArt.Apply(costBadgeImage, "CostBadge"); // 이미지 누락 시 기존 비용 배경 적용
         } // 기본 비용 배경 복원 종료
         ownerText.text = RuntimeCard.OwnerUnit.DisplayName; // 카드 소유자 적용
-        costText.text = RuntimeCard.ApCost.ToString(); // 카드 비용 적용
+        costText.text = RuntimeCard.CostLabel; // 카드 비용 적용
         artworkImage.sprite = RuntimeCard.Artwork; // 카드 일러스트 적용
         artworkImage.color = RuntimeCard.Artwork != null ? Color.white : new Color(0.22f, 0.22f, 0.26f, 1f); // 일러스트 유무 색상 적용
     } // 카드 연결 종료

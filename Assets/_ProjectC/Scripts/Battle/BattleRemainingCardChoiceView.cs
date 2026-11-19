@@ -18,7 +18,7 @@ public sealed class BattleRemainingCardChoiceView : MonoBehaviour // 남은 카�
         TMP_Text title = CreateText("Title", rootRect, "남은 카드 처리 선택", 26f); // 선택 제목 생성
         title.rectTransform.anchoredPosition = new Vector2(0f, 145f); // 제목 위치 설정
         title.rectTransform.sizeDelta = new Vector2(480f, 45f); // 제목 크기 설정
-        TMP_Text details = CreateText("CardDetails", rootRect, $"{card.DisplayName}\n{card.OwnerUnit.DisplayName} · AP {card.ApCost}\n{card.SourceData.Description}", 20f); // 남은 카드 정보 표시
+        TMP_Text details = CreateText("CardDetails", rootRect, $"{card.DisplayName}\n{card.OwnerUnit.DisplayName} · AP {card.CostLabel}\n{card.SourceData.Description}", 20f); // 남은 카드 정보 표시
         details.rectTransform.anchoredPosition = new Vector2(0f, 35f); // 카드 정보 위치 설정
         details.rectTransform.sizeDelta = new Vector2(420f, 130f); // 카드 정보 크기 설정
         Button keep = CreateButton("KeepRemaining", rootRect, "덱 맨 위에 두기", -120f); // 덱 유지 버튼 생성

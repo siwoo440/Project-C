@@ -96,6 +96,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
                 return "중독"; // 중독 이름 반환
+            case BattleStatusEffectType.CriticalChanceUp: // 치명타 확률 증가 종류
+                return "치명타 확률 증가"; // 전의 고취 상태 이름
+            case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
+                return "돌진 방어 감소"; // 돌진 약화 상태 이름
             case BattleStatusEffectType.Burn: // 화상 종류
                 return "화상"; // 화상 이름 반환
             case BattleStatusEffectType.Blind: // 실명 종류
@@ -138,7 +142,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -146,6 +150,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         { // 종류 분기 시작
             case BattleStatusEffectType.Poison: // 중독 종류
                 return "독"; // 중독 아이콘 반환
+            case BattleStatusEffectType.CriticalChanceUp: // 치명타 확률 증가 종류
+                return "치"; // 치명타 증가 약칭
+            case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
+                return "방"; // 물리 방어 감소 약칭
             case BattleStatusEffectType.Burn: // 화상 종류
                 return "화"; // 화상 아이콘 반환
             case BattleStatusEffectType.Blind: // 실명 종류
@@ -196,6 +204,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "정신력 최소 발동, 캐릭터별 피해·회복 변화, 강제 해제 불가"; // 붕괴 상태 설명 반환
             case BattleStatusEffectType.Poison: // 중독 종류
                 return $"진영 턴 시작에 피해 {effectiveValue}, 중독 수치 1 감소"; // 중독 피해와 감소 설명 반환
+            case BattleStatusEffectType.CriticalChanceUp: // 치명타 확률 증가 종류
+                return $"카드 타격의 치명타 확률 +{effectiveValue}%"; // 치명타 확률 보정 표시
+            case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
+                return $"이번 아군 턴 물리 방어력 −{effectiveValue}"; // 돌진의 적용 턴과 감소량 표시
             case BattleStatusEffectType.Burn: // 화상 종류
                 return $"진영 턴 종료에 피해 {effectiveValue}, 화상 수치 1 감소"; // 화상 설명 반환
             case BattleStatusEffectType.Blind: // 실명 종류

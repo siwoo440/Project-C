@@ -67,7 +67,17 @@ public static class CodexData // 실제 게임 데이터 기반 도감
             { // 상태 효과 확인 시작
                 if (effect != BattleStatusEffectType.None) // 빈 상태 제외
                 { // 상태 효과 추가 시작
-                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), string.Empty, null)); // 실제 상태 이름 등록
+                    string description = string.Empty; // 수치가 정해진 상태만 표시할 설명
+                    if (effect == BattleStatusEffectType.CriticalChanceUp) // 전의 고취 강화 확인
+                    { // 치명 강화 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 5) + ". 2턴 지속. 다시 받으면 지속 시간 갱신."; // 기본 확률 증가와 중복 적용 규칙
+                    } // 치명 강화 설명 종료
+                    else if (effect == BattleStatusEffectType.ChargeDefenseDown) // 돌진 약화 확인
+                    { // 돌진 약화 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 2) + ". 돌진에 명중한 적에게 다음 아군 턴 동안 적용."; // 피격 대상과 지연 발동 조건
+                    } // 돌진 약화 설명 종료
+                    Sprite icon = description.Length > 0 ? BattleStatusIconArt.Get(effect) : null; // 검 카드의 독립 상태 아이콘 조회
+                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, icon)); // 실제 상태 이름과 연결된 상세 정보 등록
                 } // 상태 효과 추가 종료
             } // 상태 효과 확인 종료
         } // 상태 효과 수집 종료

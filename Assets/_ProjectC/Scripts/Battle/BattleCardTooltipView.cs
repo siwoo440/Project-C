@@ -20,9 +20,9 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         } // 카드 누락 처리 종료
         EnsureVisualStructure(); // 툴팁 내부 UI 확인
         titleText.text = cardInstance.DisplayName; // 카드 이름 표시
-        string targetLabel = GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
+        string targetLabel = cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance ? "선택한 적과 인접한 한 칸" : GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
-        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
+        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
     } // 툴팁 표시 종료
@@ -146,6 +146,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher) // 남은 행동력 공격 확인
+        { // 처형 피해 표시 시작
+            return $"물리 피해 X × {cardInstance.EffectValue}"; // 남은 행동력과 실제 배수 표시
+        } // 처형 피해 표시 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.Counterattack) // 실제 체력 손실 반격 확인
+        { // 역공 피해 표시 시작
+            return $"현재 반격 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, 0)}"; // 현재 누적 손실로 계산한 피해 표시
+        } // 역공 피해 표시 종료
         if (cardInstance.EffectType == CardEffectType.Unplayable) // 손패에 남는 사용 불가 카드 확인
         { // 저주 상세 시작
             return "사용 불가"; // 실제 사용 제한 안내
