@@ -195,7 +195,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             modifiedAmount, // 정신 상태 포함 피해량 전달
             DamageType, // 공격 피해 유형 전달
             canPreviewPreparation == null || canPreviewPreparation(this) ? Actor : null, // 첫 공격에만 방어 준비 포함
-            block); // 예상 잔여 방어도 전달
+            block, enemyDirectAttack: true); // 현재 예고 순서의 잔여 방어도와 코일 반영
     }
 
     public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null, Func<int, int> reduceHealthDamage = null) // 예정 행동 실행
@@ -234,7 +234,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료
 
-        BattleDamageResult damageResult = Target.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage); // 실제 명중 뒤 분담과 체력 피해 방어 판정
+        BattleDamageResult damageResult = Target.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true); // 실제 명중 뒤 분담과 체력 피해 방어 판정
 
         bool applyAdditionalStatus = !Target.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 생존 대상의 공격 후 상태 부여 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? Target.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 공격 후 상태 적용 결과 계산

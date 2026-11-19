@@ -25,7 +25,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 57일차 휴식 Pro
         roomRiskLocked = true; // 실제 방 위험도 수동 변경 차단
         resultMessage =
             $"위험도 {GetHazardLabel(hazardLevel)}: HP {RestRoomRecoveryService.HealthRecoveryLabel(hazardLevel)} / " +
-            $"정신력 +{RestRoomRecoveryService.MentalRecoveryAmount} / 카드 1장 강화"; // 실제 방 휴식 효과 안내
+            $"정신력 +{RestRoomRecoveryService.CampMentalRecovery} / 카드 1장 강화"; // 실제 방 휴식 효과 안내
 
         OpenWindow(); // 휴식 창 표시
     }

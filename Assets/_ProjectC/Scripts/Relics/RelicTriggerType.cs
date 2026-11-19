@@ -26,5 +26,7 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     InspectionDraw, // 확인 효과로 고른 카드가 손으로 들어온 시점
     DecisionDraw, // 확인으로 고른 카드의 결정 추가 효과가 성공한 시점
     DirectCardHealing, // 직접 카드가 체력을 회복하는 시점
-    ExplorationRouteChoice // 플레이어가 탐사 경로를 다시 고르는 시점
+    ExplorationRouteChoice, // 플레이어가 탐사 경로를 다시 고르는 시점
+    ReceiveDefenseLoss, // 물리 방어 감소를 받을 때
+    AreaGoldReward // 지역 보상 골드 확정 전
 }

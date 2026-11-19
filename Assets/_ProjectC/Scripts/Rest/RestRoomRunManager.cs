@@ -118,7 +118,7 @@ public sealed class RestRoomRunManager : MonoBehaviour // 57일차 휴식 방 �
 
         message =
             $"휴식 완료: 생존 {recoveredMemberCount}명 HP +{recoveryLabel} / " +
-            $"정신력 +{RestRoomRecoveryService.MentalRecoveryAmount} / 카드 1장 강화"; // 휴식 결과 메시지
+            $"정신력 +{RestRoomRecoveryService.CampMentalRecovery} / 카드 1장 강화"; // 휴식 결과 메시지
 
         Debug.Log(
             $"[RestRoom][Day57] {message} / 위험도 Lv{Mathf.Clamp(hazardLevel, 0, 3)}"); // 휴식 결과 로그

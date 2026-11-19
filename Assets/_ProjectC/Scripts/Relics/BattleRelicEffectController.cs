@@ -15,6 +15,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly Dictionary<string, int> turnTriggerCounts = new Dictionary<string, int>(); // 현재 턴 유물 발동 횟수
     private readonly Dictionary<string, int> battleTriggerCounts = new Dictionary<string, int>(); // 현재 전투 유물 발동 횟수
     private readonly Queue<KeyValuePair<RelicTriggerType, BattleEventContext>> pendingTriggers = new Queue<KeyValuePair<RelicTriggerType, BattleEventContext>>(); // 중첩 유물 발동 대기열
+    private bool journalVictoryChecked; // 한 전투 승리에서 이미 시도한 일지 추첨
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
@@ -147,6 +148,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private bool TryExecuteRelic(RelicData relicData, int orderNumber, BattleEventContext eventContext) // 단일 유물 실행 시도
     {
+        if (relicData.EffectType == RelicEffectType.JournalCardRemoval) // 승리 시 일지의 확률 판정 확인
+        { // 승리 추첨 시작
+            if (journalVictoryChecked || eventContext?.Result != BattleResult.Victory) // 도주와 패배 및 같은 승리의 중복 신호 확인
+            { // 중복 추첨 차단 시작
+                return false; // 회차 덱과 일지 보존
+            } // 중복 추첨 차단 종료
+            journalVictoryChecked = true; // 성공과 실패 모두 이번 전투의 기회 기록
+        } // 승리 추첨 종료
         if (!CanTrigger(relicData)) // 발동 횟수 제한 확인
         {
             return false; // 유물 실행 실패 반환
@@ -202,6 +211,21 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                     return true; // 이번 턴 사용 횟수 기록
                 } // 성배 조각 발동 종료
                 return false; // 무관한 카드의 발동 횟수 보존
+            case RelicEffectType.JournalCardRemoval: // 승리 확률 판정 후 회차 카드 한 장 정제
+                var runDeck = RunDeckManager.Instance; // 현재 탐사의 실제 회차 덱
+                if (runDeck == null || runDeck.CardCount <= RunDeckManager.MinimumCardsAfterRemoval) // 열 장 하한과 실제 덱 확인
+                { // 제거 불가 확인 시작
+                    return false; // 제거하지 못한 일지 보존
+                } // 제거 불가 확인 종료
+                var eligible = new List<int>(); // 실제 제거 가능한 카드 위치
+                for (int index = 0; index < runDeck.CardCount; index++) // 출전 덱의 슬롯별 원본 확인
+                { // 카드 위치 검사 시작
+                    if (runDeck.CanRemoveAt(index)) // 기존 회차 덱 제거 조건 검사
+                    { // 후보 등록 시작
+                        eligible.Add(index); // 같은 원본이라도 개별 카드 위치 보존
+                    } // 후보 등록 종료
+                } // 카드 위치 검사 종료
+                return eligible.Count > 0 && runDeck.TryRemoveAt(eligible[UnityEngine.Random.Range(0, eligible.Count)]) && inventory.TryRemove(relic.RelicId); // 실제 한 장 제거에 성공한 경우에만 일지 소진
             case RelicEffectType.CopyPlayedCard: // 첫 사용 카드 복사
                 return context?.Phase == BattleTurnPhase.PlayerTurn && battleDeck != null && battleDeck.TryAddBattleCopy(context.Card); // 손패가 가득 차면 복사 기회 보존
             case RelicEffectType.QueueNextTurnDraw: // 종료 전 손패에 따른 다음 턴 드로우
@@ -306,6 +330,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicEffectType.DealDamage: // 피해 적용 효과
                 targetUnit.TakeDamage(relicData.EffectValue, relicData.DamageType); // 지정 유형 피해 적용
                 break; // 피해 효과 종료
+            case RelicEffectType.OpeningMark: // 수신기로 생존 적 전체에 공명 표식 적용
             case RelicEffectType.ApplyStatusEffect: // 상태 이상 적용 효과
                 BattleStatusEffectApplyResult result = targetUnit.ApplyStatusEffect(relicData.StatusEffectType, relicData.EffectValue, relicData.StatusDuration, relicData.StatusMaximumStacks); // 상태 이상 효과 적용 결과 확인
                 if (relicData.TriggerType == RelicTriggerType.BattleStarted && (result == BattleStatusEffectApplyResult.Applied || result == BattleStatusEffectApplyResult.Stacked)) // 실제 전투 시작 상태 효과 확인

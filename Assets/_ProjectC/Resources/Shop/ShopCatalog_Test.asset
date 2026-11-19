@@ -918,4 +918,60 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 34d5aa50b9954fa1a9cbc1098bdcdb5c, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_COOLING_COIL
+    offerType: 1
+    price: 292
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 4e39400922d2471c96124472c490dbae, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_HALF_BURNED_JOURNAL
+    offerType: 1
+    price: 265
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: d1281d58695d44f78fbbc5382b1d1bdc, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RESONANCE_RECEIVER
+    offerType: 1
+    price: 326
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 1a2e3bb9e79a472592f3dcbc8f32f92b, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_MARKING_CHALK
+    offerType: 1
+    price: 285
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 3caf86ada3ed435292853aed227bdae5, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BANDAGE_PILE
+    offerType: 1
+    price: 278
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 931bf5d8ca6b400e99fe65265a72a5b4, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SQUARE_METAL_PLATE
+    offerType: 1
+    price: 247
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 47e3e4e18dc14579a142a3b0ef654610, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_PORTABLE_PURIFIER
+    offerType: 1
+    price: 290
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: ce6aa7c786df4f1293cc4438e0623f28, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_EROSION_METER
+    offerType: 1
+    price: 225
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 267a938d44de4aa28499f892e4c73990, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

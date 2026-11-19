@@ -12,6 +12,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int lastBlackRoseRound = -1; // 검은 장미 코사지의 파티 공용 마지막 발동 라운드
     private int lastPencilRound = -1; // 흑연 연필의 마지막 성공 라운드
     private int pendingInspectionDraw; // 바보의 남은 카드 처리 뒤 받을 추가 드로우 수
+    private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
+    private int bandageBonus; // 현재 카드의 원래 회복 대상별 추가량
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
@@ -249,6 +251,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
     { // 카드 충돌 처리 시작
+        bandageBonus = 0; // 직전 카드의 추가 회복 해제
+        if (!usedFirstHealingCard && (cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 사용 확인
+        { // 첫 회복 카드 처리 시작
+            usedFirstHealingCard = true; // 대상이 최대 체력이어도 첫 사용 기록
+            bandageBonus = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FirstHealingCardBonus)?.EffectValue ?? 0; // 실제 보유한 붕대의 대상별 가산
+        } // 첫 회복 카드 처리 종료
         suitHitRelics.BeginCard(cardInstance, turnRuntime.CurrentRound, RelicRunManager.Instance?.Inventory); // 이번 피해 카드의 첫 직접 명중 보너스 예약
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
@@ -847,7 +855,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 치명타 표시 시작
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
         } // 치명타 표시 종료
-        modifiedDamage = ApplyDirectHitRelics(cardInstance, modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
+        modifiedDamage = ApplyDirectHitRelics(cardInstance, targetUnit, modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
         int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
@@ -873,15 +881,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 타격 판정 종료
-    private static int GetDirectCardHealing(CardInstance card, int healing) // 회복자의 정신력 기준 직접 카드 회복 총량
+    private int GetDirectCardHealing(CardInstance card, int healing) // 회복자의 정신력 기준 직접 카드 회복 총량
     { // 직접 회복 보정 시작
         int modified = card.OwnerUnit.ModifyOutgoingHealing(healing); // 기존 정신 상태의 비율 보정
         int bonus = healing > 0 && card.OwnerUnit.CurrentMental >= 50 ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.HighMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이상인 회복자의 흰 장미 가산량
-        return (int)Math.Min(int.MaxValue, (long)modified + bonus); // 최대 체력을 적용하기 전 직접 회복 수치
+        return (int)Math.Min(int.MaxValue, (long)modified + bonus + (healing > 0 ? bandageBonus : 0)); // 최대 체력을 적용하기 전 직접 회복 수치
     } // 직접 회복 보정 종료
-    private int ApplyDirectHitRelics(CardInstance card, int damage) // 명중한 한 타격의 소유 유물 보정
+    private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작
-        int result = suitHitRelics.ApplyHitBonus(damage); // 기존 검집과 지팡이 심의 명중 보너스
+        bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
+        int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
+        int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk)); // 기존 검집과 지팡이 심의 명중 보너스
         if (card.OwnerUnit.CurrentMental > 30 || lastBlackRoseRound == turnRuntime.CurrentRound) // 공격자의 정신력과 파티 공용 턴 횟수 확인
         { // 추가 피해 없음 처리 시작
             return result; // 원래 공격 수치 반환
@@ -905,7 +915,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 추가 드로우 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
-        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, damage => ApplyDirectHitRelics(card, damage), preparedSwordDamage); // 다른 적의 독립 명중과 피해 처리
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, null, preparedSwordDamage, (hit, damage) => ApplyDirectHitRelics(card, hit, damage)); // 다른 적의 독립 명중과 피해 처리
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

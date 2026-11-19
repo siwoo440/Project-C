@@ -35,5 +35,13 @@ public enum RelicEffectType // 유물 효과 종류
     ReduceIncomingAttack, // 적 직접 공격의 체력 피해 경감
     HighMentalCardHealing, // 높은 정신력의 직접 카드 회복 추가
     LowMentalCardDamage, // 낮은 정신력의 첫 직접 명중 피해 추가
-    ReselectExplorationRoute // 소모하여 탐사 경로 재선택
+    ReselectExplorationRoute, // 소모하여 탐사 경로 재선택
+    ShieldedDamageReduction, // 방어도를 보유한 아군의 직접 피격 감소
+    JournalCardRemoval, // 전투 종료 회차 카드 한 장 제거
+    OpeningMark, // 전투 시작 적 전체 표식
+    MarkedCardDamage, // 표식 대상의 직접 카드 피해 가산
+    FirstHealingCardBonus, // 첫 회복 카드의 대상별 추가 회복
+    SoftenDefenseLoss, // 물리 방어력 감소 약화 완화
+    CampMentalBonus, // 캠프의 생존자 정신력 추가 회복
+    ErosionGoldBonus // 침식지대 보상 골드 가산
 }

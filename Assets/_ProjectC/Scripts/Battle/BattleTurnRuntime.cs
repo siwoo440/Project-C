@@ -233,6 +233,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 돌진 효과 해제 시작
             foreach (var enemy in enemyUnits) // 적별 활성 약화 확인
             { // 개별 약화 해제 시작
+                enemy?.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 해당 아군 턴이 끝나면 공명 표식 해제
                 enemy?.RemoveStatusEffect(BattleStatusEffectType.ChargeDefenseDown); // 이번 턴의 임시 방어 감소 제거
             } // 개별 약화 해제 종료
         } // 돌진 효과 해제 종료

@@ -97,6 +97,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 경보 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1) + ". 적 턴이 끝나면 해제."; // 적용 공격과 종료 시점 표시
                     } // 경보 설명 종료
+                    else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
+                    { // 표식 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시
+                    } // 표식 설명 종료
                     Sprite icon = description.Length > 0 ? BattleStatusIconArt.Get(effect) : null; // 검 카드의 독립 상태 아이콘 조회
                     entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, icon)); // 실제 상태 이름과 연결된 상세 정보 등록
                 } // 상태 효과 추가 종료
