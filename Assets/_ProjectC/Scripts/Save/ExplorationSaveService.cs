@@ -23,6 +23,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string pendingMapFragment; // 사용 대기 중인 지도 조각의 원본 이벤트
         public GlassFieldEffect glassFieldEffects; // 다음 교전의 회피와 실명 보관
         public string[] avoidedEncounters; // 승리 보상 없이 회피한 조우 목록
+        public CharredWellRunState well; // 사용자별 물과 현재 및 다음 층 봉인 저장
         public BurntCartRunState cart; // 수레 매복과 상점 할인 저장
         public string[] relics; // 획득 순서 유물 목록
         public string[] consumables; // 소모품 슬롯 목록
@@ -169,6 +170,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 cleared = cleared.ToArray(), // 클리어 조우 설정
                 events = events.ToArray(), // 처리 이벤트 설정
                 pendingMapFragment = session.PendingMapFragmentId, // 보관 중인 일회성 지도 조각 저장
+                well = session.Well, // 우물 회복과 봉인 판정 기록
                 cart = session.Cart, // 수레가 남긴 매복과 미사용 할인 기록
                 glassFieldEffects = session.PendingGlassFieldEffects, // 들판 선택의 미사용 전투 효과 저장
                 avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
@@ -361,6 +363,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 손상된 수레 저장 처리 시작
             return false; // 잘못된 매복과 할인 복원 차단
         } // 손상된 수레 저장 처리 종료
+        if (snapshot.well != null && !snapshot.well.IsValid(snapshot.party, snapshot.events)) // 행동자와 우물 봉인 원본 유효성 확인
+        { // 손상된 우물 기록 처리 시작
+            return false; // 잘못된 효과 보유자와 완료 방 복원 차단
+        } // 손상된 우물 기록 처리 종료
         if (!string.IsNullOrEmpty(snapshot.pendingMapFragment) && Array.IndexOf(snapshot.events, snapshot.pendingMapFragment) < 0) // 조각을 준 이벤트의 완료 기록 확인
         { // 잘못된 조각 복원 차단 시작
             return false; // 원본 방이 없는 보관 조각 차단

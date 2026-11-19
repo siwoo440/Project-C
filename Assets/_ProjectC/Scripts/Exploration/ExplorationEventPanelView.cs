@@ -210,6 +210,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "철판·나사 각 1개 60% / 사냥꾼 추가 매복 40%", "지정 생존자 체력 -3 · 철판·나사·전선 각 1개", "다음 상점 첫 상품 10% 할인" }; // 수레 선택별 조건
                 label += "   " + effects[index]; // 실제 선택 전에 비용과 보상 표시
             } // 수레 안내 종료
+            if (currentEventData.EventId == CharredWellEvent.Id) // 우물 행동의 비용과 결과 안내
+            { // 우물 안내 시작
+                string[] effects = { "체력 -5 · 체력 회복 포션 1개", "정신력 -6 · 피격 생존 시 체력 8 회복 1회", "정신력 +4 · 다음 층 첫 재폭풍 15% 교체" }; // 우물 선택별 효과
+                label += "   " + effects[index]; // 행동 확정 전 비용과 효과 표시
+            } // 우물 안내 종료
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
@@ -247,6 +252,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             SelectActorEventChoice(choiceIndex, hint, BurntCartEvent.TryResolve); // 현재 방의 선택과 결말 확정
             return; // 기본 보상 처리 제외
         } // 수레 선택 종료
+        if (currentEventData.EventId == CharredWellEvent.Id) // 검게 탄 우물의 생존자 행동 확인
+        { // 우물 선택 시작
+            string[] hints = { "체력 5를 잃고 포션을 꺼낼 생존자를 선택하세요.", "정신력 6을 잃고 자신의 피격 회복을 보관할 생존자를 선택하세요.", "정신력 4를 회복하고 다음 층을 봉인할 생존자를 선택하세요." }; // 각 행동자에게 적용할 비용과 효과
+            SelectActorEventChoice(choiceIndex, hints[choiceIndex], CharredWellEvent.TryResolve); // 행동자 한 명 지정 후 우물 결과 확정
+            return; // 일반 자원 선택 처리 제외
+        } // 우물 선택 종료
         if (currentEventData.EventId == AshstormEyeEvent.Id) // 행동자 지정이 필요한 재폭풍의 눈 확인
         { // 행동자 선택 시작
             SelectAshstormActor(choiceIndex); // 행동 확정 전 대상 선택 표시

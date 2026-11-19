@@ -66,6 +66,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         int normalCount = 0; // 일반 방 생성 수
         int eliteCount = 0; // 엘리트 방 생성 수
         int eventCount = 0; // 이벤트 방 생성 수
+        bool sawWellEye = false; // 이번 실제 배치에서 첫 재폭풍 확인 여부
         int treasureCount = 0; // 보물 방 생성 수
         int restCount = 0; // 휴식 방 생성 수
         int shopCount = 0; // 상점 방 생성 수
@@ -91,7 +92,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
                     break;
 
                 case ExplorationRoomType.Event:
-                    CreateEventForRoom(cell, events, random); // 탐사 이벤트 생성
+                    CreateEventForRoom(cell, events, random, ref sawWellEye); // 첫 재폭풍의 우물 봉인 적용 후 탐사 이벤트 생성
                     eventCount += 1; // 이벤트 방 수 증가
                     break;
 
@@ -159,7 +160,8 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
     private void CreateEventForRoom(
         ExplorationMapCell cell,
         List<ExplorationEventData> events,
-        System.Random random) // 이벤트 방 콘텐츠 생성
+        System.Random random, // 기존 방 콘텐츠 추첨 난수
+        ref bool sawWellEye) // 이번 층의 첫 재폭풍 여부 공유
     {
         if (cell == null || events.Count == 0) // 방과 이벤트 데이터 존재 확인
         {
@@ -167,6 +169,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         }
 
         ExplorationEventData eventData = events[random.Next(events.Count)]; // Seed 기반 이벤트 선택
+        eventData = ExplorationSessionManager.EnsureInstance().Well.SelectEvent(eventData, events, mapRuntime.CurrentMap.Seed, ref sawWellEye, true); // 실제 첫 재폭풍에만 봉인 판정과 소모 기록
         mapRuntime.CreateEventObject(cell, eventData); // 정식 맵 API로 이벤트 생성
     }
 

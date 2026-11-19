@@ -576,6 +576,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             random); // 이벤트 후보 셀 순서 무작위화
 
         int createdEventCount = 0; // 생성 이벤트 수 초기화
+        bool sawWellEye = false; // 기본 배치에서 첫 재폭풍 여부 기록
 
         for (int index = 0;
              index < availableCells.Count &&
@@ -597,6 +598,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             ExplorationEventData eventData =
                 loadedEvents[
                     random.Next(loadedEvents.Count)]; // 이벤트 데이터 선택
+            eventData = sessionManager.Well.SelectEvent(eventData, loadedEvents, CurrentMap.Seed, ref sawWellEye, false); // 방 역할이 다시 만드는 임시 배치에 같은 결과 미리 적용
 
             CreateEventObject(
                 cell,
