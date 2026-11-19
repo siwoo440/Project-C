@@ -104,6 +104,8 @@
 
 맨손 조사와 덮기는 생존 파티원 한 명을 직접 고른다. [행동자 선택 화면](Devlogs/Day204/AshPileActor.png) · [유물 추첨과 비용 처리 코드](Assets/_ProjectC/Scripts/Exploration/AshPileEvent.cs)
 
+재 속의 지도 조각은 다음 일반 전투에서 한 번 회피 기회를 준다. 태우면 선택한 동료의 정신력을 회복하고 나사를 얻는다. [세 가지 선택과 실제 조우 화면](Devlogs/Day208/README.md)
+
 162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png) · [네 명을 편성한 탐사 화면 · 195일차](Devlogs/Day195/Exploration.png)
 
 </details>

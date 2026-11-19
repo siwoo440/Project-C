@@ -55,7 +55,23 @@ public sealed class ExplorationEncounterView : MonoBehaviour // 탐사 조우 �
         { // 전투 진입 불가 처리 시작
             return; // 조우 상태와 기존 자동 저장 유지
         } // 전투 진입 불가 처리 종료
-        if (!ExplorationAutoSave.SaveBeforeBattle(player.transform.position)) // 조우 시작 전 자동 저장 확인
+        MapFragmentContact fragment = sessionManager.ResolveMapFragmentContact(runtimeEncounterId, encounterData, player.transform.position); // 실제 일반 조우 접촉에서만 보관 조각 판정
+        if (fragment == MapFragmentContact.SaveFailed) // 판정 저장 실패와 조각 복구 확인
+        { // 접촉 재시도 안내 시작
+            ExplorationPartyStatusView hud = FindFirstObjectByType<ExplorationPartyStatusView>(); // 현재 탐사 화면 조회
+            hud?.ShowMapFragmentNotice("저장 실패 · 지도 조각을 보관했습니다. 다시 접촉하세요."); // 보상과 상태 보존 안내
+            Debug.LogWarning("[ExplorationAutoSave] 지도 조각 판정을 저장하지 못해 조우 진입을 보류했습니다."); // 저장 실패와 전투 보류 기록
+            return; // 조각이나 조우를 잃지 않고 재시도 허용
+        } // 접촉 재시도 안내 종료
+        if (fragment == MapFragmentContact.Avoided) // 지도 조각으로 회피한 조우 확인
+        { // 회피한 조우 정리 시작
+            transitionRequested = true; // 같은 프레임의 재접촉 차단
+            ExplorationPartyStatusView hud = FindFirstObjectByType<ExplorationPartyStatusView>(); // 현재 탐사 화면 조회
+            hud?.ShowMapFragmentNotice("지도 조각을 따라 전투를 피했습니다."); // 회피 성공을 플레이어에게 표시
+            gameObject.SetActive(false); // 실제 조우 표식과 접촉 즉시 해제
+            return; // 전투 시작과 승리 보상 없이 탐사 계속
+        } // 회피한 조우 정리 종료
+        if (fragment == MapFragmentContact.NoEffect && !ExplorationAutoSave.SaveBeforeBattle(player.transform.position)) // 조각 판정으로 저장하지 않은 조우 자동 저장
         { // 자동 저장 실패 처리 시작
             Debug.LogWarning("[ExplorationAutoSave] 전투 전 상태를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
         } // 자동 저장 실패 처리 종료
