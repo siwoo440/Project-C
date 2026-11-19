@@ -9,6 +9,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly List<BattleUnitRuntime> registeredUnits = new List<BattleUnitRuntime>(); // 사망 이벤트 등록 유닛 목록
     private readonly int cardsPerPlayerTurn; // 플레이어 턴당 드로우 수
     private int openingHandAfterAmbush = -1; // 적 선제 직후 첫 아군에게 줄 시작 손패 수
+    private RelicInventoryRuntime openingRelics; // 현재 탐사 유물 보관함
+    private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
+    private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
@@ -47,6 +50,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 잘못된 드로우 처리 종료
         cardsPerPlayerTurn = drawCountPerTurn; // 턴당 드로우 수 저장
         BattleType = battleType; // 전투 유형 저장
+        runtimeDeck.CardExcluded += HandleExcludedCard; // 실제 카드 제외 결과 연결
         RegisterUnitEvents(allyUnits); // 아군 사망 이벤트 등록
         RegisterUnitEvents(enemyUnits); // 적 사망 이벤트 등록
     } // 생성자 종료
@@ -57,6 +61,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 전투 시작 실패 반환
         } // 시작 불가 처리 종료
         CurrentRound = 1; // 첫 라운드 설정
+        openingRelics = RelicRunManager.Instance?.Inventory; // 전투 진입 시 실제 탐사 유물 조회
+        ApplyOpeningSpeedLoss(); // 적 예고의 첫 속도 추첨 전 적용
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
@@ -68,7 +74,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return true; // 선제 전투 시작 완료
         } // 적의 첫 행동 종료
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
-        LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(initialHandSize); // 실제 첫 아군 턴의 손패 드로우
+        DrawPlayerHand(initialHandSize); // 실제 첫 아군 턴의 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         NotifyPhaseStarted(); // 첫 플레이어 턴 시작 알림
         StateChanged?.Invoke(); // 턴 상태 변경 알림
@@ -131,7 +137,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (!IsBattleEnded) // 시작 효과 처리 후 전투 지속 확인
         { // 다음 턴 준비 시작
             sharedActionPoints.Restore(); // 공용 행동력 회복
-            LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(cardsPerPlayerTurn); // 다음 턴의 기본 및 예약 손패 드로우
+            DrawPlayerHand(cardsPerPlayerTurn); // 다음 턴의 기본 및 예약 손패 드로우
             StateChanged?.Invoke(); // 전투 화면 갱신 알림
         } // 다음 턴 준비 종료
         return true; // 강제 턴 전환 성공 반환
@@ -139,6 +145,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
     { // 플레이어 턴 정리 시작
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
+        runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
         sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
         sharedActionPoints.ClearTurnCapacity(); // 끝난 아군 턴의 임시 행동력 상한 회수
     } // 플레이어 턴 정리 종료
@@ -170,11 +177,87 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
-            LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(drawCount); // 선제 뒤 시작 손패 또는 새 라운드와 예약 손패 지급
+            DrawPlayerHand(drawCount); // 선제 뒤 시작 손패 또는 새 라운드와 예약 손패 지급
             StateChanged?.Invoke(); // 턴 상태 변경 알림
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
+    private void ApplyOpeningSpeedLoss() // 전투 시작 적 행동 속도 약화
+    { // 안테나 발동 시작
+        var antenna = openingRelics?.FindEffect(RelicEffectType.OpeningSpeedLoss); // 보유한 안테나 조회
+        if (antenna == null) // 유물 미보유 확인
+        { // 미발동 처리 시작
+            return; // 속도 약화 생략
+        } // 미발동 처리 종료
+        var living = new List<BattleUnitRuntime>(); // 약화 대상 후보
+        foreach (var enemy in enemyUnits) // 전투 배치의 적 순회
+        { // 적별 생존 여부 확인
+            if (enemy != null && !enemy.IsDead) // 생존 적만 후보 포함
+            { // 후보 추가 시작
+                living.Add(enemy); // 실제 생존 적 등록
+            } // 후보 추가 종료
+        } // 적별 생존 여부 확인 종료
+        if (living.Count > 0) // 대상 존재 확인
+        { // 하나의 적에 약화 적용
+            var target = living[UnityEngine.Random.Range(0, living.Count)]; // 생존 적 하나 무작위 선택
+            target.ApplyStatusEffect(antenna.StatusEffectType, antenna.EffectValue, antenna.StatusDuration, antenna.StatusMaximumStacks); // 기존 면역과 지속 시간 적용
+        } // 약화 적용 종료
+    } // 안테나 발동 종료
+    private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
+    { // 턴 손패 처리 시작
+        var pouch = openingRelics?.FindEffect(RelicEffectType.LargeDiscardDraw); // 보유한 잔해 주머니 조회
+        if (pouch != null && runtimeDeck.DiscardPileCount >= 10) // 재섞기 전에 버린 더미 확인
+        { // 추가 드로우 준비 시작
+            count += pouch.EffectValue; // 이번 턴의 드로우 한 장 증가
+        } // 추가 드로우 준비 종료
+        LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(count); // 기존 손패 상한과 예약 드로우 적용
+        if (CurrentRound != 1 || openingRelics == null) // 첫 아군 손패 처리 여부 확인
+        { // 일반 아군 턴 처리 시작
+            return; // 첫 손패 전용 효과 생략
+        } // 일반 아군 턴 처리 종료
+        bool hasPentacle = false; // 첫 손패의 펜타클 유무
+        bool hasSword = false; // 첫 손패의 검 유무
+        foreach (var card in runtimeDeck.Hand) // 추가 드로우 이전 첫 손패 순회
+        { // 카드 속성 확인 시작
+            hasPentacle |= card.CardType == CardType.Pentacle; // 첫 펜타클 손패 기록
+            hasSword |= card.CardType == CardType.Sword; // 첫 검 손패 기록
+        } // 카드 속성 확인 종료
+        var envelope = openingRelics.FindEffect(RelicEffectType.OpeningSwordCapacity); // 찢긴 우편봉투 조회
+        if (hasSword && envelope != null) // 첫 검 손패 조건 확인
+        { // 추가 행동력 적용 시작
+            sharedActionPoints.AddTurnCapacity(envelope.EffectValue); // 이번 턴 현재 및 최대 행동력 증가
+        } // 추가 행동력 적용 종료
+        var letter = openingRelics.FindEffect(RelicEffectType.OpeningPentacleDraw); // 구겨진 편지 조회
+        if (hasPentacle && letter != null && runtimeDeck.HandCount < runtimeDeck.MaxHandSize) // 첫 펜타클 손패와 빈자리 확인
+        { // 추가 드로우 시작
+            LastDrawnCardCount += runtimeDeck.DrawCards(letter.EffectValue); // 실제 지급한 카드 수 합산
+        } // 추가 드로우 종료
+        var shard = openingRelics.FindEffect(RelicEffectType.OpeningCardDiscount); // 모래시계 파편 조회
+        if (shard != null && openingRelics.TryRemove(shard.RelicId)) // 첫 아군 턴에 한 번만 실제 소모
+        { // 비용 감소 시작
+            runtimeDeck.SetRelicApDiscount(shard.EffectValue); // 이번 턴의 카드 비용 감소
+        } // 비용 감소 종료
+    } // 턴 손패 처리 종료
+    private void HandleExcludedCard(CardInstance card, bool fromVolatileHand) // 실제 제외 및 손패 휘발 유물 처리
+    { // 제외 유물 처리 시작
+        if (!IsPlayerTurn || IsBattleEnded) // 진행 중인 아군 턴 확인
+        { // 발동 불가 처리 시작
+            return; // 다른 단계의 제외 효과 생략
+        } // 발동 불가 처리 종료
+        var wax = openingRelics?.FindEffect(RelicEffectType.ExcludedCardBlock); // 틈새 봉인왁스 조회
+        if (wax != null && lastExcludedBlockRound != CurrentRound && !card.OwnerUnit.IsDead) // 생존 카드 소유자와 발동 기회 확인
+        { // 방어도 지급 시작
+            lastExcludedBlockRound = CurrentRound; // 같은 턴의 재발동 차단
+            card.OwnerUnit.GainBlock(wax.EffectValue); // 제외된 카드 소유자에게 방어도 지급
+        } // 방어도 지급 종료
+        var pins = openingRelics?.FindEffect(RelicEffectType.VolatileCardDraw); // 안전핀 묶음 조회
+        if (fromVolatileHand && pins != null && lastVolatileDrawRound != CurrentRound) // 실제 손패 휘발과 발동 기회 확인
+        { // 추가 손패 지급 시작
+            lastVolatileDrawRound = CurrentRound; // 같은 턴에 한 차례만 발동
+            runtimeDeck.DrawCards(pins.EffectValue); // 손패 정리 이후 새 카드 지급
+        } // 추가 손패 지급 종료
+    } // 제외 유물 처리 종료
+
     public bool TryEscape() // 플레이어 도주 요청
     { // 도주 요청 시작
         if (!CanEscape) // 도주 가능 여부 확인
@@ -354,6 +437,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 중복 해제 처리 시작
             return; // 연결 해제 중단
         } // 중복 해제 처리 종료
+        runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
         for (int unitIndex = registeredUnits.Count - 1; unitIndex >= 0; unitIndex--) // 등록 유닛 역순 순회
         { // 이벤트 일괄 해제 시작

@@ -149,6 +149,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 저항 증가"; // 마법 저항 증가 이름 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마법 저항 약화"; // 마법 저항 감소 이름 반환
+            case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
+                return "속도 감소"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명 표식"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -171,7 +173,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -231,6 +233,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마+"; // 마법 저항 증가 아이콘 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마-"; // 마법 저항 감소 아이콘 반환
+            case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
+                return "속"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -313,6 +317,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"마법 저항력 증가 {effectiveValue}"; // 마법 저항 증가 설명 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
+            case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
+                return $"적 행동 속도 −{effectiveValue}"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "첫 아군 턴 종료까지 유지. 표식용 분필의 직접 카드 피해 증가 대상"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류

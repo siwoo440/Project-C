@@ -31,6 +31,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string[] relics; // 획득 순서 유물 목록
         public string[] consumables; // 소모품 슬롯 목록
         public string shopRoom; // 현재 상점 방 식별자
+        public ShopRunManager.RelicReserve[] shopRelicReserves; // 방별 유물 추가 진열 결과
         public string[] purchasedOffers; // 현재 상점 판매 완료 상품 목록
         public bool restUsed; // 현재 휴식 방 사용 여부
         public int hazardHealth; // 대기 환경 체력 피해
@@ -190,6 +191,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
                 shopRoom = shop != null ? shop.ActiveRoomRuntimeId : null, // 상점 방 식별자 설정
+                shopRelicReserves = shop?.ExportRelicReserves(), // 열쇠의 방별 진열 결과 보관
                 purchasedOffers = purchasedOffers.ToArray(), // 판매 완료 상품 설정
                 restUsed = RestRoomRunManager.Instance != null && RestRoomRunManager.Instance.IsUsed, // 휴식 방 사용 상태 설정
                 hazardHealth = session.PendingHazardHealthDamage, // 대기 체력 피해 설정
@@ -309,7 +311,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 이전 저장 호환 시작
             resources.BeginExplorationResourceTracking(); // 기존 잔액을 보존하고 이후 획득분부터 구분
         } // 이전 저장 호환 종료
-        ShopRunManager.EnsureInstance().RestoreSession(run.shopCatalog, sourceDeck, run.snapshot.shopRoom, run.snapshot.purchasedOffers); // 저장 상점 상태 복원
+        ShopRunManager.EnsureInstance().RestoreSessionWithRelicReserves(run.shopCatalog, sourceDeck, run.snapshot.shopRoom, run.snapshot.purchasedOffers, run.snapshot.shopRelicReserves); // 저장 상점 상태 복원
         RestRoomRunManager.EnsureInstance().RestoreSession(sourceDeck, run.snapshot.restUsed); // 저장 휴식 상태 복원
         return true; // 탐사 복원 성공 반환
     } // 탐사 복원 종료

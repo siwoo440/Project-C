@@ -43,5 +43,13 @@ public enum RelicEffectType // 유물 효과 종류
     FirstHealingCardBonus, // 첫 회복 카드의 대상별 추가 회복
     SoftenDefenseLoss, // 물리 방어력 감소 약화 완화
     CampMentalBonus, // 캠프의 생존자 정신력 추가 회복
-    ErosionGoldBonus // 침식지대 보상 골드 가산
+    ErosionGoldBonus, // 침식지대 보상 골드 가산
+    OpeningSpeedLoss, // 전투 시작 무작위 적 속도 감소
+    VolatileCardDraw, // 휘발 카드 소멸 뒤 드로우
+    ExcludedCardBlock, // 카드 제외 뒤 소유자 방어도
+    LargeDiscardDraw, // 버린 더미가 큰 턴의 추가 드로우
+    ExtraShopRelic, // 첫 진열 확률로 유물 한 칸 추가
+    OpeningCardDiscount, // 소모성 첫 아군 턴 비용 할인
+    OpeningPentacleDraw, // 첫 펜타클 손패의 추가 드로우
+    OpeningSwordCapacity, // 첫 검 손패의 추가 행동력
 }

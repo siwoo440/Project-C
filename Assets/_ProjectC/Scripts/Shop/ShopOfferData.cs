@@ -12,6 +12,7 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
     [SerializeField] private CharacterData cardOwner; // 구매 카드 소유자
     [SerializeField] private bool chooseCardOwner; // 공용 카드 소유자 직접 선택 여부
     [SerializeField] private bool rewardOnly; // 상점 판매 없이 보상으로만 획득 여부
+    [SerializeField] private bool canBeReservedRelic; // 방마다 한 칸을 따로 둘 수 있는 유물
     [SerializeField] private RelicData relic; // 유물 상품 원본
     [SerializeField] private PotionData potion; // 일반 포션 상품 원본
 
@@ -22,6 +23,7 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
     public CharacterData CardOwner => cardOwner; // 카드 소유자 조회
     public bool RequiresOwnerChoice => offerType == ShopOfferType.Card && chooseCardOwner; // 공용 카드 직접 선택 여부
     public bool RewardOnly => rewardOnly; // 보상 전용 항목 여부
+    internal bool CanBeReservedRelic => offerType == ShopOfferType.Relic && canBeReservedRelic; // 추가 진열 후보 여부
     public RelicData Relic => relic; // 유물 원본 조회
     public PotionData Potion => potion; // 포션 원본 조회
 

@@ -35,5 +35,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     HealingReceivedDown, // 대상이 받는 체력 회복량 감소
     PublicMark, // 첫 아군 턴이 끝날 때까지 유지하는 공명 표식
     BattlefieldResolve, // 다음 아군 턴 시작 방어도 예약
-    BladeFrenzy // 이번 턴 소유자의 모든 검 타격 강화
+    BladeFrenzy, // 이번 턴 소유자의 모든 검 타격 강화
+    ActionSpeedDown // 적의 행동 속도 감소
 } // 열거형 종료
