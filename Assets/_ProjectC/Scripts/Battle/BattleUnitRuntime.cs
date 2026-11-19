@@ -449,7 +449,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return 0; // 적용 회복 없음
         } // 무효 회복 처리 종료
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
-        CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + healAmount); // 현재 체력 회복
+        CurrentHealth += Mathf.Min(healAmount, MaxHealth - CurrentHealth); // 남은 체력만큼만 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
         HealthRestored?.Invoke(this, appliedHealing); // 회복 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림

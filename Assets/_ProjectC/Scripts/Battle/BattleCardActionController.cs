@@ -440,10 +440,6 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
         } // 체력 비용 지불 불가 종료
-        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth && targetUnit.GetStatusEffect(cardInstance.SourceData.StatusRemovedByHealing) == null && cardInstance.SourceData.FollowUpEffect != CardFollowUpEffect.GainTargetBlock) // 회복과 상태 제거 및 추가 방어의 필요 여부 확인
-        { // 회복 불필요 처리 시작
-            return false; // 회복 대상 불가 반환
-        } // 회복 불필요 처리 종료
         if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasRemovableDebuff) // 실제 정화 가능한 디버프 확인
         { // 정화 불필요 처리 시작
             return false; // 정화 대상 불가 반환
