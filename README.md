@@ -141,3 +141,5 @@
 | 거점 성장과 저장 | 탐사가 끝나면 캐릭터 회복 상태를 반영하고, 거점 저장에 성공한 뒤에만 이전 탐사 자동 저장 파일을 정리한다. | [설비 강화](Assets/_ProjectC/Scripts/Progression/FacilityUpgradeManager.cs) · [자동 저장](Assets/_ProjectC/Scripts/Save/ExplorationAutoSave.cs) · [슬롯 저장·복원](Assets/_ProjectC/Scripts/Save/SaveSlotService.cs) |
 
 개발 과정과 검증 기록은 [일차별 개발일지](Devlogs/)에서 볼 수 있다. [탐사 자원 UI](Devlogs/Day192/README.md) · [카드·유물 획득과 저장 복원](Devlogs/Day193/README.md) · [거점과 탐사 왕복 검사](Devlogs/Day194/README.md)
+
+[윈터폴 시제품 점검표](Devlogs/Day205/README.md)에서 실제로 획득할 수 있는 카드와 유물 수, 구현한 원문 이벤트, 아직 측정할 플레이 시간과 난이도를 확인할 수 있다.
