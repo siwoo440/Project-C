@@ -100,7 +100,7 @@
 
 | 잿더미 조사 방법 선택 | 도구로 유물을 찾은 결과 |
 | --- | --- |
-| ![맨손·철판·덮어두기의 비용과 확률이 표시된 이벤트 화면](Devlogs/Day204/AshPileChoices.png) | ![철판 한 개를 소비하고 유물을 얻은 결과](Devlogs/Day204/AshPileOutcome.png) |
+| ![맨손·철판·덮어두기의 비용과 확률이 표시된 확대 이벤트 화면](Devlogs/Day206/ExpandedChoices.png) | ![철판 한 개를 소비하고 유물을 얻은 확대 결과 화면](Devlogs/Day206/ExpandedOutcome.png) |
 
 맨손 조사와 덮기는 생존 파티원 한 명을 직접 고른다. [행동자 선택 화면](Devlogs/Day204/AshPileActor.png) · [유물 추첨과 비용 처리 코드](Assets/_ProjectC/Scripts/Exploration/AshPileEvent.cs)
 
