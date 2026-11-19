@@ -21,11 +21,23 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         EnsureVisualStructure(); // 툴팁 내부 UI 확인
         titleText.text = cardInstance.DisplayName; // 카드 이름 표시
         string targetLabel = GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
-        string effectDetail = GetEffectDetail(cardInstance); // 효과 상세 문구 생성
+        string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
     } // 툴팁 표시 종료
+    private static string GetFollowUpDetail(CardData source) // 원본에 설정한 후속 효과의 표시 문구
+    { // 후속 효과 표시 시작
+        int value = source.SecondaryEffectValue; // 원본 후속 수치 조회
+        return source.FollowUpEffect switch // 후속 효과의 적용 대상 선택
+        { // 효과별 문구 시작
+            CardFollowUpEffect.GainOwnerBlock => $" · 자신 방어도 +{value}", // 소유자 방어도 표시
+            CardFollowUpEffect.HealAllAllies => $" · 생존 아군 전체 체력 {value} 회복", // 아군 전체 회복 표시
+            CardFollowUpEffect.GainTargetBlock => $" · 선택한 아군 방어도 +{value}", // 선택 대상의 방어도 표시
+            CardFollowUpEffect.DrawCards => $" · 카드 {value}장 드로우", // 추가 드로우 표시
+            _ => string.Empty // 후속 효과 없는 원본의 기존 표시 유지
+        }; // 후속 효과 문구 반환
+    } // 후속 효과 표시 종료
     public void Hide() // 카드 상세 정보 숨김
     { // 툴팁 숨김 시작
         gameObject.SetActive(false); // 툴팁 오브젝트 숨김

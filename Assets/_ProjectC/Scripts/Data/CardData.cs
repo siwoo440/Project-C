@@ -23,6 +23,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [Min(1)] // 최소 타격 횟수
     [SerializeField] private int damageHitCount = 1; // 같은 대상에 대한 공격 횟수
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
+    [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
 
     [Header("정신력 규칙")]
     [Range(-100, 100)]
@@ -49,6 +50,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public int EffectValue => effectValue; // 카드 효과 수치 조회
     public int DamageHitCount => effectType == CardEffectType.Damage ? Mathf.Max(1, damageHitCount) : 1; // 이전 원본을 포함한 실제 타격 수
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
+    public CardFollowUpEffect FollowUpEffect => followUpEffect; // 카드의 후속 효과 조회
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public BattleStatusEffectType StatusRemovedByHealing => statusRemovedByHealing; // 회복과 함께 제거할 상태 조회
@@ -80,3 +82,12 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
         return inferredTags; // 추론 태그 반환
     }
 }
+
+public enum CardFollowUpEffect // 기본 대상 처리 뒤 한 번 적용할 카드 효과
+{ // 후속 효과 목록 시작
+    None, // 기존 카드의 추가 효과 없음
+    GainOwnerBlock, // 카드 소유자 방어도 획득
+    HealAllAllies, // 생존 아군 전체 체력 회복
+    GainTargetBlock, // 선택한 대상 방어도 획득
+    DrawCards // 사용한 카드를 제외한 드로우
+} // 후속 효과 목록 종료

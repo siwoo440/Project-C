@@ -251,7 +251,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
         starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
-        bool discarded = cardInstance.EffectType == CardEffectType.DrawThenDiscard || runtimeDeck.DiscardCard(cardInstance); // 달 카드의 선행 이동 또는 일반 카드 버리기 확인
+        bool discarded = ApplyFollowUpAndDiscard(cardInstance, targetUnits); // 후속 효과 한 번 처리 후 사용 카드 이동
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
@@ -263,6 +263,32 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
+    private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets) // 기본 효과 후 보조 대상과 카드 이동 처리
+    { // 후속 효과 처리 시작
+        int value = card.SourceData.SecondaryEffectValue; // 원본의 후속 수치 조회
+        switch (card.SourceData.FollowUpEffect) // 카드별 추가 대상과 효과 선택
+        { // 효과 구분 시작
+            case CardFollowUpEffect.GainOwnerBlock: // 공격한 소유자에게 방어도 지급
+                card.OwnerUnit.GainBlock(value); // 소유자만 방어도 획득
+                break; // 방어 처리 종료
+            case CardFollowUpEffect.HealAllAllies: // 공격 후 모든 생존 아군 회복
+                int healing = card.OwnerUnit.ModifyOutgoingHealing(value); // 일반 회복과 같은 소유자 보정 적용
+                foreach (BattleUnitRuntime ally in enemyActions.AllyUnits) // 전투에 참여한 아군 순회
+                { // 동료 회복 시작
+                    ally?.RestoreHealth(healing, card.OwnerUnit); // 생존 여부와 최대 체력에 맞춘 회복
+                } // 동료 회복 종료
+                break; // 전체 회복 종료
+            case CardFollowUpEffect.GainTargetBlock: // 선택한 아군에게 방어도 지급
+                foreach (BattleUnitRuntime target in targets) // 치료한 대상 순회
+                { // 대상 방어 시작
+                    target.GainBlock(value); // 치료 대상만 방어도 획득
+                } // 대상 방어 종료
+                break; // 대상 방어 처리 종료
+            case CardFollowUpEffect.DrawCards: // 사용한 카드 자리를 비운 뒤 드로우
+                return runtimeDeck.TryPlayAndDraw(card, value, out _); // 자가 재드로우 없이 한 번 버린 더미로 이동
+        } // 효과 구분 종료
+        return card.EffectType == CardEffectType.DrawThenDiscard || runtimeDeck.DiscardCard(card); // 기존 선행 드로우 이동 또는 일반 카드 버리기
+    } // 후속 효과 처리 종료
     private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
     { // 연출 완료 처리 시작
         actionPending = false; // 카드 행동 진행 상태 해제
@@ -414,7 +440,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
         } // 체력 비용 지불 불가 종료
-        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth && targetUnit.GetStatusEffect(cardInstance.SourceData.StatusRemovedByHealing) == null) // 회복과 지정 상태 제거의 필요 여부 확인
+        if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth && targetUnit.GetStatusEffect(cardInstance.SourceData.StatusRemovedByHealing) == null && cardInstance.SourceData.FollowUpEffect != CardFollowUpEffect.GainTargetBlock) // 회복과 상태 제거 및 추가 방어의 필요 여부 확인
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
         } // 회복 불필요 처리 종료
@@ -426,7 +452,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 상태 설정 오류 처리 시작
             return false; // 상태 이상 대상 불가 반환
         } // 상태 설정 오류 처리 종료
-        if (cardInstance.EffectType == CardEffectType.ChangeMental && !targetUnit.CanChangeMental(cardInstance.MentalChangeValue)) // 정신력 변경 가능 여부 확인
+        if (cardInstance.EffectType == CardEffectType.ChangeMental && !targetUnit.CanChangeMental(cardInstance.MentalChangeValue) && !(cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.DrawCards && runtimeDeck.HasDrawableCards)) // 정신력 변화 또는 추가 드로우 가능 여부 확인
         { // 정신력 변경 불가 처리 시작
             return false; // 정신력 대상 불가 반환
         } // 정신력 변경 불가 처리 종료

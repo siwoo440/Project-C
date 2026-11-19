@@ -320,6 +320,42 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ADVANCING_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 4f93ea4b06454d46abc51a38675c285f, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HOLY_STRIKE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 11281be48a0b47abb1766eca19fdb28f, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CUP_OF_GRACE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a08f83d505974631a7234d26675118e7, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FOCUSED_BREATH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 41f1df1e0501478db2ae6425093a3d36, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: SHOP_RLC_CERULLION_BADGE
     offerType: 1
     price: 230
