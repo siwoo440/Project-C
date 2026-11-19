@@ -125,7 +125,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] {runtimeUnit.DisplayName}은 {selectedCard.DisplayName}의 대상이 아닙니다."); // 잘못된 대상 출력
             return; // 유닛 클릭 처리 중단
         } // 잘못된 대상 처리 종료
-        var targets = selectedCard.SourceData.SwordRule == SwordCardRule.SwordDance ? SwordCardCombat.GetDanceArea(runtimeUnit, enemyActions.EnemyUnits) : CreateSingleTargetList(runtimeUnit); // 범위 공격은 선택 위치의 두 칸으로 고정
+        var targets = selectedCard.SourceData.SwordRule == SwordCardRule.SwordDance || selectedCard.SourceData.SwordRule == SwordCardRule.HorizontalSlash ? SwordCardCombat.GetDanceArea(runtimeUnit, enemyActions.EnemyUnits) : CreateSingleTargetList(runtimeUnit); // 범위 공격은 선택 위치의 두 칸으로 고정
         ExecuteCard(selectedCard, targets); // 선택 대상에게 카드 사용
     } // 유닛 클릭 처리 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
@@ -283,6 +283,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets) // 기본 효과 후 보조 대상과 카드 이동 처리
     { // 후속 효과 처리 시작
         int value = card.SourceData.SecondaryEffectValue; // 원본의 후속 수치 조회
+        if (card.SourceData.SwordRule == SwordCardRule.CheckSlash) // 적을 견제한 소유자의 회피 증가 확인
+        { // 자기 회피 처리 시작
+            var result = card.OwnerUnit.ApplyStatusEffect(BattleStatusEffectType.Evasion, value, card.StatusDuration, 1, card.OwnerUnit); // 공격 명중과 무관하게 한 적 턴 회피율 증가
+            FindUnitView(card.OwnerUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.Evasion, result); // 실제 회피 상승 표시
+        } // 자기 회피 처리 종료
         switch (card.SourceData.FollowUpEffect) // 카드별 추가 대상과 효과 선택
         { // 효과 구분 시작
             case CardFollowUpEffect.GainOwnerBlock: // 공격한 소유자에게 방어도 지급
@@ -789,7 +794,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
-        int baseDamage = SwordCardCombat.BaseDamage(cardInstance, paidActionPoints); // 표기 수치와 실제 지불 비용 및 체력 손실 반영
+        int baseDamage = SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 표기 수치와 실제 지불 비용 및 체력 손실 반영
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
@@ -810,6 +815,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 기존 면역과 지속 피해 처리에 화상 전달
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
         } // 화상 부여 종료
+        var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, out var statusResult); // 실제 명중 후 검 전용 상태 확인
+        if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
+        { // 검 전용 상태 피드백 시작
+            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(appliedStatus, statusResult); // 명중 후 상태 부여 결과 표시
+        } // 검 전용 상태 피드백 종료
         if (SunChainAttack.IsChainCard(cardInstance) && !turnRuntime.HasPendingBossPhaseTransition) // 보스 전환이 예약되지 않은 태양 연속 공격 확인
         { // 태양 추가 공격 시작
             ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용

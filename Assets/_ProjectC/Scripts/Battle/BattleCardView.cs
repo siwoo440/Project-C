@@ -28,6 +28,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     private float layoutScale = 1f; // 화면 크기에 맞춘 기본 배율
     private float layoutAngle; // 부채꼴 배치 회전 각도
     private int originalSiblingIndex = -1; // 강조 전 카드 순서
+    internal bool IsSelected => selected; // 실제 손패에서 이 카드가 이미 선택된 상태
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
     public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
     public event Action<BattleCardView> HoverEntered; // 카드 마우스 진입 이벤트

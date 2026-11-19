@@ -84,6 +84,10 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
+        if (cardView.IsSelected) // 클릭으로 먼저 선택된 카드인지 확인
+        { // 드래그 입력 시작 상태 정리
+            cardView.OnPointerClick(eventData); // 기존 클릭 선택 해제 후 새 드롭 대상으로 결정
+        } // 기존 선택 정리 종료
         dragging = true; // 드래그 상태 활성화
         cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, true); // 드래그 중 주변 카드 간격 확장
         cancelRequested = false; // 취소 상태 초기화
@@ -184,33 +188,13 @@ public sealed class BattleCardDragHandler :
 
     private bool CanBeginDrag() // 카드 드래그 시작 가능 여부 확인
     {
-        if (cardView == null ||
-            cardView.RuntimeCard == null ||
-            cardView.RuntimeCard.OwnerUnit == null ||
-            cardView.RuntimeCard.OwnerUnit.IsDead)
-        {
-            return false;
-        }
-
-        BattleSceneSetup battleSceneSetup =
-            FindFirstObjectByType<BattleSceneSetup>(); // 현재 전투 설정 조회
-
-        if (battleSceneSetup == null ||
-            !battleSceneSetup.IsInitialized ||
-            battleSceneSetup.BattleTurn == null ||
-            battleSceneSetup.SharedActionPoints == null ||
-            !battleSceneSetup.BattleTurn.IsPlayerTurn ||
-            battleSceneSetup.BattleTurn.IsBattleEnded ||
-            !SwordCardCombat.CanUse(cardView.RuntimeCard, battleSceneSetup.SharedActionPoints, battleSceneSetup.BattleTurn)) // 카드별 대상과 비용 검사
-        {
-            return false;
-        }
-
-        BattleActionSequenceRunner sequenceRunner =
-            battleSceneSetup.GetComponent<BattleActionSequenceRunner>(); // 행동 연출 실행기 조회
-
-        return sequenceRunner == null ||
-               !sequenceRunner.IsBusy; // 행동 연출 중 드래그 차단
+        var hand = cardView != null ? cardView.GetComponentInParent<BattleHandView>() : null; // 카드를 실제로 보유한 손패 조회
+        if (hand == null || !hand.IsCardUsable(cardView.RuntimeCard)) // 클릭과 같은 소유자·비용·입력 잠금 규칙 확인
+        { // 드래그 시작 거절
+            return false; // 사용 불가 카드 강조 차단
+        } // 드래그 시작 거절 종료
+        var runner = FindFirstObjectByType<BattleActionSequenceRunner>(); // 현재 전투의 충돌 연출 조회
+        return runner == null || !runner.IsBusy; // 기존 충돌 연출 중 드래그 차단
     }
 
     private void ShowValidTargetHighlights() // 현재 카드 대상 후보 강조
@@ -310,6 +294,10 @@ public sealed class BattleCardDragHandler :
             return false;
         }
 
+        if (card.SourceData.SwordRule == SwordCardRule.Finisher) // 현재 체력이 낮은 적에게만 쓰는 카드 확인
+        { // 처형 드롭 검사 시작
+            return SwordCardCombat.IsFinisherTarget(targetUnit); // 클릭 입력과 같은 오분의 일 이하 경계 적용
+        } // 처형 드롭 검사 종료
         switch (card.TargetType)
         {
             case CardTargetType.Self:

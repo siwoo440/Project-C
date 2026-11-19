@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetHorizontalSlash
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_HORIZONTAL_SLASH
+  displayName: "가로베기"
+  description: "선택한 적과 이웃한 칸의 적에게 각각 물리 피해 5."
+  artwork: {fileID: 21300000, guid: 0072a38d1f7d40ba9df50b746503c856, type: 3}
+  cardType: 0
+  targetType: 3
+  apCost: 1
+  effectType: 0
+  damageType: 1
+  effectValue: 5
+  damageHitCount: 1
+  secondaryEffectValue: 0
+  swordRule: 9
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

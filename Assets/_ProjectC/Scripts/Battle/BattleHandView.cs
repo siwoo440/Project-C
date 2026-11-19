@@ -367,7 +367,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         RefreshTurnStatus(); // 턴 종료 버튼 상태 갱신
         RefreshCardPreview(); // 입력 잠금 상태에 맞춘 확대 카드 갱신
     } // 입력 잠금 설정 종료
-    private bool IsCardUsable(CardInstance cardInstance) // 카드 사용 가능 여부 확인
+    internal bool IsCardUsable(CardInstance cardInstance) // 카드 사용 가능 여부 확인
     { // 카드 사용 가능 검사 시작
         if (interactionLocked) // 행동 연출 입력 잠금 확인
         { // 입력 잠금 처리 시작

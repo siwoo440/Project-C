@@ -21,5 +21,9 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Evasion, // 적 공격 회피율 증가
     Disorientation, // 아군 첫 턴의 방향 감각 상실
     CriticalChanceUp, // 직접 카드 공격의 치명타 확률 증가
-    ChargeDefenseDown // 돌진에 의한 다음 공격 턴 물리 방어 감소
+    ChargeDefenseDown, // 돌진에 의한 다음 공격 턴 물리 방어 감소
+    Bleed, // 턴 종료 고정 체력 손실
+    Stagger, // 다음 예고 행동 한 번 취소
+    Stun, // 자기 턴 동안 행동 금지
+    NextAttackDown // 다음 공격의 원본 피해 감소
 } // 열거형 종료

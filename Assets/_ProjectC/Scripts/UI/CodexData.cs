@@ -76,6 +76,14 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 돌진 약화 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 2) + ". 돌진에 명중한 적에게 다음 아군 턴 동안 적용."; // 피격 대상과 지연 발동 조건
                     } // 돌진 약화 설명 종료
+                    else if (effect == BattleStatusEffectType.Bleed || effect == BattleStatusEffectType.NextAttackDown) // 피해 수치를 표시할 검 카드 디버프
+                    { // 상태 수치 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 2); // 턴 종료 출혈 또는 다음 공격 약화 설명
+                    } // 상태 수치 설명 종료
+                    else if (effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun) // 적 행동을 제한하는 상태
+                    { // 행동 제한 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 다음 행동 취소 또는 기절 설명
+                    } // 행동 제한 설명 종료
                     Sprite icon = description.Length > 0 ? BattleStatusIconArt.Get(effect) : null; // 검 카드의 독립 상태 아이콘 조회
                     entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, icon)); // 실제 상태 이름과 연결된 상세 정보 등록
                 } // 상태 효과 추가 종료

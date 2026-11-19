@@ -171,7 +171,7 @@
       "attribute": "검",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 물리 피해 7, 출혈(2턴) 20%",
+      "description": "적에게 물리 피해 7. 20% 확률로 출혈을 2턴 부여한다. 대상 턴 종료마다 체력 2 감소. 다시 부여하면 지속 시간 갱신.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "찌르기.png"
@@ -182,7 +182,7 @@
       "attribute": "검",
       "rarity": "일반",
       "cost": "1",
-      "description": "적 2명에게 5 피해",
+      "description": "선택한 적과 이웃한 칸의 적에게 각각 물리 피해 5.",
       "area": "2",
       "targets": "적",
       "imageFileName": "가로베기.png"
@@ -193,7 +193,7 @@
       "attribute": "검",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 6 피해, 행동력 -1 25%",
+      "description": "적에게 물리 피해 6. 25% 확률로 대상의 다음 행동 1회 취소.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "무릎 베기.png"

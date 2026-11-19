@@ -392,6 +392,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_THRUST
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 12005dd27bd64da0a705ae61266ac3d8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HORIZONTAL_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: af933e31837c4293a68a941d4da34cef, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_KNEE_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 03eded63e7924463b4867df1c923755f, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_POMMEL_STRIKE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: caeb0bdc4e4f4a80a6cbce17cfbf2b64, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOOD_EDGE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 91969b734cd743f3bdbbf2ff03d8cdff, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SHIELD_SPLITTER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: b6cc61dc458d440ba6520c3c82d71192, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_INTERCEPT_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 37d3100b12484a7a9854227e8561a27e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CHECK_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 9c56fe2d131448ef998f53f362f7999c, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_CRITICAL_STRIKE
     offerType: 0
     price: 0

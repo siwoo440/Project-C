@@ -12,7 +12,7 @@ using static WinterfallCommonCardExpansionTests; // 기존 손패 클릭과 전�
 
 public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실제 사용 검사
 { // 검사 시작
-    private sealed class Fight : IDisposable // 실제 전투를 독립 구성하는 검사 환경
+    internal sealed class Fight : IDisposable // 실제 전투를 독립 구성하는 검사 환경
     { // 전투 환경 시작
         internal readonly BattleUnitRuntime[] Allies; // 카드 소유자와 동료 목록
         internal readonly BattleUnitRuntime[] Enemies; // 실제 위치를 유지한 적 네 명
@@ -29,7 +29,10 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         private readonly DeckData source; // 회차 덱 원본
         private readonly BattleEnemyActionRuntime actions; // 적 행동 연결
         private readonly BattleStatusEffectController statuses; // 진영별 지속 효과 처리
-        internal Fight(params string[] ids) // 보물 원본으로 전투 구성
+        internal Fight(params string[] ids) : this(CreateView, ids) // 기본 검사에는 기존 경량 전투 화면 사용
+        { // 기본 전투 환경 시작
+        } // 기본 전투 환경 종료
+        internal Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, params string[] ids) // 검사할 실제 적 화면과 보물 원본으로 전투 구성
         { // 전투 구성 시작
             var offers = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test").Offers; // 실제 보물 풀 조회
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회
@@ -45,7 +48,7 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
             item.transform.SetParent(canvas.transform, false); // 손패를 전투 화면에 연결
             Hand = item.GetComponent<BattleHandView>(); // 손패 입력 조회
             var allies = Allies.Select(unit => CreateView(canvas.transform, unit)).ToArray(); // 아군 화면 연결
-            EnemyViews = Enemies.Select(unit => CreateView(canvas.transform, unit)).ToArray(); // 적 화면 연결
+            EnemyViews = Enemies.Select(unit => createEnemyView(canvas.transform, unit)).ToArray(); // 적 화면 연결
             Runner = canvas.AddComponent<BattleActionSequenceRunner>(); // 실제 연출 생성
             var processor = new BattleStatusEffectProcessor(); // 상태 처리기 생성
             Turns = new BattleTurnRuntime(Deck, Points, Allies, Enemies, cards.Length, BattleType.Normal); // 사용한 카드까지 매 턴 다시 뽑는 검사 덱 구성

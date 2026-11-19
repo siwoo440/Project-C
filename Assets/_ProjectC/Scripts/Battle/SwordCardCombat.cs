@@ -11,7 +11,15 @@ public enum SwordCardRule // 검 카드 공격별 추가 규칙
     Counterattack, // 받은 실제 체력 손실의 절반 반격
     Finisher, // 남은 행동력으로 약해진 적 공격
     FlameSlash, // 명중한 적에게 화상 부여
-    DoomBlade // 소유자 체력 비용 지불
+    DoomBlade, // 소유자 체력 비용 지불
+    Thrust, // 출혈을 일으키는 찌르기
+    HorizontalSlash, // 이웃한 두 칸 가로베기
+    KneeSlash, // 적 다음 행동 취소
+    PommelStrike, // 적 한 턴 기절
+    BloodEdge, // 출혈 중인 적 추가 피해
+    ShieldSplitter, // 대상의 물리 방어 감소
+    InterceptSlash, // 대상의 다음 공격 약화
+    CheckSlash // 소유자의 한 턴 회피
 } // 규칙 목록 종료
 
 internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 타격 계산
@@ -63,10 +71,13 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return selected == 0 ? first ?? second : second; // 방금 사망한 적을 제외한 실제 대상 반환
     } // 실제 타격 대상 결정 종료
 
-    internal static int BaseDamage(CardInstance card, int paid) // 각 검 공격의 방어 전 피해 계산
+    internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 각 검 공격의 방어 전 피해 계산
     { // 원본 피해 계산 시작
         switch (card.SourceData.SwordRule) // 카드의 가변 수치 조건 확인
         { // 피해 종류 선택 시작
+            case SwordCardRule.BloodEdge: // 출혈 중인 적의 추가 피해
+                int bonus = target?.GetStatusEffect(BattleStatusEffectType.Bleed) != null ? card.SourceData.SecondaryEffectValue : 0; // 타격 직전 출혈 유무 확인
+                return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + bonus); // 기본 공격과 출혈 추가 수치 합산
             case SwordCardRule.Counterattack: // 직전 적 턴 이후 체력 손실 반격
                 return card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue); // 실제 잃은 체력의 절반 내림
             case SwordCardRule.Finisher: // 실제 지불한 행동력에 연동한 피해
@@ -75,6 +86,40 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
                 return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus); // 기존 카드 공격력 보정 적용
         } // 피해 종류 선택 종료
     } // 원본 피해 계산 종료
+
+    internal static BattleStatusEffectType ApplyHitStatus(CardInstance card, BattleUnitRuntime target, out BattleStatusEffectApplyResult result) // 명중 후 검 카드의 상태 적용
+    { // 후속 상태 처리 시작
+        result = BattleStatusEffectApplyResult.Invalid; // 추가 효과 없는 기본 결과
+        int value = card.SourceData.SecondaryEffectValue; // 원본 카드의 확률 또는 상태 수치
+        BattleStatusEffectType type; // 실제 부여할 상태
+        switch (card.SourceData.SwordRule) // 명중한 카드의 고유 효과 확인
+        { // 상태 선택 시작
+            case SwordCardRule.Thrust: // 이십 퍼센트 출혈
+            case SwordCardRule.KneeSlash: // 이십오 퍼센트 행동 취소
+            case SwordCardRule.PommelStrike: // 십오 퍼센트 기절
+                if (target.IsDead || UnityEngine.Random.Range(0, 100) >= value) // 사망하거나 확률 밖인 대상 확인
+                { // 상태 미발동 시작
+                    return BattleStatusEffectType.None; // 추가 상태 없음
+                } // 상태 미발동 종료
+                type = card.SourceData.SwordRule == SwordCardRule.Thrust ? BattleStatusEffectType.Bleed : card.SourceData.SwordRule == SwordCardRule.KneeSlash ? BattleStatusEffectType.Stagger : BattleStatusEffectType.Stun; // 확률에 당첨된 상태 선택
+                value = type == BattleStatusEffectType.Bleed ? 2 : 1; // 고정 출혈 피해 또는 한 번의 행동 제한
+                break; // 확률 상태 선택 완료
+            case SwordCardRule.ShieldSplitter: // 두 턴 물리 방어 감소
+                type = BattleStatusEffectType.PhysicalDefenseDown; // 기존 물리 방어 약화 사용
+                break; // 물리 약화 선택 완료
+            case SwordCardRule.InterceptSlash: // 다음 실제 공격의 피해 감소
+                type = BattleStatusEffectType.NextAttackDown; // 공격 소비형 약화 선택
+                break; // 다음 공격 약화 선택 완료
+            default: // 추가 상태 없는 검 카드
+                return BattleStatusEffectType.None; // 기존 공격 규칙 유지
+        } // 상태 선택 종료
+        if (target.IsDead) // 후속 상태 대상 생존 확인
+        { // 대상 사망 처리 시작
+            return BattleStatusEffectType.None; // 전투불능 대상의 신규 상태 차단
+        } // 대상 사망 처리 종료
+        result = target.ApplyStatusEffect(type, value, card.StatusDuration, 1, card.OwnerUnit); // 면역과 지속 갱신을 거친 실제 상태 적용
+        return type; // 피격과 면역 피드백 종류 반환
+    } // 후속 상태 처리 종료
 
     internal static int RollCritical(CardInstance card, int damage, out bool critical) // 명중한 직접 카드 타격의 치명타 판정
     { // 치명타 계산 시작

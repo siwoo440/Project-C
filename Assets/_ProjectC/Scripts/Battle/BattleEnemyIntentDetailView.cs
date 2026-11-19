@@ -236,11 +236,14 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
         builder.AppendLine(
             $"속도 : {currentAction.ActionSpeed}"); // 행동 속도 표시
 
+        if (currentAction.BlockingStatus != BattleStatusEffectType.None) // 현재 예고 행동의 취소 상태 확인
+        { // 취소 안내 시작
+            builder.AppendLine(BattleStatusEffectInstance.GetDisplayName(currentAction.BlockingStatus) + " · 이번 행동 취소"); // 실제 행동 제한 원인 표시
+            return builder.ToString(); // 취소된 공격의 피해와 상태 예고 제외
+        } // 취소 안내 종료
         if (currentAction.ActionType == EnemyActionType.Attack)
         {
-            int modifiedDamage =
-                currentAction.Actor.ModifyOutgoingDamage(
-                    currentAction.Amount); // 정신 상태 포함 공격 수치 계산
+            int modifiedDamage = currentAction.AttackAmount; // 정신 상태와 공격 약화를 반영한 수치
 
             BattleDamageResult previewResult =
                 currentAction.PreviewDamage(); // 대상 방어 포함 예상 피해 계산
