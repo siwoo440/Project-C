@@ -19,6 +19,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
+    public WandererCryRunState WandererCry { get; private set; } = new WandererCryRunState(); // 추적과 귀 막기의 다음 교전 상태
     public CharredWellRunState Well { get; private set; } = new CharredWellRunState(); // 회차의 우물 물과 봉인 상태
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
 
@@ -554,6 +555,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
         Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
+        WandererCry = snapshot.wandererCry ?? new WandererCryRunState(); // 이전 저장은 방랑자 효과 없이 복원
         Well = snapshot.well ?? new CharredWellRunState(); // 이전 저장의 빈 기본값 또는 우물 상태 복원
         if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
         { // 회피 목록 복원 시작
@@ -584,6 +586,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
         Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
+        WandererCry = new WandererCryRunState(); // 새 탐사의 추적과 카드 후보 초기화
         Well = new CharredWellRunState(); // 새 탐사의 우물 회복과 봉인 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화

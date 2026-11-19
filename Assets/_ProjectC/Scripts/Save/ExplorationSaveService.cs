@@ -22,6 +22,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string[] events; // 처리한 이벤트와 특수 방 목록
         public string pendingMapFragment; // 사용 대기 중인 지도 조각의 원본 이벤트
         public GlassFieldEffect glassFieldEffects; // 다음 교전의 회피와 실명 보관
+        public WandererCryRunState wandererCry; // 교전 전 추적과 세 카드 및 귀 막기 보관
         public string[] avoidedEncounters; // 승리 보상 없이 회피한 조우 목록
         public CharredWellRunState well; // 사용자별 물과 현재 및 다음 층 봉인 저장
         public BurntCartRunState cart; // 수레 매복과 상점 할인 저장
@@ -173,6 +174,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 well = session.Well, // 우물 회복과 봉인 판정 기록
                 cart = session.Cart, // 수레가 남긴 매복과 미사용 할인 기록
                 glassFieldEffects = session.PendingGlassFieldEffects, // 들판 선택의 미사용 전투 효과 저장
+                wandererCry = session.WandererCry, // 선택한 방과 확정 카드 후보를 함께 저장
                 avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
@@ -331,6 +333,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 미지원 목록 버전 처리 시작
             return false; // 알 수 없는 조우 구성의 복원 차단
         } // 미지원 목록 버전 처리 종료
+        if (snapshot.wandererCry != null && !snapshot.wandererCry.IsValid(snapshot.events)) // 기존 체크포인트의 방랑자 출처와 후보 검사
+        { // 잘못된 보상 예약 처리 시작
+            return false; // 중복 후보나 출처 없는 추적 복원 차단
+        } // 잘못된 보상 예약 처리 종료
         if ((snapshot.glassFieldEffects & ~(GlassFieldEffect.Evasion | GlassFieldEffect.Blind)) != 0) // 지원하지 않는 들판 효과 확인
         { // 잘못된 효과 처리 시작
             return false; // 알 수 없는 효과 복원 차단

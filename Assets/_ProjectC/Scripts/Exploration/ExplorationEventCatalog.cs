@@ -5,7 +5,8 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public const int CurrentVersion = 7; // 검게 탄 우물까지 포함하는 최신 이벤트 버전
+    public const int CurrentVersion = 8; // 방랑자의 울음까지 포함하는 최신 이벤트 버전
+    private static List<ExplorationEventData> wandererEvents; // 방랑자의 울음까지 포함한 새 층 후보
     private static List<ExplorationEventData> wellEvents; // 우물까지 포함한 층의 후보
     private static List<ExplorationEventData> cartEvents; // 수레를 포함한 새 층 후보
     private static List<ExplorationEventData> ashstormEvents; // 재폭풍의 눈까지 포함한 이전 목록
@@ -16,6 +17,16 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
     { // 버전별 이벤트 조회 시작
+        if (version >= 8) // 방랑자까지 포함하는 층 확인
+        { // 방랑자 후보 구성 시작
+            if (NeedsReload(wandererEvents)) // 새 후보 목록 최초 생성 확인
+            { // 목록 복사 시작
+                wandererEvents = new List<ExplorationEventData>(LoadEvents(7)); // 이전 우물 버전의 후보 순서 복사
+                wandererEvents.Add(AshWandererCryEvent.Create()); // 잿빛 방랑자의 울음 추가
+                wandererEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 새 층의 고정 시드 순서 정렬
+            } // 목록 복사 종료
+            return wandererEvents; // 새 층 후보 반환
+        } // 방랑자 후보 구성 종료
         if (version >= 7) // 우물이 포함된 층 버전 확인
         { // 우물 목록 준비 시작
             if (NeedsReload(wellEvents)) // 최신 목록 첫 사용 확인

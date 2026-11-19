@@ -189,20 +189,31 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         RegisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 등록
         battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         IsInitialized = true; // 초기화 완료 저장
-        if (!battleTurn.StartBattle(initialHandSize)) // 전투 시작 처리 확인
+        var exploration = ExplorationSessionManager.Instance; // 실제 교전을 요청한 탐사 상태
+        bool enemyFirst = exploration != null && exploration.ActiveEncounter != null && exploration.WandererCry.EnemyStartsFirst; // 이번 교전의 고정 선제 여부
+        int preparedActionCount = enemyFirst ? enemyActionRuntime.PrepareActions() : 0; // 선제 적이 즉시 실행할 행동 준비
+        if (!battleTurn.StartBattle(initialHandSize, enemyFirst, () => ApplyOpeningExplorationEffects(exploration))) // 준비된 양 진영과 탐사 효과로 교전 시작
         { // 전투 시작 실패 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 턴 시작에 실패했습니다.", this); // 전투 시작 오류 출력
             IsInitialized = false; // 초기화 실패 저장
             return; // 초기화 중단
         } // 전투 시작 실패 처리 종료
-        GlassFieldEvent.ApplyBattleStart(ExplorationSessionManager.Instance, allyUnits); // 실제 교전 시작 성공 뒤 들판 선택 한 번 반영
+        if (!enemyFirst) // 보통 교전의 첫 예고 준비 여부 확인
+        { // 일반 예고 준비 시작
+            preparedActionCount = enemyActionRuntime.PrepareActions(); // 평소처럼 첫 아군 턴에 적 행동 예고
+        } // 일반 예고 준비 종료
         int drawnCardCount = battleTurn.LastDrawnCardCount; // 실제 시작 손패 수 조회
-        int preparedActionCount = enemyActionRuntime.PrepareActions(); // 첫 적 행동 준비
         InitializeBattleTutorial(battleCanvas); // 전투 안내 화면과 실제 행동 연결
         Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}", this); // 생성 완료 출력
         Debug.Log($"[BattleSceneSetup] 적 행동 예고 준비 - {preparedActionCount}개", this); // 첫 행동 준비 결과 출력
         LogDeckState(); // 시작 카드 상태 출력
     } // 초기화 종료
+    private void ApplyOpeningExplorationEffects(ExplorationSessionManager exploration) // 실제 교전 첫 행동 전 들판과 방랑자 효과 반영
+    { // 전투 시작 효과 처리 시작
+        GlassFieldEvent.ApplyBattleStart(exploration, allyUnits); // 들판의 회피와 고유 실명 적용
+        exploration?.WandererCry.BeginBattle(exploration.ActiveRuntimeEncounterId, allyUnits); // 방랑자 명중 감소와 승리 보상 대상 연결
+    } // 전투 시작 효과 처리 종료
+
     private void InitializeBattleTutorial(Canvas battleCanvas) // 전투 안내 화면 초기화
     { // 전투 안내 초기화 시작
         if (battleCanvas == null) // 전투 캔버스 누락 확인
@@ -681,6 +692,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             return; // 결과 화면 표시 중단
         } // 결과 화면 없음 처리 종료
         resultView.Show(resultData, ConfirmBattleResult); // 전투 결과와 확인 처리 표시
+        var exploration = ExplorationSessionManager.Instance; // 승패를 받을 실제 탐사 조회
+        exploration?.WandererCry.RecordResult(exploration.ActiveRuntimeEncounterId, resultData.Result); // 같은 교전 승리만 추가 선택 활성화
+        WandererCryRewardView.Show(resultView.transform, exploration); // 승리한 추적의 세 카드와 생존자 선택 표시
         Debug.Log($"[BattleSceneSetup] 전투 결과 저장 - {resultData.Result} / 라운드 {resultData.CompletedRound} / 생존 아군 {resultData.LivingAllyCount}명 / 보상 {resultData.CanReceiveReward}", this); // 결과 저장 내용 출력
     } // 결과 저장 종료
     private void EnsureResultView() // 전투 결과 화면 준비
@@ -704,6 +718,12 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 탐사 Scene으로 이동할 SceneFlowManager가 없습니다.", this); // Scene 관리자 누락 오류 출력
             return false; // 결과 확인 실패 반환
         } // 관리자 없음 처리 종료
+        var exploration = ExplorationSessionManager.Instance; // 현재 결과에 남은 카드 선택 확인
+        if (exploration != null && exploration.WandererCry.HasVictoryChoice) // 아직 생존자가 카드를 받지 않은 승리 확인
+        { // 보상 선택 유지 시작
+            WandererCryRewardView.Show(resultView.transform, exploration); // 동일한 선택 화면 유지
+            return false; // 보상 확정 전 탐사 복귀 차단
+        } // 보상 선택 유지 종료
         SceneFlowManager.Instance.LoadScene("30_Exploration"); // 탐사 Scene 복귀 요청
         return SceneFlowManager.Instance.IsLoadingScene; // Scene 전환 시작 여부 반환
     } // 결과 확인 종료

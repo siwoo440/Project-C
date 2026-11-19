@@ -23,7 +23,7 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
             } // 상태 없음 제외 종료
             Sprite icon = BattleStatusIconArt.Get(effect); // 생성한 상태 이미지 조회
             Assert.IsNotNull(icon, effect.ToString()); // 각 상태 이미지 존재 확인
-            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion; // 개별 투명 원화 상태 확인
+            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion || effect == BattleStatusEffectType.Disorientation; // 개별 투명 원화 상태 확인
             Assert.AreEqual(separate ? effect + "StatusIcon" : "StatusIcons", icon.texture.name); // 상태별 생성 이미지 사용 확인
             if (!separate) // 공용 아이콘 시트 상태 확인
             { // 기존 정사각형 이미지 검사 시작
@@ -38,7 +38,7 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
             } // 투명 이미지 검사 종료
             Assert.IsTrue(areas.Add(icon.texture.name + icon.rect), effect.ToString()); // 서로 다른 상태의 독립 이미지 확인
         } // 개별 상태 아이콘 검사 종료
-        Assert.AreEqual(18, areas.Count); // 회피를 포함한 상태 열여덟 종류 확인
+        Assert.AreEqual(19, areas.Count); // 방랑자 상태를 포함한 열아홉 아이콘 확인
     } // 상태 아이콘 종류 검사 종료
     [UnityTest] // 실제 상태 아이콘 화면 검사 지정
     public IEnumerator StatusView_ShowsIconsAndCornerValuesAndUpdates() // 상태 아이콘과 구석 수치의 실제 갱신 확인
