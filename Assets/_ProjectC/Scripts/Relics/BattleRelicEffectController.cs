@@ -120,6 +120,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             {
                 continue; // 다음 유물 확인
             }
+            int interval = relicData.PlayerTurnInterval; // 유물이 요구하는 아군 턴 간격 조회
+            if (interval > 0 && (eventContext == null || eventContext.Phase != BattleTurnPhase.PlayerTurn || eventContext.Round <= 0 || eventContext.Round % interval != 0)) // 지정 라운드의 아군 턴 여부 확인
+            { // 발동 주기 확인 시작
+                continue; // 해당 아군 턴까지 회복 대기
+            } // 발동 주기 확인 종료
 
             int currentOrder = inventory.GetCurrentOrder(relicData.RelicId); // 제거와 순서 변경 반영 현재 순번 조회
             if (currentOrder < 1) // 처리 중 제거된 유물 여부 확인
@@ -252,6 +257,17 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicTargetType.FirstAlly: // 첫 아군 대상
                 AddFirstLivingUnit(allyUnits, targets); // 첫 생존 아군 추가
                 break; // 첫 아군 처리 종료
+            case RelicTargetType.LowestHealthLivingAlly: // 현재 체력이 가장 낮은 아군 대상
+                BattleUnitRuntime lowest = null; // 최저 체력 후보 준비
+                foreach (BattleUnitRuntime ally in allyUnits) // 앞쪽 편성부터 아군 순회
+                { // 생존 아군 비교 시작
+                    if (ally != null && !ally.IsDead && (lowest == null || ally.CurrentHealth < lowest.CurrentHealth)) // 생존 여부와 현재 체력 비교
+                    { // 최저 체력 후보 교체 시작
+                        lowest = ally; // 같은 체력에서는 먼저 찾은 아군 유지
+                    } // 최저 체력 후보 교체 종료
+                } // 생존 아군 비교 종료
+                AddUnit(lowest, targets); // 선택된 아군 한 명 추가
+                break; // 최저 체력 아군 선택 종료
             case RelicTargetType.AllAllies: // 모든 아군 대상
                 AddUnits(allyUnits, targets); // 전체 아군 추가
                 break; // 전체 아군 처리 종료

@@ -8,5 +8,6 @@ public enum RelicTargetType // 유물 효과 대상 종류
     EventSource, // 이벤트 발생자
     EventTarget, // 이벤트 대표 대상
     RandomLivingAlly, // 무작위 생존 아군 대상
-    RandomLivingEnemy // 무작위 생존 적 대상
+    RandomLivingEnemy, // 무작위 생존 적 대상
+    LowestHealthLivingAlly // 현재 체력이 가장 낮은 생존 아군
 }
