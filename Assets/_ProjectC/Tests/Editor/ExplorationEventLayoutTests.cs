@@ -46,6 +46,36 @@ public sealed class ExplorationEventLayoutTests // 탐사 이벤트 패널 배�
             Assert.That(resultFrame.size.x, Is.EqualTo(resultFrame.size.y).Within(0.1f)); // 정사각형 테두리 비율 확인
             Assert.IsTrue(picture.preserveAspect); // 원화 자체의 가로세로 비율 유지 확인
         } // 결과 화면 검사 종료
+        var extended = ScriptableObject.CreateInstance<ExplorationEventData>(); // 선택지를 늘린 검사용 사건
+        var entries = data.Choices.ToList(); // 원래 사건의 세 행동 복사
+        for (int number = 4; number <= 8; number++) // 아래로 내려야 보이는 다섯 행동 준비
+        { // 선택지 추가 시작
+            var entry = new ExplorationEventChoiceData(); // 새 데이터 행동 생성
+            entry.Initialize($"선택 {number}", $"결과 {number}", new ExplorationEventResourceChange()); // 선택별 결과 구분
+            entries.Add(entry); // 목록 뒤에 추가
+        } // 선택지 추가 종료
+        extended.Initialize(data.EventId, data.DisplayName, data.Description, data.Category, data.IllustrationSprite, entries); // 기존 윈터폴 사건의 확장 상황 구성
+        panel.ShowEvent(marker, extended, "extended_layout"); // 실제 선택지 생성 경로 실행
+        panel.SendMessage("PopulateEventContent"); // 화면 내용 즉시 갱신
+        root.gameObject.SetActive(true); // 목록 표시
+        Canvas.ForceUpdateCanvases(); // 내용 높이와 손잡이 크기 갱신
+        var scroll = root.GetComponentInChildren<ScrollRect>(); // 선택지 스크롤 조회
+        Assert.IsTrue(scroll.verticalScrollbar.gameObject.activeSelf); // 초과분이 있을 때 손잡이 표시 확인
+        Assert.Greater(scroll.content.rect.height, scroll.viewport.rect.height); // 실제 스크롤 범위 확인
+        var wheel = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current); // 선택지 위 휠 입력 준비
+        wheel.scrollDelta = Vector2.down; // 아래 방향 휠 한 칸
+        scroll.OnScroll(wheel); // 목록의 실제 휠 처리 실행
+        Assert.Greater(scroll.content.anchoredPosition.y, 0f); // 휠로 숨은 줄을 향해 이동 확인
+        scroll.verticalScrollbar.value = 0f; // 손잡이로 마지막 줄까지 이동
+        Canvas.ForceUpdateCanvases(); // 아래쪽 버튼 좌표 갱신
+        var last = scroll.content.GetComponentsInChildren<Button>().Last(); // 마지막 선택지 조회
+        var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport, last.transform); // 마지막 줄의 표시 범위 계산
+        Assert.That(bounds.min.y, Is.EqualTo(scroll.viewport.rect.yMin).Within(1f)); // 마지막 선택지가 보이는 위치 확인
+        last.onClick.Invoke(); // 마지막 행동 실행
+        Assert.That(root.Find("Content/BodyText").GetComponent<TMPro.TMP_Text>().text, Does.Contain("결과 8")); // 선택한 결과 확인
+        Assert.IsFalse(scroll.verticalScrollbar.gameObject.activeSelf); // 결과 한 줄에서 손잡이 숨김 확인
+        Assert.That(scroll.content.anchoredPosition.y, Is.EqualTo(0f).Within(0.1f)); // 결과 목록 시작 위치 확인
+        Object.Destroy(extended); // 검사용 사건 정리
         Object.Destroy(marker.gameObject); // 검사 표식 정리
         Object.Destroy(panel.gameObject); // 검사 캔버스 정리
         yield return new ExitPlayMode(); // 편집 모드 복귀

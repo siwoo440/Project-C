@@ -28,6 +28,10 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     private Image illustrationFrameImage; // 그림 프레임 이미지
     private Image illustrationImage; // 이벤트 그림 이미지
     private TMP_Text illustrationFallbackText; // 그림 대체 텍스트
+    private const int AuthoredWinterfallChoices = 3; // 윈터폴 사건별로 정의한 전용 행동 수
+    private const int VisibleChoiceRows = 3; // 한 번에 보여줄 선택지 줄 수
+    private ScrollRect choiceScroll; // 선택지 세로 이동 제어
+    private RectTransform storyBackground; // 결과 설명 뒤의 장식 패널
     private RectTransform choiceContainer; // 선택지 버튼 컨테이너
 
     private Coroutine showCoroutine; // 현재 표시 코루틴
@@ -179,6 +183,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
             int capturedIndex = index; // 클릭용 인덱스 복사
 
+            if (index >= AuthoredWinterfallChoices) // 전용 원문 뒤에 추가한 데이터 선택지 확인
+            { // 데이터 선택지 등록 시작
+                CreateChoiceButton(choiceData.ChoiceText, () => HandleChoiceSelected(capturedIndex)); // 추가 행동의 원문 표시
+                continue; // 원래 세 행동의 전용 설명 생략
+            } // 데이터 선택지 등록 종료
             string label = choiceData.ChoiceText; // 행동 이름 조회
             if (currentEventData.EventId == AshstormEyeEvent.Id) // 재폭풍의 눈 비용 안내 여부 확인
             { // 행동 효과 표시 시작
@@ -239,6 +248,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return; // 잘못된 클릭 또는 중복 선택 차단
         }
 
+        if (choiceIndex >= AuthoredWinterfallChoices) // 전용 처리 범위를 벗어난 추가 선택지 확인
+        { // 추가 행동 처리 시작
+            CommitDataChoice(choiceIndex); // 데이터에 정의된 변화와 결과 적용
+            return; // 전용 행동 중복 실행 방지
+        } // 추가 행동 처리 종료
         if (currentEventData.EventId == AshWandererCryEvent.Id) // 잿빛 방랑자의 울음 확인
         { // 방랑자 선택 시작
             string hint = choiceIndex == AshWandererCryEvent.Follow ? "목소리를 따라가며 정신력 5를 잃을 생존자를 선택하세요." : choiceIndex == AshWandererCryEvent.Pray ? "기도하고 정신력 2를 회복할 생존자를 선택하세요." : null; // 원문 행동별 생존자 선택 안내
@@ -284,6 +298,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             SelectMapFragmentChoice(choiceIndex); // 행동별 대상 및 결과 처리
             return; // 다른 이벤트 결과 처리 제외
         } // 지도 조각 선택 종료
+        CommitDataChoice(choiceIndex); // 일반 이벤트의 데이터 행동 처리
+    } // 선택 분기 종료
+
+    private void CommitDataChoice(int choiceIndex) // 데이터 기반 선택 결과 반영
+    { // 데이터 행동 시작
         choiceCommitted = true; // 선택 완료 상태 저장
 
         ExplorationEventChoiceData choiceData =
@@ -740,11 +759,17 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         {
             if (choiceButtons[index] != null)
             {
+                choiceButtons[index].gameObject.SetActive(false); // 레이아웃에서 이전 버튼 즉시 제외
                 Destroy(choiceButtons[index].gameObject); // 버튼 오브젝트 제거
             }
         }
 
         choiceButtons.Clear(); // 버튼 목록 초기화
+        if (choiceScroll != null) // 목록 초기화 여부 확인
+        { // 스크롤 초기화 시작
+            choiceScroll.StopMovement(); // 남은 이동 정지
+            choiceContainer.anchoredPosition = Vector2.zero; // 다음 목록의 첫 줄로 복귀
+        } // 스크롤 초기화 종료
     }
 
     private void CreateChoiceButton(
@@ -810,10 +835,17 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         buttonText.textWrappingMode = TextWrappingModes.Normal; // 버튼 줄바꿈 모드 설정
 
         choiceButtons.Add(button); // 버튼 목록에 현재 버튼 등록
-        int reservedRows = Mathf.Max(3, currentEventData?.Choices?.Count ?? 0); // 원래 선택지를 기준으로 고정할 하단 줄 수
-        float rowHeight = ChoiceHeight + ChoiceGap; // 버튼 한 줄과 위쪽 간격
-        contentRect.offsetMin = new Vector2(56f, ChoiceBottom + reservedRows * rowHeight - ChoiceGap + 22f); // 원래 선택지 위에 삽화 영역 고정
-        bodyText.rectTransform.offsetMin = new Vector2(34f, (choiceButtons.Count - reservedRows) * rowHeight); // 줄어든 버튼 공간을 설명문에만 배정
+        int rows = Mathf.Min(VisibleChoiceRows, choiceButtons.Count); // 화면에 필요한 줄 수
+        float height = rows * (ChoiceHeight + ChoiceGap) - ChoiceGap; // 보이는 버튼들의 총높이
+        float fullHeight = VisibleChoiceRows * (ChoiceHeight + ChoiceGap) - ChoiceGap; // 삽화 아래 고정 여백 기준
+        var list = (RectTransform)choiceScroll.transform; // 목록 배경 영역 조회
+        list.offsetMax = new Vector2(-48f, ChoiceBottom + height + 8f); // 현재 버튼 수에 맞춘 목록 높이
+        bool overflow = choiceButtons.Count > VisibleChoiceRows; // 추가 선택지 존재 여부
+        choiceScroll.verticalScrollbar.gameObject.SetActive(overflow); // 필요한 경우에만 손잡이 표시
+        choiceScroll.viewport.offsetMax = new Vector2(overflow ? -40f : -12f, -8f); // 스크롤바와 버튼 사이 여백
+        contentRect.offsetMin = new Vector2(56f, ChoiceBottom + fullHeight + 24f); // 삽화 위치 고정
+        storyBackground.offsetMin = new Vector2(20f, height - fullHeight); // 남은 높이를 설명 배경에 배정
+        bodyText.rectTransform.offsetMin = storyBackground.offsetMin + new Vector2(26f, 18f); // 테두리 안쪽에 설명 배치
     }
 
     private void EnsureEventSystem() // New Input System 기반 UI 클릭 이벤트 시스템 보장
@@ -1022,7 +1054,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         illustrationFrameImage =
             frameObject.GetComponent<Image>(); // 일러스트 프레임 이미지 저장
 
-        illustrationFrameImage.color = new Color(0.16f, 0.12f, 0.15f, 1f); // 프레임 배경 색상 지정
+        LobbyUiArt.Apply(illustrationFrameImage, "FormationPanel"); // 삽화에 금속 테두리와 청록색 배경 적용
 
         GameObject illustrationObject =
             new GameObject(
@@ -1063,6 +1095,9 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         illustrationFallbackText.color = new Color(0.92f, 0.46f, 0.28f, 1f); // 대체 문자 색상 지정
         illustrationFallbackText.alignment = TextAlignmentOptions.Center; // 대체 문자 정렬 지정
 
+        storyBackground = PreparationUi.CreatePanel("StoryBackground", contentRect, new Vector2(0.32f, 0f), Vector2.one); // 본문 전용 배경 생성
+        LobbyUiArt.Apply(storyBackground.GetComponent<Image>(), "FormationPanel"); // 설명 패널 테두리와 질감 적용
+        storyBackground.GetComponent<Image>().raycastTarget = false; // 장식의 입력 가로채기 방지
         GameObject bodyObject =
             new GameObject(
                 "BodyText",
@@ -1077,7 +1112,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         bodyRect.anchorMin = new Vector2(0.32f, 0f); // 삽화 오른쪽에서 본문 시작
         bodyRect.anchorMax = new Vector2(1f, 1f); // 본문 상단 우측 앵커 설정
         bodyRect.offsetMin = new Vector2(34f, 0f); // 삽화와 본문 사이 여백 지정
-        bodyRect.offsetMax = new Vector2(-8f, -8f); // 본문 우상단 여백 설정
+        bodyRect.offsetMax = new Vector2(-26f, -20f); // 본문 우상단 여백 설정
 
         bodyText =
             bodyObject.GetComponent<TMP_Text>(); // 본문 텍스트 저장
@@ -1093,23 +1128,35 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
     private void CreateChoiceArea(Transform parent) // 하단 선택지 영역 생성
     {
-        GameObject choiceObject =
-            new GameObject(
-                "Choices",
-                typeof(RectTransform),
-                typeof(VerticalLayoutGroup),
-                typeof(ContentSizeFitter)); // 선택지 영역 오브젝트 생성
-
-        choiceObject.transform.SetParent(parent, false); // 선택지 영역을 패널 하위에 배치
-
-        choiceContainer =
-            choiceObject.GetComponent<RectTransform>(); // 선택지 컨테이너 저장
-
-        choiceContainer.anchorMin = new Vector2(0f, 0f); // 선택지 영역 하단 좌측 앵커 설정
-        choiceContainer.anchorMax = new Vector2(1f, 0f); // 선택지 영역 하단 우측 앵커 설정
-        choiceContainer.pivot = new Vector2(0.5f, 0f); // 선택지 영역 하단 피벗 설정
-        choiceContainer.offsetMin = new Vector2(56f, ChoiceBottom); // 선택지 영역 좌하단 여백 설정
-        choiceContainer.offsetMax = new Vector2(-56f, 132f); // 선택지 영역 우상단 여백 설정
+        var list = PreparationUi.CreatePanel("Choices", parent, Vector2.zero, Vector2.right); // 하단 목록 패널 생성
+        list.offsetMin = new Vector2(48f, ChoiceBottom - 8f); // 목록 좌하단 여백
+        LobbyUiArt.Apply(list.GetComponent<Image>(), "FormationPanel"); // 목록 뒤 금속 테두리 배경 적용
+        choiceScroll = list.gameObject.AddComponent<ScrollRect>(); // 휠과 드래그 입력 연결
+        choiceScroll.horizontal = false; // 수평 이동 차단
+        choiceScroll.movementType = ScrollRect.MovementType.Clamped; // 첫 줄과 끝 줄에서 이동 제한
+        choiceScroll.scrollSensitivity = ChoiceHeight + ChoiceGap; // 휠 이동량을 한 줄로 설정
+        var viewport = PreparationUi.CreatePanel("Viewport", list, Vector2.zero, Vector2.one); // 선택지가 보이는 영역
+        viewport.GetComponent<Image>().color = Color.clear; // 배경을 보여주는 투명 입력 영역
+        viewport.offsetMin = new Vector2(12f, 8f); // 목록 안쪽 여백
+        viewport.gameObject.AddComponent<RectMask2D>(); // 보이지 않는 버튼의 렌더와 클릭 차단
+        choiceScroll.viewport = viewport; // 스크롤 표시 영역 지정
+        GameObject choiceObject = new GameObject("Rows", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter)); // 높이가 늘어나는 버튼 목록
+        choiceContainer = choiceObject.GetComponent<RectTransform>(); // 선택지 목록 영역 저장
+        choiceContainer.SetParent(viewport, false); // 잘림 영역 안에 목록 배치
+        PreparationUi.Stretch(choiceContainer, Vector2.up, Vector2.one); // 상단 기준으로 가로 폭 채우기
+        choiceContainer.pivot = new Vector2(0.5f, 1f); // 첫 줄부터 아래로 버튼 배치
+        choiceScroll.content = choiceContainer; // 이동 대상 연결
+        var track = PreparationUi.CreatePanel("ScrollTrack", list, Vector2.right, Vector2.one); // 오른쪽 스크롤 홈
+        track.offsetMin = new Vector2(-32f, 10f); // 홈의 폭과 아래 여백
+        track.offsetMax = new Vector2(-10f, -10f); // 위와 오른쪽 여백
+        var grip = PreparationUi.CreatePanel("Handle", track, Vector2.zero, Vector2.one); // 드래그 손잡이 생성
+        grip.GetComponent<Image>().color = new Color(0.82f, 0.65f, 0.34f); // 금빛 손잡이 색상
+        var bar = track.gameObject.AddComponent<Scrollbar>(); // 수직 스크롤바 생성
+        bar.direction = Scrollbar.Direction.BottomToTop; // 맨 위 값을 목록 시작에 연결
+        bar.handleRect = grip; // 움직일 손잡이 지정
+        bar.targetGraphic = grip.GetComponent<Image>(); // 손잡이 입력 강조 연결
+        choiceScroll.verticalScrollbar = bar; // 목록과 스크롤바 값 동기화
+        choiceScroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide; // 다음 프레임에도 짧은 목록의 손잡이 숨김 유지
 
         VerticalLayoutGroup layoutGroup =
             choiceObject.GetComponent<VerticalLayoutGroup>(); // 세로 레이아웃 그룹 조회
