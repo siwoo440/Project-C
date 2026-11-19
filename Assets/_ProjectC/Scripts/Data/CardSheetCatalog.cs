@@ -27,26 +27,36 @@ public sealed class CardSheetEntry // 카드 시트 원본 항목
 } // 항목 종료
 
 [Serializable] // 카드 목록 직렬화
-public sealed class CardSheetCatalog // 카드 시트 원본 목록
+public sealed class CardSheetCatalog : ISerializationCallbackReceiver // 카드 시트 원본 목록
 { // 목록 시작
-    [SerializeField] private List<CardSheetEntry> entries = new List<CardSheetEntry>(); // 카드 시트 항목 목록
-    public IReadOnlyList<CardSheetEntry> Entries => entries; // 읽기 전용 항목 조회
+    [SerializeField] private List<CardSheetEntry> entries = new List<CardSheetEntry>(); // 원본 순서의 카드 시트 항목
+    private static CardSheetCatalog cached; // 현재 플레이 실행에서 읽은 카드 시트
+    [NonSerialized] private SheetNameIndex<CardSheetEntry> names; // 현재 원본 행의 이름 색인
+    private SheetNameIndex<CardSheetEntry> Names => names ??= new SheetNameIndex<CardSheetEntry>(entries, entry => entry.Name); // 현재 목록의 첫 조회에서만 색인 구성
+    public IReadOnlyList<CardSheetEntry> Entries => Names.Rows; // 읽기 전용 원본 행 조회
 
     public static CardSheetCatalog Load() // 카드 시트 목록 불러오기
     { // 불러오기 시작
-        TextAsset source = Resources.Load<TextAsset>("CardSheetCatalog"); // 카드 시트 리소스 조회
-        return source == null ? null : JsonUtility.FromJson<CardSheetCatalog>(source.text); // 자료 변환 결과 반환
+        return SheetCatalogCache.Load("CardSheetCatalog", ref cached); // 성공한 카드 시트 재사용
     } // 불러오기 종료
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] // 도메인 유지 설정에서도 실행 시작마다 초기화
+    private static void ResetCache() // 다음 실행의 카드 시트 새로 읽기
+    { // 실행 초기화 시작
+        cached = null; // 이전 실행의 원본과 색인 해제
+    } // 실행 초기화 종료
 
     public CardSheetEntry FindByName(string cardName) // 이름으로 카드 조회
     { // 검색 시작
-        foreach (CardSheetEntry entry in entries) // 카드 항목 순회
-        { // 항목 검색 시작
-            if (entry != null && string.Equals(entry.Name, cardName, StringComparison.Ordinal)) // 정확한 이름 확인
-            { // 일치 처리 시작
-                return entry; // 일치 항목 반환
-            } // 일치 처리 종료
-        } // 항목 검색 종료
-        return null; // 일치 항목 없음 반환
+        return Names.Find(cardName); // 대소문자와 원래 순서가 일치하는 첫 행 반환
     } // 검색 종료
+
+    void ISerializationCallbackReceiver.OnBeforeSerialize() // 원본 행만 직렬화
+    { // 직렬화 전 처리 시작
+    } // 직렬화 전 처리 종료
+
+    void ISerializationCallbackReceiver.OnAfterDeserialize() // 동일 객체의 JSON 덮어쓰기 반영
+    { // 시트 교체 처리 시작
+        names = null; // 교체 전 행의 색인과 읽기 전용 목록 해제
+    } // 시트 교체 처리 종료
 } // 목록 종료
