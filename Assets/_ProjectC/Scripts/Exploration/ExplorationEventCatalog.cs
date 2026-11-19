@@ -5,8 +5,9 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public const int CurrentVersion = 1; // 재폭풍의 눈을 포함한 이벤트 목록 버전
-    private static List<ExplorationEventData> currentEvents; // 새 층의 이벤트 목록
+    public const int CurrentVersion = 2; // 잿더미 조사를 포함한 최신 층의 이벤트 버전
+    private static List<ExplorationEventData> ashstormEvents; // 재폭풍의 눈까지 포함한 이전 목록
+    private static List<ExplorationEventData> currentEvents; // 최신 층의 이벤트 목록
 
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
     { // 버전별 이벤트 조회 시작
@@ -15,10 +16,20 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 목록 선택 시작
             return original; // 기존 층의 이벤트 배치 유지
         } // 이전 목록 선택 종료
-        if (currentEvents == null) // 새 목록 최초 생성 여부 확인
+        if (ashstormEvents == null) // 재폭풍의 눈 목록 최초 생성 여부 확인
+        { // 이전 목록 구성 시작
+            ashstormEvents = new List<ExplorationEventData>(original); // 최초 이벤트 목록 복사
+            ashstormEvents.Add(AshstormEyeEvent.Create()); // 재폭풍의 눈 추가
+            ashstormEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 이전 버전 배치 순서 유지
+        } // 이전 목록 구성 종료
+        if (version == 1) // 201일차부터 사용한 저장 버전 확인
+        { // 이전 버전 반환 시작
+            return ashstormEvents; // 같은 층의 기존 네 이벤트 보존
+        } // 이전 버전 반환 종료
+        if (currentEvents == null) // 최신 목록 최초 생성 여부 확인
         { // 새 목록 생성 시작
-            currentEvents = new List<ExplorationEventData>(original); // 기존 이벤트 복사
-            currentEvents.Add(AshstormEyeEvent.Create()); // 윈터폴 재폭풍의 눈 추가
+            currentEvents = new List<ExplorationEventData>(ashstormEvents); // 이전 버전 이벤트 복사
+            currentEvents.Add(AshPileEvent.Create()); // 윈터폴 잿더미 조사 추가
             currentEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 고정 시드용 ID 순서 정렬
         } // 새 목록 생성 종료
         return currentEvents; // 새 층의 이벤트 목록 반환

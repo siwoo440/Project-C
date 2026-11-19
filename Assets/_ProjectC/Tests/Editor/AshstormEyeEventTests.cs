@@ -14,7 +14,7 @@ public sealed class AshstormEyeEventTests // 재폭풍의 눈 통합 검사
     { // 원본 검사 시작
         var previous = ExplorationEventCatalog.LoadEvents(0); // 이전 저장에서 사용할 이벤트 조회
         CollectionAssert.AreEqual(new[] { "event_abandoned_crate", "event_damaged_terminal", "event_supply_cache" }, previous.Select(item => item.EventId)); // 이전 세 종류와 난수 선택 순서 확인
-        var current = ExplorationEventCatalog.LoadEvents(); // 신규 층의 이벤트 조회
+        var current = ExplorationEventCatalog.LoadEvents(1); // 재폭풍의 눈이 추가된 당시의 네 이벤트 조회
         Assert.AreEqual(previous.Count + 1, current.Count); // 기존 이벤트와 신규 이벤트 공존 확인
         ExplorationEventData eye = current.Single(item => item.EventId == AshstormEyeEvent.Id); // 실제 생성 가능한 재폭풍의 눈 조회
         Assert.IsNotNull(eye.IllustrationSprite); // 전용 삽화 연결 확인
@@ -39,7 +39,7 @@ public sealed class AshstormEyeEventTests // 재폭풍의 눈 통합 검사
             Assert.IsTrue(session.MarkEventResolved(eventId)); // 이전 이벤트의 처리 상태 기록
             Assert.IsTrue(ExplorationSaveService.Save(path, Vector3.right)); // 실제 회차 저장 생성
             string modern = File.ReadAllText(path); // 최신 저장 내용 읽기
-            string legacy = modern.Replace("\"eventPoolVersion\":1,", string.Empty); // 과거 형식처럼 버전 필드 생략
+            string legacy = modern.Replace("\"eventPoolVersion\":" + ExplorationEventCatalog.CurrentVersion + ",", string.Empty); // 최신 저장에서 과거 형식처럼 버전 필드 생략
             Assert.AreNotEqual(modern, legacy); // 실제 버전 필드 제거 확인
             File.WriteAllText(path, legacy); // 이전 탐사 저장 재현
             Assert.IsTrue(ExplorationSaveService.Load(path)); // 이전 저장 복원 확인

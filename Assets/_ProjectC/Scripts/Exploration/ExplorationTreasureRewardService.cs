@@ -275,7 +275,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         return true; // 강화 지급 성공 반환
     }
 
-    private static List<ShopOfferData> GetValidOffers(ShopOfferType offerType) // 상점 카탈로그 기반 보상 후보 조회
+    internal static List<ShopOfferData> GetValidOffers(ShopOfferType offerType) // 탐사 보물과 이벤트의 실제 보상 후보 조회
     {
         List<ShopOfferData> result = new List<ShopOfferData>(); // 유효 상품 목록 생성
         ShopRunManager shopManager = ShopRunManager.Instance; // 현재 상점 관리자 조회
