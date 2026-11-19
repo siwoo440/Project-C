@@ -62,10 +62,11 @@ public sealed class MinorCardBuffWindowView : MonoBehaviour, IDisposable
         buttonRect.anchorMin = Vector2.one;
         buttonRect.anchorMax = Vector2.one;
         buttonRect.pivot = Vector2.one;
-        buttonRect.sizeDelta = new Vector2(145f, 42f);
-        buttonRect.anchoredPosition = new Vector2(-170f, -20f);
+        buttonRect.sizeDelta = new Vector2(54f, 50f);
+        buttonRect.anchoredPosition = new Vector2(-82f, -20f);
         toggleButton.onClick.AddListener(TogglePanel);
 
+        BattleUiArt.SetHudIcon(toggleButton, "HudUpgrade"); // 강화 계급장 표시
         toggleText = CreateText("Label", toggleButton.transform, 17f, Color.white, TextAlignmentOptions.Center);
         Stretch(toggleText.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
     }
@@ -124,7 +125,8 @@ public sealed class MinorCardBuffWindowView : MonoBehaviour, IDisposable
         int count = controller.SelectedCards.Count;
         if (toggleText != null)
         {
-            toggleText.text = count > 0 ? $"현재 강화 ({count})" : "현재 강화";
+            toggleText.text = count > 0 ? count.ToString() : string.Empty; // 현재 강화 수량 배지
+            toggleText.alignment = TextAlignmentOptions.BottomRight; // 우하단 정렬
         }
 
         if (contentText == null)

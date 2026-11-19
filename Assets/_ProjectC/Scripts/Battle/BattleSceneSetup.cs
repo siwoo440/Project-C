@@ -192,6 +192,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         var exploration = ExplorationSessionManager.Instance; // 실제 교전을 요청한 탐사 상태
         bool enemyFirst = exploration != null && exploration.ActiveEncounter != null && exploration.WandererCry.EnemyStartsFirst; // 이번 교전의 고정 선제 여부
         int preparedActionCount = enemyFirst ? enemyActionRuntime.PrepareActions() : 0; // 선제 적이 즉시 실행할 행동 준비
+        handView.PrepareOpeningDeal(); // 첫 손패 순차 배분 예약
         if (!battleTurn.StartBattle(initialHandSize, enemyFirst, () => ApplyOpeningExplorationEffects(exploration))) // 준비된 양 진영과 탐사 효과로 교전 시작
         { // 전투 시작 실패 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 턴 시작에 실패했습니다.", this); // 전투 시작 오류 출력
@@ -225,7 +226,18 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         cardActionController.CardUsed += HandleTutorialCardUsed; // 실제 카드 사용 감지 연결
         battleTurn.PhaseStarted += HandleTutorialPhaseStarted; // 실제 진영 턴 감지 연결
         battleTurn.BattleCompleted += HandleTutorialBattleCompleted; // 전투 종료 시 안내 숨김 연결
-        tutorialProgress.StartIfNeeded(GraphicsAudioSettingsRuntime.Current.GetIndex("tutorial") == 0); // 사용자 설정에 따른 첫 안내 자동 시작
+        StartCoroutine(ShowTutorialAfterOpeningDeal()); // 첫 배분 뒤 자동 안내 표시
+    } // 전투 안내 연결 종료
+    private IEnumerator ShowTutorialAfterOpeningDeal() // 드로우가 보인 뒤 첫 도움말 열기
+    { // 도움말 자동 시작 준비
+        while (handView.IsDealingOpeningHand) // 첫 손패 정렬 완료 대기
+        { // 연출 프레임 대기
+            yield return null; // 다음 프레임까지 대기
+        } // 연출 대기 종료
+        if (!battleTurn.IsBattleEnded && !tutorialProgress.IsActive) // 진행 중인 전투와 수동 다시 보기 확인
+        { // 자동 안내 시작
+            tutorialProgress.StartIfNeeded(GraphicsAudioSettingsRuntime.Current.GetIndex("tutorial") == 0); // 사용자 설정과 완료 기록 반영
+        } // 자동 안내 시작 종료
     } // 전투 안내 초기화 종료
     private RectTransform FindTutorialTarget(BattleTutorialStep step) // 단계별 실제 화면 대상 조회
     { // 안내 대상 조회 시작

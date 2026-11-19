@@ -52,14 +52,15 @@ public sealed class RelicDebugWindow : MonoBehaviour, IDisposable // 유물 획�
 
     private void CreateToggleButton() // 디버그 창 표시 전환 버튼 생성
     {
-        Button toggleButton = CreateButton("RelicDebugToggle", transform, "유물 DEBUG", new Color(0.16f, 0.16f, 0.2f, 0.98f)); // 우측 상단 토글 버튼 생성
+        Button toggleButton = CreateButton("RelicDebugToggle", transform, string.Empty, new Color(0.16f, 0.16f, 0.2f, 0.98f)); // 우측 상단 토글 버튼 생성
         LobbyUiArt.Apply(toggleButton.image, "Button"); // 기존 제작 금속 이미지로 유물 버튼 적용
         RectTransform buttonRect = toggleButton.GetComponent<RectTransform>(); // 토글 버튼 사각형 조회
         buttonRect.anchorMin = Vector2.one; // 우측 상단 최소 앵커 적용
         buttonRect.anchorMax = Vector2.one; // 우측 상단 최대 앵커 적용
         buttonRect.pivot = Vector2.one; // 우측 상단 피벗 적용
-        buttonRect.sizeDelta = new Vector2(140f, 42f); // 토글 버튼 크기 적용
+        buttonRect.sizeDelta = new Vector2(54f, 50f); // 토글 버튼 크기 적용
         buttonRect.anchoredPosition = new Vector2(-20f, -20f); // 토글 버튼 화면 위치 적용
+        BattleUiArt.SetHudIcon(toggleButton, "HudRelic"); // 유물 수정 표시
         toggleButton.onClick.AddListener(TogglePanel); // 패널 표시 전환 연결
     }
 
