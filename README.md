@@ -37,7 +37,7 @@
 | ![시작 씬에서 메인 메뉴로 전환할 때의 로딩 화면](Devlogs/Day195/BootLoading.png) | ![새로하기·이어하기·설정·나가기가 있는 메인 메뉴](Devlogs/Day195/MainMenu.png) |
 | [00_Boot](Assets/_ProjectC/Scenes/00_Boot.unity) · 게임 시스템을 준비하고 메인 메뉴로 이동한다. | [10_MainMenu](Assets/_ProjectC/Scenes/10_MainMenu.unity) · 새 게임과 저장한 게임을 시작한다. |
 | **거점** | **탐사** |
-| ![세룰리온 거점에서 캐릭터·탐사·설비를 선택하는 화면](Devlogs/Day195/Lobby.png) | ![탐사 플레이어와 던전 통로, 왼쪽 아래 파티원과 오른쪽 위 자원 현황](Devlogs/Day195/Exploration.png) |
+| ![세룰리온 거점에서 캐릭터·탐사·설비를 선택하는 화면](Devlogs/Day195/Lobby.png) | ![검은 외곽선으로 바닥과 벽의 각 칸을 구분한 윈터폴 탐사 지도](Devlogs/Day196/DungeonGrid.png) |
 | [20_Lobby](Assets/_ProjectC/Scenes/20_Lobby.unity) · 출전을 준비하고 자원과 캐릭터를 관리한다. | [30_Exploration](Assets/_ProjectC/Scenes/30_Exploration.unity) · 지도를 걸으며 방을 찾고 파티와 자원을 관리한다. |
 | **전투** | **설정** |
 | ![일반 몬스터가 노리는 아군, 파티의 행동력과 손패](Devlogs/Day195/NormalBattle.png) | ![설정의 그래픽 탭에서 해상도와 프레임 제한을 확인하는 화면](Devlogs/Day195/Settings.png) |
@@ -92,7 +92,7 @@
 | **상점에서 카드 소유자 선택 · 165일차** | **보유 유물 판매 · 162일차** |
 | ![상점에서 공용 카드 구매 전 소유자를 고르는 화면](Devlogs/Day165/CardOwnerSelection.png) | ![상점의 유물 판매 목록](Devlogs/Day162/RelicSalesShop.png) |
 
-162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png)
+162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png) · [네 명을 편성한 탐사 화면 · 195일차](Devlogs/Day195/Exploration.png)
 
 </details>
 
