@@ -434,4 +434,32 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c82302, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_CRACKED_COMPASS
+    offerType: 1
+    price: 204
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 81799888f4c64ed6b65a885bfc12ebdb, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLOODSTAINED_SYRINGE
+    offerType: 1
+    price: 228
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: dec289def9324d60ab2e6a77de488b11, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WORN_DIE
+    offerType: 1
+    price: 261
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: d700e5488a82424cb64c2b4bb59f8b57, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SEALED_DAGGER
+    offerType: 1
+    price: 284
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 9ee7d764a43b42f58c7d8d676039e465, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

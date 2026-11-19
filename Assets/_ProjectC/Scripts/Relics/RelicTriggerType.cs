@@ -11,5 +11,8 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     StatusApplied, // 상태 이상 적용 시점
     MentalChanged, // 정신력 변화 시점
     UnitDefeated, // 유닛 처치 시점
-    BattleEnded // 전투 종료 시점
+    BattleEnded, // 전투 종료 시점
+    BattleVictory, // 전투 승리 결과 저장 직전
+    FirstNormalRoom, // 탐사 출발 뒤 첫 일반 방 진입
+    CardRandomTarget // 카드의 무작위 대상 추첨
 }

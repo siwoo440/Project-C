@@ -172,7 +172,8 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 재굴림 실패 반환
         } // 재굴림 불가 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 선택 적의 예정 공격 조회
-        BattleUnitRuntime target = SelectTarget(EnemyTargetRule.RandomLiving); // 기존 대상을 포함한 생존 아군 재추첨
+        List<BattleUnitRuntime> living = CollectLivingAllies(); // 운명의 카드로 다시 정할 생존 대상 목록
+        BattleUnitRuntime target = living[RelicRandomCardTarget.PickIndex(living.Count, random.Next)]; // 카드의 무작위 재지정에 보유 주사위 반영
         if (!action.ChangeTarget(target)) // 재추첨된 대상 적용 확인
         { // 대상 적용 실패 시작
             return false; // 재굴림 실패 반환

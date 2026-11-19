@@ -120,6 +120,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e03, type: 2}
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c82301, type: 2}
   - {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c82302, type: 2}
+  - {fileID: 11400000, guid: 81799888f4c64ed6b65a885bfc12ebdb, type: 2}
+  - {fileID: 11400000, guid: dec289def9324d60ab2e6a77de488b11, type: 2}
+  - {fileID: 11400000, guid: d700e5488a82424cb64c2b4bb59f8b57, type: 2}
+  - {fileID: 11400000, guid: 9ee7d764a43b42f58c7d8d676039e465, type: 2}
   consumables:
   - {fileID: 11400000, guid: 45f2df39a8eb4ba1950ca04e30ca71cc, type: 2}
   - {fileID: 11400000, guid: 2516d23cf829422d92957bc7f2aabdd9, type: 2}

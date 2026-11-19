@@ -32,7 +32,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         { // 추가 대상 없음 처리 시작
             return null; // 연속 공격 생략 반환
         } // 추가 대상 없음 처리 종료
-        BattleUnitRuntime target = candidates[UnityEngine.Random.Range(0, candidates.Count)]; // 다른 생존 적 중 하나 무작위 선택
+        BattleUnitRuntime target = candidates[RelicRandomCardTarget.PickIndex(candidates.Count, count => UnityEngine.Random.Range(0, count))]; // 태양의 추가 대상 추첨에 보유 주사위 반영
         if (!BattleHitChance.Roll(card.OwnerUnit)) // 두 번째 공격의 독립 명중 판정
         { // 추가 공격 빗나감 처리 시작
             missed = true; // 빗나감 결과 저장

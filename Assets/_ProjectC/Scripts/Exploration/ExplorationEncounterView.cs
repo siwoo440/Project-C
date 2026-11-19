@@ -51,6 +51,7 @@ public sealed class ExplorationEncounterView : MonoBehaviour // 탐사 조우 �
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
+        GetComponentInParent<ExplorationRoomRoleRuntime>()?.TryVisitCurrentRoom(); // 첫 방의 물리 접촉이 먼저인 경우에도 나침반 우선 판정
         SceneFlowManager sceneFlowManager = SceneFlowManager.Instance; // 전투 씬 전환 관리자 조회
         if (sceneFlowManager == null || sceneFlowManager.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("40_Battle") || !sessionManager.CanBeginEncounter(runtimeEncounterId, encounterData)) // 정상 조우와 씬 이동 가능 여부 확인
         { // 전투 진입 불가 처리 시작
