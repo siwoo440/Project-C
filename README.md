@@ -91,6 +91,10 @@
 | ![보물로 나온 공용 카드를 받을 파티원을 고르는 창](Devlogs/Day166/TreasureOwnerSelection.png) | ![탐사 중 보유 유물 목록과 선택한 유물 정보](Devlogs/Day189/RelicWindow.png) |
 | **상점에서 카드 소유자 선택 · 165일차** | **보유 유물 판매 · 162일차** |
 | ![상점에서 공용 카드 구매 전 소유자를 고르는 화면](Devlogs/Day165/CardOwnerSelection.png) | ![상점의 유물 판매 목록](Devlogs/Day162/RelicSalesShop.png) |
+| **탐사 이동 튜토리얼 · 200일차** | **보물 방 튜토리얼 · 200일차** |
+| ![실제 던전 지도로 이동을 안내하는 첫 페이지](Devlogs/Day200/GuideMap.png) | ![보물 방에서 카드를 받을 파티원을 고르는 방법](Devlogs/Day200/GuideTreasure.png) |
+
+이벤트·휴식·상점 안내도 게임에서 읽을 수 있다. [탐사 튜토리얼 다섯 화면](Devlogs/Day200/README.md) · [회복 유물 세 종류](Devlogs/Day198/HealingRelics.png) · [성배 카드 다섯 장](Devlogs/Day197/CupCards.png)
 
 162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png) · [네 명을 편성한 탐사 화면 · 195일차](Devlogs/Day195/Exploration.png)
 
