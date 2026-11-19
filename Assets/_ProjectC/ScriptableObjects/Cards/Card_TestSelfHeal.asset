@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_TEST_SELF_HEAL
   displayName: Test Self Heal
-  description: "카드 소유자의 체력을 회복한다."
+  description: 카드 소유자의 체력을 12 회복합니다.
   artwork: {fileID: 0}
   cardType: 2
   targetType: 0

@@ -104,9 +104,10 @@ public sealed class BurntCartEventTests // 수레 선택과 매복 및 표식 �
         Assert.AreEqual(removal, shop.GetCardRemovalPrice()); // 카드 제거 서비스 할인 제외 확인
         var product = Clickable("Offer_" + offer.OfferId); // 실제 상품 목록의 카드 버튼 조회
         AssertPrice(product, discounted); // 실제 상품 목록 가격 확인
-        product.onClick.Invoke(); // 실제 소유자 선택 목록 열기
-        AssertPrice(Clickable("ChooseCardOwner_" + owner.CharacterId), discounted); // 소유자 선택 가격 확인
-        Clickable("BackToProducts").onClick.Invoke(); // 소유자 지정 취소
+        product.onClick.Invoke(); // 실제 구매 확인 화면 열기
+        Assert.AreEqual($"구매 가격   {discounted:N0} Gold", GameObject.Find("PurchasePrice").GetComponent<TMP_Text>().text); // 확인 화면의 표식 할인 가격
+        Assert.IsFalse(Clickable("ConfirmPurchase").interactable); // 잔액 부족 시 실제 결제 차단
+        Clickable("CancelPurchase").onClick.Invoke(); // 골드가 없는 상품 확인 취소
         Assert.AreEqual(ShopPurchaseResult.InsufficientGold, shop.TryPurchase(offer, owner)); // 지갑 부족 구매 실패 확인
         Assert.AreEqual(0, shop.Gold); // 실패와 취소 후 차감 없음 확인
         Object.FindFirstObjectByType<ShopPrototypeView>().SendMessage("CloseShop"); // 구매 없이 상점 이탈
@@ -120,6 +121,8 @@ public sealed class BurntCartEventTests // 수레 선택과 매복 및 표식 �
         shop.AddDebugGold(1000); // 실제 두 상품 결제를 위한 테스트 지갑 준비
         owner = BattleResultManager.Instance.ActiveParty.Members[0]; // 복원한 구매자 조회
         Clickable("Offer_" + offer.OfferId).onClick.Invoke(); // 실제 공용 상품 선택
+        Clickable("ConfirmPurchase").onClick.Invoke(); // 할인 가격 확인 뒤 소유자 선택
+        AssertPrice(Clickable("ChooseCardOwner_" + owner.CharacterId), discounted); // 결제 직전까지 같은 할인 가격 확인
         Clickable("ChooseCardOwner_" + owner.CharacterId).onClick.Invoke(); // 구매자 지정과 최초 결제
         Assert.IsTrue(shop.IsPurchased(offer)); // 첫 상품 지급과 판매 완료 확인
         Assert.AreEqual(1000 - discounted, shop.Gold); // 최초 한 상품만 할인한 차감 확인

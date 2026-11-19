@@ -84,6 +84,7 @@ public sealed class CommonCardShopTests // 공용 카드 상점 검사
             Assert.IsTrue(view.TryOpenFromRoom(shop.ActiveRoomRuntimeId)); // 상점 방 방문 성공 확인
             Transform content = view.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 실제 상품 목록 조회
             content.Find("Offer_SHOP_SHEET_HEAVY_STRIKE").GetComponent<Button>().onClick.Invoke(); // 공용 카드 선택
+            GameObject.Find("ConfirmPurchase").GetComponent<Button>().onClick.Invoke(); // 지불 조건 확인 뒤 소유자 선택
             TMP_Text resultText = view.transform.Find("ShopOverlay/ShopPanel/ResultText").GetComponent<TMP_Text>(); // 실제 안내 문구 조회
             StringAssert.Contains(offer.DisplayName, resultText.text); // 선택한 카드 이름 표시 확인
             Assert.AreEqual(beforeGold, resources.Gold); // 소유자 선택 전 골드 유지 확인
@@ -94,6 +95,7 @@ public sealed class CommonCardShopTests // 공용 카드 상점 검사
             Assert.IsFalse(shop.IsPurchased(offer)); // 선택 취소 시 상품 유지 확인
             yield return null; // 이전 선택 버튼 정리 대기
             content.Find("Offer_SHOP_SHEET_HEAVY_STRIKE").GetComponent<Button>().onClick.Invoke(); // 공용 카드 다시 선택
+            GameObject.Find("ConfirmPurchase").GetComponent<Button>().onClick.Invoke(); // 확인한 공용 카드의 소유자 다시 선택
             Transform secondButton = content.Find("ChooseCardOwner_" + second.CharacterId); // 두 번째 파티원 선택 조회
             Assert.IsNotNull(secondButton); // 두 번째 파티원 선택 표시 확인
             secondButton.GetComponent<Button>().onClick.Invoke(); // 직접 선택한 파티원에게 구매
