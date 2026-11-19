@@ -48,13 +48,23 @@ public sealed class RelicRunManager : MonoBehaviour // 탐사 회차 유물 상�
     public RelicAcquireResult TryAcquire(RelicData relicData) // 유물 획득 요청
     {
         EnsureRuntimeData(); // 유물 런타임 준비
-        return inventoryRuntime.TryAcquire(relicData); // 유물 획득 결과 반환
+        var result = inventoryRuntime.TryAcquire(relicData); // 실제 획득과 중복 보상 처리
+        if (result == RelicAcquireResult.Acquired && relicData.EffectType == RelicEffectType.ExtraPotionSlot && inventoryRuntime.ContainsRelic(relicData.RelicId)) // 획득 알림 이후에도 보유한 포션 보관대 확인
+        { // 보관대 획득 시작
+            ConsumableRunManager.EnsureInstance().Inventory.SetPotionRack(true); // 탐사와 전투의 포션칸 즉시 개방
+        } // 보관대 획득 종료
+        return result; // 실제 유물 획득 결과
     }
 
     public bool TryRemove(string relicId) // 유물 제거 요청
     {
         EnsureRuntimeData(); // 유물 런타임 준비
-        return inventoryRuntime.TryRemove(relicId); // 유물 제거 결과 반환
+        var rack = inventoryRuntime.FindEffect(RelicEffectType.ExtraPotionSlot); // 보유한 포션 보관대 조회
+        if (rack != null && rack.RelicId == relicId && !ConsumableRunManager.EnsureInstance().Inventory.SetPotionRack(false)) // 기본칸 이전 가능 여부와 용량 전환
+        { // 제거 중단 시작
+            return false; // 보관대와 포션 모두 보존
+        } // 제거 중단 종료
+        return inventoryRuntime.TryRemove(relicId); // 용량 확인 후 유물 제거
     }
 
     private void EnsureRuntimeData() // 내부 런타임 데이터 준비

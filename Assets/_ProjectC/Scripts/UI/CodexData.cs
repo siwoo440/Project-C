@@ -84,6 +84,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 행동 제한 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 다음 행동 취소 또는 기절 설명
                     } // 행동 제한 설명 종료
+                    else if (effect == BattleStatusEffectType.AttackPowerDown) // 청동 경보장치의 한 턴 약화
+                    { // 경보 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1) + ". 적 턴이 끝나면 해제."; // 적용 공격과 종료 시점 표시
+                    } // 경보 설명 종료
                     Sprite icon = description.Length > 0 ? BattleStatusIconArt.Get(effect) : null; // 검 카드의 독립 상태 아이콘 조회
                     entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, icon)); // 실제 상태 이름과 연결된 상세 정보 등록
                 } // 상태 효과 추가 종료

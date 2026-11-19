@@ -324,6 +324,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         { // 판매 조건 미충족 시작
             return CompleteTransaction(ShopPurchaseResult.Unavailable, "판매할 수 없거나 골드 한도를 초과합니다."); // 판매 조건 실패 알림
         } // 판매 조건 미충족 종료
+        if (relic.EffectType == RelicEffectType.ExtraPotionSlot && !ConsumableRunManager.EnsureInstance().Inventory.CanRemovePotionRack) // 추가칸에서 옮길 빈 기본칸 확인
+        { // 보관대 판매 중단 시작
+            return CompleteTransaction(ShopPurchaseResult.Unavailable, "기본 소모품 칸을 하나 비워야 포션 보관대를 팔 수 있습니다."); // 포션 보존 조건 안내
+        } // 보관대 판매 중단 종료
         if (!relicManager.TryRemove(relic.RelicId)) // 유물 제거 결과 확인
         { // 유물 제거 실패 시작
             return CompleteTransaction(ShopPurchaseResult.Unavailable, "보유한 유물을 찾을 수 없습니다."); // 제거 실패 알림
@@ -385,7 +389,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             case ShopOfferType.Relic: // 유물 상품 지급 검사
                 return !RelicRunManager.EnsureInstance().Inventory.ContainsRelic(offer.Relic.RelicId); // 유물 중복 없음 반환
             case ShopOfferType.Potion: // 포션 상품 지급 검사
-                return ConsumableRunManager.EnsureInstance().Inventory.Count < ConsumableInventoryRuntime.SlotCount; // 소모품 빈 슬롯 여부 반환
+                return ConsumableRunManager.EnsureInstance().Inventory.CanAcquire(offer.Potion); // 포션 추가칸을 포함한 실제 구매 공간 확인
             default: // 알 수 없는 상품 검사
                 return false; // 지급 불가 반환
         } // 상품 지급 분기 종료

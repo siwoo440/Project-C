@@ -20,5 +20,12 @@ public enum RelicEffectType // 유물 효과 종류
     GainFirstTurnCapacity, // 첫 아군 턴 최대 행동력과 현재 행동력 증가
     CampHealthRecoveryBonus, // 캠프 체력 회복량 증가
     FreeCardRemoval, // 상점 카드 제거 비용 면제
-    PreventFirstHealthDamage // 첫 체력 피해 방지
+    PreventFirstHealthDamage, // 첫 체력 피해 방지
+    ExtraPotionSlot, // 포션 전용 보관칸 개방
+    HealthPotionBonus, // 회복 포션의 대상별 체력 추가
+    EnemyTurnAttackLoss, // 적 턴 시작 무작위 적 공격 약화
+    HealingCardBlock, // 회복 카드 사용자의 방어도 획득
+    ChaliceCardHealing, // 성배 카드 사용자의 체력 회복
+    FirstSwordDamage, // 첫 검 공격의 명중 보너스
+    FirstWandDamage // 첫 지팡이 마법 명중 보너스
 }

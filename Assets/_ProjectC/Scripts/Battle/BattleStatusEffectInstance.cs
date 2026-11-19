@@ -107,6 +107,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "기절"; // 기절 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "다음 공격 약화"; // 다음 공격 약화 표시
+            case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
+                return "공격력 감소"; // 청동 경보장치의 약화 표시
             case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
                 return "돌진 방어 감소"; // 돌진 약화 상태 이름
             case BattleStatusEffectType.Burn: // 화상 종류
@@ -151,7 +153,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -169,6 +171,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "절"; // 기절 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "약"; // 다음 공격 약화 표시
+            case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
+                return "공−"; // 청동 경보장치의 약화 표시
             case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
                 return "방"; // 물리 방어 감소 약칭
             case BattleStatusEffectType.Burn: // 화상 종류
@@ -231,6 +235,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "남은 턴 동안 적의 모든 행동 취소"; // 기절 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return $"다음 공격 한 번의 피해 {effectiveValue} 감소"; // 다음 공격 약화 표시
+            case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
+                return $"이번 적 턴의 물리·마법 직접 공격 피해 −{effectiveValue}"; // 청동 경보장치의 약화 표시
             case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
                 return $"이번 아군 턴 물리 방어력 −{effectiveValue}"; // 돌진의 적용 턴과 감소량 표시
             case BattleStatusEffectType.Burn: // 화상 종류

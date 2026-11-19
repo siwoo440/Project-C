@@ -9,6 +9,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
+    private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly WinterfallBossPhaseRuntime bossPhaseRuntime; // 선택적인 보스 페이즈 관리자
@@ -229,6 +230,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
     { // 카드 충돌 처리 시작
+        suitHitRelics.BeginCard(cardInstance, turnRuntime.CurrentRound, RelicRunManager.Instance?.Inventory); // 이번 피해 카드의 첫 직접 명중 보너스 예약
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
         worldCoordination.RecordCardUsed(cardInstance); // 세계 연계용 동료 전용 카드 사용 기록
@@ -805,6 +807,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 치명타 표시 시작
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
         } // 치명타 표시 종료
+        modifiedDamage = suitHitRelics.ApplyHitBonus(modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
         { // 돌진 후속 효과 시작
@@ -831,7 +834,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 타격 판정 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
-        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed); // 다른 적의 독립 명중과 피해 처리
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, suitHitRelics.ApplyHitBonus); // 다른 적의 독립 명중과 피해 처리
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

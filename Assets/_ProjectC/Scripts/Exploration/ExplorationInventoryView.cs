@@ -3,9 +3,10 @@ using UnityEngine; // 탐사 화면 객체 사용
 using UnityEngine.UI; // 아이템 칸 이미지와 배치 사용
 public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보유 아이템 화면
 { // 탐사 아이템 화면 시작
-    private readonly Image[] icons = new Image[ConsumableInventoryRuntime.SlotCount]; // 실제 아이템 이미지 목록
-    private readonly TMP_Text[] missingIcons = new TMP_Text[ConsumableInventoryRuntime.SlotCount]; // 이미지 누락 아이템 안내 목록
+    private readonly Image[] icons = new Image[ConsumableInventoryRuntime.MaximumSlotCount]; // 실제 아이템 이미지 목록
+    private readonly TMP_Text[] missingIcons = new TMP_Text[ConsumableInventoryRuntime.MaximumSlotCount]; // 이미지 누락 아이템 안내 목록
     private ConsumableInventoryRuntime inventory; // 실제 회차 소모품 보관함
+    private Transform slotGrid; // 추가 포션칸을 붙일 격자
     private GameObject tooltip; // 마우스 위치의 아이템 안내 화면
     private TMP_Text tooltipText; // 아이템 이름과 설명 글자
     private int hoveredIndex = -1; // 현재 마우스가 가리킨 칸
@@ -30,6 +31,7 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
     { // 아이템 보관함 연결 시작
         inventory = source; // 실제 회차 소모품 보관함 저장
         GameObject slots = new GameObject("Slots", typeof(RectTransform), typeof(GridLayoutGroup)); // 아이템 칸 격자 생성
+        slotGrid = slots.transform; // 유물 획득 후 포션칸 생성 위치 보관
         slots.transform.SetParent(transform, false); // 아이템 패널 안에 격자 연결
         RectTransform gridRect = slots.transform as RectTransform; // 격자 영역 조회
         gridRect.anchorMin = Vector2.zero; // 격자 왼쪽 아래 최소 앵커
@@ -127,7 +129,18 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
     } // 아이템 이름 숨김 종료
     private void Refresh() // 실제 보관함 변경에 따른 아이템 화면 갱신
     { // 아이템 화면 갱신 시작
-        for (int index = 0; index < icons.Length; index++) // 전체 아이템 칸 순회
+        int last = ConsumableInventoryRuntime.SlotCount; // 열한 번째 포션칸 위치
+        bool extra = inventory.Capacity > last; // 보관대의 실제 추가 용량 확인
+        if (extra && icons[last] == null) // 첫 보관대 획득 확인
+        { // 추가칸 생성 시작
+            CreateSlot(slotGrid, last); // 아이템 이름 안내가 있는 포션칸 생성
+        } // 추가칸 생성 종료
+        if (icons[last] != null) // 이미 생성한 포션칸 확인
+        { // 보관칸 노출 시작
+            icons[last].transform.parent.gameObject.SetActive(extra); // 판매 후 보관칸 숨김
+        } // 보관칸 노출 종료
+        ((RectTransform)transform).sizeDelta = new Vector2(316f, extra ? 194f : 132f); // 포션칸 세 번째 줄의 패널 크기 적용
+        for (int index = 0; index < inventory.Capacity; index++) // 실제 소유한 아이템 칸 순회
         { // 단일 아이템 칸 갱신 시작
             ConsumableItemData item = inventory.GetItem(index); // 현재 칸의 실제 아이템 조회
             icons[index].sprite = item != null ? item.Icon : null; // 실제 아이템 아이콘 연결

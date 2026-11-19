@@ -12,12 +12,14 @@ public sealed class ConsumableSlotBarView : MonoBehaviour, IDisposable // 왼쪽
     private static readonly Color MoveSelectedColor = new Color(0.75f, 0.58f, 0.12f, 1f); // 이동 선택 강조색
     private static readonly Color UseSelectedColor = new Color(0.18f, 0.55f, 0.85f, 1f); // 사용 선택 강조색
 
-    private readonly Button[] slotButtons = new Button[ConsumableInventoryRuntime.SlotCount]; // 슬롯 버튼 목록
-    private readonly Image[] slotBackgrounds = new Image[ConsumableInventoryRuntime.SlotCount]; // 슬롯 배경 목록
-    private readonly Image[] slotIcons = new Image[ConsumableInventoryRuntime.SlotCount]; // 슬롯 아이콘 목록
-    private readonly TMP_Text[] slotNames = new TMP_Text[ConsumableInventoryRuntime.SlotCount]; // 슬롯 이름 목록
+    private readonly Button[] slotButtons = new Button[ConsumableInventoryRuntime.MaximumSlotCount]; // 슬롯 버튼 목록
+    private readonly Image[] slotBackgrounds = new Image[ConsumableInventoryRuntime.MaximumSlotCount]; // 슬롯 배경 목록
+    private readonly Image[] slotIcons = new Image[ConsumableInventoryRuntime.MaximumSlotCount]; // 슬롯 아이콘 목록
+    private readonly TMP_Text[] slotNames = new TMP_Text[ConsumableInventoryRuntime.MaximumSlotCount]; // 슬롯 이름 목록
     private BattleConsumableController controller; // 전투 소모품 관리자
     private ConsumableInventoryRuntime inventory; // 공용 소모품 보관함
+    private RectTransform panelArea; // 보관대 획득에 맞춰 늘릴 패널 영역
+    private Transform slotGrid; // 포션 전용칸을 추가할 격자
     private TMP_Text modeText; // Alt 정리 상태 안내
     private bool altRearrangeMode; // 현재 Alt 정리 모드 여부
     private bool savedCursorVisible; // Alt 전 커서 표시 상태
@@ -96,6 +98,8 @@ public sealed class ConsumableSlotBarView : MonoBehaviour, IDisposable // 왼쪽
         RefreshModeText(); // 초기 Alt 안내 적용
 
         GameObject gridObject = new GameObject("Slots", typeof(RectTransform), typeof(GridLayoutGroup)); // 10칸 슬롯 부모 생성
+        panelArea = panelRect; // 실제 패널 크기 변경용 연결
+        slotGrid = gridObject.transform; // 나중에 열리는 추가 포션칸 연결
         gridObject.transform.SetParent(panelImage.transform, false); // 패널 자식 배치
         RectTransform gridRect = gridObject.GetComponent<RectTransform>(); // 슬롯 부모 사각형 조회
         Stretch(gridRect, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(12f, 12f), new Vector2(-12f, -42f)); // 슬롯 영역 패널 내부 배치
@@ -123,7 +127,7 @@ public sealed class ConsumableSlotBarView : MonoBehaviour, IDisposable // 왼쪽
         slotBackgrounds[slotIndex] = slotButton.GetComponent<Image>(); // 슬롯 배경 저장
 
         TMP_Text numberText = CreateText("Number", slotButton.transform, 12f, new Color(0.75f, 0.75f, 0.78f, 1f), TextAlignmentOptions.TopLeft); // 슬롯 번호 텍스트 생성
-        numberText.text = (slotIndex + 1).ToString(); // 일부터 십 슬롯 번호 적용
+        numberText.text = slotIndex == ConsumableInventoryRuntime.SlotCount ? "포션" : (slotIndex + 1).ToString(); // 일부터 십 슬롯 번호 적용
         Stretch(numberText.rectTransform, new Vector2(0f, 0.7f), new Vector2(0.3f, 1f), new Vector2(4f, 0f), new Vector2(0f, -2f)); // 번호 왼쪽 위 배치
 
         Image iconImage = CreateImage("Icon", slotButton.transform, new Color(0.16f, 0.16f, 0.19f, 1f)); // 소모품 아이콘 영역 생성
@@ -151,7 +155,18 @@ public sealed class ConsumableSlotBarView : MonoBehaviour, IDisposable // 왼쪽
             return; // 슬롯 갱신 중단
         }
 
-        for (int index = 0; index < ConsumableInventoryRuntime.SlotCount; index++) // 전체 슬롯 순회
+        bool extra = inventory.Capacity > ConsumableInventoryRuntime.SlotCount; // 포션 보관대 소유 여부
+        int last = ConsumableInventoryRuntime.SlotCount; // 추가 포션칸 위치
+        if (extra && slotButtons[last] == null) // 최초 보관대 획득 확인
+        { // 추가칸 생성 시작
+            CreateSlot(slotGrid, last); // 포션 전용 슬롯의 실제 버튼 생성
+        } // 추가칸 생성 종료
+        if (slotButtons[last] != null) // 기존 추가칸 확인
+        { // 추가칸 노출 시작
+            slotButtons[last].gameObject.SetActive(extra); // 소유 상태에 맞춘 표시와 클릭 허용
+        } // 추가칸 노출 종료
+        panelArea.sizeDelta = new Vector2(590f, extra ? 311f : 225f); // 세 번째 줄의 포션칸 영역 확보
+        for (int index = 0; index < inventory.Capacity; index++) // 실제 사용 가능한 슬롯 순회
         {
             ConsumableItemData itemData = inventory.GetItem(index); // 현재 슬롯 소모품 조회
             Image backgroundImage = slotBackgrounds[index]; // 현재 슬롯 배경 조회
