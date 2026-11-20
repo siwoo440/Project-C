@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetBashBack
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_BASH_BACK
+  displayName: "막아내고 밀기"
+  description: "적 하나에게 물리 피해 7을 주고 35% 확률로 그 적의 다음 행동을 한 번 취소한다."
+  artwork: {fileID: 21300000, guid: 4441a74ccff751fbaa248f6a14273c91, type: 3}
+  cardType: 4
+  targetType: 3
+  apCost: 2
+  effectType: 0
+  damageType: 1
+  effectValue: 7
+  shieldRule: 3
+  secondaryEffectValue: 35
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

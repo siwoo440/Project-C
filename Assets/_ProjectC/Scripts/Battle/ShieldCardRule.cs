@@ -8,5 +8,8 @@ public enum ShieldCardRule // 방패 카드의 전용 전투 규칙
     SplitBarrier, // 서로 다른 생존 아군 두 명에게 방어도 부여
     BalanceGuard, // 다음 유료 방패 카드 할인
     Taunt, // 적의 다음 단일 공격 우선 대상 지정
-    RendingShield // 현재 방어도 절반의 기본 피해
+    RendingShield, // 현재 방어도 절반의 기본 피해
+    FrontlineProtection, // 아군 전체 방어도와 출혈 저항
+    SuppressionStrike, // 명중한 적의 공격력 약화
+    ShieldOath // 지정 아군의 두 적 턴 동안 직접 피해 대신 받기
 } // 방패 규칙 목록 종료

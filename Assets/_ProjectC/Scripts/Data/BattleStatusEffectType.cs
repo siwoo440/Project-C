@@ -45,5 +45,8 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     ShieldBalance, // 다음 유료 방패 카드 기본 비용 감소
     ShieldCounter, // 방어도로 적 직접 공격 흡수 시 고정 반격
     GuardianCircle, // 받는 직접 피해 비율 경감
-    DangerInterception // 다음 적의 직접 공격 한 번에 대한 비율 경감
+    DangerInterception, // 다음 적의 직접 공격 한 번에 대한 비율 경감
+    FocusedDefense, // 다음 적 턴 동안 직접 피해 비율 감소
+    BleedResistance, // 적의 출혈 부여 시도 방어 확률
+    UndyingGuard // 체력이 한 점 이하가 될 때 한 번 버티는 효과
 } // 열거형 종료

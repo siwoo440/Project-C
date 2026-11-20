@@ -167,6 +167,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호의 원"; // 수호의 원의 표시 문구
             case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
                 return "위험 차단"; // 위험 차단의 표시 문구
+            case BattleStatusEffectType.FocusedDefense: // 집중 방어 상태 구분
+                return "집중 방어"; // 집중 방어의 실제 화면 문구
+            case BattleStatusEffectType.BleedResistance: // 출혈 저항 상태 구분
+                return "출혈 저항"; // 출혈 저항의 실제 화면 문구
+            case BattleStatusEffectType.UndyingGuard: // 불굴 상태 구분
+                return "불굴"; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -269,6 +275,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호"; // 수호의 원의 표시 문구
             case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
                 return "차단"; // 위험 차단의 표시 문구
+            case BattleStatusEffectType.FocusedDefense: // 집중 방어 상태 구분
+                return "집중"; // 집중 방어의 실제 화면 문구
+            case BattleStatusEffectType.BleedResistance: // 출혈 저항 상태 구분
+                return "저항"; // 출혈 저항의 실제 화면 문구
+            case BattleStatusEffectType.UndyingGuard: // 불굴 상태 구분
+                return "불굴"; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -371,6 +383,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"적의 직접 공격 피해 −{effectiveValue}%"; // 수호의 원의 표시 문구
             case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
                 return $"적의 다음 직접 공격 피해 −{effectiveValue}%"; // 위험 차단의 표시 문구
+            case BattleStatusEffectType.FocusedDefense: // 집중 방어 상태 구분
+                return $"다음 적 턴에 적의 직접 피해 −{effectiveValue}%"; // 집중 방어의 실제 화면 문구
+            case BattleStatusEffectType.BleedResistance: // 출혈 저항 상태 구분
+                return $"적의 출혈 부여에 저항할 확률 +{effectiveValue}%p"; // 출혈 저항의 실제 화면 문구
+            case BattleStatusEffectType.UndyingGuard: // 불굴 상태 구분
+                return "피해로 체력이 1 이하가 될 때 한 번 버틴다."; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식

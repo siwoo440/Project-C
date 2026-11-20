@@ -864,7 +864,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 자신이 받는 피해 -50%",
+      "description": "이번 턴 자신이 받는 피해를 50% 줄인다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "집중 방어.png"
@@ -875,7 +875,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 방어도 +7, 출혈 저항 +20% (2턴)",
+      "description": "생존 아군 모두에게 각각 방어도 7을 부여하고 출혈 저항을 2턴 동안 20% 높인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "전열 보호.png"
@@ -886,7 +886,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 9 피해, 공격력 -3 (2턴)",
+      "description": "적 하나에게 물리 피해 9를 주고 공격력을 2턴 동안 3 낮춘다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "억제 타격.png"
@@ -897,7 +897,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 7 피해, 행동력 -1 35%",
+      "description": "적 하나에게 물리 피해 7을 주고 35% 확률로 그 적의 다음 행동을 한 번 취소한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "막아내고 밀기.png"
@@ -908,7 +908,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 방어도 +15, 자신 행동력 -1",
+      "description": "생존 아군 모두에게 각각 방어도 15를 부여한다. 사용 시 행동력을 1 추가로 지불한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "성벽 자세.png"
@@ -919,7 +919,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "체력 1 이하로 떨어지는 피해를 1회 버팀 (2턴)",
+      "description": "2턴 동안 체력이 1 이하로 내려가는 피해를 한 번 막아 체력 1로 버틴다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "불굴.png"
@@ -930,7 +930,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 1명에게 피해 대신 받기 (2턴), 자신 방어력 +4",
+      "description": "2턴 동안 아군 하나가 받을 공격을 대신 받고 자신의 물리 방어력이 4 증가한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "수호 맹세.png"
@@ -941,7 +941,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 전체에게 현재 방어도 50%만큼 피해",
+      "description": "모든 적에게 현재 자신의 방어도의 절반만큼 물리 피해를 준다. 소수점은 버리며 방어도는 소모하지 않는다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "방패 파동.png"
