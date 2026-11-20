@@ -63,6 +63,10 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 단죄 대상 확인 시작
             return false; // 강화 없는 전투에서 카드 소비 차단
         } // 단죄 대상 확인 종료
+        if (card.SourceData.ShieldRule == ShieldCardRule.SplitBarrier && !turn.HasOtherLivingAlly(card.OwnerUnit)) // 자신과 함께 선택할 생존 동료 확인
+        { // 생존 아군 부족 처리 시작
+            return false; // 살아 있는 아군 두 명이 없는 경우 카드 사용 차단
+        } // 생존 아군 부족 처리 종료
         bool healthCost = card.SourceData.SwordRule == SwordCardRule.DoomBlade || card.SourceData.SwordRule == SwordCardRule.BloodOath; // 생존 체력을 지불할 검 확인
         return points.CanSpend(card.ApCost) && (!healthCost || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 소유자 체력 비용 확인
     } // 사용 가능 검사 종료

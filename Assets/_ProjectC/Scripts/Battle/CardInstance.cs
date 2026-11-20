@@ -24,7 +24,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => (int)Math.Min(int.MaxValue, (long)Mathf.Max(0, ApCostBeforeNextCardDiscount - NextCardRelicApDiscount) + SourceData.AdditionalActionPointCost); // 할인된 기본 비용과 의무 행동력 대가 합산
+    public int ApCost => (int)Math.Min(int.MaxValue, (long)Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount) + SourceData.AdditionalActionPointCost); // 할인된 기본 비용과 의무 행동력 대가 합산
     internal int ApCostBeforeNextCardDiscount // 다음 카드 할인 적용 전의 고정 비용
     { // 고정 비용 계산 시작
         get // 현재 카드 비용 조회
@@ -34,6 +34,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료
+    internal int ShieldBalanceDiscount => CardType == CardType.Shield && ApCostBeforeNextCardDiscount > 0 ? OwnerUnit.GetStatusEffect(BattleStatusEffectType.ShieldBalance)?.EffectiveValue ?? 0 : 0; // 비용이 남는 방패 카드에 예약된 기본 할인
     private int SwordSaintDiscount => CardType == CardType.Sword && OwnerUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance) != null ? 1 : 0; // 검성 상태 소유자의 검 카드 비용 감소
     public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용
     { // 할인 적용 시작

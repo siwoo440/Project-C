@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetSplitBarrier
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_SPLIT_BARRIER
+  displayName: "보호막 분배"
+  description: "서로 다른 생존 아군 두 명에게 각각 방어도 4를 부여한다."
+  artwork: {fileID: 21300000, guid: b8b9a14857ac575a8da5a17611dc3006, type: 3}
+  cardType: 4
+  targetType: 1
+  apCost: 1
+  effectType: 9
+  damageType: 0
+  effectValue: 4
+  shieldRule: 5
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

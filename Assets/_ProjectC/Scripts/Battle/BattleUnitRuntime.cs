@@ -416,6 +416,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return removed; // 실제 제거량 반환
     } // 방어도 부분 제거 종료
     public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false) // 직접 적 공격과 방어도를 반영한 피해 예고
+    { // 기본 피해 예고 시작
+        return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true); // 현재 위험 차단을 포함한 피해 예고
+    } // 기본 피해 예고 종료
+    internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception) // 공격 순서에 따른 일회성 경감 반영
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
@@ -427,15 +431,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
-        int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType) : 0; // 적 직접 피해의 방패 상태 감소량
+        int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception) : 0; // 일회성 경감을 포함한 적 직접 피해 감소량
         int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction); // 방어도 흡수 전 모든 감소량 합산
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
-    private int GetShieldCardReduction(int damage, BattleDamageType type) // 직접 피해에 적용할 저항 자세와 충격 흡수 수치 계산
+    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception) // 방패 상태의 직접 피해 경감 계산
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
-        int adjusted = (int)((long)damage * (100 - resistance) / 100); // 일반 저항이 적용된 피해에 추가 비율 계산 및 내림
-        int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 다음 충격 흡수의 고정 피해 감소
+        int protection = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.GuardianCircle)); // 수호의 원 피해 경감률
+        int interception = applyDangerInterception ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.DangerInterception)) : 0; // 적용 가능한 위험 차단 비율
+        int adjusted = (int)((long)damage * (100 - resistance) * (100 - protection) * (100 - interception) / 1_000_000); // 세 비율을 곱한 뒤 한 번만 내림
+        int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
     public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null, bool enemyDirectAttack = false) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
@@ -447,6 +453,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
         BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack); // 방어도 관통을 반영한 피해 계산
+        if (enemyDirectAttack && Team == BattleTeam.Ally) // 양수 직접 공격으로 실제 피해 계산 확인
+        { // 위험 차단 소모 시작
+            RemoveStatusEffect(BattleStatusEffectType.DangerInterception); // 피해 예고가 아닌 이번 명중에서 한 번 소모
+        } // 위험 차단 소모 종료
         int sharedDamage = 0; // 동료에게 분담할 피해 초기화
         if (sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead) // 생존한 다른 아군 분담자 확인
         { // 피해 분담 계산 시작
@@ -503,6 +513,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
                 sourceUnit.TakeUnblockedDamage(reflected, BattleDamageType.None, this); // 공격자 방어와 방어도를 건너뛴 고정 피해
             } // 반사 확정 종료
         } // 검격 반사 종료
+        if (!IsDead && enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy && damageResult.AbsorbedDamage > 0) // 생존한 아군 방어도의 실제 흡수 확인
+        { // 방패 반격 시작
+            sourceUnit.TakeUnblockedDamage(GetStatusEffectValue(BattleStatusEffectType.ShieldCounter), BattleDamageType.None, this); // 공격자 방어와 방어도를 무시한 고정 반격
+        } // 방패 반격 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
     internal int TakeUnblockedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 분담과 출혈의 방어도 없는 실제 체력 피해

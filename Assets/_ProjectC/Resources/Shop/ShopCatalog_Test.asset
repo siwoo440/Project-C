@@ -455,10 +455,82 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SPLIT_BARRIER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: cafaaf9c29785a23ab1c97ee981105a8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BALANCE_GUARD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 56a86cdd49c15fb9895c5f0325d49642, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_IRON_WALL
     offerType: 0
     price: 0
     card: {fileID: 11400000, guid: f3061aa86e5847648993333f25efd6f6, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_TAUNT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 0eb1fb18c7d75e82aa0dafb9b465376e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SHIELD_COUNTER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 067f7155869f527fa081850c1d85e670, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GUARDIAN_CIRCLE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 79c830b93f565a3482613cf9e6b619fb, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ADVANCING_GUARD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 4c77d536b7005c4eb4f70c83299062cc, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RENDING_SHIELD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ed866c377d6a5fc29d061e85dfc47c79, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DANGER_INTERCEPTION
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 05ca537c26695c70b4b5286d92aaf113, type: 2}
     cardOwner: {fileID: 0}
     chooseCardOwner: 1
     rewardOnly: 1

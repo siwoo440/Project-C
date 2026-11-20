@@ -14,7 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown; // 정해진 행동 한 번을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception; // 정해진 행동 한 번을 기다리는 상태
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -159,6 +159,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "검성의 자세"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속도 감소"; // 속도 감소 표시
+            case BattleStatusEffectType.ShieldBalance: // 균형 잡기 종류
+                return "균형 잡기"; // 균형 잡기의 표시 문구
+            case BattleStatusEffectType.ShieldCounter: // 방패 반격 종류
+                return "방패 반격"; // 방패 반격의 표시 문구
+            case BattleStatusEffectType.GuardianCircle: // 수호의 원 종류
+                return "수호의 원"; // 수호의 원의 표시 문구
+            case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
+                return "위험 차단"; // 위험 차단의 표시 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -253,6 +261,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "성"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속"; // 속도 감소 표시
+            case BattleStatusEffectType.ShieldBalance: // 균형 잡기 종류
+                return "균형"; // 균형 잡기의 표시 문구
+            case BattleStatusEffectType.ShieldCounter: // 방패 반격 종류
+                return "반격"; // 방패 반격의 표시 문구
+            case BattleStatusEffectType.GuardianCircle: // 수호의 원 종류
+                return "수호"; // 수호의 원의 표시 문구
+            case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
+                return "차단"; // 위험 차단의 표시 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -347,6 +363,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"고정 비용 검 카드의 행동력 비용 −1, 검 피해 +{effectiveValue}"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return $"적 행동 속도 −{effectiveValue}"; // 속도 감소 표시
+            case BattleStatusEffectType.ShieldBalance: // 균형 잡기 종류
+                return $"다음 유료 방패 카드의 기본 행동력 비용 −{effectiveValue}"; // 균형 잡기의 표시 문구
+            case BattleStatusEffectType.ShieldCounter: // 방패 반격 종류
+                return $"방어도가 직접 공격을 흡수하면 공격자에게 고정 피해 {effectiveValue}"; // 방패 반격의 표시 문구
+            case BattleStatusEffectType.GuardianCircle: // 수호의 원 종류
+                return $"적의 직접 공격 피해 −{effectiveValue}%"; // 수호의 원의 표시 문구
+            case BattleStatusEffectType.DangerInterception: // 위험 차단 종류
+                return $"적의 다음 직접 공격 피해 −{effectiveValue}%"; // 위험 차단의 표시 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식

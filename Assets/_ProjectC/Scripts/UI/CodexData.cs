@@ -113,6 +113,17 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 속도 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 바람개비 배지의 속도 보정 수치 연결
                     } // 속도 상태 설명 종료
+                    else if (effect == BattleStatusEffectType.ShieldBalance || effect == BattleStatusEffectType.ShieldCounter || effect == BattleStatusEffectType.GuardianCircle || effect == BattleStatusEffectType.DangerInterception) // 방패 지원 카드의 네 상태 확인
+                    { // 신규 방패 상태의 도감 설명 시작
+                        int amount = effect switch // 원본 방패 카드의 상태 수치 결정
+                        { // 방패 상태 수치 분기 시작
+                            BattleStatusEffectType.ShieldBalance => 1, // 다음 방패의 행동력 할인
+                            BattleStatusEffectType.ShieldCounter => 8, // 방어 성공 반격의 고정 피해
+                            BattleStatusEffectType.GuardianCircle => 10, // 직접 피해 비율 경감
+                            _ => 70 // 위험 차단의 한 번의 피해 경감
+                        }; // 원본 카드 수치 지정 종료
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 새 방패 상태의 실제 게임 수치 안내
+                    } // 신규 방패 상태의 도감 설명 종료
                     else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시
