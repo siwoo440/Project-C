@@ -15,6 +15,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
     private int lastSpringRound; // 붉은 스프링의 마지막 할인 준비 라운드
+    private int lastEmptyHandDrawRound; // 패치 노끈의 마지막 예약 라운드
     private bool springReady; // 다음 유료 고정 카드에 남은 할인
     private bool resolvingCard; // 사용 카드가 손패를 떠날 때까지의 정산 상태
     private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
@@ -152,6 +153,15 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     } // 강제 턴 전환 종료
     private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
     { // 플레이어 턴 정리 시작
+        if (runtimeDeck.HandCount == 0 && lastEmptyHandDrawRound != CurrentRound) // 자동 버림 전 빈손과 중복 발동 확인
+        { // 패치 노끈 발동 검사 시작
+            var cord = openingRelics?.FindEffect(RelicEffectType.EmptyHandNextTurnDraw); // 보유한 낡은 패치 노끈 조회
+            if (cord != null) // 패치 노끈 보유 확인
+            { // 다음 턴 드로우 예약 시작
+                lastEmptyHandDrawRound = CurrentRound; // 같은 턴의 중복 예약 차단
+                runtimeDeck.QueuePlayerTurnDraw(cord.EffectValue); // 다음 아군 턴의 추가 드로우 예약
+            } // 다음 턴 드로우 예약 종료
+        } // 패치 노끈 발동 검사 종료
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
         runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
         runtimeDeck.ClearFirstDrawRelicDiscount(); // 종료된 턴의 첫 드로우 카드 비용 복원
@@ -250,6 +260,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 추가 드로우 준비 시작
             count += pouch.EffectValue; // 이번 턴의 드로우 한 장 증가
         } // 추가 드로우 준비 종료
+        if (openingRelics?.FindEffect(RelicEffectType.RecoverRandomDiscard) != null) // 회수용 자석 보유 여부 확인
+        { // 턴 드로우 전 자석 처리 시작
+            runtimeDeck.TryRecoverRandomDiscardOnce(); // 가능한 경우 기존 버린 카드 한 장 회수
+        } // 턴 드로우 전 자석 처리 종료
         LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(count); // 기존 손패 상한과 예약 드로우 적용
         if (CurrentRound != 1 || openingRelics == null) // 첫 아군 손패 처리 여부 확인
         { // 일반 아군 턴 처리 시작

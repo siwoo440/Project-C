@@ -110,6 +110,60 @@ public sealed class WinterfallCampRelicTests // 캠프와 상점 및 직접 피�
         Assert.AreEqual(1, enemy.PrepareActions()); // 생존 적의 정상 공격 생성
         return enemy.PlannedActions.Single(); // 실제 예정 행동 반환
     } // 예정 공격 조회 종료
+    [UnityTest] // 실제 캠프 체력 회복 검사
+    public IEnumerator FoldingCotAddsThreeHealthAfterTheRationBonus() // 침대 보유와 식량팩 합산 검증
+    { // 캠프 회복 검사 시작
+        yield return new EnterPlayMode(); // 회차 관리자의 플레이 모드 진입
+        CheckFoldingCotCampRecovery(); // 실제 캠프 회복 경로 검사
+        yield return new ExitPlayMode(); // 검사 회차 종료
+    } // 캠프 회복 검사 종료
+    private static void CheckFoldingCotCampRecovery() // 출전 파티의 회복량과 체력 상한 검증
+    { // 출전 파티 검사 시작
+        var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 출전 명단 조회
+        var members = roster.Characters.Take(3).ToArray(); // 회복과 상한 및 사망 상태의 검사 대상
+        var party = PartyData.CreateRuntime(members); // 세 명의 임시 출전 파티 생성
+        var result = BattleResultManager.EnsureInstance(); // 실제 지속 상태 관리자 준비
+        var relics = RelicRunManager.EnsureInstance(); // 실제 회차 유물 보관함 준비
+        var cot = Relic("FoldingCot"); // 접이식 침대 원본 조회
+        var pack = Relic("EmergencyRationPack"); // 비상 식량팩 원본 조회
+        try // 임시 파티 정리 보장
+        { // 보유 조합별 회복 검사 시작
+            Assert.IsTrue(result.RegisterParty(party)); // 실제 출전 파티 등록
+            result.RestoreSavedAllyState(members[2], 0, 12, 1); // 쓰러진 파티원 상태 준비
+            int ordinaryHealth = RecoverFromCamp(result, members[0]); // 유물 미보유 시 실제 캠프 체력
+            Assert.AreEqual(RelicAcquireResult.Acquired, relics.TryAcquire(cot)); // 침대 정식 획득
+            result.RestoreSavedAllyState(members[1], members[1].MaxHealth - 1, 98, 0); // 체력 상한 근처 파티원 준비
+            Assert.AreEqual(ordinaryHealth + 3, RecoverFromCamp(result, members[0])); // 침대 단독 회복량 세 점 증가
+            Assert.IsTrue(result.TryGetSavedAllyState(members[1], out int hp, out _, out _)); // 상한 확인 파티원의 체력 조회
+            Assert.AreEqual(members[1].MaxHealth, hp); // 최대 체력 초과 방지
+            Assert.AreEqual(RelicAcquireResult.Acquired, relics.TryAcquire(pack)); // 식량팩 정식 획득
+            int rationHealth = ordinaryHealth + (ordinaryHealth - 1) * 30 / 100; // 초기 체력 일 점 제외 후 식량팩 회복 계산
+            Assert.AreEqual(rationHealth + 3, RecoverFromCamp(result, members[0])); // 식량팩의 비율 계산 뒤 침대 세 점 추가
+            string label = RestRoomRecoveryService.HealthRecoveryLabel(1); // 캠프 안내와 결과에 공통 표시되는 문구
+            StringAssert.Contains("+30%", label); // 식량팩의 백분율 표시 확인
+            StringAssert.EndsWith(" +3", label); // 침대의 고정 회복량 표시 확인
+            Assert.IsTrue(result.TryGetSavedAllyState(members[2], out hp, out int mental, out int deaths)); // 쓰러진 파티원 상태 조회
+            Assert.AreEqual(0, hp); // 캠프 중 부활 방지
+            Assert.AreEqual(12, mental); // 쓰러진 파티원 정신력 보존
+            Assert.AreEqual(1, deaths); // 쓰러진 파티원의 누적 사망 횟수 보존
+            Assert.IsTrue(relics.TryRemove(cot.RelicId)); // 판매와 같은 보관함 제거
+            Assert.AreEqual(rationHealth, RecoverFromCamp(result, members[0])); // 제거 뒤 식량팩 회복만 유지
+        } // 보유 조합별 회복 검사 종료
+        finally // 임시 출전 상태 정리
+        { // 임시 출전 상태 정리 시작
+            result.ResetSavedPartyState(); // 검사 파티와 저장 상태 초기화
+            Object.Destroy(party); // 검사에 만든 임시 파티 제거
+        } // 임시 출전 상태 정리 종료
+    } // 출전 파티 검사 종료
+    private static int RecoverFromCamp(BattleResultManager result, CharacterData member) // 검사 시작 체력에서 실제 캠프 회복
+    { // 캠프 적용 시작
+        result.RestoreSavedAllyState(member, 1, 30, 0); // 회복 전 체력과 정신력 준비
+        Assert.IsTrue(result.TryApplyRestRecovery(1, out int recoveredCount)); // 위험도 일의 실제 캠프 회복 실행
+        Assert.AreEqual(2, recoveredCount); // 생존 파티원 두 명만 회복 처리
+        Assert.IsTrue(result.TryGetSavedAllyState(member, out int hp, out int mental, out _)); // 회복 뒤 영속 상태 조회
+        Assert.AreEqual(45, mental); // 두 유물 보유 여부에 관계없이 기본 정신력 회복 유지
+        return hp; // 검사 대상의 회복 뒤 체력 반환
+    } // 캠프 적용 종료
     [UnityTest] // 회차 원본 소유와 캠프 및 교환권 저장 검사
     public IEnumerator CampAndVoucherSurviveSaveUntilConsumedOrSold() // 실제 휴식 회복과 무료 제거 및 재방문 검증
     { // 탐사 검사 시작

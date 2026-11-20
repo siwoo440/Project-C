@@ -729,7 +729,7 @@
     {
       "sourceRow": 68,
       "name": "붉은 잉크병",
-      "description": "카드 설명(효과) 중 ‘피해’ +2(전투당 1회)",
+      "description": "각 전투에서 첫 유효 카드 직접 명중의 피해가 2 증가한다.",
       "buyMin": 252,
       "buyMax": 301,
       "buyVariance": 49,
@@ -740,7 +740,7 @@
     {
       "sourceRow": 69,
       "name": "금박 책갈피",
-      "description": "덱 상단 확인 카드의 확인 장수 +1",
+      "description": "덱 위를 확인하는 카드가 실제로 확인할 수 있는 최대 장수가 1 늘어난다.",
       "buyMin": 261,
       "buyMax": 309,
       "buyVariance": 48,
@@ -751,7 +751,7 @@
     {
       "sourceRow": 70,
       "name": "균열 봉인테이프",
-      "description": "사용불가 카드를 받으면 즉시 버림으로 이동(전투당 1회)",
+      "description": "각 전투에서 처음 손으로 들어올 사용 불가 카드를 손패 대신 버린 더미로 보낸다.",
       "buyMin": 244,
       "buyMax": 293,
       "buyVariance": 49,
@@ -762,7 +762,7 @@
     {
       "sourceRow": 71,
       "name": "회수용 자석",
-      "description": "버림 더미에서 무작위 카드 1장 손으로(전투당 1회)",
+      "description": "아군 턴의 기본 드로우 직전 손패에 빈자리가 있으면 버린 더미의 무작위 카드 한 장을 손에 넣는다. 전투당 한 번 발동한다.",
       "buyMin": 271,
       "buyMax": 319,
       "buyVariance": 48,
@@ -784,7 +784,7 @@
     {
       "sourceRow": 73,
       "name": "흰 깃털 펜던트",
-      "description": "유지 카드가 손에 남아있으면 회복 +1(턴당 1회)",
+      "description": "유지 카드가 손에 있을 때 아군에게 주는 첫 유효 카드 회복량이 1 증가한다. 아군 턴당 한 번 발동한다.",
       "buyMin": 283,
       "buyMax": 332,
       "buyVariance": 49,
@@ -795,7 +795,7 @@
     {
       "sourceRow": 74,
       "name": "검은 깃털 펜던트",
-      "description": "유지 카드가 손에 남아있으면 피해 +1(턴당 1회)",
+      "description": "유지 카드가 손에 있을 때 적에게 명중한 첫 카드 직접 공격 피해가 1 증가한다. 아군 턴당 한 번 발동한다.",
       "buyMin": 263,
       "buyMax": 311,
       "buyVariance": 48,
@@ -806,7 +806,7 @@
     {
       "sourceRow": 75,
       "name": "접이식 침대",
-      "description": "캠프에서 체력 회복 +3",
+      "description": "캠프에서 휴식하면 생존 아군 한 명마다 체력이 최대치까지 추가로 3 회복된다.",
       "buyMin": 272,
       "buyMax": 320,
       "buyVariance": 48,
@@ -828,7 +828,7 @@
     {
       "sourceRow": 77,
       "name": "낡은 패치 노끈",
-      "description": "턴 종료 손패가 0장이면 다음 턴 드로우 +2",
+      "description": "아군 턴을 끝내기 직전 손패가 0장이면 다음 아군 턴에 카드 2장을 더 뽑는다.",
       "buyMin": 261,
       "buyMax": 310,
       "buyVariance": 49,

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: FoldingCot
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_FOLDING_COT
+  displayName: 접이식 침대
+  description: "캠프에서 휴식하면 생존 아군 한 명마다 체력이 최대치까지 추가로 3 회복된다."
+  icon: {fileID: 21300000, guid: a2b189215063507281adbca5bfff1464, type: 3}
+  rarity: 0
+  triggerType: 16
+  effectType: 74
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 3
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

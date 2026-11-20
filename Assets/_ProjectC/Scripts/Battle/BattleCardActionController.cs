@@ -13,6 +13,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int lastPencilRound = -1; // 흑연 연필의 마지막 성공 라운드
     private int pendingInspectionDraw; // 바보의 남은 카드 처리 뒤 받을 추가 드로우 수
     private int lastPentacleDrawRound = -1; // 펜타클 드로우 유물의 마지막 아군 라운드
+    private int lastRetainedHealingRound = -1; // 흰 깃털 펜던트의 마지막 발동 라운드
+    private int lastRetainedDamageRound = -1; // 검은 깃털 펜던트의 마지막 발동 라운드
+    private bool usedFirstCardDamageBonus; // 붉은 잉크병의 전투당 한 번 발동 기록
     private int pendingPentacleDraw; // 카드 선택이 끝난 뒤 받을 펜타클 드로우 수
     private bool usedFirstCardDrawBonus; // 이번 전투 최초 카드 드로우 증가 사용 기록
     private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
@@ -416,7 +419,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 int healing = GetDirectCardHealing(card, value); // 일반 회복과 같은 소유자 보정 적용
                 foreach (BattleUnitRuntime ally in enemyActions.AllyUnits) // 전투에 참여한 아군 순회
                 { // 동료 회복 시작
-                    ally?.RestoreHealth(healing, card.OwnerUnit); // 생존 여부와 최대 체력에 맞춘 회복
+                    RestoreDirectCardHealth(card, ally, healing); // 실제 부상 아군별 직접 카드 회복 적용
                 } // 동료 회복 종료
                 break; // 전체 회복 종료
             case CardFollowUpEffect.GainTargetBlock: // 선택한 아군에게 방어도 지급
@@ -492,7 +495,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 선택 화면 표시 종료
     private void HandleCardChoiceSelected(CardInstance choice) // 드로우 후보 선택 처리
     { // 선택 처리 시작
-        int choiceCount = pendingCardChoices == null ? 0 : pendingCardChoices.Count; // 현재 후보 수 조회
+        int choiceCount = pendingCardChoices == null ? 0 : pendingCardChoices.Count; // 유물 반영 후 화면에 보여 준 후보 수
         CardInstance remaining = null; // 선택하지 않은 카드 초기화
         if (pendingFoolPassive && pendingCardChoices != null) // 바보 패시브 선택 여부 확인
         { // 남은 카드 검색 시작
@@ -632,14 +635,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회수 불가 처리 시작
             return false; // 선택 불가 반환
         } // 회수 불가 처리 종료
-        if (cardInstance.EffectType == CardEffectType.ChooseDraw && !runtimeDeck.HasDrawableCards) // 생존 소유자의 선택 가능 카드 확인
+        if (!CanUseDrawInspection(cardInstance, runtimeDeck)) // 유물이 반영된 덱 위 확인 가능 여부 검사
         { // 선택 불가 처리 시작
             return false; // 선택 불가 반환
         } // 선택 불가 처리 종료
-        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop && runtimeDeck.PeekDrawTop(1).Count == 0) // 현재 덱 위 정리 가능 카드 확인
-        { // 덱 순서 정리 불가 시작
-            return false; // 선택 불가 반환
-        } // 덱 순서 정리 불가 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard && !runtimeDeck.HasDrawableCards && runtimeDeck.HandCount <= 1) // 드로우와 사용 후 남을 손패 확인
         { // 드로우와 버리기 불가 시작
             return false; // 선택 불가 반환
@@ -734,6 +733,23 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             ? enemyActions.CanBodyGuard(card.OwnerUnit, target) // 예고 없이도 보호 가능한 생존 동료
             : enemyActions.CanProtectAlly(card.OwnerUnit, target); // 실제 공격 예고가 필요한 기존 힘 카드
     } // 보호 조건 조회 종료
+    internal static bool CanUseDrawInspection(CardInstance card, BattleDeckRuntime deck) // 전투 손패와 대상의 공통 확인 가능 조건
+    { // 확인 가능 검사 시작
+        switch (card.EffectType) // 덱 위 확인 방식 구분
+        { // 확인 방식 검사 시작
+            case CardEffectType.ChooseDraw: // 버린 더미 재구성이 가능한 선택 뽑기
+                return GetInspectionChoiceLimit(card) > 0 && deck.HasDrawableCards; // 유효한 확인 수와 생존 소유자의 후보 존재 조건
+            case CardEffectType.ArrangeDrawTop: // 현재 뽑을 더미에서만 순서 조정
+                return deck.PeekDrawTop(GetInspectionChoiceLimit(card)).Count > 0; // 유물 한도 안에서 실제 재배치할 후보 확인
+            default: // 덱 위 확인과 관련 없는 카드
+                return true; // 다른 효과의 사용 조건 유지
+        } // 확인 방식 검사 종료
+    } // 확인 가능 검사 종료
+    private static int GetInspectionChoiceLimit(CardInstance card) // 유물을 포함한 카드의 덱 위 확인 한도
+    { // 확인 한도 계산 시작
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.InspectionChoiceBonus)?.EffectValue ?? 0; // 금박 책갈피의 후보 수 가산량
+        return (int)Math.Min(int.MaxValue, (long)card.EffectValue + Math.Max(0, bonus)); // 정수 범위 안의 최종 확인 후보 수
+    } // 확인 한도 계산 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
         return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
@@ -799,7 +815,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 은둔자의 덱 순서 정리 확인
         { // 덱 순서 정리 준비 시작
             pendingChoiceEffect = CardEffectType.ArrangeDrawTop; // 덱 순서 정리 선택 효과 저장
-            pendingCardChoices = runtimeDeck.PeekDrawTop(cardInstance.EffectValue); // 현재 덱 위의 후보만 조회
+            pendingCardChoices = runtimeDeck.PeekDrawTop(GetInspectionChoiceLimit(cardInstance)); // 유물을 반영한 현재 덱 위 후보 조회
             return pendingCardChoices.Count; // 확인 가능한 후보 수 반환
         } // 덱 순서 정리 준비 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner) // 연인 파트너 지정 효과 확인
@@ -834,7 +850,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 바보 전용 효과 시작
             pendingFoolPassive = cardInstance.OwnerUnit.CharacterSource != null && cardInstance.OwnerUnit.CharacterSource.CharacterId == "ARC_00" && cardInstance.SourceData.CardId == "CRD_ARC_00_CHOICE" && lastFoolPassiveRound != turnRuntime.CurrentRound; // 바보의 첫 선택 드로우 확인
             pendingChoiceEffect = CardEffectType.ChooseDraw; // 선택 드로우 효과 저장
-            pendingCardChoices = runtimeDeck.PrepareDrawChoices(cardInstance.EffectValue); // 덱 위 선택 후보 준비
+            pendingCardChoices = runtimeDeck.PrepareDrawChoices(GetInspectionChoiceLimit(cardInstance)); // 유물을 반영한 덱 위 선택 후보 준비
             return pendingCardChoices.Count; // 준비된 후보 수 반환
         } // 바보 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget) // 공격 예고 대상 보호 효과 확인
@@ -875,7 +891,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 상태 해제 표시 종료
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
-            return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
+            return RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 첫 부상 회복 유물과 실제 회복량 적용
         } // 회복 효과 처리 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodstainedDuel) // 시전자와 적 한 명의 결투 확인
         { // 결투 표식 처리 시작
@@ -1070,6 +1086,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
         } // 치명타 표시 종료
         modifiedDamage = ApplyDirectHitRelics(cardInstance, targetUnit, modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
+        modifiedDamage = ApplyFirstAndRetainedDamage(cardInstance, targetUnit, modifiedDamage); // 치명타 직후 첫 피해와 유지 피해 가산
         int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
         int healthBefore = targetUnit.CurrentHealth; // 카드 타격 직전 대상 체력 보관
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
@@ -1119,6 +1136,38 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         int bonus = healing > 0 && card.OwnerUnit.CurrentMental >= 50 ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.HighMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이상인 회복자의 흰 장미 가산량
         return (int)Math.Min(int.MaxValue, (long)modified + bonus + (healing > 0 ? bandageBonus : 0)); // 최대 체력을 적용하기 전 직접 회복 수치
     } // 직접 회복 보정 종료
+    private int RestoreDirectCardHealth(CardInstance card, BattleUnitRuntime target, int healing) // 직접 카드 회복과 아군 턴의 첫 유지 회복 처리
+    { // 실제 카드 회복 시작
+        if (healing > 0 && target != null && target.Team == BattleTeam.Ally && !target.IsDead && target.CurrentHealth < target.MaxHealth && turnRuntime.IsPlayerTurn && lastRetainedHealingRound != turnRuntime.CurrentRound && runtimeDeck.HasRetainedHandCardOtherThan(card)) // 실제 회복 대상과 사용 후 남는 유지 손패 및 턴 제한 확인
+        { // 흰 깃털 펜던트 처리 시작
+            int bonus = BattleSupplyRelics.Find(RelicEffectType.RetainedHandHealing)?.EffectValue ?? 0; // 보유한 유지 회복 유물의 수치
+            if (bonus > 0) // 양수 가산량 확인
+            { // 유지 회복 보너스 적용 시작
+                lastRetainedHealingRound = turnRuntime.CurrentRound; // 회복 이벤트 전에 같은 턴 재발동 차단
+                healing = (int)Math.Min(int.MaxValue, (long)healing + bonus); // 이번 대상의 회복량 증가
+            } // 유지 회복 보너스 적용 종료
+        } // 흰 깃털 펜던트 처리 종료
+        return target?.RestoreHealth(healing, card.OwnerUnit) ?? 0; // 체력 상한을 반영한 실제 카드 회복량 반환
+    } // 실제 카드 회복 종료
+    private int ApplyFirstAndRetainedDamage(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 아군 카드의 직접 적 피해 가산
+    { // 직접 명중 유물 확인 시작
+        if (damage <= 0 || card.OwnerUnit.Team != BattleTeam.Ally || target == null || target.IsDead || target.Team != BattleTeam.Enemy) // 양수 피해와 살아 있는 적의 직접 명중 확인
+        { // 명중 가산 제외 시작
+            return damage; // 현재 타격 수치 유지
+        } // 명중 가산 제외 종료
+        int firstBonus = usedFirstCardDamageBonus ? 0 : BattleSupplyRelics.Find(RelicEffectType.FirstCardDamageBonus)?.EffectValue ?? 0; // 전투당 첫 명중에 쓸 붉은 잉크병 수치
+        if (firstBonus > 0) // 붉은 잉크병의 유효한 가산량 확인
+        { // 붉은 잉크병 발동 시작
+            usedFirstCardDamageBonus = true; // 방어 처리 전 전투당 한 차례 기회 기록
+        } // 붉은 잉크병 발동 종료
+        bool canAddRetainedDamage = turnRuntime.IsPlayerTurn && lastRetainedDamageRound != turnRuntime.CurrentRound && runtimeDeck.HasRetainedHandCardOtherThan(card); // 아군 턴과 사용 후 남는 유지 카드 및 턴 제한 확인
+        int retainedBonus = canAddRetainedDamage ? BattleSupplyRelics.Find(RelicEffectType.RetainedHandDamage)?.EffectValue ?? 0 : 0; // 보유한 검은 깃털 펜던트 수치
+        if (retainedBonus > 0) // 유지 피해의 유효한 가산량 확인
+        { // 검은 깃털 펜던트 발동 시작
+            lastRetainedDamageRound = turnRuntime.CurrentRound; // 같은 아군 턴의 다음 타격 중복 방지
+        } // 검은 깃털 펜던트 발동 종료
+        return (int)Math.Min(int.MaxValue, (long)damage + Math.Max(0, firstBonus) + Math.Max(0, retainedBonus)); // 방어와 방어도 앞에서 직접 타격 가산
+    } // 직접 명중 유물 확인 종료
     private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작
         bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
@@ -1189,7 +1238,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 드로우 예약 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
-        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, null, preparedSwordDamage, (hit, damage) => ApplyDirectHitRelics(card, hit, damage)); // 다른 적의 독립 명중과 피해 처리
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, // 다른 적의 독립 명중 처리
+            preparedSwordDamage: preparedSwordDamage, // 정비 보너스가 남아 있는 검 피해
+            applyTargetBonus: (hit, damage) => ApplyDirectHitRelics(card, hit, damage), // 태양 연속 공격의 기존 명중 유물
+            applyFlatTargetBonus: (hit, damage) => ApplyFirstAndRetainedDamage(card, hit, damage)); // 치명타 뒤 한 번 제한의 직접 타격 가산
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

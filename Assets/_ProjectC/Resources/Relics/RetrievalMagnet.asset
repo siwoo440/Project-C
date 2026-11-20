@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: RetrievalMagnet
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_RETRIEVAL_MAGNET
+  displayName: 회수용 자석
+  description: "아군 턴의 기본 드로우 직전 손패에 빈자리가 있으면 버린 더미의 무작위 카드 한 장을 손에 넣는다. 전투당 한 번 발동한다."
+  icon: {fileID: 21300000, guid: 9c254ea7dd8258059d6254bfdc6d81dd, type: 3}
+  rarity: 0
+  triggerType: 31
+  effectType: 71
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

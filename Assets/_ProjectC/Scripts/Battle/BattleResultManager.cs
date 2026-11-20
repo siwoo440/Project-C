@@ -379,7 +379,8 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
     {
         recoveredMemberCount = 0; // 회복 적용 생존 인원 초기화
         int mentalRecovery = RestRoomRecoveryService.CampMentalRecovery; // 같은 휴식에 적용할 정수기 포함 정신력 회복량
-        int bonus = RestRoomRecoveryService.CampRecoveryBonus; // 이번 휴식에 사용할 회복량 보너스 조회
+        int bonus = RestRoomRecoveryService.CampRecoveryBonus; // 이번 휴식의 식량팩 회복 비율 조회
+        int flatBonus = RestRoomRecoveryService.CampFlatHealthBonus; // 이번 휴식의 접이식 침대 추가 회복량 조회
 
         if (ActiveParty == null) // 등록 파티 존재 확인
         {
@@ -408,7 +409,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                 RestRoomRecoveryService.CalculateRecoveredHealth(
                     currentHealth,
                     member.MaxHealth,
-                    hazardLevel, bonus); // 퇴색 위험도와 식량팩 보정 적용
+                    hazardLevel, bonus, flatBonus); // 위험도와 식량팩 보정 뒤 침대 회복량 적용
 
             savedAllyMental[unitId] =
                 RestRoomRecoveryService.CalculateRecoveredMental(

@@ -10,6 +10,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private int relicApDiscount; // 현재 턴의 모든 카드에 적용하는 비용 감소량
     private int nextCardRelicApDiscount; // 다음 유료 카드 한 장에 적용하는 비용 감소량
     private bool firstDrawCompleted; // 이번 전투 첫 실제 손패 드로우 기록
+    private bool discardedUnplayableDraw; // 봉인테이프의 전투 발동 기록
+    private bool recoveredRandomDiscard; // 회수용 자석의 전투 발동 기록
     private CardInstance firstDrawDiscountCard; // 현재 턴에 개별 드로우 할인을 받은 카드
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
@@ -130,7 +132,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     { // 공통 드로우 시작
         int drawnCount = 0; // 실제 드로우 수 초기화
         processedCount = 0; // 처리한 카드 수 초기화
-        List<CardInstance> overflowCards = new List<CardInstance>(); // 초과 카드 임시 목록
+        List<CardInstance> discardedCards = new List<CardInstance>(); // 같은 요청의 재순환에서 제외할 카드 목록
         while (processedCount < requestedCount) // 요청 수까지 반복
         { // 반복 드로우 시작
             int topIndex = FindTopDrawableIndex(); // 사망 소유자를 건너뛴 맨 위 카드 조회
@@ -144,26 +146,34 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             } // 드로우 불가 처리 종료
             CardInstance drawnCard = drawPile[topIndex]; // 맨 위 카드 선택
             drawPile.RemoveAt(topIndex); // 뽑을 카드 더미에서 제거
-            if (hand.Count < MaxHandSize) // 손패 공간 확인
+            if (TryAddDrawnCardToHand(drawnCard)) // 상한과 봉인 판정 후 손패 이동 확인
             { // 손패 추가 시작
-                AddDrawnCardToHand(drawnCard); // 손패 이동과 최초 드로우 할인 처리
                 drawnCount++; // 실제 드로우 수 증가
             } // 손패 추가 종료
-            else // 손패 가득 참 확인
-            { // 초과 카드 처리 시작
-                overflowCards.Add(drawnCard); // 초과 카드 임시 보관
-            } // 초과 카드 처리 종료
+            else // 초과 또는 봉인 카드 확인
+            { // 드로우 버림 처리 시작
+                discardedCards.Add(drawnCard); // 현재 요청 중 같은 카드의 재드로우 방지
+            } // 드로우 버림 처리 종료
             processedCount++; // 처리 카드 수 증가
         } // 반복 드로우 종료
-        discardPile.AddRange(overflowCards); // 초과 카드 버린 더미 이동
+        discardPile.AddRange(discardedCards); // 초과 및 봉인 카드의 버린 더미 이동
         return drawnCount; // 실제 드로우 수 반환
     } // 공통 드로우 종료
-    private void AddDrawnCardToHand(CardInstance card) // 정상 드로우의 손패 이동과 최초 할인 적용
+    private bool TryAddDrawnCardToHand(CardInstance card) // 손패 공간과 봉인 판정 및 최초 할인 처리
     { // 실제 손패 드로우 처리 시작
+        if (hand.Count >= MaxHandSize) // 일반 초과 드로우 확인
+        { // 손패 상한 처리 시작
+            return false; // 봉인 기회를 유지한 채 일반 버림 요청
+        } // 손패 상한 처리 종료
+        if (!discardedUnplayableDraw && card.EffectType == CardEffectType.Unplayable && BattleSupplyRelics.Find(RelicEffectType.DiscardFirstUnplayableDraw) != null) // 손패로 들어갈 첫 사용불가 드로우 확인
+        { // 봉인테이프 발동 시작
+            discardedUnplayableDraw = true; // 같은 전투의 봉인 재발동 차단
+            return false; // 현재 드로우 횟수의 버림 요청
+        } // 봉인테이프 발동 종료
         hand.Add(card); // 손패에 드로우 카드 추가
         if (firstDrawCompleted) // 이번 전투 첫 손패 드로우 확인
         { // 최초 이후 드로우 처리 시작
-            return; // 이후 카드의 비용 보존
+            return true; // 이후 카드의 기존 비용 보존
         } // 최초 이후 드로우 처리 종료
         firstDrawCompleted = true; // 빈 덱과 손패 초과로 소비되지 않는 첫 드로우 기록
         int discount = BattleSupplyRelics.Find(RelicEffectType.FirstDrawCardDiscount)?.EffectValue ?? 0; // 보유한 첫 드로우 유물의 할인량
@@ -172,6 +182,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             firstDrawDiscountCard = card; // 턴 종료 때 복원할 카드 저장
             card.FirstDrawRelicApDiscount = discount; // 다른 카드와 별개의 턴 한정 비용 감소
         } // 첫 카드 할인 종료
+        return true; // 실제 손패 드로우 완료
     } // 실제 손패 드로우 처리 종료
     internal void ClearFirstDrawRelicDiscount() // 종료된 턴의 첫 드로우 카드 할인 복원
     { // 첫 드로우 할인 정리 시작
@@ -270,14 +281,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             return false; // 선택 실패 반환
         } // 후보 이탈 처리 종료
         drawPile.RemoveAt(index); // 뽑을 카드 더미에서 선택 카드 제거
-        if (hand.Count < MaxHandSize) // 손패 공간 확인
-        { // 정상 드로우 시작
-            AddDrawnCardToHand(choice); // 선택 드로우의 실제 손패 이동과 할인 적용
-        } // 정상 드로우 종료
-        else // 손패 가득 참 확인
-        { // 초과 카드 처리 시작
+        if (!TryAddDrawnCardToHand(choice)) // 상한과 봉인 판정 후 버림 확인
+        { // 초과 및 봉인 처리 시작
             discardPile.Add(choice); // 선택 카드를 버린 더미로 이동
-        } // 초과 카드 처리 종료
+        } // 초과 및 봉인 처리 종료
         EnsureValidState(); // 선택 후 덱 상태 검증
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 선택 처리 성공 반환
@@ -313,6 +320,20 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 회수 성공 반환
     } // 카드 회수 종료
+    internal bool TryRecoverRandomDiscardOnce() // 회수용 자석의 전투당 한 번 회수
+    { // 무작위 회수 시작
+        if (recoveredRandomDiscard || hand.Count >= MaxHandSize) // 사용 기회와 손패 공간 확인
+        { // 회수 유예 시작
+            return false; // 회수할 수 없는 상태 반환
+        } // 회수 유예 종료
+        List<CardInstance> candidates = discardPile.FindAll(IsDrawable); // 생존 소유자의 버린 카드 후보
+        if (candidates.Count == 0) // 회수 후보 유무 확인
+        { // 후보 없음 처리 시작
+            return false; // 회수 기회 보존
+        } // 후보 없음 처리 종료
+        recoveredRandomDiscard = true; // 카드 회수 알림 전에 전투 기회 소비
+        return TryRecoverDiscard(candidates[random.Next(candidates.Count)]); // 기존 무작위와 카드 객체의 회수 처리
+    } // 무작위 회수 종료
     public void ClearTemporaryCardCosts() // 모든 카드의 턴 한정 비용 초기화
     { // 임시 비용 초기화 시작
         bool changed = false; // 비용 변경 여부 초기화
@@ -470,7 +491,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
                 volatileCards.Add(card); // 손패 정리 뒤 발동 예약
                 continue; // 일반 버림 검사 생략
             } // 휘발 카드 소멸 종료
-            if (!IsHandDiscardPrevented(card)) // 이번 턴 종료 버림이 실제로 취소됐는지 확인
+            if (!IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 유지 카드와 이번 버림 취소 확인
             { // 실제 버림 시작
                 hand.Remove(card); // 원래 손패에서 제거
                 discardPile.Add(card); // 버린 더미 끝에 추가
@@ -563,6 +584,14 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     { // 카드 드로우 조건 시작
         return candidate != null && candidate.OwnerUnit != null && !candidate.OwnerUnit.IsDead; // 카드와 소유자 생존 여부 반환
     } // 카드 드로우 조건 종료
+    private static bool IsRetainedHandCard(CardInstance card) // 일반 턴 정리를 통과하는 유지 카드 확인
+    { // 유지 조건 확인 시작
+        return IsDrawable(card) && card.SourceData.RetainInHand && !card.SourceData.VolatileInHand; // 생존 소유자의 휘발하지 않는 유지 카드 확인
+    } // 유지 조건 확인 종료
+    internal bool HasRetainedHandCardOtherThan(CardInstance resolving) // 사용 정산 중인 카드를 제외한 유지 손패 조회
+    { // 유지 손패 조회 시작
+        return hand.Exists(card => card != resolving && IsRetainedHandCard(card)); // 사용 카드 외 실제 유지 카드 확인
+    } // 유지 손패 조회 종료
     private void ShuffleList(List<CardInstance> targetCards) // 카드 목록 셔플
     { // 셔플 시작
         for (int index = targetCards.Count - 1; index > 0; index--) // 뒤에서 앞으로 카드 순회
