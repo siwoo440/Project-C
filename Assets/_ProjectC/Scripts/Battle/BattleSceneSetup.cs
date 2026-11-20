@@ -691,7 +691,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 패배 처리 종료
         else if (battleTurn.CurrentPhase == BattleTurnPhase.Escaped) // 도주 상태 확인
         { // 도주 처리 시작
-            Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP와 정신력 유지", this); // 도주 결과 출력
+            Debug.Log("[BattleSceneSetup] 전투 도주 / 현재 아군 HP와 정신력 유지", this); // 도주 결과 출력
         } // 도주 처리 종료
     } // 턴 상태 처리 종료
     private void StoreAndShowBattleResult(BattleEventContext eventContext) // 종료 이벤트의 최종 체력과 결과 화면 저장

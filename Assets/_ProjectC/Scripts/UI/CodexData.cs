@@ -109,6 +109,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 방패 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.ShockAbsorption ? 5 : 15); // 원본의 고정 피해와 마법 비율 경감 수치
                     } // 방패 상태 설명 종료
+                    else if (effect == BattleStatusEffectType.ActionSpeedUp) // 전투 시작에 보이는 속도 상승 상태
+                    { // 속도 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 바람개비 배지의 속도 보정 수치 연결
+                    } // 속도 상태 설명 종료
                     else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시

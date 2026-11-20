@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: LeatherNotebook
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_LEATHER_NOTEBOOK
+  displayName: 가죽 수첩
+  description: "각 전투에서 처음 손패로 뽑은 카드의 고정 행동력 비용이 그 턴 동안 1 감소한다."
+  icon: {fileID: 21300000, guid: 2036851def3b51ccbc782155f508a406, type: 3}
+  rarity: 0
+  triggerType: 41
+  effectType: 66
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

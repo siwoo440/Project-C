@@ -232,6 +232,14 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             out hazardState); // 현재 층 위험 방 상태 반환
     }
 
+    internal bool IsFadeAtWorldPosition(Vector3 position) // 조우 위치의 퇴색 지역 확인
+    { // 조우 위치 확인 시작
+        return tilemapView != null // 실제 탐사 맵 존재 확인
+            && tilemapView.TryGetRoomCoordinateAtWorldPosition(position, out Vector2Int coordinate) // 전달된 위치의 방 좌표 조회
+            && TryGetHazardAt(coordinate, out ExplorationHazardRoomState hazard) // 해당 방 위험 상태 조회
+            && hazard.HazardType == ExplorationHazardType.Fade; // 퇴색 위험 종류 확인
+    } // 조우 위치 확인 종료
+
     public bool TryGetPlayerRoomCoordinate(
         out Vector2Int coordinate) // 플레이어가 실제로 서 있는 방 좌표 조회
     {

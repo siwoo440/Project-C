@@ -194,6 +194,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return enemies.Count > 0 && enemies[0].ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks) != BattleStatusEffectApplyResult.Invalid; // 면역과 지속 규칙을 따르는 약화
             case RelicEffectType.HealingCardBlock: // 회복 카드를 사용한 아군의 방어도 획득
             case RelicEffectType.ChaliceCardHealing: // 성배 카드를 사용한 아군의 체력 회복
+            case RelicEffectType.ChaliceMentalOnUse: // 첫 성배 카드 사용자의 정신력 회복
                 var card = context?.Card; // 실제 사용이 확정된 카드 원본
                 var owner = card?.OwnerUnit; // 피해를 받은 대상과 구별한 실제 사용자
                 if (context?.Phase != BattleTurnPhase.PlayerTurn || owner == null || owner.IsDead || owner.Team != BattleTeam.Ally) // 생존한 아군 사용자 확인
@@ -210,6 +211,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                     owner.RestoreHealth(relic.EffectValue); // 사용자의 최대 체력까지만 회복
                     return true; // 이번 턴 사용 횟수 기록
                 } // 성배 조각 발동 종료
+                if (relic.EffectType == RelicEffectType.ChaliceMentalOnUse && card.CardType == CardType.Cup) // 아군 턴 최초 성배 사용 확인
+                { // 성배 사용 정신력 지급 시작
+                    owner.ChangeMental(relic.EffectValue, BattleMentalChangeReason.RelicEffect); // 카드 사용자의 정신력 회복
+                    return true; // 회복 상한에 닿아도 첫 성배 사용 기회 기록
+                } // 성배 사용 정신력 지급 종료
                 return false; // 무관한 카드의 발동 횟수 보존
             case RelicEffectType.JournalCardRemoval: // 승리 확률 판정 후 회차 카드 한 장 정제
                 var runDeck = RunDeckManager.Instance; // 현재 탐사의 실제 회차 덱

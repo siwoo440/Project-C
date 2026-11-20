@@ -52,6 +52,7 @@ public sealed class ExplorationBattleResultReceiver : MonoBehaviour // 전투 �
         ExplorationSessionManager sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
+        int escapeGold = sessionManager.GetEscapeGoldReward(ReceivedResult); // 정산할 조난 신호탄 보상 보관
         sessionManager.ResolveBattleResult(
             ReceivedResult); // 맵 생성 전에 클리어 상태 반영
 
@@ -66,6 +67,10 @@ public sealed class ExplorationBattleResultReceiver : MonoBehaviour // 전투 �
             ReceivedResult.CanReceiveReward
                 ? "보상 가능"
                 : "보상 없음"; // 보상 가능 여부 문구 결정
+        if (escapeGold > 0) // 실제 도주 골드 정산 확인
+        { // 도주 보상 기록 시작
+            rewardLabel = $"도주 골드 +{escapeGold}"; // 보존한 골드의 결과 로그 문구
+        } // 도주 보상 기록 종료
 
         Debug.Log(
             $"[ExplorationBattleResultReceiver] 전투 결과 수신 - " +

@@ -15,6 +15,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private readonly HashSet<string> resolvedEventIds =
         new HashSet<string>(); // 처리 완료 이벤트 ID 목록
     private readonly HashSet<string> avoidedEncounterIds = new HashSet<string>(); // 승리와 보상을 제외한 지도 조각 회피 기록
+    private readonly Dictionary<string, int> escapeGoldClaims = new Dictionary<string, int>(); // 런타임 조우별 선지급 도주 골드
     private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
     public bool UsedSealedMap { get; private set; } // 현재 탐사에서 봉인된 지도 사용 여부
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
@@ -24,6 +25,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public CrackedCompassRunState Compass { get; private set; } = new CrackedCompassRunState(); // 첫 일반 방과 발견된 사건 기록
     public CharredWellRunState Well { get; private set; } = new CharredWellRunState(); // 회차의 우물 물과 봉인 상태
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
+    internal IReadOnlyDictionary<string, int> EscapeGoldClaims => escapeGoldClaims; // 저장에 포함할 조우별 도주 골드 조회
 
     private EncounterData activeEncounter; // 현재 전투 조우 데이터
     private string activeRuntimeEncounterId; // 현재 전투 런타임 조우 ID
@@ -54,6 +56,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
+    internal bool ActiveEncounterInFade { get; private set; } // 현재 조우가 시작된 방의 퇴색 여부
     public int CurrentFloor => currentFloor; // 현재 층 조회
     public int EncounterPoolVersion => encounterPoolVersion; // 저장된 탐사 조우 목록 버전 조회
     public int EventPoolVersion { get; private set; } = ExplorationEventCatalog.CurrentVersion; // 현재 층의 고정 이벤트 목록 버전
@@ -206,6 +209,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         activeEncounter = encounterData; // 현재 전투 데이터 저장
         activeRuntimeEncounterId = runtimeEncounterId; // 런타임 조우 ID 저장
+        ActiveEncounterInFade = FindFirstObjectByType<ExplorationMapRuntime>()?.IsFadeAtWorldPosition(encounterPosition) == true; // 진입 위치의 퇴색 여부를 전투까지 저장
         LastClearReward = null; // 이전 보상 표시 초기화
 
         Vector2 escapeDirection =
@@ -270,7 +274,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         if (resultData.Result == BattleResult.Victory)
         {
-            GrantVictoryRewards(activeEncounter); // 승리 보상 지급 및 런 합계 누적
+            escapeGoldClaims.TryGetValue(runtimeEncounterId, out int previousEscapeGold); // 같은 조우에서 먼저 보관한 도주 골드 조회
+            escapeGoldClaims.Remove(runtimeEncounterId); // 승리한 조우의 도주 골드 정산 기록 제거
+            GrantVictoryRewards(activeEncounter, previousEscapeGold); // 차액과 나머지 승리 보상 지급
 
             if (!string.IsNullOrWhiteSpace(runtimeEncounterId))
             {
@@ -299,6 +305,13 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         else
         {
             LastClearReward = null; // 비승리 보상 제거
+            int escapeGold = GetEscapeGoldReward(resultData); // 성공한 첫 도주의 정산 골드 조회
+            if (escapeGold > 0) // 정산할 골드 확인
+            { // 도주 골드 지급 시작
+                escapeGoldClaims.Add(runtimeEncounterId, escapeGold); // 같은 조우의 중복 지급 방지 기록
+                runGoldGained += escapeGold; // 실제 지급 골드 탐사 합계 누적
+                PlayerResourceManager.EnsureInstance().AddResources(escapeGold, 0, 0, 0); // 탐사 추적 경로로 골드만 지급
+            } // 도주 골드 지급 종료
 
             if (resultData.LivingAllyCount <= 0)
             {
@@ -316,7 +329,21 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         activeEncounter = null; // 현재 전투 데이터 초기화
         activeRuntimeEncounterId = null; // 현재 런타임 조우 ID 초기화
-    }
+        ActiveEncounterInFade = false; // 완료된 교전의 퇴색 정보 해제
+    } // 전투 결과 처리 종료
+
+    internal int GetEscapeGoldReward(BattleResultData resultData) // 결과 화면과 정산에 사용할 도주 골드 계산
+    { // 도주 골드 계산 시작
+        if (resultData == null || resultData.Result != BattleResult.Escape || resultData.LivingAllyCount <= 0 // 도주 성공과 생존자 확인
+            || isExplorationCompleted || activeEncounter == null || activeEncounter.BattleType != resultData.BattleType // 종료 상태와 현재 조우 확인
+            || (resultData.BattleType != BattleType.Normal && resultData.BattleType != BattleType.Elite) // 일반·정예 조우 확인
+            || string.IsNullOrWhiteSpace(activeRuntimeEncounterId) || escapeGoldClaims.ContainsKey(activeRuntimeEncounterId)) // 조우 식별자와 중복 지급 확인
+        { // 지급 불가 처리 시작
+            return 0; // 보존할 골드 없음
+        } // 지급 불가 처리 종료
+        int percent = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.EscapePartialGold)?.EffectValue ?? 0; // 보유 조난 신호탄의 보존 비율 조회
+        return (int)((long)activeEncounter.GoldReward * Mathf.Clamp(percent, 0, 100) / 100L); // 층과 등급을 반영한 기본 골드의 소수점 절사
+    } // 도주 골드 계산 종료
 
     public bool CompleteExplorationSuccess() // 탐사 성공 처리 시도
     {
@@ -559,6 +586,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         Cart.LeaveFloor(); // 미구매 할인을 다음 층 첫 상점으로 이월
         activeEncounter = null; // 진행 중 조우 초기화
         activeRuntimeEncounterId = null; // 진행 중 런타임 조우 초기화
+        ActiveEncounterInFade = false; // 층 이동 때 퇴색 조우 정보 해제
         returnPosition = Vector3.zero; // 이전 층 복귀 위치 초기화
         hasReturnPosition = false; // 이전 층 복귀 위치 해제
         LastClearReward = null; // 이전 보상 표시 초기화
@@ -593,6 +621,13 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         { // 회피 목록 복원 시작
             avoidedEncounterIds.UnionWith(snapshot.avoidedEncounters); // 회피 조우 재등장 방지 기록 복원
         } // 회피 목록 복원 종료
+        if (snapshot.escapeGoldClaims != null) // 도주 골드 기록이 있는 저장인지 확인
+        { // 도주 골드 복원 시작
+            foreach (var claim in snapshot.escapeGoldClaims) // 저장된 도주 지급 기록 순회
+            { // 개별 지급 기록 복원 시작
+                escapeGoldClaims.Add(claim.encounter, claim.gold); // 조우별 중복 방지와 승리 차감 복원
+            } // 개별 지급 기록 복원 종료
+        } // 도주 골드 복원 종료
         pendingHazardHealthDamage = snapshot.hazardHealth; // 대기 체력 피해 복원
         pendingHazardMentalDamage = snapshot.hazardMental; // 대기 정신력 피해 복원
         restoredHazardExposure = snapshot.hazardExposure; // 위험 노출도 복원 예약
@@ -623,8 +658,10 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         Compass = CrackedCompassRunState.ForDeparture(RelicRunManager.Instance?.Inventory); // 출발 시 보유한 나침반의 기회 기록
         Well = new CharredWellRunState(); // 새 탐사의 우물 회복과 봉인 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
+        escapeGoldClaims.Clear(); // 신규 탐사의 도주 골드 지급 기록 초기화
         activeEncounter = null; // 현재 조우 초기화
         activeRuntimeEncounterId = null; // 런타임 조우 초기화
+        ActiveEncounterInFade = false; // 신규 탐사의 퇴색 조우 정보 초기화
         returnPosition = Vector3.zero; // 복귀 위치 초기화
         hasReturnPosition = false; // 복귀 위치 해제
         LastClearReward = null; // 마지막 보상 초기화
@@ -650,7 +687,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             "[Exploration][Day49] 다음 탐사를 위해 런 상태를 초기화했습니다."); // 새 탐사 초기화 로그
     }
 
-    private void GrantVictoryRewards(EncounterData encounterData) // 승리 보상 지급 및 탐사 합계 기록
+    private void GrantVictoryRewards(EncounterData encounterData, int previousEscapeGold) // 남은 승리 보상 지급 및 탐사 합계 기록
     {
         CharacterProgressionManager progressionManager =
             CharacterProgressionManager.EnsureInstance(); // 캐릭터 성장 관리자 준비
@@ -669,6 +706,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         int bonusPercent = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.VictoryGoldPercent)?.EffectValue ?? 0; // 보유한 동전지갑의 승리 골드 증가율
         int goldReward = (int)System.Math.Min(int.MaxValue, (long)encounterData.GoldReward * (100L + bonusPercent) / 100L); // 기본 골드에만 비율 가산 후 소수점 버림
+        goldReward = Mathf.Max(0, goldReward - previousEscapeGold); // 이미 도주에서 받은 골드를 실제 승리 지급량에서 차감
 
         int baseScrewReward =
             encounterData.ScrewReward; // 현재 조우 기본 나사 보상 저장

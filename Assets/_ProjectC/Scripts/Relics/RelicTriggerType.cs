@@ -37,5 +37,10 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforeBattleActions, // 전투의 첫 적 예고 생성 전
     BeforeHealthRecovery, // 전투 중 회복량을 확정하기 직전
     OptionalCardEffectRoll, // 명중 시 발동하는 약화의 무작위 판정
-    CardDamageRoll // 카드의 두 기본 피해 중 하나를 고를 때
+    CardDamageRoll, // 카드의 두 기본 피해 중 하나를 고를 때
+    AfterCardResolved, // 사용한 카드의 효과와 이동 완료 시점
+    BeforeStatusDuration, // 기간제 상태의 남은 턴 지정 직전
+    BattleEscaped, // 실제 조우에서 전투 도주 성공 시점
+    CardDrawn, // 드로우한 카드가 손패에 들어갈 때
+    CardDrawEffect // 카드 자체 효과의 드로우 수량을 확정할 때
 }

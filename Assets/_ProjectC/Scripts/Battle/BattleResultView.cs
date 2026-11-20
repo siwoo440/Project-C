@@ -32,7 +32,12 @@ public sealed class BattleResultView : MonoBehaviour // 전투 종료 결과 화
         EnsureVisualStructure(); // 결과 화면 구조 확인
         confirmationAction = confirmAction; // 확인 처리 저장
         titleText.text = GetResultTitle(resultData.Result); // 결과별 제목 표시
-        string rewardText = resultData.CanReceiveReward ? "보상 획득 가능" : "보상 없음"; // 보상 가능 문구 계산
+        int escapeGold = ExplorationSessionManager.Instance?.GetEscapeGoldReward(resultData) ?? 0; // 탐사 복귀 시 받을 도주 골드 미리 계산
+        string rewardText = resultData.CanReceiveReward ? "보상 획득 가능" : "보상 없음"; // 일반 전투 결과의 보상 문구 계산
+        if (escapeGold > 0) // 조난 신호탄 보존 금액 확인
+        { // 도주 보상 안내 시작
+            rewardText = $"조난 신호탄 · 골드 +{escapeGold}"; // 복귀 후 받는 도주 골드 표시
+        } // 도주 보상 안내 종료
         summaryText.text = $"라운드 {resultData.CompletedRound}\n생존 아군 {resultData.LivingAllyCount}명\n{rewardText}"; // 결과 요약 표시
         confirmButton.interactable = true; // 확인 버튼 활성화
         gameObject.SetActive(true); // 결과 화면 표시

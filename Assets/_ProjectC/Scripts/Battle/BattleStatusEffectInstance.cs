@@ -159,6 +159,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "검성의 자세"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속도 감소"; // 속도 감소 표시
+            case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
+                return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명 표식"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -251,6 +253,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "성"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속"; // 속도 감소 표시
+            case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
+                return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -343,6 +347,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"고정 비용 검 카드의 행동력 비용 −1, 검 피해 +{effectiveValue}"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return $"적 행동 속도 −{effectiveValue}"; // 속도 감소 표시
+            case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
+                return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "첫 아군 턴 종료까지 유지. 표식용 분필의 직접 카드 피해 증가 대상"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류

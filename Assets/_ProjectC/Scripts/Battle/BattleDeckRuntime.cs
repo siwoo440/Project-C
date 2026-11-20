@@ -9,6 +9,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private readonly List<CardInstance> excludedPile = new List<CardInstance>(); // 이번 전투에서만 제외된 카드 목록
     private int relicApDiscount; // 현재 턴의 모든 카드에 적용하는 비용 감소량
     private int nextCardRelicApDiscount; // 다음 유료 카드 한 장에 적용하는 비용 감소량
+    private bool firstDrawCompleted; // 이번 전투 첫 실제 손패 드로우 기록
+    private CardInstance firstDrawDiscountCard; // 현재 턴에 개별 드로우 할인을 받은 카드
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
@@ -144,7 +146,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             drawPile.RemoveAt(topIndex); // 뽑을 카드 더미에서 제거
             if (hand.Count < MaxHandSize) // 손패 공간 확인
             { // 손패 추가 시작
-                hand.Add(drawnCard); // 손패에 카드 추가
+                AddDrawnCardToHand(drawnCard); // 손패 이동과 최초 드로우 할인 처리
                 drawnCount++; // 실제 드로우 수 증가
             } // 손패 추가 종료
             else // 손패 가득 참 확인
@@ -156,6 +158,31 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         discardPile.AddRange(overflowCards); // 초과 카드 버린 더미 이동
         return drawnCount; // 실제 드로우 수 반환
     } // 공통 드로우 종료
+    private void AddDrawnCardToHand(CardInstance card) // 정상 드로우의 손패 이동과 최초 할인 적용
+    { // 실제 손패 드로우 처리 시작
+        hand.Add(card); // 손패에 드로우 카드 추가
+        if (firstDrawCompleted) // 이번 전투 첫 손패 드로우 확인
+        { // 최초 이후 드로우 처리 시작
+            return; // 이후 카드의 비용 보존
+        } // 최초 이후 드로우 처리 종료
+        firstDrawCompleted = true; // 빈 덱과 손패 초과로 소비되지 않는 첫 드로우 기록
+        int discount = BattleSupplyRelics.Find(RelicEffectType.FirstDrawCardDiscount)?.EffectValue ?? 0; // 보유한 첫 드로우 유물의 할인량
+        if (discount > 0) // 적용할 실제 할인 확인
+        { // 첫 카드 할인 시작
+            firstDrawDiscountCard = card; // 턴 종료 때 복원할 카드 저장
+            card.FirstDrawRelicApDiscount = discount; // 다른 카드와 별개의 턴 한정 비용 감소
+        } // 첫 카드 할인 종료
+    } // 실제 손패 드로우 처리 종료
+    internal void ClearFirstDrawRelicDiscount() // 종료된 턴의 첫 드로우 카드 할인 복원
+    { // 첫 드로우 할인 정리 시작
+        if (firstDrawDiscountCard == null) // 실제로 할인한 카드 확인
+        { // 복원 대상 없음 처리 시작
+            return; // 비용 변경 생략
+        } // 복원 대상 없음 처리 종료
+        firstDrawDiscountCard.FirstDrawRelicApDiscount = 0; // 카드 위치와 무관하게 개별 비용 복원
+        firstDrawDiscountCard = null; // 종료된 턴의 할인 참조 해제
+        StateChanged?.Invoke(); // 유지된 손패의 비용 표시 갱신
+    } // 첫 드로우 할인 정리 종료
     public IReadOnlyList<CardInstance> PeekDrawTop(int maximumChoices) // 현재 덱 위의 생존 카드 확인
     { // 덱 위 확인 시작
         List<CardInstance> choices = new List<CardInstance>(); // 덱 위 후보 목록 생성
@@ -245,7 +272,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         drawPile.RemoveAt(index); // 뽑을 카드 더미에서 선택 카드 제거
         if (hand.Count < MaxHandSize) // 손패 공간 확인
         { // 정상 드로우 시작
-            hand.Add(choice); // 선택 카드를 손패에 추가
+            AddDrawnCardToHand(choice); // 선택 드로우의 실제 손패 이동과 할인 적용
         } // 정상 드로우 종료
         else // 손패 가득 참 확인
         { // 초과 카드 처리 시작
@@ -314,6 +341,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 복사 종료
     internal void ClearBattleRelicCards() // 전투가 끝난 뒤 임시 카드와 예약 정리
     { // 전투 카드 정리 시작
+        ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
         { // 복사본 제거 시작

@@ -641,7 +641,7 @@
     {
       "sourceRow": 60,
       "name": "녹슨 성배대",
-      "description": "성배 카드 사용 시 정신력 +1(턴당 1회)",
+      "description": "아군 턴에 성배 카드를 처음 사용하면 카드 소유자의 정신력이 1 증가한다.",
       "buyMin": 321,
       "buyMax": 369,
       "buyVariance": 48,
@@ -652,7 +652,7 @@
     {
       "sourceRow": 61,
       "name": "손때 묻은 계산기",
-      "description": "펜타클 카드 사용 시 드로우 +1(턴당 1회)",
+      "description": "아군 턴에 첫 펜타클 카드 사용을 마치면 손패 상한까지 카드 한 장을 뽑는다.",
       "buyMin": 303,
       "buyMax": 352,
       "buyVariance": 49,
@@ -663,7 +663,7 @@
     {
       "sourceRow": 62,
       "name": "바람개비 배지",
-      "description": "전투 시작 시 속도 +1(아군 전체, 1턴)",
+      "description": "전투 시작 시 모든 생존 아군의 행동 속도가 1 증가한다. 첫 적 턴이 끝나면 해제된다.",
       "buyMin": 241,
       "buyMax": 289,
       "buyVariance": 48,
@@ -674,7 +674,7 @@
     {
       "sourceRow": 63,
       "name": "불완전한 방독면",
-      "description": "침식지대에서 받는 디버프 지속턴 -1(최소 1)",
+      "description": "침식지대에서 시작한 전투에서 아군이 받는 기간제 디버프 지속 시간이 1턴 감소한다. 최소 1턴이다.",
       "buyMin": 223,
       "buyMax": 272,
       "buyVariance": 49,
@@ -685,7 +685,7 @@
     {
       "sourceRow": 64,
       "name": "조난 신호탄",
-      "description": "도주 성공 시 패널티 감소(보상 일부 유지)",
+      "description": "전투 도주에 성공하면 해당 조우의 기본 골드 보상 중 25%를 한 번 받는다. 이후 같은 조우 승리 시 먼저 받은 골드는 정산에서 차감한다.",
       "buyMin": 252,
       "buyMax": 301,
       "buyVariance": 49,
@@ -696,7 +696,7 @@
     {
       "sourceRow": 65,
       "name": "초소형 드론",
-      "description": "전투 시작 시 무작위 적 1명에게 약화 1턴",
+      "description": "전투 시작 시 무작위 생존 적 한 명의 공격력을 첫 적 턴 동안 2 낮춘다.",
       "buyMin": 252,
       "buyMax": 301,
       "buyVariance": 49,
@@ -707,7 +707,7 @@
     {
       "sourceRow": 66,
       "name": "가죽 수첩",
-      "description": "전투 중 처음 드로우한 카드 1장의 코스트 -1(그 턴)",
+      "description": "각 전투에서 처음 손패로 뽑은 카드의 고정 행동력 비용이 그 턴 동안 1 감소한다.",
       "buyMin": 271,
       "buyMax": 320,
       "buyVariance": 49,
@@ -718,7 +718,7 @@
     {
       "sourceRow": 67,
       "name": "푸른 잉크병",
-      "description": "카드 설명(효과) 중 ‘드로우’ +1(전투당 1회)",
+      "description": "전투당 한 번, 카드 효과가 지정한 장수를 뽑을 때 그 장수를 1 늘린다.",
       "buyMin": 241,
       "buyMax": 290,
       "buyVariance": 49,

@@ -12,6 +12,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int lastBlackRoseRound = -1; // 검은 장미 코사지의 파티 공용 마지막 발동 라운드
     private int lastPencilRound = -1; // 흑연 연필의 마지막 성공 라운드
     private int pendingInspectionDraw; // 바보의 남은 카드 처리 뒤 받을 추가 드로우 수
+    private int lastPentacleDrawRound = -1; // 펜타클 드로우 유물의 마지막 아군 라운드
+    private int pendingPentacleDraw; // 카드 선택이 끝난 뒤 받을 펜타클 드로우 수
+    private bool usedFirstCardDrawBonus; // 이번 전투 최초 카드 드로우 증가 사용 기록
     private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
     private int bandageBonus; // 현재 카드의 원래 회복 대상별 추가량
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
@@ -325,6 +328,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 버릴 카드 후보 준비 시작
             pendingCardChoices = new List<CardInstance>(runtimeDeck.Hand); // 사용한 카드를 제외한 현재 손패 복사
         } // 버릴 카드 후보 준비 종료
+        if (discarded) // 사용 카드의 손패 이탈 확인
+        { // 사용 후 드로우 유물 처리 시작
+            QueuePentacleUseDraw(cardInstance); // 카드 사용 위치 정산 뒤 펜타클 보너스 확인
+        } // 사용 후 드로우 유물 처리 종료
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
@@ -380,7 +387,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 } // 대상 방어 종료
                 break; // 대상 방어 처리 종료
             case CardFollowUpEffect.DrawCards: // 사용한 카드 자리를 비운 뒤 드로우
-                return runtimeDeck.TryPlayAndDraw(card, value, out _); // 자가 재드로우 없이 한 번 버린 더미로 이동
+                return runtimeDeck.TryPlayAndDraw(card, GetCardEffectDrawCount(value), out _); // 최초 카드 드로우 보너스를 포함한 후속 드로우
         } // 효과 구분 종료
         return card.EffectType == CardEffectType.DrawThenDiscard || (turnRuntime.IsBattleEnded && !ContainsHandCard(card)) || runtimeDeck.DiscardPlayedCard(card); // 선행 이동과 전투 종료 복사본 정리 및 일반 카드 사용 정산
     } // 후속 효과 처리 종료
@@ -389,6 +396,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         actionPending = false; // 카드 행동 진행 상태 해제
         bossPhaseRuntime?.CompletePendingTransition(); // 충돌과 카드 이동 완료 후 보스 페이즈 전환
         ShowPendingCardChoices(); // 대기 중인 드로우 선택 화면 표시
+        if (drawChoiceView == null) // 별도 카드 선택을 기다리지 않는 경우 확인
+        { // 대기 드로우 처리 시작
+            ApplyPendingPentacleDraw(); // 후보 없이 끝난 카드 사용의 예약 지급
+        } // 대기 드로우 처리 종료
         ShowPendingDebuffChoices(); // 대기 중인 디버프 선택 화면 표시
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 연출 완료 처리 종료
@@ -494,6 +505,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 남은 카드 처리 선택 종료
         pendingFoolPassive = false; // 대기 패시브 해제
         ApplyInspectionDraw(); // 남은 카드 처리 없는 확인 보너스 즉시 지급
+        ApplyPendingPentacleDraw(); // 카드 선택과 기존 확인 드로우 뒤 펜타클 보너스 지급
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 처리 종료
     private void HandleRemainingCardSelected(bool discard) // 남은 카드 처리 선택
@@ -503,6 +515,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             runtimeDeck.TryDiscardDrawTop(remainingChoiceCard); // 남은 맨 위 카드 버리기
         } // 남은 카드 버리기 종료
         ApplyInspectionDraw(); // 남은 카드를 유지하거나 버린 뒤 확인 보너스 지급
+        ApplyPendingPentacleDraw(); // 남은 카드 결정 뒤 펜타클 보너스 지급
         remainingChoiceCard = null; // 남은 카드 참조 정리
         remainingChoiceView = null; // 닫힌 선택 화면 참조 정리
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
@@ -510,6 +523,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
         pendingInspectionDraw = 0; // 전투 종료나 선택 강제 해제 뒤 남은 드로우 예약 정리
+        pendingPentacleDraw = 0; // 전투 종료나 선택 강제 해제 뒤 펜타클 예약 정리
         pendingCardChoices = null; // 대기 후보 정리
         pendingFoolPassive = false; // 대기 패시브 해제
         remainingChoiceCard = null; // 남은 카드 참조 정리
@@ -719,7 +733,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우와 손패 정리 확인
         { // 달 카드 드로우 처리 시작
             pendingChoiceEffect = CardEffectType.DrawThenDiscard; // 드로우 후 손패 선택 효과 저장
-            return runtimeDeck.TryPlayAndDraw(cardInstance, cardInstance.EffectValue, out int drawnCount) ? drawnCount : 0; // 사용 카드 공간을 확보하고 가능한 카드 드로우
+            return runtimeDeck.TryPlayAndDraw(cardInstance, GetCardEffectDrawCount(cardInstance.EffectValue), out int drawnCount) ? drawnCount : 0; // 카드 드로우 증가를 포함해 손패 선택 준비
         } // 달 카드 드로우 처리 종료
         if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 매달린 자의 디버프 이전 효과 확인
         { // 디버프 이전 선택 준비 시작
@@ -1074,6 +1088,47 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             runtimeDeck.DrawCards(count); // 기존 덱과 손패 규칙으로 추가 드로우
         } // 추가 카드 지급 종료
     } // 추가 드로우 처리 종료
+    private int GetCardEffectDrawCount(int count) // 수량이 정해진 카드 드로우의 최초 보너스 계산
+    { // 카드 드로우 수량 처리 시작
+        if (count <= 0 || usedFirstCardDrawBonus) // 실제 양수 요청과 전투 최초 기회 확인
+        { // 보너스 제외 시작
+            return count; // 원래 드로우 수량 유지
+        } // 보너스 제외 종료
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.FirstCardDrawBonus)?.EffectValue ?? 0; // 보유한 카드 드로우 증가 유물 확인
+        if (bonus <= 0) // 증가할 실제 수량 확인
+        { // 미보유 또는 효과 없음 처리 시작
+            return count; // 기본 카드 드로우 수량 유지
+        } // 미보유 또는 효과 없음 처리 종료
+        usedFirstCardDrawBonus = true; // 드로우 처리 전 전투당 한 번 기회 기록
+        return (int)Math.Min(int.MaxValue, (long)count + bonus); // 정수 범위 내 증가한 카드 드로우 수 반환
+    } // 카드 드로우 수량 처리 종료
+    private void QueuePentacleUseDraw(CardInstance card) // 실제 사용한 펜타클의 추가 드로우 예약
+    { // 펜타클 사용 확인 시작
+        if (card.CardType != CardType.Pentacle || !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded || lastPentacleDrawRound == turnRuntime.CurrentRound) // 유효한 아군 턴의 첫 펜타클 사용 확인
+        { // 유물 발동 제외 시작
+            return; // 관련 없는 카드와 턴에서 드로우 생략
+        } // 유물 발동 제외 종료
+        int count = BattleSupplyRelics.Find(RelicEffectType.PentacleDrawOnUse)?.EffectValue ?? 0; // 보유한 펜타클 사용 유물 드로우 수
+        if (count <= 0) // 보유 여부와 양수 보너스 확인
+        { // 드로우 불가 처리 시작
+            return; // 실제 유물 효과 없음 처리
+        } // 드로우 불가 처리 종료
+        lastPentacleDrawRound = turnRuntime.CurrentRound; // 이번 아군 턴의 첫 펜타클 사용 기록
+        pendingPentacleDraw = count; // 현재 카드 이동 뒤 지급할 드로우 보관
+        if (pendingCardChoices == null || pendingCardChoices.Count == 0) // 덱이나 손패의 기존 선택 후보 여부 확인
+        { // 선택 없는 카드 보너스 처리 시작
+            ApplyPendingPentacleDraw(); // 손패를 떠난 카드의 드로우 즉시 지급
+        } // 선택 없는 카드 보너스 처리 종료
+    } // 펜타클 사용 확인 종료
+    private void ApplyPendingPentacleDraw() // 보관한 펜타클 드로우 한 번 지급
+    { // 드로우 예약 처리 시작
+        int count = pendingPentacleDraw; // 이번 펜타클 사용으로 예약한 수량
+        pendingPentacleDraw = 0; // 실제 드로우와 덱 변경 전에 중복 지급 차단
+        if (count > 0 && turnRuntime.IsPlayerTurn && !turnRuntime.IsBattleEnded) // 유효한 현재 턴의 예약 확인
+        { // 펜타클 드로우 실행 시작
+            runtimeDeck.DrawCards(count); // 기존 덱과 손패 규칙을 따르는 유물 드로우
+        } // 펜타클 드로우 실행 종료
+    } // 드로우 예약 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
         BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, null, preparedSwordDamage, (hit, damage) => ApplyDirectHitRelics(card, hit, damage)); // 다른 적의 독립 명중과 피해 처리
