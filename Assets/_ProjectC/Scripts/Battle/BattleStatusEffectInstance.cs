@@ -151,6 +151,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 저항 약화"; // 마법 저항 감소 이름 반환
             case BattleStatusEffectType.DuelMark: // 결투 표식 정보
                 return "결투 표식"; // 결투 상태 표시
+            case BattleStatusEffectType.ShockAbsorption: // 충격 흡수 이름 확인
+                return "충격 흡수"; // 충격 흡수 표시 이름
+            case BattleStatusEffectType.ResistanceStance: // 저항 태세 이름 확인
+                return "저항 태세"; // 저항 태세 표시 이름
             case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
                 return "검성의 자세"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
@@ -239,6 +243,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마-"; // 마법 저항 감소 아이콘 반환
             case BattleStatusEffectType.DuelMark: // 결투 표식 정보
                 return "투"; // 결투 상태 표시
+            case BattleStatusEffectType.ShockAbsorption: // 충격 흡수 아이콘 확인
+                return "충격"; // 축약 상태 이름
+            case BattleStatusEffectType.ResistanceStance: // 저항 태세 아이콘 확인
+                return "저항"; // 축약 상태 이름
             case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
                 return "성"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
@@ -327,6 +335,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
             case BattleStatusEffectType.DuelMark: // 결투 표식 정보
                 return $"결투를 건 유닛이 상대에게 주는 직접 카드 피해 +{effectiveValue}%"; // 결투 상태 표시
+            case BattleStatusEffectType.ShockAbsorption: // 충격 흡수 상세 확인
+                return $"적의 직접 공격 피해 -{effectiveValue}"; // 적 턴에 타격마다 막는 피해
+            case BattleStatusEffectType.ResistanceStance: // 저항 태세 상세 확인
+                return $"적의 직접 마법 피해 -{effectiveValue}%"; // 추가 마법 피해 경감률
             case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
                 return $"고정 비용 검 카드의 행동력 비용 −1, 검 피해 +{effectiveValue}"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류

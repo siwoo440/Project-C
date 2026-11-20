@@ -99,12 +99,16 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     } // 검 상태 설명 종료
                     else if (effect == BattleStatusEffectType.AttackPowerDown) // 청동 경보장치의 한 턴 약화
                     { // 경보 설명 시작
-                        description = BattleStatusEffectInstance.GetDescription(effect, 1) + ". 적 턴이 끝나면 해제."; // 적용 공격과 종료 시점 표시
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1) + ". 적 턴 종료마다 남은 기간이 줄어든다."; // 새 방패 카드와 기존 공격력 약화의 기간 표시
                     } // 경보 설명 종료
                     else if (effect == BattleStatusEffectType.DuelMark || effect == BattleStatusEffectType.SwordSaintStance) // 전설 검 카드의 표식과 자세 확인
                     { // 전설 검 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.DuelMark ? 40 : 4); // 원본의 피해 비율과 타격 강화 수치
                     } // 전설 검 상태 설명 종료
+                    else if (effect == BattleStatusEffectType.ShockAbsorption || effect == BattleStatusEffectType.ResistanceStance) // 방패 카드의 두 직접 피해 경감 확인
+                    { // 방패 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.ShockAbsorption ? 5 : 15); // 원본의 고정 피해와 마법 비율 경감 수치
+                    } // 방패 상태 설명 종료
                     else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시

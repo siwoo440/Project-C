@@ -23,7 +23,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => Mathf.Max(0, ApCostBeforeNextCardDiscount - NextCardRelicApDiscount); // 0을 하한으로 다음 카드 할인 적용
+    public int ApCost => (int)Math.Min(int.MaxValue, (long)Mathf.Max(0, ApCostBeforeNextCardDiscount - NextCardRelicApDiscount) + SourceData.AdditionalActionPointCost); // 할인된 기본 비용과 의무 행동력 대가 합산
     internal int ApCostBeforeNextCardDiscount => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount - RelicApDiscount - SwordSaintDiscount); // 지속하는 할인만 계산한 고정 비용
     private int SwordSaintDiscount => CardType == CardType.Sword && OwnerUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance) != null ? 1 : 0; // 검성 상태 소유자의 검 카드 비용 감소
     public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용

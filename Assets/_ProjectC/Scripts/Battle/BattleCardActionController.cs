@@ -591,7 +591,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 드로우와 버리기 불가 시작
             return false; // 선택 불가 반환
         } // 드로우와 버리기 불가 종료
-        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack && !enemyActions.CanProtectAlly(cardInstance.OwnerUnit, targetUnit)) // 대신 받을 동료 공격 확인
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack && !CanGuardAllyWithCard(cardInstance, targetUnit)) // 이 카드로 보호할 동료의 적격 여부 확인
         { // 동료 보호 불가 시작
             return false; // 선택 불가 반환
         } // 동료 보호 불가 종료
@@ -675,6 +675,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 유효 대상 검사 종료
         return targetUnits; // 유효 대상 목록 반환
     } // 유효 대상 생성 종료
+    private bool CanGuardAllyWithCard(CardInstance card, BattleUnitRuntime target) // 기존 힘 카드와 방패 카드의 다른 보호 조건 조회
+    { // 보호 조건 조회 시작
+        return card.SourceData.ShieldRule == ShieldCardRule.BodyGuard // 대상을 미리 지정하는 방패 카드 확인
+            ? enemyActions.CanBodyGuard(card.OwnerUnit, target) // 예고 없이도 보호 가능한 생존 동료
+            : enemyActions.CanProtectAlly(card.OwnerUnit, target); // 실제 공격 예고가 필요한 기존 힘 카드
+    } // 보호 조건 조회 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
         return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
@@ -732,7 +738,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 동료 피해 분담 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 힘의 동료 보호 효과 확인
         { // 동료 보호 처리 시작
-            return enemyActions.TryProtectAlly(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 첫 예정 공격 대신 받기 결과 반환
+            bool guarded = cardInstance.SourceData.ShieldRule == ShieldCardRule.BodyGuard // 방패 카드의 지속 보호 여부 확인
+                ? enemyActions.TryBodyGuard(cardInstance.OwnerUnit, targetUnit) // 대상의 이후 첫 유효 공격을 대신 받을 예약
+                : enemyActions.TryProtectAlly(cardInstance.OwnerUnit, targetUnit); // 기존 힘 카드의 예정 공격 보호
+            return guarded ? 1 : 0; // 실제 보호 예약 결과 반환
         } // 동료 보호 처리 종료
         if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 은둔자의 덱 순서 정리 확인
         { // 덱 순서 정리 준비 시작
@@ -1014,6 +1023,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
         } // 화상 부여 종료
         var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, supplyRelics, out var statusResult); // 실제 명중과 보유 구슬을 반영한 후속 상태 확인
+        if (cardInstance.SourceData.ShieldRule == ShieldCardRule.ShieldBash && !targetUnit.IsDead && supplyRelics.RollOptionalStatus(targetUnit, cardInstance.SourceData.SecondaryEffectValue)) // 방패 밀치기의 명중 후 행동 제한 확률 확인
+        { // 방패로 적 행동 밀어내기 시작
+            appliedStatus = BattleStatusEffectType.Stagger; // 적만 사용하는 다음 행동 취소 상태 선택
+            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, 1, 1, 1, cardInstance.OwnerUnit); // 다음 유효 적 행동을 한 번 취소
+        } // 방패로 적 행동 밀어내기 종료
         if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
         { // 검 전용 상태 피드백 시작
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(appliedStatus, statusResult); // 명중 후 상태 부여 결과 표시

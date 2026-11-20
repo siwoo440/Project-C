@@ -1,16 +1,20 @@
 using System; // 기본 예외 기능 사용
 
 public sealed class BattleEnemyAction // 적 예정 행동 정보
-{
+{ // 행동 정보 시작
     private Func<BattleEnemyAction, bool> canPreviewPreparation; // 방어 준비 예고 순서 확인
     private Func<BattleEnemyAction, int> getBootReduction; // 현재 예고 순서에서 사용할 수 있는 장화 경감량
     private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
+    private Func<BattleEnemyAction, BattleUnitRuntime> getBodyGuardPreviewTarget; // 대신 받을 아군 예고 조회
+    private BattleUnitRuntime executedAttackTarget; // 실행 당시의 실제 공격 대상
+    private BattleUnitRuntime damageShareRecipient; // 원래 대상의 피해 분담 동료
     private readonly Func<int> rollPercent; // 명중과 추가 상태 확률 난수
     private readonly int statusChancePercent; // 공격 후 상태 부여 확률
     private readonly int statusValue; // 공격 후 상태 효과 수치
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
-    public BattleUnitRuntime Target { get; private set; } // 대상 아군 조회
-    public BattleUnitRuntime SharedDamageRecipient { get; private set; } // 피해 분담 동료 조회
+    internal BattleUnitRuntime IntendedTarget { get; private set; } // 전환 효과 전의 지정 대상
+    public BattleUnitRuntime Target => executedAttackTarget ?? getBodyGuardPreviewTarget?.Invoke(this) ?? IntendedTarget; // 실제 또는 예고 피격 대상
+    public BattleUnitRuntime SharedDamageRecipient => Target == IntendedTarget ? damageShareRecipient : null; // 현재 피격 대상의 분담 동료
     public EnemyActionType ActionType { get; } // 행동 종류 조회
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public int Amount { get; } // 층 난이도 포함 예정 수치 조회
@@ -36,9 +40,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         Actor != null &&
         !Actor.IsDead &&
         BlockingStatus == BattleStatusEffectType.None && // 취소되거나 기절한 행동 제외
-        Target != null &&
-        !Target.IsDead &&
+        IntendedTarget != null && // 지정 대상 확인
+        !IntendedTarget.IsDead && // 지정 대상 생존 확인
         IsActionConfigurationValid(); // 실행 가능 여부 조회
+
+    internal bool IsPositiveDirectAttack => IsExecutable && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && AttackAmount > 0; // 양수 직접 적 공격 확인
 
     public BattleEnemyAction(
         BattleUnitRuntime actor,
@@ -64,7 +70,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             actor ??
             throw new ArgumentNullException(nameof(actor)); // 행동 적 저장
 
-        Target =
+        IntendedTarget = // 원래 대상 지정
             target ??
             throw new ArgumentNullException(nameof(target)); // 대상 아군 저장
 
@@ -115,29 +121,30 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return false;
         }
 
-        if (Target != target) // 기존 공격 대상 변경 확인
+        if (IntendedTarget != target) // 지정 공격 대상 변경 확인
         { // 기존 분담 해제 시작
-            SharedDamageRecipient = null; // 이전 대상의 피해 분담 해제
+            damageShareRecipient = null; // 이전 지정 대상의 분담 해제
         } // 기존 분담 해제 종료
-        Target = target; // 새 대상 저장
+        IntendedTarget = target; // 새 지정 대상 저장
+        executedAttackTarget = null; // 이전 실행 대상 초기화
         return true;
     }
     internal bool SetDamageShare(BattleUnitRuntime recipient) // 생존 동료를 피해 분담자로 설정
     { // 피해 분담 설정 시작
-        if (recipient == null || recipient.IsDead || recipient == Target || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 분담자와 공격 유효성 확인
+        if (recipient == null || recipient.IsDead || recipient == IntendedTarget || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 지정 대상과 분담자 유효성 확인
         { // 분담 설정 불가 시작
             return false; // 설정 실패 반환
         } // 분담 설정 불가 종료
-        SharedDamageRecipient = recipient; // 현재 공격의 피해 분담자 저장
+        damageShareRecipient = recipient; // 현재 공격의 피해 분담자 저장
         return true; // 설정 성공 반환
     } // 피해 분담 설정 종료
     internal bool ClearDamageShare(BattleUnitRuntime recipient) // 지정 분담자의 피해 분담 해제
     { // 피해 분담 해제 시작
-        if (recipient == null || SharedDamageRecipient != recipient) // 기존 분담자 일치 확인
+        if (recipient == null || damageShareRecipient != recipient) // 지정 분담자 일치 확인
         { // 해제 대상 없음 시작
             return false; // 변경 없음 반환
         } // 해제 대상 없음 종료
-        SharedDamageRecipient = null; // 지정 분담자 연결 해제
+        damageShareRecipient = null; // 지정 분담자 연결 해제
         return true; // 해제 성공 반환
     } // 피해 분담 해제 종료
 
@@ -153,6 +160,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     { // 경감 예고 연결 시작
         getBootReduction = rule; // 현재 파티의 이번 턴 경감 기회 조회
     } // 경감 예고 연결 종료
+    internal void SetBodyGuardPreviewRule(Func<BattleEnemyAction, BattleUnitRuntime> rule) // 대신 받기 대상 예고 연결
+    { // 보호 예고 연결 시작
+        getBodyGuardPreviewTarget = rule; // 대신 받을 대상 조회 규칙 저장
+    } // 보호 예고 연결 종료
     public BattleDamageResult PreviewDamage() // 예정 피해 계산
     { // 예정 피해 계산 시작
         return PreviewDamageWithBlock(Target == null ? 0 : getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this)); // 공격 순서별 방어도 반영
@@ -199,7 +210,12 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     }
 
     public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null, Func<int, int> reduceHealthDamage = null) // 예정 행동 실행
-    {
+    { // 일반 실행 시작
+        return Execute(preventHealthDamage, reduceHealthDamage, null, null); // 기존 단독 실행 경로 연결
+    } // 일반 실행 종료
+
+    internal BattleEnemyActionResult Execute(Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, BattleUnitRuntime guard, Action consumeBodyGuard) // 대신 받기를 포함한 행동 실행
+    { // 보호 포함 실행 시작
         if (BlockingStatus == BattleStatusEffectType.Stagger) // 다음 행동 한 번을 취소하는 상태 확인
         { // 행동 한 번 취소 시작
             Actor.RemoveStatusEffect(BattleStatusEffectType.Stagger); // 취소한 예고 한 번에만 상태 소모
@@ -228,22 +244,29 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
         int attackDamage = AttackAmount; // 약화 소모 전 이번 공격 수치 보관
         Actor.RemoveStatusEffect(BattleStatusEffectType.NextAttackDown); // 적이 실제 공격을 시도하면 명중과 관계없이 한 번 소모
-        int hitChance = BattleHitChance.GetPercent(Actor, Target); // 공격자 실명과 대상 회피를 합산한 명중률
-        if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), Target)) // 유효한 난수로 실명과 회피를 함께 판정
+        BattleUnitRuntime attackTarget = attackDamage > 0 && guard != null && !guard.IsDead ? guard : IntendedTarget; // 현재 명중 판정 대상 선택
+        executedAttackTarget = attackTarget; // 연출과 결과 표시용 피격 대상 고정
+        int hitChance = BattleHitChance.GetPercent(Actor, attackTarget); // 실제 대상 회피를 포함한 명중률
+        if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), attackTarget)) // 실제 대상에 대한 명중 판정
         { // 공격 빗나감 처리 시작
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료
 
-        BattleDamageResult damageResult = Target.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true); // 실제 명중 뒤 분담과 체력 피해 방어 판정
+        if (attackTarget != IntendedTarget) // 보호자에게 명중한 공격 확인
+        { // 대신 받기 소모 시작
+            consumeBodyGuard?.Invoke(); // 피격 이벤트 전 이번 효과 소모
+        } // 대신 받기 소모 종료
 
-        bool applyAdditionalStatus = !Target.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 생존 대상의 공격 후 상태 부여 판정
-        BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? Target.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 공격 후 상태 적용 결과 계산
-        if (!Target.IsDead && AdditionalMentalChange != 0) // 생존 대상의 정신력 추가 변화 확인
+        BattleDamageResult damageResult = attackTarget.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true); // 실제 피격 대상의 방어와 피해 처리
+
+        bool applyAdditionalStatus = !attackTarget.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 실제 피격 대상의 추가 상태 판정
+        BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? attackTarget.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 실제 피격 대상의 추가 상태 적용
+        if (!attackTarget.IsDead && AdditionalMentalChange != 0) // 실제 피격 대상의 정신력 변화 확인
         { // 정신력 압박 적용 시작
-            Target.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived); // 공격 적중 시 정신력 변화 적용
+            attackTarget.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived); // 실제 피격 대상의 정신력 변화 적용
         } // 정신력 압박 적용 종료
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
-    }
+    } // 보호 포함 실행 종료
 
     private static int GetScaledActionAmount(
         EnemyActionType actionType,

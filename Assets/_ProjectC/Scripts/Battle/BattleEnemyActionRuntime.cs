@@ -5,6 +5,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 적 런타임 목록
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 아군 런타임 목록
     private readonly List<BattleEnemyAction> plannedActions = new List<BattleEnemyAction>(); // 예정 행동 목록
+    private readonly List<(BattleUnitRuntime Guard, BattleUnitRuntime Ally)> bodyGuards = new List<(BattleUnitRuntime Guard, BattleUnitRuntime Ally)>(); // 사용 순서대로 등록한 보호 목록
     private readonly Dictionary<BattleUnitRuntime, int> nextPatternIndices = new Dictionary<BattleUnitRuntime, int>(); // 적별 다음 패턴 순번
     private readonly Dictionary<BattleUnitRuntime, int> phasePatternStarts = new Dictionary<BattleUnitRuntime, int>(); // 적별 현재 페이즈 시작 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
@@ -70,6 +71,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 action.SetPreparationPreviewRule(IsFirstAttackAgainstTarget); // 방어 준비 예고 순서 연결
                 action.SetBootPreviewRule(GetBootPreviewReduction); // 남은 장화 횟수와 예고된 순서 반영
                 action.SetBlockPreviewRule(GetBlockBeforeAttack); // 방어도 예고 순서 연결
+                action.SetBodyGuardPreviewRule(GetBodyGuardPreviewTarget); // 대신 받을 대상 예고 연결
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
@@ -86,7 +88,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 첫 공격 처리 시작
                 return true; // 앞선 공격 없음 반환
             } // 첫 공격 처리 종료
-            if (candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
+            if (candidate != executingAction && CanPreviewAttackImpact(candidate) && candidate.Target == action.Target) // 같은 피격 대상의 앞선 유효 공격 확인
             { // 앞선 공격 처리 시작
                 return false; // 방어 준비 선행 소모 반환
             } // 앞선 공격 처리 종료
@@ -102,7 +104,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 결과 반환 시작
                 break; // 앞선 공격 검사 종료
             } // 결과 반환 종료
-            if (candidate != executingAction && candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
+            if (candidate != executingAction && CanPreviewAttackImpact(candidate) && candidate.Target == action.Target) // 같은 피격 대상의 앞선 유효 공격 확인
             { // 방어도 소모 예측 시작
                 BattleDamageResult preview = candidate.PreviewDamageBeforeShare(block); // 장화 경감과 무관한 앞선 방어도 흡수량
                 block = block + preview.PreparedBlock - preview.AbsorbedDamage; // 준비 획득과 흡수 후 예상 방어도 계산
@@ -110,9 +112,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 앞선 공격 검사 종료
         return block; // 공격 전 예상 방어도 반환
     } // 잔여 방어도 계산 종료
+    private static bool CanPreviewAttackImpact(BattleEnemyAction action) // 예고에서 피해가 가능한 직접 공격 확인
+    { // 유효 명중 예고 시작
+        return action.IsPositiveDirectAttack && BattleHitChance.GetPercent(action.Actor, action.Target) > 0; // 양수 피해와 영보다 높은 명중률 확인
+    } // 유효 명중 예고 종료
     public BattleEnemyActionResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
-        if (disposed || action == null || !plannedActions.Contains(action)) // 실행 대상 유효성 확인
+        if (disposed || executingAction != null || action == null || !plannedActions.Contains(action)) // 중첩 실행 차단과 실행 대상 확인
         { // 실행 불가 처리 시작
             return BattleEnemyActionResult.Empty(action == null ? EnemyActionType.None : action.ActionType, action == null ? BattleDamageType.None : action.DamageType); // 적용 행동 없음 반환
         } // 실행 불가 처리 종료
@@ -123,7 +129,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             StateChanged?.Invoke(); // 예정 행동 변경 알림
             return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
         } // 사망 적 처리 종료
-        if (action.Target == null || action.Target.IsDead) // 기존 대상 상태 확인
+        if (action.IntendedTarget == null || action.IntendedTarget.IsDead) // 기존 지정 대상 상태 확인
         { // 대상 재선택 시작
             BattleUnitRuntime replacementTarget = SelectTarget(action.TargetRule); // 행동 규칙으로 새 생존 대상 선택
             if (!action.ChangeTarget(replacementTarget)) // 대상 변경 결과 확인
@@ -134,9 +140,25 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
+        int guardIndex = action.IsPositiveDirectAttack ? FindBodyGuardIndex(action.IntendedTarget) : -1; // 실제 지정 대상의 첫 보호 검색
+        BattleEnemyActionResult actionResult; // 적 행동 적용 결과
         executingAction = action; // 현재 실행 행동 저장
-        BattleEnemyActionResult actionResult = action.Execute(TryPreventFirstHealthDamage, ReduceBootHealthDamage); // 적 직접 공격에만 파티 공용 군번줄 연결
-        executingAction = null; // 현재 실행 행동 제거
+        try // 실행 여부 초기화 보장
+        { // 행동 처리 시작
+            if (guardIndex < 0) // 대신 받을 보호자 유무 확인
+            { // 일반 행동 처리 시작
+                actionResult = action.Execute(TryPreventFirstHealthDamage, ReduceBootHealthDamage); // 기존 적 행동 처리
+            } // 일반 행동 처리 종료
+            else // 대신 받을 보호자 확인
+            { // 보호 적용 시작
+                var bodyGuard = bodyGuards[guardIndex]; // 보호자와 보호 대상 저장
+                actionResult = action.Execute(TryPreventFirstHealthDamage, ReduceBootHealthDamage, bodyGuard.Guard, () => bodyGuards.Remove(bodyGuard)); // 양수 공격 명중 때 보호 한 건 소모
+            } // 보호 적용 종료
+        } // 행동 처리 종료
+        finally // 행동 처리 뒤 실행 표시 정리
+        { // 실행 표시 정리 시작
+            executingAction = null; // 현재 실행 행동 제거
+        } // 실행 표시 정리 종료
         plannedActions.Remove(action); // 실행 완료 행동 제거
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
@@ -149,7 +171,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 유도 실패 반환
         } // 유도 불가 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 해당 적의 예정 행동 조회
-        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target != targetUnit; // 유도 가능한 단일 공격 판정 반환
+        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget != targetUnit; // 지정 대상 변경 가능 확인
     } // 유도 가능 확인 종료
     public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
     { // 공격 유도 시작
@@ -202,7 +224,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 분담 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 동료 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally && action.SetDamageShare(protector)) // 동료의 첫 공격에 분담자 설정
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally && action.SetDamageShare(protector)) // 지정 동료를 향한 첫 공격에 분담자 설정
             { // 분담 설정 완료 시작
                 StateChanged?.Invoke(); // 변경된 피해 예고 알림
                 return true; // 분담 설정 성공 반환
@@ -210,15 +232,61 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 첫 동료 공격 검색 종료
         return false; // 설정할 공격 없음 반환
     } // 피해 분담 설정 종료
+    public bool CanBodyGuard(BattleUnitRuntime guard, BattleUnitRuntime ally) // 다음 피해 대신 받기 가능 확인
+    { // 대신 받기 조건 확인 시작
+        return !disposed && guard != null && ally != null && guard != ally && !guard.IsDead && !ally.IsDead && guard.Team == BattleTeam.Ally && ally.Team == BattleTeam.Ally && ContainsUnit(allyUnits, guard) && ContainsUnit(allyUnits, ally); // 서로 다른 생존 전투 아군 확인
+    } // 대신 받기 조건 확인 종료
+    public bool TryBodyGuard(BattleUnitRuntime guard, BattleUnitRuntime ally) // 다음 직접 공격 대신 받기 설정
+    { // 대신 받기 설정 시작
+        if (!CanBodyGuard(guard, ally)) // 두 아군의 보호 가능 상태 확인
+        { // 보호 불가 처리 시작
+            return false; // 잘못된 보호 대상 거부
+        } // 보호 불가 처리 종료
+        bodyGuards.Add((guard, ally)); // 다음 양수 직접 공격을 위한 보호 한 건 등록
+        StateChanged?.Invoke(); // 피격 대상 예고 갱신
+        return true; // 대신 받기 설정 성공
+    } // 대신 받기 설정 종료
+    private int FindBodyGuardIndex(BattleUnitRuntime ally, int startIndex = 0) // 지정 아군의 다음 보호 위치 조회
+    { // 보호 검색 시작
+        for (int index = startIndex; index < bodyGuards.Count; index++) // 등록 순서대로 보호 목록 순회
+        { // 개별 보호 확인 시작
+            var bodyGuard = bodyGuards[index]; // 보호자와 지정 아군 조회
+            if (bodyGuard.Ally == ally && CanBodyGuard(bodyGuard.Guard, ally)) // 지정 대상과 보호 유효성 확인
+            { // 유효 보호 확인 시작
+                return index; // 가장 앞선 보호 위치 반환
+            } // 유효 보호 확인 종료
+        } // 개별 보호 확인 종료
+        return -1; // 유효한 보호 없음 반환
+    } // 보호 검색 종료
+    private BattleUnitRuntime GetBodyGuardPreviewTarget(BattleEnemyAction action) // 순서에 맞는 보호자 예고 조회
+    { // 보호자 예고 시작
+        if (bodyGuards.Count == 0 || !action.IsPositiveDirectAttack) // 유효한 보호와 공격 여부 확인
+        { // 보호 예고 제외 시작
+            return null; // 기존 대상 예고 유지
+        } // 보호 예고 제외 종료
+        int guardIndex = FindBodyGuardIndex(action.IntendedTarget); // 지정 대상의 첫 보호 조회
+        foreach (BattleEnemyAction candidate in plannedActions) // 공격 예고 순서대로 순회
+        { // 앞선 보호 소모 확인 시작
+            if (guardIndex < 0 || candidate == action) // 보호 소진 또는 현재 공격 도달 확인
+            { // 보호자 예고 반환 시작
+                return guardIndex < 0 ? null : bodyGuards[guardIndex].Guard; // 남은 첫 보호자 반환
+            } // 보호자 예고 반환 종료
+            if (candidate != executingAction && candidate.IntendedTarget == action.IntendedTarget && candidate.IsPositiveDirectAttack && BattleHitChance.GetPercent(candidate.Actor, bodyGuards[guardIndex].Guard) > 0) // 이전 공격의 같은 아군 보호 소모 예측
+            { // 예고용 보호 이동 시작
+                guardIndex = FindBodyGuardIndex(action.IntendedTarget, guardIndex + 1); // 다음 보호 위치 조회
+            } // 예고용 보호 이동 종료
+        } // 앞선 보호 소모 확인 종료
+        return null; // 예정 목록 밖의 보호자 예고 제외
+    } // 보호자 예고 종료
     public bool CanProtectAlly(BattleUnitRuntime guard, BattleUnitRuntime ally) // 동료 대신 공격받기 가능 여부 확인
     { // 동료 보호 가능 확인 시작
-        if (disposed || guard == null || ally == null || guard == ally || guard.IsDead || ally.IsDead || guard.Team != BattleTeam.Ally || ally.Team != BattleTeam.Ally || !ContainsUnit(allyUnits, guard) || !ContainsUnit(allyUnits, ally)) // 보호자와 동료의 전투 상태 확인
+        if (!CanBodyGuard(guard, ally)) // 보호자와 동료의 전투 상태 확인
         { // 보호 불가 처리 시작
             return false; // 보호 불가 반환
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 공격 가능 확인 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally) // 동료를 향한 유효 공격 확인
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally) // 지정 동료를 향한 유효 공격 확인
             { // 보호 가능 처리 시작
                 return true; // 대신 받을 공격 존재 반환
             } // 보호 가능 처리 종료
@@ -233,7 +301,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target == ally && action.ChangeTarget(guard)) // 동료의 첫 공격을 보호자로 전환
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally && action.ChangeTarget(guard)) // 지정 동료의 첫 공격을 보호자로 전환
             { // 공격 전환 처리 시작
                 StateChanged?.Invoke(); // 변경된 공격 예고 알림
                 return true; // 보호 성공 반환
@@ -362,7 +430,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         bool dogTag = !dogTagUsed && inventory.FindEffect(RelicEffectType.PreventFirstHealthDamage) != null; // 먼저 발동할 군번줄의 남은 보호
         foreach (var action in plannedActions) // 실제로 예정된 적 행동 순서 순회
         { // 앞선 소모 예상 시작
-            if (action == executingAction || !action.IsExecutable || action.ActionType != EnemyActionType.Attack) // 이미 실행 중인 행동과 비공격 제외
+            if (action == executingAction || !CanPreviewAttackImpact(action)) // 실행 중인 행동과 피해가 불가능한 공격 제외
             { // 수치 미소모 시작
                 continue; // 다음 예고 행동 확인
             } // 수치 미소모 종료
@@ -483,7 +551,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     } // 적 사망 처리 종료
     private void HandleAllyDied(BattleUnitRuntime allyUnit) // 아군 사망 처리
     { // 아군 사망 처리 시작
-        bool changed = false; // 대상 변경 여부 초기화
+        bool changed = bodyGuards.RemoveAll(bodyGuard => bodyGuard.Guard == allyUnit || bodyGuard.Ally == allyUnit) > 0; // 사망 아군이 참여한 보호 제거
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순회
         { // 대상 확인 시작
             if (action == executingAction) // 현재 실행 행동 확인
@@ -491,7 +559,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 continue; // 대상 재선택 제외
             } // 실행 행동 처리 종료
             changed |= action.ClearDamageShare(allyUnit); // 사망한 분담자의 연결 해제
-            if (action.Target != allyUnit) // 사망 대상 일치 확인
+            if (action.IntendedTarget != allyUnit) // 사망한 지정 대상 일치 확인
             { // 다른 대상 처리 시작
                 continue; // 다음 행동 이동
             } // 다른 대상 처리 종료
@@ -548,6 +616,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         UnregisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 해제
         UnregisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 해제
         plannedActions.Clear(); // 예정 행동 목록 비우기
+        bodyGuards.Clear(); // 전투에 남아 있는 대신 받기 보호 제거
         nextPatternIndices.Clear(); // 적별 패턴 순번 비우기
     } // 연결 해제 종료
 } // 클래스 종료
