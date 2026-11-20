@@ -161,7 +161,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         } // 피해 종류 선택 종료
     } // 원본 피해 계산 종료
 
-    internal static BattleStatusEffectType ApplyHitStatus(CardInstance card, BattleUnitRuntime target, out BattleStatusEffectApplyResult result) // 명중 후 검 카드의 상태 적용
+    internal static BattleStatusEffectType ApplyHitStatus(CardInstance card, BattleUnitRuntime target, BattleSupplyRelics supplyRelics, out BattleStatusEffectApplyResult result) // 명중 후 검 카드의 상태 적용
     { // 후속 상태 처리 시작
         result = BattleStatusEffectApplyResult.Invalid; // 추가 효과 없는 기본 결과
         int value = card.SourceData.SecondaryEffectValue; // 원본 카드의 확률 또는 상태 수치
@@ -171,7 +171,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             case SwordCardRule.Thrust: // 이십 퍼센트 출혈
             case SwordCardRule.KneeSlash: // 이십오 퍼센트 행동 취소
             case SwordCardRule.PommelStrike: // 십오 퍼센트 기절
-                if (target.IsDead || UnityEngine.Random.Range(0, 100) >= value) // 사망하거나 확률 밖인 대상 확인
+                if (target.IsDead || !supplyRelics.RollOptionalStatus(target, value)) // 생존과 유리 구슬을 반영한 상태 확률 확인
                 { // 상태 미발동 시작
                     return BattleStatusEffectType.None; // 추가 상태 없음
                 } // 상태 미발동 종료
@@ -179,7 +179,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
                 value = type == BattleStatusEffectType.Bleed ? 2 : 1; // 고정 출혈 피해 또는 한 번의 행동 제한
                 break; // 확률 상태 선택 완료
             case SwordCardRule.IntimidatingCharge: // 위협 돌진의 공포 확률
-                if (target.IsDead || UnityEngine.Random.Range(0, 100) >= value) // 사망과 공포 미발동 확인
+                if (target.IsDead || !supplyRelics.RollOptionalStatus(target, value)) // 생존과 유리 구슬을 반영한 공포 확률 확인
                 { // 공포 미적용 시작
                     return BattleStatusEffectType.None; // 공포 없는 일반 명중 처리
                 } // 공포 미적용 종료

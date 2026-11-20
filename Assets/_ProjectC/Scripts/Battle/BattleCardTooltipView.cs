@@ -234,11 +234,17 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             string sign = cardInstance.MentalChangeValue > 0 ? "+" : string.Empty; // 양수 부호 문구 계산
             return $"정신력 {sign}{cardInstance.MentalChangeValue}"; // 정신력 상세 반환
         } // 정신력 상세 처리 종료
+        string value = cardInstance.EffectValue.ToString(); // 기본 효과 수치 문구 생성
+        if (cardInstance.SourceData.HasRandomDamage) // 두 기본 피해가 설정된 카드 확인
+        { // 무작위 피해 문구 시작
+            int high = CardUpgradeProfileCatalog.CalculateEffectValue(cardInstance.SourceData, cardInstance.SourceData.RandomDamageHighValue, cardInstance.UpgradeLevel); // 높은 피해의 실제 강화 수치
+            value = $"{value} 또는 {high}"; // 두 가지 초기 피해를 같은 효과 줄에 표시
+        } // 무작위 피해 문구 종료
         if (cardInstance.SourceData.DamageHitCount > 1) // 동일 대상 연속 공격 확인
         { // 연타 상세 시작
-            return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue} × {cardInstance.SourceData.DamageHitCount}회"; // 타격당 피해와 반복 횟수 반환
+            return $"{GetEffectLabel(cardInstance)} {value} × {cardInstance.SourceData.DamageHitCount}회"; // 타격당 피해와 반복 횟수 반환
         } // 연타 상세 종료
-        return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue}"; // 피해와 회복 상세 반환
+        return $"{GetEffectLabel(cardInstance)} {value}"; // 피해와 회복 상세 반환
     } // 효과 상세 조회 종료
     private static TMP_Text CreateText(string objectName, Transform parent, float fontSize, Color textColor, TextAlignmentOptions alignment) // 공용 텍스트 생성
     { // 텍스트 생성 시작

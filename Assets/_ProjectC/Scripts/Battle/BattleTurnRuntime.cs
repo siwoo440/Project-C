@@ -12,6 +12,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private RelicInventoryRuntime openingRelics; // 현재 탐사 유물 보관함
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
+    private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
+    private int lastSpringRound; // 붉은 스프링의 마지막 할인 준비 라운드
+    private bool springReady; // 다음 유료 고정 카드에 남은 할인
+    private bool resolvingCard; // 사용 카드가 손패를 떠날 때까지의 정산 상태
+    private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
@@ -146,6 +151,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 플레이어 턴 정리 시작
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
         runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
+        springReady = false; // 지난 턴의 붉은 스프링 예약 해제
+        runtimeDeck.SetNextCardRelicApDiscount(0); // 다음 카드에 남은 비용 표시 복구
         sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
         sharedActionPoints.ClearTurnCapacity(); // 끝난 아군 턴의 임시 행동력 상한 회수
     } // 플레이어 턴 정리 종료
@@ -337,6 +344,58 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 개별 약화 해제 종료
         } // 돌진 효과 해제 종료
     } // 종료 효과 적용 종료
+    internal void RecordCardPayment(CardInstance card, int paid) // 실제 지불에 따른 스프링 예약과 소비
+    { // 다음 카드 할인 처리 시작
+        if (springReady && card.SourceData.SwordRule != SwordCardRule.Finisher && card.ApCostBeforeNextCardDiscount > 0) // 예약을 쓸 수 있는 유료 고정 카드 확인
+        { // 예약 할인 소비 시작
+            springReady = false; // 같은 턴의 남은 카드 할인 종료
+            runtimeDeck.SetNextCardRelicApDiscount(0); // 다른 손패의 실제 비용 복원
+        } // 예약 할인 소비 종료
+        var spring = paid > 0 && lastSpringRound != CurrentRound ? openingRelics?.FindEffect(RelicEffectType.DiscountNextPaidCard) : null; // 현재 턴의 첫 행동력 소모 확인
+        if (spring != null) // 실제로 보유한 붉은 스프링 확인
+        { // 다음 카드 할인 준비 시작
+            lastSpringRound = CurrentRound; // 같은 턴 재충전 방지
+            springReady = true; // 다음 사용에 적용할 할인 예약
+            runtimeDeck.SetNextCardRelicApDiscount(spring.EffectValue); // 현재 손패에 다음 카드 표시 반영
+        } // 다음 카드 할인 준비 종료
+    } // 다음 카드 할인 처리 종료
+
+    internal void BeginCardResolution() // 카드가 손패에 남아 있는 정산 범위 시작
+    { // 카드 정산 표시 시작
+        resolvingCard = true; // 처치 드로우를 카드 사용 뒤로 미루기
+    } // 카드 정산 표시 종료
+
+    internal void EndCardResolution() // 사용 카드가 빠진 뒤 예약 처치 드로우 정산
+    { // 카드 정산 완료 처리 시작
+        resolvingCard = false; // 독립 처치에 즉시 드로우 허용
+        DrawDefeatReward(); // 카드가 떠난 손패 공간을 기준으로 지급
+    } // 카드 정산 완료 처리 종료
+
+    private void HandleUnitDefeated(BattleUnitRuntime source, BattleUnitRuntime target) // 아군이 적을 실제로 처치한 경우 확인
+    { // 처치 드로우 예약 시작
+        if (!IsPlayerTurn || HasPendingBossPhaseTransition || source?.Team != BattleTeam.Ally || target.Team != BattleTeam.Enemy || lastFlagDrawRound == CurrentRound) // 아군 턴의 유효 처치와 발동 제한 확인
+        { // 발동 제외 시작
+            return; // 적의 처치나 같은 턴의 재발동 제외
+        } // 발동 제외 종료
+        pendingDefeatDraw = openingRelics?.FindEffect(RelicEffectType.DefeatDraw)?.EffectValue ?? 0; // 회전 깃발로 받을 카드 수 예약
+        if (!resolvingCard) // 사용할 카드가 손패를 비울 필요가 없는 시점 확인
+        { // 독립 처치 지급 시작
+            DrawDefeatReward(); // 카드 정산 외 처치의 즉시 드로우 처리
+        } // 독립 처치 지급 종료
+    } // 처치 드로우 예약 종료
+
+    private void DrawDefeatReward() // 현재 가능한 회전 깃발 보상 지급
+    { // 처치 드로우 처리 시작
+        int count = pendingDefeatDraw; // 대기 중인 드로우 수 확보
+        pendingDefeatDraw = 0; // 드로우 알림 전에 대기 상태 초기화
+        if (count <= 0 || IsBattleEnded || HasPendingBossPhaseTransition || runtimeDeck.HandCount >= runtimeDeck.MaxHandSize || !runtimeDeck.HasDrawableCards) // 전투 진행과 손패 공간 및 실제 드로우 대상 확인
+        { // 드로우 불가 처리 시작
+            return; // 발동 횟수를 사용하지 않고 보상 처리 종료
+        } // 드로우 불가 처리 종료
+        lastFlagDrawRound = CurrentRound; // 같은 아군 턴의 추가 처치 드로우 차단
+        runtimeDeck.DrawCards(Math.Min(count, runtimeDeck.MaxHandSize - runtimeDeck.HandCount)); // 열린 손패 공간까지 처치 드로우 지급
+    } // 처치 드로우 처리 종료
+
     private static void ClearRoundBlock(IReadOnlyList<BattleUnitRuntime> units) // 진영의 남은 방어도 정리
     { // 방어도 정리 시작
         foreach (BattleUnitRuntime unit in units) // 진영 유닛 순회
@@ -412,6 +471,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 이벤트 등록 실패 반환
         } // 중복 등록 처리 종료
         runtimeUnit.Died += HandleUnitDied; // 사망 이벤트 등록
+        runtimeUnit.Defeated += HandleUnitDefeated; // 발생자와 대상을 포함한 처치 등록
         registeredUnits.Add(runtimeUnit); // 등록 유닛 목록 추가
         return true; // 이벤트 등록 성공 반환
     } // 개별 사망 이벤트 등록 종료
@@ -422,6 +482,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 이벤트 해제 실패 반환
         } // 미등록 처리 종료
         runtimeUnit.Died -= HandleUnitDied; // 사망 이벤트 해제
+        runtimeUnit.Defeated -= HandleUnitDefeated; // 회전 깃발의 처치 구독 해제
         return true; // 이벤트 해제 성공 반환
     } // 개별 사망 이벤트 해제 종료
     private static bool ContainsUnit(IReadOnlyList<BattleUnitRuntime> units, BattleUnitRuntime targetUnit) // 런타임 목록 포함 확인

@@ -521,6 +521,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 무효 회복 처리 시작
             return 0; // 적용 회복 없음
         } // 무효 회복 처리 종료
+        if (Team == BattleTeam.Ally && (long)CurrentHealth * 10 <= (long)MaxHealth * 3) // 전투 중 회복을 받는 아군의 체력 삼십 퍼센트 확인
+        { // 저체력 회복 가산 시작
+            int bonus = BattleSupplyRelics.Find(RelicEffectType.LowHealthHealing)?.EffectValue ?? 0; // 실제 보유한 은빛 심장핀의 수치 조회
+            healAmount = (int)Math.Min(int.MaxValue, (long)healAmount + bonus); // 받는 회복 감소 처리 전 가산
+        } // 저체력 회복 가산 종료
         var reduction = GetStatusEffect(BattleStatusEffectType.HealingReceivedDown); // 회복 대상이 보유한 받는 회복 감소 조회
         if (reduction != null) // 회복 감쇠 상태 적용 확인
         { // 받는 회복 감소 시작

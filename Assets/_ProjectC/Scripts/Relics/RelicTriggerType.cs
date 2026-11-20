@@ -34,5 +34,8 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforePlayerTurnDraw, // 아군의 턴 드로우 직전
     OpeningHandReady, // 첫 아군 손패 지급 직후
     ShopFirstStock, // 상점의 첫 진열 준비
-    BeforeBattleActions // 전투의 첫 적 예고 생성 전
+    BeforeBattleActions, // 전투의 첫 적 예고 생성 전
+    BeforeHealthRecovery, // 전투 중 회복량을 확정하기 직전
+    OptionalCardEffectRoll, // 명중 시 발동하는 약화의 무작위 판정
+    CardDamageRoll // 카드의 두 기본 피해 중 하나를 고를 때
 }

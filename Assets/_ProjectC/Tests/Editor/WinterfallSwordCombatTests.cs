@@ -33,14 +33,19 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         { // 기본 전투 환경 시작
         } // 기본 전투 환경 종료
         internal Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, params string[] ids) // 검사할 실제 적 화면과 보물 원본으로 전투 구성
+            : this(createEnemyView, LoadCards(ids)) // 기존 원본 조회 경로 유지
+        { // 보물 카드 전투 시작
+        } // 보물 카드 전투 종료
+        internal Fight(CardData[] cards) : this(CreateView, cards) // 기존 카드에 없는 무작위 규칙의 원본으로 전투 구성
+        { // 독립 원본 전투 시작
+        } // 독립 원본 전투 종료
+        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards) // 원본 배열을 받는 공통 실제 전투
         { // 전투 구성 시작
-            var offers = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test").Offers; // 실제 보물 풀 조회
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회
             Allies = roster.Characters.Take(3).Select(BattleUnitRuntime.CreateAlly).ToArray(); // 생존자와 전투불능 검사 아군 생성
             enemyData = ScriptableObject.CreateInstance<EnemyData>(); // 저항과 약점이 없는 검사 적 생성
             JsonUtility.FromJsonOverwrite("{\"maxHealth\":200}", enemyData); // 반복 타격 측정용 체력 설정
             Enemies = Enumerable.Range(0, 4).Select(index => BattleUnitRuntime.CreateEnemy(enemyData)).ToArray(); // 실제 순서의 네 칸 생성
-            var cards = ids.Select(id => id.Contains("/") ? Resources.Load<CardData>(id) : offers.Single(offer => offer.OfferId == "REWARD_SHEET_" + id).Card).ToArray(); // 지정한 시작 카드나 보물 카드 원본 조회
             source = DeckData.CreateRuntime(cards.Select(card => new DeckCardEntry(card, Allies[0].CharacterSource)).ToArray()); // 같은 소유자의 독립 비교 덱 생성
             Deck = BattleDeckRuntime.Create(source, Allies, cards.Length, 224); // 손패 순서 고정
             canvas = new GameObject("SwordCombat", typeof(RectTransform), typeof(Canvas)); // 전투 화면 생성
@@ -58,6 +63,11 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
             Assert.IsTrue(Hand.Bind(Deck, Points, Turns)); // 턴 상태와 손패 입력 연결
             Controller = new BattleCardActionController(Deck, Points, Turns, Hand, Runner, processor, allies, EnemyViews, actions); // 실제 카드 선택과 충돌 처리 연결
         } // 전투 구성 종료
+        private static CardData[] LoadCards(string[] ids) // 지정한 시작 및 보물 카드 원본 읽기
+        { // 실제 원본 읽기 시작
+            var offers = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test").Offers; // 게임의 실제 보물 후보 목록
+            return ids.Select(id => id.Contains("/") ? Resources.Load<CardData>(id) : offers.Single(offer => offer.OfferId == "REWARD_SHEET_" + id).Card).ToArray(); // 요청한 원본을 기존 순서대로 반환
+        } // 실제 원본 읽기 종료
         internal BattleCardView View(string id) // 사용 가능한 손패 화면 조회
         { // 카드 검색 시작
             return Hand.GetComponentsInChildren<BattleCardView>().First(view => view.RuntimeCard?.SourceData.CardId == "CRD_SHEET_" + id && Deck.Hand.Contains(view.RuntimeCard)); // 버린 카드와 파기 대기 화면 제외
