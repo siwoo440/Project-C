@@ -78,6 +78,9 @@ public sealed class ExplorationDungeonArtTests // 던전 원화와 연결 벽 �
             Assert.IsNotNull(layers["Wall"].GetComponent<CompositeCollider2D>()); // 기존 합성 벽 충돌 유지 확인
             Assert.IsNull(layers["WallEdges"].GetComponent<TilemapCollider2D>()); // 벽 테두리의 추가 충돌 없음 확인
             Assert.IsNull(layers["Decoration"].GetComponent<TilemapCollider2D>()); // 바닥 장식이 움직임을 방해하지 않는지 확인
+            Assert.IsTrue(walls.Keys.All(cell => layers["Wall"].GetTransformMatrix(cell) == Matrix4x4.identity)); // 벽 충돌과 단위 타일 배율 유지 확인
+            var detailTransform = Matrix4x4.Scale(new Vector3(2f, 2f, 1f)); // 바닥 격자와 분리된 장식 그림의 배율
+            Assert.IsTrue(decor.Keys.All(cell => layers["Decoration"].GetTransformMatrix(cell) == detailTransform)); // 실제 벽과 바닥 장식의 두 배 확대 확인
             view.Build(ExplorationMapGenerator.Generate(14, seed, 1)); // 같은 층을 다시 생성해 동일 배치 비교
             CollectionAssert.AreEquivalent(floors, ReadTiles(layers["Floor"])); // 바닥 배치 재현
             CollectionAssert.AreEquivalent(walls, ReadTiles(layers["Wall"])); // 벽 배치 재현

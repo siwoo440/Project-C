@@ -234,6 +234,34 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
         return true;
     }
 
+    internal bool TryGetWalkableCell(Vector2 worldPosition, out Vector3Int cell) // 실측 월드 위치를 이동 가능한 바닥 셀로 변환
+    { // 시야와 추격의 바닥 셀 조회 시작
+        cell = floorTilemap == null ? Vector3Int.zero : floorTilemap.WorldToCell(worldPosition); // 현재 층의 실제 타일 좌표
+        return floorTilemap != null && IsWalkableCell(cell); // 현재 타일과 실제 바닥 여부 확인
+    } // 시야와 추격의 바닥 셀 조회 종료
+
+    internal bool IsWalkableCell(Vector3Int cell) // 시야와 경로의 공용 통행 가능 범위
+    { // 바닥 타일 셀 확인 시작
+        return floorCells.Contains(cell); // 자동 연결 통로를 포함하는 실제 이동 바닥 확인
+    } // 바닥 타일 셀 확인 종료
+
+    internal bool CanUseBattleReturnPosition(Vector2 playerPosition, Vector2 candidate) // 전투 뒤 발판과 플레이어 폭 확인
+    { // 복귀 지점 충돌 검사 시작
+        const float playerHalfWidth = 0.275f; // 탐사 플레이어 상자 충돌 범위의 절반
+        Vector2 diagonal = new Vector2(playerHalfWidth, playerHalfWidth); // 왼쪽 아래와 오른쪽 위 검사 오프셋
+        Vector2 opposite = new Vector2(playerHalfWidth, -playerHalfWidth); // 왼쪽 위와 오른쪽 아래 검사 오프셋
+        return TryGetWalkableCell(playerPosition, out Vector3Int from) // 접촉 직전에 있던 실제 바닥 셀
+            && TryGetWalkableCell(candidate, out Vector3Int to) // 조우를 피한 복귀 바닥 셀
+            && ExplorationPursuitGrid.HasLineOfSight(from, to, IsWalkableCell) // 모서리와 벽을 넘지 않는 복귀 이동
+            && TryGetWalkableCell(candidate + diagonal, out _) && TryGetWalkableCell(candidate - diagonal, out _) // 첫 대각 모서리의 바닥 확인
+            && TryGetWalkableCell(candidate + opposite, out _) && TryGetWalkableCell(candidate - opposite, out _); // 나머지 대각 모서리의 바닥 확인
+    } // 복귀 지점 충돌 검사 종료
+
+    internal Vector2 GetWalkableCellCenter(Vector3Int cell) // 추격이 가로지를 다음 바닥 타일의 중심
+    { // 실제 월드 타일 중심 계산 시작
+        return floorTilemap.GetCellCenterWorld(cell); // 맵의 실제 그리드 및 변환을 반영한 세계 좌표
+    } // 실제 월드 타일 중심 계산 종료
+
     public Vector2 GetLogicalPosition(
         Vector3 worldPosition) // World 위치를 미니맵용 연속 논리 위치로 변환
     {

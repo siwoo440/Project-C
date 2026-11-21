@@ -274,8 +274,15 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         roomObject.transform.localScale = new Vector3(0.86f, 0.86f, 1f); // 특수 방 표시 크기 설정
 
         SpriteRenderer spriteRenderer = roomObject.GetComponent<SpriteRenderer>(); // 특수 방 렌더러 조회
-        spriteRenderer.sprite = ExplorationSpecialRoomView.GetRuntimeMarkerSprite(); // 임시 방 표시 스프라이트 지정
-        spriteRenderer.color = ExplorationSpecialRoomView.GetRoomColor(roomType); // 방 역할별 임시 색상 지정
+        ExplorationProp prop = roomType switch // 방 역할을 실제 탐사 그림에 연결
+        { // 방마다 어울리는 생성 원화 선택 시작
+            ExplorationRoomType.Treasure => ExplorationProp.Treasure, // 철장식 보물 상자
+            ExplorationRoomType.Rest => ExplorationProp.Rest, // 모닥불과 침낭의 휴식 표식
+            _ => ExplorationProp.Shop // 상점의 파란 천막
+        }; // 방마다 어울리는 생성 원화 선택 종료
+        Sprite roomImage = ExplorationWorldArt.GetProp(prop); // 현재 방에 해당하는 게임 원화
+        spriteRenderer.sprite = roomImage ?? ExplorationSpecialRoomView.GetRuntimeMarkerSprite(); // 실제 방 장식과 이전 대체 표시
+        spriteRenderer.color = roomImage != null ? Color.white : ExplorationSpecialRoomView.GetRoomColor(roomType); // 방 원화 본래의 색과 대체색 유지
         spriteRenderer.sortingOrder = 4; // 탐사 오브젝트 표시 순서 지정
 
         CircleCollider2D collider = roomObject.GetComponent<CircleCollider2D>(); // 특수 방 Trigger 조회

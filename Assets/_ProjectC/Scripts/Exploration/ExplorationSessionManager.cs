@@ -238,7 +238,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         activeEncounter = encounterData; // 현재 전투 데이터 저장
         activeEncounterIdentity = new object(); // 같은 탐사 방의 재시도와 구분할 실제 조우 생성
         activeRuntimeEncounterId = runtimeEncounterId; // 런타임 조우 ID 저장
-        ActiveEncounterInFade = FindFirstObjectByType<ExplorationMapRuntime>()?.IsFadeAtWorldPosition(encounterPosition) == true; // 진입 위치의 퇴색 여부를 전투까지 저장
+        ExplorationMapRuntime explorationMap = FindFirstObjectByType<ExplorationMapRuntime>(); // 현재 전투 접촉을 처리한 실제 탐사 맵
+        ActiveEncounterInFade = explorationMap?.IsFadeAtWorldPosition(encounterPosition) == true; // 진입 위치의 퇴색 여부를 전투까지 저장
         LastClearReward = null; // 이전 보상 표시 초기화
 
         Vector2 escapeDirection =
@@ -254,6 +255,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         returnPosition =
             playerPosition +
             (Vector3)(escapeDirection * 1.25f); // 전투 후 복귀 위치 계산
+        returnPosition = explorationMap?.SelectBattleReturnPosition(playerPosition, returnPosition) ?? returnPosition; // 추격 접촉이 벽 근처인 경우 안전한 실제 위치 유지
 
         returnPosition.z = 0f; // Z 위치 초기화
         hasReturnPosition = true; // 복귀 위치 활성화
