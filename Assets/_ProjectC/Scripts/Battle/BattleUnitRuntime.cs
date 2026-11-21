@@ -436,7 +436,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
         int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
+        int vulnerability = GetStatusEffectValue(BattleStatusEffectType.Vulnerable); // 대상에게 적용된 받는 피해 증가율
+        int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 정수 범위 안에서 원본 피해 증가율 적용과 내림
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance); // 취약을 적용한 원본 피해에 방어력과 저항력 반영
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception) : 0; // 일회성 경감을 포함한 적 직접 피해 감소량

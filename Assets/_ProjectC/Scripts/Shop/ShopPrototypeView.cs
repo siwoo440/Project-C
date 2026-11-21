@@ -289,6 +289,14 @@ public sealed partial class ShopPrototypeView : MonoBehaviour // 54일차 코드
     { // 진열 갱신 시작
         if (shelfDirty) // 거래 완료 알림 없이 보관함만 바뀐 경우 확인
         { // 외부 획득 반영 시작
+            if (showingCardRemoval && manager.IsReady) // 열린 카드 제거 목록의 외부 할인 변경 확인
+            { // 제거 목록 가격 새로고침 시작
+                shelfDirty = false; // 같은 외부 유물 변경의 중복 처리 방지
+                float position = productScrollRect.verticalNormalizedPosition; // 가격 갱신 전 제거 목록 위치 보관
+                ShowCardRemovalList(); // 실제 보유 유물에 맞춘 모든 제거 가격 갱신
+                productScrollRect.verticalNormalizedPosition = position; // 가격 갱신 뒤 이전 위치 복구
+                return; // 같은 프레임의 상품 목록 갱신 생략
+            } // 제거 목록 가격 새로고침 종료
             HandleManagerChanged(); // 현재 하위 화면의 원본과 가격 갱신
         } // 외부 획득 반영 종료
     } // 진열 갱신 종료

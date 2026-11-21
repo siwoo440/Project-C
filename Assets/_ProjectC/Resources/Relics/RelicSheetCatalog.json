@@ -839,7 +839,7 @@
     {
       "sourceRow": 78,
       "name": "손상된 코어 조각",
-      "description": "침식핵 파괴 보상 유물 등장 확률 +",
+      "description": "침식핵을 처음 파괴하면 추가 유물 획득 확률이 20%포인트 증가한다.",
       "buyMin": 271,
       "buyMax": 320,
       "buyVariance": 49,
@@ -850,7 +850,7 @@
     {
       "sourceRow": 79,
       "name": "잔광 등불",
-      "description": "탐사 이벤트에서 함정 피해 -2",
+      "description": "탐사 이벤트에서 파편과 깨진 유리 함정으로 받는 피해가 2 줄어든다.",
       "buyMin": 191,
       "buyMax": 239,
       "buyVariance": 48,
@@ -861,7 +861,7 @@
     {
       "sourceRow": 80,
       "name": "파열된 방울",
-      "description": "전투 중 피해를 받으면 1회 보호막 +3(전투당 2회)",
+      "description": "아군이 전투 중 체력 피해를 받고 생존하면 방어도 3을 얻는다. 전투당 두 번 발동한다.",
       "buyMin": 301,
       "buyMax": 349,
       "buyVariance": 48,
@@ -872,7 +872,7 @@
     {
       "sourceRow": 81,
       "name": "퇴색한 왕관",
-      "description": "전투 시작 시 무작위 카드 1장 코스트 -1(그 턴)",
+      "description": "첫 아군 턴의 시작 손패에서 사용 가능하고 비용이 있는 고정 비용 카드 한 장을 골라 이번 턴 비용을 1 낮춘다.",
       "buyMin": 241,
       "buyMax": 289,
       "buyVariance": 48,
@@ -883,7 +883,7 @@
     {
       "sourceRow": 82,
       "name": "검은 왕관",
-      "description": "전투 시작 시 무작위 적 1명에게 취약 1턴",
+      "description": "무작위 생존 적 하나에게 취약을 부여한다. 첫 아군 턴이 끝날 때까지 방어도로 막을 수 있는 받는 피해가 20% 증가한다.",
       "buyMin": 283,
       "buyMax": 332,
       "buyVariance": 49,
@@ -894,7 +894,7 @@
     {
       "sourceRow": 83,
       "name": "오염 표본병",
-      "description": "괴생체 전투 승리 시 드로우 +1(전투당 1회)",
+      "description": "괴생체 조우 승리 시 다음 탐사 전투의 첫 아군 턴에 카드 1장을 더 뽑는다. 승리한 전투마다 한 번 발동한다.",
       "buyMin": 263,
       "buyMax": 312,
       "buyVariance": 49,
@@ -905,7 +905,7 @@
     {
       "sourceRow": 84,
       "name": "균열 표본병",
-      "description": "괴생체 전투 승리 시 행동력 +1(전투당 1회)",
+      "description": "괴생체 조우 승리 시 다음 탐사 전투의 첫 아군 턴 행동력이 1 증가한다. 승리한 전투마다 한 번 발동한다.",
       "buyMin": 191,
       "buyMax": 239,
       "buyVariance": 48,
@@ -916,7 +916,7 @@
     {
       "sourceRow": 85,
       "name": "세공된 초크",
-      "description": "카드 제거(정제) 비용 -20%",
+      "description": "상점에서 회차 카드 한 장을 제거하는 비용이 20% 감소한다.",
       "buyMin": 303,
       "buyMax": 352,
       "buyVariance": 49,

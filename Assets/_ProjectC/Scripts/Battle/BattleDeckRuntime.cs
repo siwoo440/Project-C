@@ -13,6 +13,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private bool discardedUnplayableDraw; // 봉인테이프의 전투 발동 기록
     private bool recoveredRandomDiscard; // 회수용 자석의 전투 발동 기록
     private CardInstance firstDrawDiscountCard; // 현재 턴에 개별 드로우 할인을 받은 카드
+    private CardInstance openingRandomDiscountCard; // 퇴색한 왕관이 첫 손패에서 선택한 카드
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
@@ -194,6 +195,31 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         firstDrawDiscountCard = null; // 종료된 턴의 할인 참조 해제
         StateChanged?.Invoke(); // 유지된 손패의 비용 표시 갱신
     } // 첫 드로우 할인 정리 종료
+    internal void DiscountRandomOpeningHandCard(int amount) // 첫 손패의 유료 고정 카드 한 장 할인
+    { // 왕관의 무작위 카드 선택 시작
+        if (amount <= 0 || openingRandomDiscountCard != null) // 유효한 할인량과 첫 선택 여부 확인
+        { // 선택 생략 처리 시작
+            return; // 기존 손패 카드 비용 보존
+        } // 선택 생략 처리 종료
+        var candidates = hand.FindAll(card => IsDrawable(card) && card.EffectType != CardEffectType.Unplayable && card.SourceData.SwordRule != SwordCardRule.Finisher && card.ApCostBeforeNextCardDiscount > 0); // 생존 소유자의 줄일 수 있는 고정 비용 카드 후보
+        if (candidates.Count == 0) // 줄일 수 있는 실제 손패 확인
+        { // 후보 없음 처리 시작
+            return; // 빈 손패나 무료 카드의 비용 보존
+        } // 후보 없음 처리 종료
+        openingRandomDiscountCard = candidates[random.Next(candidates.Count)]; // 기존 덱 무작위로 후보 하나 선택
+        openingRandomDiscountCard.OpeningRandomRelicApDiscount = amount; // 선택 카드에 독립 첫 턴 할인 적용
+        StateChanged?.Invoke(); // 할인된 카드의 손패 화면 갱신
+    } // 왕관의 무작위 카드 선택 종료
+    internal void ClearOpeningRandomRelicDiscount() // 맨 처음 아군 턴의 퇴색 왕관 비용 복원
+    { // 왕관 비용 정리 시작
+        if (openingRandomDiscountCard == null) // 실제 할인 카드 존재 확인
+        { // 복원 없음 처리 시작
+            return; // 다른 카드 할인 유지
+        } // 복원 없음 처리 종료
+        openingRandomDiscountCard.OpeningRandomRelicApDiscount = 0; // 카드 영역과 무관한 개별 비용 복원
+        openingRandomDiscountCard = null; // 이전 턴의 할인 카드 참조 해제
+        StateChanged?.Invoke(); // 유지된 손패의 비용 표시 갱신
+    } // 왕관 비용 정리 종료
     public IReadOnlyList<CardInstance> PeekDrawTop(int maximumChoices) // 현재 덱 위의 생존 카드 확인
     { // 덱 위 확인 시작
         List<CardInstance> choices = new List<CardInstance>(); // 덱 위 후보 목록 생성
@@ -363,6 +389,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     internal void ClearBattleRelicCards() // 전투가 끝난 뒤 임시 카드와 예약 정리
     { // 전투 카드 정리 시작
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
+        ClearOpeningRandomRelicDiscount(); // 종료된 전투의 왕관 할인 복원
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
         { // 복사본 제거 시작
@@ -376,13 +403,13 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 전투 카드 정리 종료
     internal void QueuePlayerTurnDraw(int count) // 다음 아군 턴에 추가 드로우 보관
     { // 드로우 예약 시작
-        nextPlayerTurnDraw += count; // 다음 턴 한정 추가 수량 기록
+        nextPlayerTurnDraw = (int)Math.Clamp((long)nextPlayerTurnDraw + count, 0L, int.MaxValue); // 정수 범위에서 추가 드로우 합산
     } // 드로우 예약 종료
     internal int DrawForPlayerTurn(int count) // 아군 턴의 기본 수량과 예약 수량 함께 드로우
     { // 턴 드로우 시작
         int bonus = nextPlayerTurnDraw; // 이번 턴 보너스 보관
         nextPlayerTurnDraw = 0; // 드로우 알림 전 중복 예약 소비 차단
-        return DrawCards(count + bonus); // 손패 상한을 따르는 실제 드로우 수 반환
+        return DrawCards((int)Math.Clamp((long)count + bonus, 0L, int.MaxValue)); // 정수 범위와 손패 상한에 따른 실제 드로우 반환
     } // 턴 드로우 종료
     internal bool RetainHandCard(CardInstance card) // 현재 한 번의 손패 버림 취소
     { // 손패 유지 시작

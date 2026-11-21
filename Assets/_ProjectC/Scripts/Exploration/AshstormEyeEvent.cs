@@ -8,6 +8,7 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
     public const int Gaze = 0; // 응시 선택 순서
     public const int Shatter = 1; // 파괴 선택 순서
     public const int LookAway = 2; // 시선 회피 선택 순서
+    internal static int ShatterHealthDamage => BattleResultManager.GetEventTrapHealthDamage(7); // 눈 파편 함정의 실제 체력 피해
     private static bool resolving; // 결과 반영 중 같은 입력 재진입 방지
 
     internal static ExplorationEventData Create() // 이벤트 원본과 선택지 구성
@@ -78,9 +79,10 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
                     summary = $"{actor.DisplayName} 정신력 {mental} → {Mathf.Max(BattleMentalRuntime.MinimumMental, mental - 8)} · {owner.DisplayName} 카드 [{reward.DisplayName}] 획득"; // 행동자와 카드 소유자 구분 표시
                     break; // 응시 처리 종료
                 case Shatter: // 체력을 치르고 재료 획득
-                    party.ApplyEventChange(actor, 7, 0); // 돌을 던진 생존자의 체력 일곱 감소
+                    party.ApplyEventChange(actor, ShatterHealthDamage, 0); // 눈 파편의 보정된 체력 피해 적용
+                    party.TryGetSavedAllyState(actor, out int afterHealth, out _, out _); // 실제 파편 피해 뒤 남은 체력 조회
                     PlayerResourceManager.EnsureInstance().AddResources(0, 1, 1, 0); // 나사와 철판 한 개씩 지급
-                    summary = $"{actor.DisplayName} 체력 {health} → {Mathf.Max(0, health - 7)} · 철판 +1 · 나사 +1"; // 행동자 피해와 획득 재료 표시
+                    summary = $"{actor.DisplayName} 체력 {health} → {afterHealth} · 철판 +1 · 나사 +1"; // 실제 남은 체력과 재료 표시
                     break; // 파괴 처리 종료
                 default: // 시선을 피하고 정신력 회복
                     party.ApplyEventChange(actor, 0, 1); // 시선을 피한 생존자의 정신력 하나 회복

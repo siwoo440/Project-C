@@ -44,6 +44,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public int runIronPlate; // 탐사 획득 철판 합계
         public int runWire; // 탐사 획득 전선 합계
         public bool hasResourceLedger; // 탐사 획득 재화 구분 저장 여부
+        public int pendingSpecimenDraw; // 다음 전투에서 지급할 괴생체 승리의 드로우
+        public int pendingSpecimenActionPoints; // 다음 전투에서 지급할 괴생체 승리의 행동력
         public int temporaryGold; // 남은 탐사 획득 골드
         public int temporaryScrew; // 남은 탐사 획득 나사
         public int temporaryIronPlate; // 남은 탐사 획득 철판
@@ -221,6 +223,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 runScrew = session.RunScrewGained, // 탐사 획득 나사 설정
                 runIronPlate = session.RunIronPlateGained, // 탐사 획득 철판 설정
                 runWire = session.RunWireGained, // 탐사 획득 전선 설정
+                pendingSpecimenDraw = session.PendingSpecimenDraw, // 다음 전투용 미사용 드로우 저장
+                pendingSpecimenActionPoints = session.PendingSpecimenActionPoints, // 다음 전투용 미사용 행동력 저장
                 hasResourceLedger = PlayerResourceManager.EnsureInstance().IsTrackingExplorationResources, // 탐사 재화 구분 저장 여부
                 temporaryGold = PlayerResourceManager.EnsureInstance().ExplorationGold, // 남은 탐사 골드 저장
                 temporaryScrew = PlayerResourceManager.EnsureInstance().ExplorationScrew, // 남은 탐사 나사 저장
@@ -389,6 +393,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 탐사 수치 오류 시작
             return false; // 복원 불가 반환
         } // 탐사 수치 오류 종료
+        if (snapshot.pendingSpecimenDraw < 0 || snapshot.pendingSpecimenActionPoints < 0) // 저장된 시작 보상의 음수 여부 확인
+        { // 잘못된 예약 처리 시작
+            return false; // 올바르지 않은 표본병 예약 복원 차단
+        } // 잘못된 예약 처리 종료
         if (snapshot.hasResourceLedger && !LobbySaveService.ContainsResources(snapshot.lobbyJson, snapshot.temporaryGold, snapshot.temporaryScrew, snapshot.temporaryIronPlate, snapshot.temporaryWire)) // 탐사 획득분과 저장 전체 재화 비교
         { // 잘못된 탐사 재화 처리 시작
             return false; // 전체 잔액을 초과하는 획득분 복원 차단

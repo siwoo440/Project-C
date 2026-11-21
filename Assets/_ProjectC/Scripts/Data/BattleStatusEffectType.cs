@@ -48,5 +48,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     DangerInterception, // 다음 적의 직접 공격 한 번에 대한 비율 경감
     FocusedDefense, // 다음 적 턴 동안 직접 피해 비율 감소
     BleedResistance, // 적의 출혈 부여 시도 방어 확률
-    UndyingGuard // 체력이 한 점 이하가 될 때 한 번 버티는 효과
+    UndyingGuard, // 체력이 한 점 이하가 될 때 한 번 버티는 효과
+    Vulnerable = 49 // 방어도 적용 가능 원본 피해 증가
 } // 열거형 종료

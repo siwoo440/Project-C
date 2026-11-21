@@ -25,10 +25,14 @@ public sealed class CodexViewTests // 도감 분류와 목록 검증
         Assert.AreEqual(potions, CodexData.Load(1).Count); // 실제 포션 목록 일치 확인
         Assert.AreEqual(catalog.Relics.Count, CodexData.Load(3).Count); // 실제 유물 목록 일치 확인
         Assert.AreEqual(ExplorationEventCatalog.LoadEvents().Count, CodexData.Load(0).Count); // 실제 이벤트 목록 일치 확인
+        CollectionAssert.AreEqual(catalog.Relics.Select(item => (item.DisplayName, item.Description)), CodexData.Load(3).Select(item => (item.Name, item.Description))); // 생성된 색인의 원본 순서와 내용 확인
+        CollectionAssert.AreEqual(ExplorationEventCatalog.LoadEvents().Select(item => (item.DisplayName, item.Description)), CodexData.Load(0).Select(item => (item.Name, item.Description))); // 코드형 사건의 원문과 원본 순서 확인
         Assert.Greater(CodexData.Load(2).Count, 0); // 실제 조우의 적 포함 확인
         Assert.Greater(CodexData.Load(4).Count, 0); // 실제 전투 상태 효과 포함 확인
         Assert.AreEqual(0, CodexData.Load(5).Count); // 원본 없는 기록 분류 확인
         Assert.AreEqual(0, CodexData.Load(6).Count); // 원본 없는 오브젝트 분류 확인
+        Assert.AreEqual(catalog.Cards.Count, CodexData.Load(7).Count); // 저장 가능한 카드 도감 등록 수 확인
+        CollectionAssert.AreEqual(catalog.Cards.Select(item => (item.DisplayName, item.Description)), CodexData.Load(7).Select(item => (item.Name, item.Description))); // 카드의 실제 이름과 설명 및 원본 순서 확인
     } // 도감 원본 검사 종료
     [UnityTest] // 플레이 모드 테스트 지정
     public IEnumerator LobbyCodex_OpensCategoriesAndActualEntries() // 도감 분류와 실제 데이터 확인
@@ -74,10 +78,20 @@ public sealed class CodexViewTests // 도감 분류와 목록 검증
         Assert.IsTrue(tail != null && tail.gameObject.activeInHierarchy); // 마지막 행까지 스크롤 가능 확인
         var lastRelic = CodexData.Load(3).OrderBy(entry => entry.Name, System.StringComparer.Ordinal).Last(); // 데이터의 실제 마지막 항목
         Assert.AreEqual(lastRelic.Name, tail.Find("Name").GetComponent<TMP_Text>().text); // 재연결한 원본 이름 일치
-        Assert.AreSame(lastRelic.Image, tail.Find("Image").GetComponent<Image>().sprite); // 이전 셀 그림과 현재 원본 구별
+        Sprite thumb = tail.Find("Image").GetComponent<Image>().sprite; // 현재 셀과 연결된 실제 썸네일 조회
+        Assert.AreSame(lastRelic.LoadThumbnail(), thumb); // 이전 셀 그림과 독립 썸네일 구별
+        Assert.IsNotNull(thumb); // 원화가 있는 유물의 독립 썸네일 확인
+        Assert.LessOrEqual(Mathf.Max(thumb.texture.width, thumb.texture.height), 128); // 작은 별도 텍스처의 실제 임포트 크기 확인
         tail.GetComponent<Button>().onClick.Invoke(); // 스크롤 뒤 마지막 실제 항목 상세 열기
         Assert.AreEqual(lastRelic.Name, view.transform.Find("Detail/Name").GetComponent<TMP_Text>().text); // 재사용한 버튼의 최신 이름 확인
         Assert.AreEqual(lastRelic.Description, view.transform.Find("Detail/Description").GetComponent<TMP_Text>().text); // 재사용한 버튼의 최신 설명 확인
+        Image detailArtwork = view.transform.Find("Detail/Artwork").GetComponent<Image>(); // 선택 상세의 별도 원화 표시 조회
+        for (float artDeadline = Time.realtimeSinceStartup + 15f; detailArtwork.sprite == null && Time.realtimeSinceStartup < artDeadline;) // 원화 비동기 로드 완료 확인
+        { // 원화 렌더 대기 시작
+            yield return null; // 실제 플레이어 프레임에서 요청 결과 대기
+        } // 원화 렌더 대기 종료
+        Assert.IsNotNull(detailArtwork.sprite); // 선택한 유물 원화 실제 표시 확인
+        Assert.AreNotSame(thumb.texture, detailArtwork.sprite.texture); // 원화와 목록 썸네일의 독립 네이티브 텍스처 확인
         view.transform.Find("Detail/CloseButton").GetComponent<Button>().onClick.Invoke(); // 실제 상세 닫기
         yield return null; // 닫은 상세 화면 제거 대기
         scroll.verticalNormalizedPosition = 1f; // 상단으로 복귀
@@ -94,6 +108,7 @@ public sealed class CodexViewTests // 도감 분류와 목록 검증
         } // 유물 상세 확인 종료
         view.transform.Find("BackButton").GetComponent<Button>().onClick.Invoke(); // 분류 화면 복귀
         Assert.IsTrue(view.transform.Find("Categories").gameObject.activeInHierarchy); // 도감 분류 화면 복귀 확인
+        Assert.IsTrue(grid.Cast<Transform>().All(cell => cell.Find("Image").GetComponent<Image>().sprite == null)); // 분류를 닫은 뒤 재사용 셀의 썸네일 참조 해제 확인
         view.transform.Find("Categories/Category_4").GetComponent<Button>().onClick.Invoke(); // 상태 효과 목록 열기
         var states = CodexData.Load(4).OrderBy(entry => entry.Name, System.StringComparer.Ordinal).ToArray(); // 상태 도감의 전체 정방향 원본
         list.Find("SortButton").GetComponent<Button>().onClick.Invoke(); // 이름 역순 전환

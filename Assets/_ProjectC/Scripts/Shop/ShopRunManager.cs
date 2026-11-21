@@ -325,8 +325,14 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public int GetCardRemovalPrice() // 현재 카드 제거 비용 조회
     { // 카드 제거 비용 조회 시작
-        var voucher = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FreeCardRemoval); // 실제 보유한 소모성 제거 교환권 조회
-        return catalog != null && voucher == null ? ApplyShopDiscount(catalog.CardRemovalPrice) : 0; // 상점 준비 상태의 할인 적용 비용 반환
+        var inventory = RelicRunManager.Instance?.Inventory; // 현재 회차의 제거 유물 보관함 조회
+        if (catalog == null || inventory?.FindEffect(RelicEffectType.FreeCardRemoval) != null) // 미준비 상점 또는 무료 제거 교환권 확인
+        { // 비용 없는 서비스 시작
+            return 0; // 무료 제거 가격 반환
+        } // 비용 없는 서비스 종료
+        int price = ApplyShopDiscount(catalog.CardRemovalPrice); // 기존 공통 할인 적용 카드 제거 가격
+        int chalkPercent = inventory?.FindEffect(RelicEffectType.CardRemovalDiscount)?.EffectValue ?? 0; // 현재 보유한 세공된 초크의 제거 할인율
+        return price - (int)((long)price * Mathf.Clamp(chalkPercent, 0, 100) / 100L); // 공통 할인 뒤 초크 할인액을 내림해 차감
     } // 카드 제거 비용 조회 종료
 
     private static int ApplyShopDiscount(int price) // 보유 유물의 상점 할인 계산

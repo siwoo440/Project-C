@@ -31,7 +31,7 @@ public sealed class CodexScrollMeasurementTests // 동일 조작의 도감 셀 �
         yield return null; // 캔버스 배치와 글꼴 준비
         var real = CodexData.Load(3); // 실제 유물 자료와 원화
         Assert.Greater(real.Count, 0); // 실물 비교 원본 확인
-        var synthetic = Enumerable.Range(0, 549).Select(i => new CodexEntry("계측 " + i.ToString("D3"), real[i % real.Count].Description, real[i % real.Count].Image)).ToList(); // 화면 생성 비용을 분리할 비교용 549개 행
+        var synthetic = Enumerable.Range(0, 549).Select(i => real[i % real.Count].WithName("계측 " + i.ToString("D3"))).ToList(); // 원화를 미리 불러오지 않는 비교용 549개 행
         foreach (bool useSynthetic in new[] { false, true }) // 실제 자료와 비교 자료를 각각 측정
         { // 자료별 계측 시작
             var initial = new List<double>(); // 목록 첫 표시 표본

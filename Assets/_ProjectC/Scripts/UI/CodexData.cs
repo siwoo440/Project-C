@@ -6,61 +6,63 @@ public sealed class CodexEntry // 도감에 표시할 실제 항목
 { // 도감 항목 시작
     public readonly string Name; // 항목 이름
     public readonly string Description; // 항목 설명
-    public readonly Sprite Image; // 항목 이미지
-    public CodexEntry(string name, string description, Sprite image) // 실제 원본 정보 보관
+    private readonly string artworkKey; // 독립 썸네일과 원화 참조의 리소스 키
+    private readonly Func<Sprite> statusIcon; // 상태 분류의 늦은 아이콘 조회
+    public bool HasArtwork => !string.IsNullOrEmpty(artworkKey) || statusIcon != null; // 항목에 등록된 이미지 여부
+    public Sprite Image => statusIcon != null ? statusIcon() : string.IsNullOrEmpty(artworkKey) ? null : Resources.Load<CodexArtworkResource>("Codex/Originals/" + artworkKey)?.Artwork; // 기존 호출자가 명시적으로 조회한 원본 이미지
+    internal CodexEntry(string name, string description, string artworkKey, Func<Sprite> statusIcon = null) // 이미지 없이 도감 문자와 키 보관
     { // 도감 항목 생성 시작
         Name = name; // 실제 이름 보관
         Description = description; // 실제 설명 보관
-        Image = image; // 실제 이미지 보관
+        this.artworkKey = artworkKey; // 실제 이미지 조회에 사용할 키 보관
+        this.statusIcon = statusIcon; // 상태 이미지 필요 시 사용할 조회 함수
     } // 도감 항목 생성 종료
+    public CodexEntry WithName(string name) // 같은 이미지 계약으로 표시 이름만 바꾼 항목 생성
+    { // 이름 복사 시작
+        return new CodexEntry(name, Description, artworkKey, statusIcon); // 도감 이미지 없이 새 이름 사용
+    } // 이름 복사 종료
+    public Sprite LoadThumbnail() // 현재 표시되는 셀의 작은 이미지 조회
+    { // 썸네일 조회 시작
+        return !string.IsNullOrEmpty(artworkKey) ? Resources.Load<Sprite>("Codex/Thumbnails/CodexThumb_" + artworkKey) : null; // 상세 원화와 분리된 작은 이미지 조회
+    } // 썸네일 조회 종료
+    internal ResourceRequest RequestFullArtwork() // 상세를 선택한 경우 원화 리소스 조회
+    { // 원화 요청 시작
+        return statusIcon == null && !string.IsNullOrEmpty(artworkKey) ? Resources.LoadAsync<CodexArtworkResource>("Codex/Originals/" + artworkKey) : null; // 한 원화만 참조하는 작은 리소스 비동기 로드
+    } // 원화 요청 종료
+    internal Sprite LoadStatusArtwork() // 선택 상세에 작은 상태 원본 표시
+    { // 상태 원화 조회 시작
+        return statusIcon?.Invoke(); // 독립 원본이 없을 때 실제 상태 아이콘 조회
+    } // 상태 원화 조회 종료
 } // 도감 항목 종료
 public static class CodexData // 실제 게임 데이터 기반 도감
 { // 도감 데이터 시작
+    [Serializable] // 텍스트로 내보낸 도감 행 구조
+    private sealed class Row // 유니티 에셋 참조 없는 도감 자료
+    { // 도감 행 시작
+        public int category; // 도감 분류 번호
+        public string name; // 실제 항목 이름
+        public string description; // 실제 항목 설명
+        public string artworkKey; // 원화와 썸네일의 조회 키
+    } // 도감 행 종료
+    [Serializable] // 도감 텍스트 목록 구조
+    private sealed class Index // 도감 텍스트 전체 목록
+    { // 목록 구조 시작
+        public Row[] rows; // 원본 순서를 유지한 항목 행
+    } // 목록 구조 종료
+    private static Row[] rows; // 첫 조회 후 재사용할 문자와 이미지 키
     public static List<CodexEntry> Load(int category) // 선택 분류의 실제 항목 조회
     { // 도감 항목 조회 시작
         List<CodexEntry> entries = new List<CodexEntry>(); // 도감 항목 목록 생성
-        SaveAssetCatalog catalog = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 실제 아이템 원본 목록 조회
-        if (category == 0) // 상호작용 이벤트 분류 확인
-        { // 이벤트 항목 수집 시작
-            foreach (ExplorationEventData item in ExplorationEventCatalog.LoadEvents()) // 실제 탐사 이벤트 순회
-            { // 이벤트 항목 추가 시작
-                entries.Add(new CodexEntry(item.DisplayName, item.Description, item.IllustrationSprite)); // 이벤트 정보 등록
-            } // 이벤트 항목 추가 종료
-        } // 이벤트 항목 수집 종료
-        else if (category == 1 && catalog != null) // 포션 원본 목록 확인
-        { // 포션 항목 수집 시작
-            foreach (ConsumableItemData item in catalog.Consumables) // 실제 소모품 목록 순회
-            { // 소모품 분류 확인 시작
-                if (item is PotionData) // 포션 자료형 확인
-                { // 포션 항목 추가 시작
-                    entries.Add(new CodexEntry(item.DisplayName, item.Description, item.Icon)); // 실제 포션 정보 등록
-                } // 포션 항목 추가 종료
-            } // 소모품 분류 확인 종료
-        } // 포션 항목 수집 종료
-        else if (category == 2) // 적 분류 확인
-        { // 적 항목 수집 시작
-            HashSet<string> seen = new HashSet<string>(); // 중복 적 식별자 보관
-            foreach (EncounterData encounter in Resources.LoadAll<EncounterData>("Encounters")) // 실제 탐사 조우 목록 순회
-            { // 조우별 적 수집 시작
-                foreach (EnemyData enemy in encounter.Enemies) // 조우의 적 목록 순회
-                { // 적 원본 확인 시작
-                    if (enemy != null && seen.Add(enemy.EnemyId)) // 중복되지 않은 적 확인
-                    { // 적 항목 추가 시작
-                        entries.Add(new CodexEntry(enemy.DisplayName, enemy.Description, enemy.Portrait)); // 실제 적 정보 등록
-                    } // 적 항목 추가 종료
-                } // 적 원본 확인 종료
-            } // 조우별 적 수집 종료
-        } // 적 항목 수집 종료
-        else if (category == 3 && catalog != null) // 유물 원본 목록 확인
-        { // 유물 항목 수집 시작
-            foreach (RelicData item in catalog.Relics) // 실제 유물 목록 순회
-            { // 유물 원본 확인 시작
-                if (item != null) // 유물 존재 여부 확인
-                { // 유물 항목 추가 시작
-                    entries.Add(new CodexEntry(item.DisplayName, item.Description, item.Icon)); // 실제 유물 정보 등록
-                } // 유물 항목 추가 종료
-            } // 유물 원본 확인 종료
-        } // 유물 항목 수집 종료
+        if ((category >= 0 && category < 4) || category == 7) // 탐사 사건과 포션 및 적과 유물과 카드 분류 확인
+        { // 문자열 목록 수집 시작
+            foreach (Row row in LoadRows()) // 원화 의존성 없는 도감 원본 순회
+            { // 해당 목록의 항목 확인 시작
+                if (row.category == category) // 선택 분류에 포함된 실제 데이터 확인
+                { // 도감 항목 추가 시작
+                    entries.Add(new CodexEntry(row.name, row.description, row.artworkKey)); // 필요한 화면에서만 읽을 이미지 키 기록
+                } // 도감 항목 추가 종료
+            } // 해당 목록의 항목 확인 종료
+        } // 문자열 목록 수집 종료
         else if (category == 4) // 상태 효과 분류 확인
         { // 상태 효과 수집 시작
             foreach (BattleStatusEffectType effect in Enum.GetValues(typeof(BattleStatusEffectType))) // 게임 상태 효과 순회
@@ -129,15 +131,29 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                         int amount = effect == BattleStatusEffectType.FocusedDefense ? 50 : effect == BattleStatusEffectType.BleedResistance ? 20 : 1; // 기본 방패 카드의 원본 수치
                         description = BattleStatusEffectInstance.GetDescription(effect, amount); // 새 방패 상태 도감 설명 연결
                     } // 새 방패 상태 상세 안내 종료
+                    else if (effect == BattleStatusEffectType.Vulnerable) // 검은 왕관의 받는 피해 증가 확인
+                    { // 취약 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 검은 왕관의 기본 취약 20퍼센트 설명
+                    } // 취약 설명 종료
                     else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시
                     } // 표식 설명 종료
-                    Sprite icon = description.Length > 0 ? BattleStatusIconArt.Get(effect) : null; // 검 카드의 독립 상태 아이콘 조회
-                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, icon)); // 실제 상태 이름과 연결된 상세 정보 등록
+                    Func<Sprite> icon = description.Length > 0 ? () => BattleStatusIconArt.Get(effect) : null; // 표시 중인 상태에만 사용할 작은 아이콘 조회
+                    string key = icon != null ? "status_" + effect : null; // 상태별 독립 썸네일 키 설정
+                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, key, icon)); // 상태 이름과 설명 및 이미지 키 등록
                 } // 상태 효과 추가 종료
             } // 상태 효과 확인 종료
         } // 상태 효과 수집 종료
         return entries; // 실제 원본 항목 반환
     } // 도감 항목 조회 종료
+    private static Row[] LoadRows() // 원본 에셋 없이 도감 문자 목록 파싱
+    { // 도감 목록 조회 시작
+        if (rows == null) // 회차에서 처음으로 사용하는 도감 원본 확인
+        { // 텍스트 자료 준비 시작
+            TextAsset text = Resources.Load<TextAsset>("Codex/Index"); // 에셋 참조가 없는 JSON 텍스트 조회
+            rows = text != null ? JsonUtility.FromJson<Index>(text.text)?.rows ?? Array.Empty<Row>() : Array.Empty<Row>(); // 이미지 오브젝트 없는 목록 한 번 파싱
+        } // 텍스트 자료 준비 종료
+        return rows; // 현재 도감 텍스트 조회 결과 반환
+    } // 도감 목록 조회 종료
 } // 도감 데이터 종료

@@ -11,6 +11,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int openingHandAfterAmbush = -1; // 적 선제 직후 첫 아군에게 줄 시작 손패 수
     private RelicInventoryRuntime openingRelics; // 현재 탐사 유물 보관함
     private bool openingAllySpeedActive; // 첫 적 턴까지 유지할 배지 상태
+    private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
+    private int openingSpecimenActionPoints; // 첫 아군 턴에 지급할 탐사 표본병 행동력
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
@@ -82,6 +84,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             StateChanged?.Invoke(); // 실제 적 행동 실행
             return true; // 선제 전투 시작 완료
         } // 적의 첫 행동 종료
+        openingVulnerableEnemy = ApplyOpeningEnemyStatus(RelicEffectType.OpeningVulnerable); // 실제 첫 아군 턴의 검은 왕관 약화
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
         DrawPlayerHand(initialHandSize); // 실제 첫 아군 턴의 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
@@ -165,6 +168,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
         runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
         runtimeDeck.ClearFirstDrawRelicDiscount(); // 종료된 턴의 첫 드로우 카드 비용 복원
+        runtimeDeck.ClearOpeningRandomRelicDiscount(); // 첫 턴이 끝난 왕관 할인 복원
         springReady = false; // 지난 턴의 붉은 스프링 예약 해제
         runtimeDeck.SetNextCardRelicApDiscount(0); // 다음 카드에 남은 비용 표시 복구
         sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
@@ -189,6 +193,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 첫 아군 턴 준비 시작
             drawCount = openingHandAfterAmbush; // 정상 시작 손패 수 복원
             openingHandAfterAmbush = -1; // 다음 적 턴부터 정상 라운드 진행
+            openingVulnerableEnemy = ApplyOpeningEnemyStatus(RelicEffectType.OpeningVulnerable); // 선제가 끝난 뒤 첫 아군 턴의 취약 적용
         } // 첫 아군 턴 준비 종료
         else // 일반 적 턴 종료
         { // 새 라운드 준비 시작
@@ -204,12 +209,12 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
-    private void ApplyOpeningEnemyStatus(RelicEffectType effectType) // 전투 시작 시 무작위 적 상태 적용
+    private BattleUnitRuntime ApplyOpeningEnemyStatus(RelicEffectType effectType) // 무작위 적 상태 적용과 실제 대상 반환
     { // 시작 적 상태 처리 시작
         var relic = openingRelics?.FindEffect(effectType); // 지정 시작 유물의 보유 여부 조회
         if (relic == null) // 유물 미보유 확인
         { // 미발동 처리 시작
-            return; // 보유하지 않은 효과 생략
+            return null; // 보유하지 않은 효과의 대상 없음
         } // 미발동 처리 종료
         var living = new List<BattleUnitRuntime>(); // 약화 대상 후보
         foreach (var enemy in enemyUnits) // 전투 배치의 적 순회
@@ -222,9 +227,17 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (living.Count > 0) // 대상 존재 확인
         { // 하나의 적에 약화 적용
             var target = living[UnityEngine.Random.Range(0, living.Count)]; // 생존 적 하나 무작위 선택
-            target.ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks); // 유물 상태 수치와 기존 면역 규칙 적용
+            var result = target.ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks); // 유물 상태 수치와 기존 면역 규칙 적용
+            return result is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? target : null; // 상태 부여에 성공한 실제 적 반환
         } // 약화 적용 종료
+        return null; // 생존 적이 없는 경우의 대상 없음
     } // 시작 적 상태 처리 종료
+    private void ClearOpeningVulnerability() // 첫 아군 턴 한정의 검은 왕관 취약 회수
+    { // 검은 왕관 해제 시작
+        var affected = openingVulnerableEnemy; // 취약의 실제 적용 대상 보관
+        openingVulnerableEnemy = null; // 상태 알림 전에 취약 대상 참조 해제
+        affected?.RemoveStatusEffect(BattleStatusEffectType.Vulnerable); // 첫 아군 턴이 끝난 대상의 취약 제거
+    } // 검은 왕관 해제 종료
     private void ApplyOpeningAllySpeed() // 전투 시작 배지 속도 증가 적용
     { // 배지 발동 시작
         var badge = openingRelics?.FindEffect(RelicEffectType.OpeningAllySpeed); // 보유한 바람개비 배지 조회
@@ -253,8 +266,16 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             ally?.RemoveStatusEffect(BattleStatusEffectType.ActionSpeedUp); // 첫 적 턴용 속도 상태 해제
         } // 개별 상태 제거 종료
     } // 속도 효과 회수 종료
+    internal void QueueSpecimenOpeningRewards(int draw, int actionPoints) // 탐사에서 얻은 표본병 효과를 시작 손패에 예약
+    { // 시작 표본병 예약 시작
+        runtimeDeck.QueuePlayerTurnDraw(draw); // 첫 실제 아군 드로우의 추가량 예약
+        openingSpecimenActionPoints = actionPoints; // 선제 적 턴에는 사용하지 않을 행동력 보관
+    } // 시작 표본병 예약 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
+        int specimenActionPoints = openingSpecimenActionPoints; // 실제 아군 턴에 지급할 행동력 확보
+        openingSpecimenActionPoints = 0; // 발동 알림 전에 재지급 방지
+        sharedActionPoints.AddTurnCapacity(specimenActionPoints); // 끝나는 턴에 회수할 현재 및 상한 행동력 지급
         var pouch = openingRelics?.FindEffect(RelicEffectType.LargeDiscardDraw); // 보유한 잔해 주머니 조회
         if (pouch != null && runtimeDeck.DiscardPileCount >= 10) // 재섞기 전에 버린 더미 확인
         { // 추가 드로우 준비 시작
@@ -291,6 +312,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 비용 감소 시작
             runtimeDeck.SetRelicApDiscount(shard.EffectValue); // 이번 턴의 카드 비용 감소
         } // 비용 감소 종료
+        var crown = openingRelics.FindEffect(RelicEffectType.OpeningRandomCardDiscount); // 실제 첫 손패에 적용할 퇴색한 왕관 조회
+        runtimeDeck.DiscountRandomOpeningHandCard(crown?.EffectValue ?? 0); // 첫 손패 추첨과 개별 고정 비용 할인
     } // 턴 손패 처리 종료
     private void HandleExcludedCard(CardInstance card, bool fromVolatileHand) // 실제 제외 및 손패 휘발 유물 처리
     { // 제외 유물 처리 시작
@@ -380,6 +403,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 기존 진영 종료 효과 전달
         if (endCharge) // 돌진의 한 차례 아군 공격 기회 종료 확인
         { // 돌진 효과 해제 시작
+            ClearOpeningVulnerability(); // 첫 실제 아군 턴이 끝난 검은 왕관의 취약 제거
             foreach (var ally in allyUnits) // 결투를 시작한 아군 확인
             { // 결투 기간 처리 시작
                 ally?.ActiveDuel?.AdvancePlayerTurn(); // 양쪽 표식의 남은 턴을 함께 감소
@@ -489,6 +513,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         Result = battleResult; // 최종 전투 결과 저장
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
         ClearOpeningAllySpeed(); // 첫 적 턴을 마치지 않은 전투의 배지 상태 회수
+        ClearOpeningVulnerability(); // 첫 아군 턴 중 승리나 도주 시에도 취약 회수
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
         sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
         StateChanged?.Invoke(); // 전투 종료 알림
@@ -553,6 +578,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
         ClearOpeningAllySpeed(); // 전투 관리자 해제 시 배지 상태 회수
+        ClearOpeningVulnerability(); // 전투 관리자 해제 시 왕관 상태 회수
         for (int unitIndex = registeredUnits.Count - 1; unitIndex >= 0; unitIndex--) // 등록 유닛 역순 순회
         { // 이벤트 일괄 해제 시작
             UnregisterUnitEvent(registeredUnits[unitIndex]); // 개별 사망 이벤트 해제

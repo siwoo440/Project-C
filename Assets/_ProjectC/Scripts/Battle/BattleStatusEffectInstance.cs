@@ -175,6 +175,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "불굴"; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
+            case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
+                return "취약"; // 취약의 표시 이름
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명 표식"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -197,7 +199,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -283,6 +285,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "불굴"; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
+            case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
+                return "취약"; // 취약 아이콘의 대체 글자
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -391,6 +395,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "피해로 체력이 1 이하가 될 때 한 번 버틴다."; // 불굴의 실제 화면 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
+            case BattleStatusEffectType.Vulnerable: // 방어도 적용 전 받는 피해 증가
+                return $"방어도를 적용할 수 있는 받는 원본 피해 +{effectiveValue}%"; // 상태 화면의 피해 증가 설명
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "첫 아군 턴 종료까지 유지. 표식용 분필의 직접 카드 피해 증가 대상"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류

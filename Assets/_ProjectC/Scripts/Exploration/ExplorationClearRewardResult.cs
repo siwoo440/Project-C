@@ -8,6 +8,7 @@ public sealed class ExplorationClearRewardResult
     public int Wire { get; }
     public int PreviousCharacterLevel { get; }
     public int CurrentCharacterLevel { get; }
+    public RelicData CoreRelic { get; internal set; } // 이번 침식핵 파괴에서 실제 획득한 유물
 
     public bool LeveledUp =>
         CurrentCharacterLevel > PreviousCharacterLevel;

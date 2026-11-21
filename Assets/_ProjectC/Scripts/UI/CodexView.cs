@@ -1,4 +1,5 @@
 using System; // 항목 이름 비교 사용
+using System.Collections; // 상세 원화 로드 완료 대기
 using System.Collections.Generic; // 도감 항목 목록 사용
 using TMPro; // 도감 문구 사용
 using UnityEngine; // 화면 객체 사용
@@ -6,7 +7,7 @@ using UnityEngine.UI; // 도감 버튼과 목록 사용
 
 public sealed class CodexView : MonoBehaviour // 로비 도감 화면
 { // 도감 화면 시작
-    private static readonly string[] CategoryNames = { "상호작용", "포션", "적", "유물", "상태 이상", "찢겨진 기록", "상호작용 오브젝트" }; // 도감 분류 이름
+    private static readonly string[] CategoryNames = { "상호작용", "포션", "적", "유물", "상태 이상", "찢겨진 기록", "상호작용 오브젝트", "카드" }; // 실제 게임 자료를 보는 여덟 분류
     private const int Columns = 6; // 기존 도감의 가로 항목 수
     private const float Width = 195f; // 원래 항목 너비
     private const float Height = 235f; // 원래 항목 높이
@@ -16,6 +17,8 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
     private readonly List<Cell> pool = new List<Cell>(); // 현재 도감에서 재사용할 항목 셀
     private ScrollRect scroll; // 실제 위치와 속도를 가진 스크롤
     private int firstRow = -1; // 마지막으로 연결한 첫 행
+    private int firstImageRow = -1; // 화면에 걸린 첫 이미지 행
+    private int lastImageRow = -1; // 화면에 걸린 마지막 이미지 행
     private float viewportHeight = -1f; // 화면 크기 변경 감지용 높이
     private RectTransform categories; // 분류 선택 화면
     private RectTransform list; // 항목 목록 화면
@@ -45,10 +48,10 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         categoryObject.transform.SetParent(transform, false); // 도감 화면 연결
         categories = categoryObject.GetComponent<RectTransform>(); // 분류 영역 조회
         PreparationUi.Stretch(categories, Vector2.zero, Vector2.one); // 분류 영역 화면 채우기
-        for (int index = 0; index < CategoryNames.Length; index++) // 일곱 개의 도감 분류 순회
+        for (int index = 0; index < CategoryNames.Length; index++) // 여덟 개의 도감 분류 순회
         { // 분류 버튼 생성 시작
             int category = index; // 버튼별 분류 번호 보관
-            float x = index < 4 ? 0.185f + index * 0.21f : 0.29f + (index - 4) * 0.21f; // 두 줄 기준 가로 위치 계산
+            float x = 0.185f + index % 4 * 0.21f; // 두 줄 네 칸의 분류 위치 계산
             float y = index < 4 ? 0.62f : 0.40f; // 분류별 세로 위치 계산
             PreparationUi.CreateButton("Category_" + index, categories, CategoryNames[index], new Vector2(x, y), Vector2.zero, new Vector2(320f, 140f), () => OpenCategory(category)); // 분류 선택 버튼 생성
         } // 분류 버튼 생성 종료
@@ -124,12 +127,17 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         float height = scroll.viewport.rect.height; // 현재 화면에서 사용할 세로 길이
         int rows = (entries.Count + Columns - 1) / Columns; // 데이터 전체의 행 수
         int visibleRows = Mathf.Min(rows, Mathf.CeilToInt(Mathf.Max(0f, height) / RowHeight) + 2); // 일부만 보이는 행과 위아래 여유분 확보
-        int start = Mathf.Clamp(Mathf.FloorToInt((grid.anchoredPosition.y - Margin) / RowHeight) - 1, 0, rows - visibleRows); // 목록 범위 안에서 첫 표시 행 결정
-        if (start == firstRow && Mathf.Approximately(height, viewportHeight)) // 같은 행 안의 스크롤 확인
+        float top = grid.anchoredPosition.y; // 현재 표시 영역 상단의 목록 좌표
+        int start = Mathf.Clamp(Mathf.FloorToInt((top - Margin) / RowHeight) - 1, 0, rows - visibleRows); // 여유 셀을 포함한 첫 재사용 행
+        int imageStart = Mathf.Max(0, Mathf.FloorToInt((top - Margin - Height) / RowHeight) + 1); // 아랫변이 표시 영역 안에 들어오는 첫 행
+        int imageEnd = height > 0f ? Mathf.Min(rows - 1, Mathf.CeilToInt((top + height - Margin) / RowHeight) - 1) : -1; // 윗변이 표시 영역 안에 들어오는 마지막 행
+        if (start == firstRow && imageStart == firstImageRow && imageEnd == lastImageRow && Mathf.Approximately(height, viewportHeight)) // 셀 창과 실제 이미지 영역의 변경 여부 확인
         { // 기존 연결 유지 시작
             return; // 같은 항목과 그림의 중복 연결 생략
         } // 기존 연결 유지 종료
         firstRow = start; // 갱신한 첫 행 보관
+        firstImageRow = imageStart; // 실제 이미지 요청의 첫 행 보관
+        lastImageRow = imageEnd; // 실제 이미지 요청의 마지막 행 보관
         viewportHeight = height; // 이번 크기 보관
         int capacity = Mathf.Min(entries.Count, visibleRows * Columns); // 현재 목록에 필요한 최대 셀 수
         while (pool.Count < capacity) // 더 큰 화면이나 분류의 첫 표시 확인
@@ -142,11 +150,12 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
             if (offset < capacity) // 현재 화면 범위의 셀 확인
             { // 보이는 행 처리 시작
                 var cell = pool[index % capacity]; // 겹치는 항목은 같은 셀에 남는 순환 위치
-                cell.Bind(index, index < entries.Count ? entries[index] : null); // 마지막 줄의 빈 칸은 숨김
+                int row = index / Columns; // 현재 재사용 셀의 실제 목록 행
+                cell.Bind(index, index < entries.Count ? entries[index] : null, row >= imageStart && row <= imageEnd); // 표시 영역에 들어온 행만 썸네일 연결
             } // 보이는 행 처리 종료
             else // 이전 분류 또는 큰 창에서 남은 셀 확인
             { // 여유 셀 정리 시작
-                pool[offset].Bind(-1, null); // 다음 사용을 위해 숨긴 채 유지
+                pool[offset].Bind(-1, null, false); // 다음 사용을 위해 이미지 연결을 해제하고 숨김
             } // 여유 셀 정리 종료
         } // 개별 셀 연결 종료
     } // 화면 행 연결 종료
@@ -157,6 +166,7 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         private readonly TMP_Text label; // 현재 항목의 이름
         private CodexEntry entry; // 버튼이 열 현재 항목
         private int index = -1; // 현재 셀이 표시하는 논리적 순번
+        private bool thumbnailVisible; // 이전 갱신에서 실제로 보인 셀 이미지 여부
         public Cell(RectTransform parent, Action<CodexEntry> showDetail) // 공통 셀 화면과 단일 클릭 연결 생성
         { // 셀 생성 시작
             area = PreparationUi.CreatePanel("Entry", parent, Vector2.up, Vector2.up); // 상단 왼쪽 좌표를 사용하는 카드 영역
@@ -174,7 +184,7 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
             icon.raycastTarget = false; // 상세 버튼 입력 허용
             label = PreparationUi.CreateText("Name", area, string.Empty, 23f); // 재사용할 이름 표시
         } // 셀 생성 종료
-        public void Bind(int nextIndex, CodexEntry nextEntry) // 보이는 자료가 바뀐 셀만 다시 연결
+        public void Bind(int nextIndex, CodexEntry nextEntry, bool imageVisible) // 자료와 표시 영역이 바뀐 셀 재연결
         { // 셀 내용 변경 시작
             if (nextEntry == null) // 빈 분류 또는 마지막 행의 빈 칸 확인
             { // 비사용 셀 처리 시작
@@ -182,45 +192,79 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
                 { // 비사용 화면 숨김 시작
                     entry = null; // 이전 상세 대상 해제
                     icon.sprite = null; // 이전 항목 그림 연결 해제
+                    thumbnailVisible = false; // 이 썸네일을 표시 영역 밖으로 기록
                     area.gameObject.SetActive(false); // 표시와 클릭 차단
                 } // 비사용 화면 숨김 종료
                 return; // 빈 항목 배치 생략
             } // 비사용 셀 처리 종료
             if (index == nextIndex && entry == nextEntry) // 스크롤 전부터 보이던 같은 항목 확인
             { // 같은 셀 유지 시작
-                return; // 이름과 이미지 재배치 생략
+                if (thumbnailVisible != imageVisible) // 셀 위치를 유지한 채 표시 영역만 바뀐 경우 확인
+                { // 실제 이미지 상태 갱신 시작
+                    SetThumbnailVisible(imageVisible); // 화면에 들어온 셀의 썸네일만 연결
+                } // 실제 이미지 상태 갱신 종료
+                return; // 이름과 셀 위치의 중복 배치 생략
             } // 같은 셀 유지 종료
             index = nextIndex; // 실제 항목 순번 저장
             entry = nextEntry; // 현재 클릭 시 열 항목 저장
             area.name = "Entry_" + index; // 기존 도감의 실제 항목 식별 이름
             area.anchoredPosition = new Vector2(Margin + index % Columns * (Width + Gap), -Margin - index / Columns * RowHeight); // 전체 목록 안의 원래 위치
-            icon.sprite = entry.Image; // 새 항목의 실제 그림 연결
-            bool hasImage = entry.Image != null; // 원화가 있는 항목 확인
-            icon.gameObject.SetActive(hasImage); // 원화가 없는 항목의 이전 이미지 숨김
             label.text = entry.Name; // 현재 실제 항목 이름
-            PreparationUi.Stretch(label.rectTransform, hasImage ? new Vector2(0.06f, 0.05f) : new Vector2(0.06f, 0.3f), hasImage ? new Vector2(0.94f, 0.23f) : new Vector2(0.94f, 0.7f)); // 이미지 유무에 맞춘 기존 이름 위치
+            SetThumbnailVisible(imageVisible); // 새 항목의 작은 그림 연결과 이름 위치 갱신
             area.gameObject.SetActive(true); // 새 항목의 표시와 클릭 허용
         } // 셀 내용 변경 종료
+        private void SetThumbnailVisible(bool visible) // 현재 표시 영역에 해당하는 작은 그림만 연결
+        { // 썸네일 표시 처리 시작
+            thumbnailVisible = visible; // 이미지 표시 범위 변경 기록
+            icon.sprite = visible ? entry.LoadThumbnail() : null; // 화면 밖 항목은 원본과 작은 그림을 모두 읽지 않음
+            icon.gameObject.SetActive(icon.sprite != null); // 표시할 작은 그림이 없는 영역 숨김
+            bool hasImage = visible ? icon.sprite != null : entry.HasArtwork; // 화면 밖에서도 이미지 슬롯이 있는 이름 자리 보존
+            PreparationUi.Stretch(label.rectTransform, hasImage ? new Vector2(0.06f, 0.05f) : new Vector2(0.06f, 0.3f), hasImage ? new Vector2(0.94f, 0.23f) : new Vector2(0.94f, 0.7f)); // 이미지 유무에 맞춘 기존 이름 위치
+        } // 썸네일 표시 처리 종료
     } // 재사용 셀 종료
     private void ShowDetail(CodexEntry entry) // 실제 항목 상세 정보 표시
     { // 상세 화면 표시 시작
-        if (transform.Find("Detail") != null) // 기존 상세 화면 존재 확인
+        if (entry == null || transform.Find("Detail") != null) // 실제 항목과 중복 상세 화면 확인
         { // 중복 상세 화면 처리 시작
             return; // 중복 상세 생성 중단
         } // 중복 상세 화면 처리 종료
         RectTransform detail = PreparationUi.CreatePanel("Detail", transform, Vector2.zero, Vector2.one); // 상세 화면 배경 생성
         detail.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.82f); // 상세 화면 뒤 어두운 배경 설정
-        RectTransform panel = PreparationUi.CreatePanel("Panel", detail, new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f)); // 상세 정보 패널 생성
+        RectTransform panel = PreparationUi.CreatePanel("Panel", detail, new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f)); // 원화와 설명을 담을 상세 패널 생성
         LobbyUiArt.Apply(panel.GetComponent<Image>(), "FormationPanel"); // 기존 패널 디자인 적용
         TMP_Text heading = PreparationUi.CreateText("Name", detail, entry.Name, 36f); // 항목 상세 이름 생성
-        PreparationUi.Place(heading.rectTransform, new Vector2(0.5f, 0.66f), Vector2.zero, new Vector2(800f, 70f)); // 상세 이름 위치 설정
+        PreparationUi.Place(heading.rectTransform, new Vector2(0.5f, 0.75f), Vector2.zero, new Vector2(800f, 70f)); // 상세 이름 위치 설정
         TMP_Text description = PreparationUi.CreateText("Description", detail, string.IsNullOrWhiteSpace(entry.Description) ? "등록된 설명이 없습니다." : entry.Description, 26f); // 실제 항목 설명 생성
-        PreparationUi.Place(description.rectTransform, new Vector2(0.5f, 0.49f), Vector2.zero, new Vector2(760f, 230f)); // 상세 설명 위치 설정
-        PreparationUi.CreateButton("CloseButton", detail, "닫기", new Vector2(0.5f, 0.31f), Vector2.zero, new Vector2(200f, 70f), () => CloseDetail(detail)); // 상세 화면 닫기 버튼 생성
+        PreparationUi.Stretch(description.rectTransform, entry.HasArtwork ? new Vector2(0.5f, 0.34f) : new Vector2(0.25f, 0.34f), new Vector2(0.77f, 0.68f)); // 이미지 유무에 맞춘 설명 위치 설정
+        if (entry.HasArtwork) // 원화 또는 상태 아이콘을 표시하는 항목 확인
+        { // 상세 이미지 준비 시작
+            RectTransform area = PreparationUi.CreatePanel("Artwork", detail, new Vector2(0.23f, 0.34f), new Vector2(0.48f, 0.68f)); // 상세 원화의 표시 영역 생성
+            Image artwork = area.GetComponent<Image>(); // 상세 원화 표시 요소 조회
+            artwork.color = Color.white; // 기존 그림의 색상 유지
+            artwork.preserveAspect = true; // 원본 이미지 비율 유지
+            artwork.enabled = false; // 원화가 준비되기 전 빈 이미지 감춤
+            StartCoroutine(ShowArtwork(entry, artwork)); // 이 상세 창에서만 원화 비동기 로드
+        } // 상세 이미지 준비 종료
+        PreparationUi.CreateButton("CloseButton", detail, "닫기", new Vector2(0.5f, 0.25f), Vector2.zero, new Vector2(200f, 70f), () => CloseDetail(detail)); // 상세 화면 닫기 버튼 생성
     } // 상세 화면 표시 종료
+    private static IEnumerator ShowArtwork(CodexEntry entry, Image artwork) // 상세 화면 한 곳에 요청 결과 표시
+    { // 상세 원화 조회 시작
+        ResourceRequest request = entry.RequestFullArtwork(); // 선택한 항목의 단일 원화 요청
+        if (request != null) // 별도의 원화가 있는 항목 확인
+        { // 원화 비동기 대기 시작
+            yield return request; // 표시 스레드를 막지 않고 로드 완료 대기
+        } // 원화 비동기 대기 종료
+        if (artwork == null || !artwork.gameObject.activeInHierarchy) // 완료 전에 닫거나 바꾼 상세 확인
+        { // 닫힌 화면 처리 시작
+            yield break; // 이미 닫힌 화면에 늦은 결과 미적용
+        } // 닫힌 화면 처리 종료
+        artwork.sprite = request == null ? entry.LoadStatusArtwork() : (request.asset as CodexArtworkResource)?.Artwork; // 원화 또는 실제 상태 아이콘 표시
+        artwork.enabled = artwork.sprite != null; // 실제 이미지가 있는 경우 표시
+    } // 상세 원화 조회 종료
     private static void CloseDetail(RectTransform detail) // 상세 정보 화면 닫기
     { // 상세 정보 닫기 시작
         detail.gameObject.SetActive(false); // 상세 화면 입력 차단
+        detail.SetParent(null, false); // 같은 프레임에 다음 항목을 열 수 있도록 비활성 상세 분리
         Destroy(detail.gameObject); // 상세 화면 제거
     } // 상세 정보 닫기 종료
     private void Back() // 도감 이전 화면 복귀
@@ -228,6 +272,11 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         if (list.gameObject.activeSelf) // 항목 목록 표시 여부 확인
         { // 분류 화면 복귀 시작
             list.gameObject.SetActive(false); // 항목 목록 숨김
+            foreach (Cell cell in pool) // 숨긴 분류의 재사용 셀 순회
+            { // 이미지 참조 정리 시작
+                cell.Bind(-1, null, false); // 이전 항목과 작은 그림 참조 해제
+            } // 이미지 참조 정리 종료
+            entries = null; // 이전 분류의 항목 목록 참조 해제
             categories.gameObject.SetActive(true); // 분류 선택 화면 표시
             title.text = "도감"; // 기본 도감 제목 복원
             return; // 도감 화면 유지
