@@ -289,7 +289,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             turnRuntime.ResolveOpeningBookmark(null); // 다른 전투 입력이 영구 잠기지 않도록 선택 취소
             return; // 캔버스 없는 화면 생성 생략
         } // 모달을 열 수 없는 경로 종료
-        openingBookmarkView = BattleDrawChoiceView.Show(canvas.transform, choices, ResolveOpeningBookmarkView, "서고 먼지갈피 · 가져올 카드 선택", () => ResolveOpeningBookmarkView(null)); // 현재 후보 및 취소를 기존 선택 화면에 연결
+        openingBookmarkView = BattleDrawChoiceView.Show( // 실제 카드 후보를 유물 명패가 있는 선택 화면에 연결
+            canvas.transform, // 전투 선택창의 부모 캔버스
+            choices, // 현재 뽑기 더미의 실제 선택 후보
+            ResolveOpeningBookmarkView, // 기존 카드 선택 정산
+            titleText: "가져올 카드 선택", // 중앙 패널 안에 표시할 안내 문구
+            cancelled: () => ResolveOpeningBookmarkView(null), // 기존 선택 취소와 전투 입력 복귀
+            relicName: "서고 먼지갈피"); // 패널 위 개별 명패의 유물 이름
     } // 개막 쪽지 화면 정산 종료
     private void ResolveOpeningBookmarkView(CardInstance choice) // 기존 모달의 카드 선택 또는 취소 버튼 처리
     { // 모달 선택 결과 전달 시작

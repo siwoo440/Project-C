@@ -14,7 +14,13 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
     private Button nextButton; // 다음 페이지 버튼
     private TMP_Text pageLabel; // 현재 페이지 안내
     private int currentPage; // 현재 페이지 번호
-    public static BattleDrawChoiceView Show(Transform parent, IReadOnlyList<CardInstance> cards, Action<CardInstance> selected, string titleText = "가져올 카드 한 장 선택", Action cancelled = null) // 닫고 되돌아갈 수 있는 선택 화면 생성
+    public static BattleDrawChoiceView Show( // 닫고 되돌아갈 수 있는 선택 화면 생성
+        Transform parent, // 전투 캔버스의 부모 영역
+        IReadOnlyList<CardInstance> cards, // 표시할 원래 선택 카드
+        Action<CardInstance> selected, // 실제 선택을 전달할 동작
+        string titleText = "가져올 카드 한 장 선택", // 중앙 프레임 안의 선택 안내
+        Action cancelled = null, // 선택 취소를 전달할 동작
+        string relicName = null) // 별도 명패에 표시할 유물 이름
     { // 화면 생성 시작
         GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(Image)); // 별도 그리기와 입력을 갖는 화면 가림막 생성
         RectTransform rootRect = root.GetComponent<RectTransform>(); // 가림막 영역 조회
@@ -36,6 +42,10 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
         title.fontStyle = FontStyles.Bold; // 후보 이름과 구분되는 상단 제목 강조
         title.rectTransform.anchoredPosition = new Vector2(0f, 265f); // 카드와 분리된 상단 제목 위치
         title.rectTransform.sizeDelta = new Vector2(800f, 64f); // 공용 선택 제목의 충분한 가로 영역
+        if (!string.IsNullOrEmpty(relicName)) // 유물의 별도 제목을 요청한 선택 화면 확인
+        { // 유물 이름 표시 시작
+            CreateRelicNameplate(rootRect, relicName); // 중앙 패널 바깥의 전용 명패 연결
+        } // 유물 이름 표시 종료
         for (int index = 0; index < cards.Count; index++) // 선택 후보 순회
         { // 후보 화면 생성 시작
             CardInstance card = cards[index]; // 현재 후보 카드 조회
@@ -80,6 +90,21 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
         CreateDivider(panel, 226f); // 제목과 후보 카드 위쪽의 얇은 경계 표시
         CreateDivider(panel, -232f); // 카드와 하단 조작 사이의 얇은 경계 표시
     } // 선택 패널 외형 적용 종료
+
+    private static void CreateRelicNameplate(RectTransform root, string relicName) // 중앙 프레임 위 유물 명패 생성
+    { // 유물 전용 명패 구성 시작
+        RectTransform plate = CreateRect("RelicNameplate", root); // 메인 패널과 분리된 명패 영역
+        plate.anchoredPosition = new Vector2(0f, 365f); // 패널 테두리 위 가운데 명패 위치
+        plate.sizeDelta = new Vector2(300f, 54f); // 긴 영어 이름을 담을 명패 폭
+        Image art = plate.gameObject.AddComponent<Image>(); // 명패 원화를 그릴 투명 이미지
+        art.color = new Color(0.035f, 0.1f, 0.12f, 1f); // 원화 임포트 실패 시의 대비 색상
+        art.raycastTarget = false; // 장식이 전투 선택 입력을 가로채지 않는 설정
+        BattleUiArt.Apply(art, "DrawChoiceRelicNameplate"); // 새 전용 청록색과 금속 테두리 원화 연결
+        TMP_Text caption = CreateText("RelicName", plate, relicName, 25f); // 현재 언어를 적용할 실제 유물 이름 글자
+        caption.color = new Color(1f, 0.87f, 0.63f); // 청록 배경 위 읽기 쉬운 따뜻한 금빛
+        caption.fontStyle = FontStyles.Bold; // 일반 안내와 구분되는 명패 글자 굵기
+        caption.rectTransform.sizeDelta = new Vector2(256f, 34f); // 양끝 금속 장식을 피하는 글자 영역
+    } // 유물 전용 명패 구성 종료
 
     private static void CreateDivider(RectTransform parent, float y) // 중앙 패널의 영역 구분선 생성
     { // 패널 구분선 생성 시작
@@ -214,7 +239,7 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
         RectTransform rect = CreateRect(objectName, parent); // 문자 영역 생성
         TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>(); // 문자 컴포넌트 추가
         text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 글꼴 적용
-        text.text = value ?? string.Empty; // 비어 있을 수 있는 표시 문구 설정
+        ProjectCLanguageDisplay.SetCaption(text, value ?? string.Empty); // 선택 화면의 처음 배치부터 현재 언어 표시
         text.fontSize = size; // 글자 크기 설정
         text.enableAutoSizing = true; // 긴 문구 크기 자동 조정
         text.fontSizeMin = 12f; // 최소 글자 크기 설정
