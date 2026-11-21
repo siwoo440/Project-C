@@ -89,6 +89,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return "아군 1명"; // 단일 아군 문구 반환
             case CardTargetType.FallenAlly: // 전투불능 아군 대상
                 return "전투불능 아군 1명"; // 부활 대상 문구 반환
+            case CardTargetType.EnemyAndAlly: // 적과 아군의 순차 지정
+                return "적 1명 → 아군 1명"; // 서로 다른 두 대상의 선택 순서 표시
             case CardTargetType.AllAllies: // 전체 아군 대상
                 return "모든 아군"; // 전체 아군 문구 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상
@@ -157,6 +159,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 적 피해와 아군 회복을 나눈 복합 카드 확인
+        { // 두 대상의 효과 표시 시작
+            return $"적 {GetEffectLabel(cardInstance)} {cardInstance.EffectValue} · 아군 체력 {cardInstance.SourceData.SecondaryEffectValue} 회복"; // 카드별 현재 피해와 원본 회복량 안내
+        } // 두 대상의 효과 표시 종료
         if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군의 부활 효과 확인
         { // 부활 상세 문구 처리 시작
             return $"최대 체력의 {cardInstance.SourceData.EffectValue}%로 부활 · 소수점 올림"; // 실제 부활 체력 계산 방식 표시
@@ -250,6 +256,15 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 파트너 상세 처리 시작
             return "생존한 다른 아군을 파트너로 지정"; // 파트너 지정 상세 반환
         } // 파트너 상세 처리 종료
+        switch (cardInstance.SourceData.CupRule) // 성배 지원 카드의 추가 효과 확인
+        { // 성배 지원 설명 분기 시작
+            case CupCardRule.Calming: // 공포 해제와 정신력 회복 안내
+                return $"공포 해제 · 정신력 +{cardInstance.MentalChangeValue}"; // 진정의 두 독립 효과 표시
+            case CupCardRule.HolyWater: // 성수의 조건부 언데드 피해 안내
+                return $"마법 피해 {cardInstance.EffectValue} · 언데드에게 추가 +{cardInstance.SourceData.SecondaryEffectValue}"; // 일반과 언데드 대상의 피해 구분 표시
+            case CupCardRule.PurifyingTouch: // 약화 제거와 마법 저항 안내
+                return $"디버프 1개 해제 · 직접 마법 피해 {cardInstance.SourceData.SecondaryEffectValue}% 감소 ({cardInstance.StatusDuration} 적 턴)"; // 정화의 손길의 의미와 실제 지속 시간 표시
+        } // 성배 지원 설명 분기 종료
         if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
         { // 디버프 해제 상세 처리 시작
             return cardInstance.EffectType == CardEffectType.RemoveOneDebuff ? "먼저 적용된 디버프 1개 해제" : "모든 디버프 해제"; // 카드별 디버프 해제 상세 반환

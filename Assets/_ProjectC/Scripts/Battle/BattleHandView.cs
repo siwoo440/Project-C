@@ -32,6 +32,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private CardInstance selectedCard; // 현재 선택 카드
+    internal BattleTeam? MixedTargetStage { get; private set; } // 피해 적과 회복 아군의 현재 대상 선택 단계
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private BattleCardView draggedCardView; // 현재 꺼내는 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
@@ -141,6 +142,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         sharedActionPoints = null; // 공용 행동력 참조 제거
         turnRuntime = null; // 전투 턴 관리자 참조 제거
         selectedCard = null; // 선택 카드 제거
+        MixedTargetStage = null; // 이전 전투의 순차 대상 입력 안내 제거
         recoveredCards.Clear(); // 이전 덱 카드 회수 기록 정리
         HideTooltip(); // 카드 툴팁 숨김
         Refresh(); // 빈 손패 화면 표시
@@ -342,6 +344,14 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 선택 표시 적용 종료
         RefreshCardPreview(); // 선택 또는 선택 해제한 확대 카드 갱신
     } // 선택 카드 설정 종료
+    internal void SetMixedTargetStage(BattleTeam? team) // 현재 적 또는 아군의 선택 단계 표시
+    { // 선택 단계 표시 시작
+        if (MixedTargetStage != team) // 이전 대상과의 변경 확인
+        { // 새 선택 단계 적용 시작
+            MixedTargetStage = team; // 선택 안내와 드래그가 공유할 진영 기록
+            RefreshTurnStatus(); // 화면 상단의 선택 단계 문구 갱신
+        } // 새 선택 단계 적용 종료
+    } // 선택 단계 표시 종료
     public void RefreshCardAvailability() // 카드 사용 가능 상태 갱신
     { // 사용 가능 상태 갱신 시작
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
@@ -385,6 +395,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 부활 대상 없음 처리 시작
             return false; // 손패 클릭과 드래그 시작 차단
         } // 부활 대상 없음 처리 종료
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 올바른 복합 효과와 생존 적 후보 확인
+        { // 복합 대상 없음 처리 시작
+            return false; // 대상 조합을 완성할 수 없는 카드 사용 차단
+        } // 복합 대상 없음 처리 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
         { // 체력 비용 부족 처리 시작
             return false; // 체력 비용 카드 사용 차단
@@ -636,7 +650,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         switch (turnRuntime.CurrentPhase) // 현재 턴 단계 분기
         { // 턴 단계 분기 시작
             case BattleTurnPhase.PlayerTurn: // 플레이어 턴 단계
-                turnStatusText.text = $"라운드 {turnRuntime.CurrentRound} | 플레이어 턴"; // 플레이어 턴 표시
+                turnStatusText.text = MixedTargetStage switch // 현재 카드의 대상 안내 또는 라운드 표시 선택
+                { // 선택 안내 문구 시작
+                    BattleTeam.Enemy => "피해를 줄 적 선택", // 첫 피해 대상 입력 안내
+                    BattleTeam.Ally => "회복할 아군 선택", // 두 번째 회복 대상 입력 안내
+                    _ => $"라운드 {turnRuntime.CurrentRound} | 플레이어 턴" // 일반 플레이어 턴 표시
+                }; // 선택 안내 문구 종료
                 break; // 플레이어 턴 분기 종료
             case BattleTurnPhase.EnemyTurn: // 적 턴 단계
                 turnStatusText.text = $"라운드 {turnRuntime.CurrentRound} | 적 턴"; // 적 턴 표시

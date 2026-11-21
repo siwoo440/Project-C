@@ -85,6 +85,11 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             return results; // 빈 결과 반환
         } // 처리 불가 종료
         List<BattleStatusEffectInstance> snapshot = runtimeUnit.CreateStatusEffectSnapshot(); // 변경 대비 상태 목록 복사
+        var healingIncrease = runtimeUnit.GetStatusEffect(BattleStatusEffectType.HealingReceivedUp); // 턴 종료 회복까지 적용할 잔잔한 축복 확보
+        if (healingIncrease != null && snapshot.Remove(healingIncrease)) // 이번 턴의 회복 증가가 아직 적용 중인지 확인
+        { // 실제 지속 회복 뒤에 종료할 상태 재배치 시작
+            snapshot.Add(healingIncrease); // 기존 효과 순서를 유지한 마지막 회복 증가 만료
+        } // 실제 지속 회복 뒤에 종료할 상태 재배치 종료
         foreach (BattleStatusEffectInstance effect in snapshot) // 대상 상태 순회
         { // 턴 종료 효과 확인 시작
             if (runtimeUnit.IsDead) // 이전 효과로 사망 확인
@@ -106,7 +111,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             int previousTurns = effect.RemainingTurns; // 처리 전 지속 횟수 저장
             int previousValue = effect.EffectiveValue; // 처리 전 효과 수치 저장
             int applied = 0; // 실제 피해 초기화
-            bool triggered = effect.EffectType == BattleStatusEffectType.Burn || effect.EffectType == BattleStatusEffectType.Bleed; // 화상과 출혈의 턴 종료 발동 확인
+            bool renew = effect.EffectType == BattleStatusEffectType.Renewal && runtimeUnit.Team == BattleTeam.Ally; // 실제 아군 종료에 회복하는 별도 재생 상태 확인
+            bool triggered = renew || effect.EffectType == BattleStatusEffectType.Burn || effect.EffectType == BattleStatusEffectType.Bleed; // 재생과 지속 피해의 턴 종료 발동 확인
             if (effect.EffectType == BattleStatusEffectType.Bleed) // 방어도를 우회하는 고정 체력 손실 확인
             { // 출혈 처리 시작
                 applied = runtimeUnit.TakeUnblockedDamage(previousValue, BattleDamageType.None, null); // 현재 체력만 감소시키고 사망 알림 처리
@@ -115,7 +121,11 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 화상 피해 처리 시작
                 applied = runtimeUnit.TakeDamage(previousValue, BattleDamageType.None).AppliedDamage; // 화상 수치만큼 피해 적용
             } // 화상 피해 처리 종료
-            if (runtimeUnit.IsDead) // 화상 피해로 사망 확인
+            else if (renew) // 생존 아군 자신의 실제 턴 종료인 경우
+            { // 재생 지속 회복 시작
+                applied = runtimeUnit.RestoreHealth(previousValue); // 받는 회복 보정과 체력 상한이 적용된 실제 재생
+            } // 재생 지속 회복 종료
+            if (runtimeUnit.IsDead) // 턴 종료 상태 처리 중 사망 확인
             { // 사망 결과 처리 시작
                 results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, previousTurns, effect.StackCount, triggered, BattleStatusEffectRemovalReason.UnitDied)); // 사망 처리 결과 기록
                 break; // 나머지 상태 처리 중단

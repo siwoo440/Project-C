@@ -34,7 +34,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
-    private BattleUnitRuntime splitBarrierFirstTarget; // 분할 방벽에서 먼저 고른 아군
+    private BattleUnitRuntime firstSequentialTarget; // 두 대상을 고르는 카드의 첫 유닛
     private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
@@ -88,6 +88,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 부활 대상 없음 시작
             return; // 대상 선택 시작 차단
         } // 부활 대상 없음 종료
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 복합 카드의 생존 적 선택 가능 여부 확인
+        { // 적 대상 없음 처리 시작
+            return; // 두 대상 선택 시작 차단
+        } // 적 대상 없음 처리 종료
         if (cardInstance.OwnerUnit.IsDead) // 카드 소유자 사망 확인
         { // 사망 소유자 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 사망한 소유자의 카드는 사용할 수 없습니다: {cardInstance.OwnerUnit.DisplayName}"); // 사용 불가 출력
@@ -104,9 +108,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 취소
             return; // 카드 클릭 처리 종료
         } // 재선택 처리 종료
-        splitBarrierFirstTarget = null; // 새 카드 선택 전 분할 방벽 대상 초기화
+        firstSequentialTarget = null; // 새 카드 선택 전 첫 유닛 초기화
         selectedCard = cardInstance; // 새 선택 카드 저장
         handView.SetSelectedCard(selectedCard); // 손패 선택 표시 적용
+        handView.SetMixedTargetStage(selectedCard.TargetType == CardTargetType.EnemyAndAlly ? BattleTeam.Enemy : null); // 복합 카드의 첫 적 선택 안내 표시
         if (selectedCard.TargetType == CardTargetType.Self) // 자신 대상 카드 확인
         { // 자신 대상 처리 시작
             if (IsValidTarget(selectedCard, selectedCard.OwnerUnit)) // 자신 대상 유효성 확인
@@ -119,6 +124,19 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 자신 대상 실패 처리 종료
             return; // 카드 클릭 처리 종료
         } // 자신 대상 처리 종료
+        if (selectedCard.TargetType == CardTargetType.LowestHealthAlly) // 가장 낮은 생존 아군의 자동 회복 확인
+        { // 자동 회복 카드 실행 시작
+            BattleUnitRuntime ally = turnRuntime.GetLowestHealthLivingAlly(); // 전체 명단에서만 결정하는 자동 대상 조회
+            if (IsValidTarget(selectedCard, ally)) // 선택 시점의 실제 치유 대상 확인
+            { // 자동 치유 카드 사용 시작
+                ExecuteCard(selectedCard, CreateSingleTargetList(ally)); // 대상 클릭 없이 현재 최저 체력 아군 한 명에게 사용
+            } // 자동 치유 카드 사용 종료
+            else // 회복할 생존 대상이 없는 경우
+            { // 무효한 카드 선택 해제 시작
+                CancelSelection(); // 행동력 지불 전 선택 초기화
+            } // 무효한 카드 선택 해제 종료
+            return; // 사용자 지정 대상 선택 단계 생략
+        } // 자동 회복 카드 실행 종료
         if (selectedCard.TargetType == CardTargetType.AllAllies) // 전체 아군 대상 확인
         { // 전체 아군 처리 시작
             ExecuteCard(selectedCard, CollectValidTargets(selectedCard, allyUnitViews)); // 전체 유효 아군에게 카드 사용
@@ -146,19 +164,24 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] {runtimeUnit.DisplayName}은 {selectedCard.DisplayName}의 대상이 아닙니다."); // 잘못된 대상 출력
             return; // 유닛 클릭 처리 중단
         } // 잘못된 대상 처리 종료
-        if (selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 분할 방벽의 순차 대상 선택 확인
-        { // 두 아군 대상 선택 시작
-            if (runtimeUnit == splitBarrierFirstTarget) // 먼저 선택한 아군 반복 입력 확인
+        bool selectsEnemyAndAlly = selectedCard.TargetType == CardTargetType.EnemyAndAlly; // 적과 아군을 차례로 선택하는 카드 확인
+        if (selectsEnemyAndAlly || selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 두 유닛 순차 선택 카드 확인
+        { // 순차 대상 선택 시작
+            if (runtimeUnit == firstSequentialTarget) // 먼저 선택한 유닛의 반복 입력 확인
             { // 같은 대상 처리 시작
                 return; // 행동력과 첫 번째 선택 보존
             } // 같은 대상 처리 종료
-            if (splitBarrierFirstTarget == null) // 첫 번째 대상 선택 여부 확인
+            if (firstSequentialTarget == null) // 첫 번째 대상 선택 여부 확인
             { // 첫 번째 대상 보관 시작
-                splitBarrierFirstTarget = runtimeUnit; // 최초 입력 아군 저장
-                UpdateTargetHighlights(); // 먼저 선택한 아군을 제외한 후보 갱신
+                firstSequentialTarget = runtimeUnit; // 첫 입력 유닛 저장
+                if (selectsEnemyAndAlly) // 적을 먼저 고르는 복합 카드 확인
+                { // 두 번째 대상 안내 시작
+                    handView.SetMixedTargetStage(BattleTeam.Ally); // 피해 대상 확정 뒤 회복 대상 선택 안내
+                } // 두 번째 대상 안내 종료
+                UpdateTargetHighlights(); // 두 번째 단계의 유효 대상 강조 갱신
                 return; // 두 번째 입력까지 카드 사용 보류
             } // 첫 번째 대상 보관 종료
-            ExecuteCard(selectedCard, new[] { splitBarrierFirstTarget, runtimeUnit }); // 두 아군 대상으로 한 번만 카드 실행
+            ExecuteCard(selectedCard, new[] { firstSequentialTarget, runtimeUnit }); // 두 대상 확정 후 카드 한 번 실행
             return; // 다른 단일 대상 처리 차단
         } // 두 아군 대상 선택 종료
         if (selectedCard.SourceData.SwordRule == SwordCardRule.BladeWhirlwind) // 소용돌이의 고정 세 칸 확인
@@ -203,13 +226,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 대상 선택 갱신 생략
         } // 미선택 처리 종료
         bool selectingSplitBarrier = selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier; // 분할 방벽 선택 중인지 확인
-        if (selectedCard.OwnerUnit == runtimeUnit || selectingSplitBarrier && // 소유자 사망과 분할 대상 조건 확인
-            (splitBarrierFirstTarget == runtimeUnit || !turnRuntime.HasOtherLivingAlly(selectedCard.OwnerUnit))) // 최초 대상 사망 또는 생존자 부족 확인
+        bool selectingEnemyAndAlly = selectedCard.TargetType == CardTargetType.EnemyAndAlly; // 적과 아군의 순차 선택 중인지 확인
+        if (selectedCard.OwnerUnit == runtimeUnit || firstSequentialTarget == runtimeUnit || // 소유자 또는 확정한 첫 대상의 사망 확인
+            selectingSplitBarrier && !turnRuntime.HasOtherLivingAlly(selectedCard.OwnerUnit)) // 분할 방벽의 생존 대상 부족 확인
         { // 카드 선택 취소 시작
             CancelSelection(); // 미확정 대상과 카드 선택 초기화
             return; // 대상 강조 재적용 생략
         } // 카드 선택 취소 종료
-        if (selectingSplitBarrier && runtimeUnit.Team == BattleTeam.Ally) // 아직 선택하지 않은 아군 사망 확인
+        if (selectingEnemyAndAlly || selectingSplitBarrier && runtimeUnit.Team == BattleTeam.Ally) // 두 번째 대상 후보의 생존 변화 확인
         { // 남은 선택 대상 처리 시작
             UpdateTargetHighlights(); // 생존 후보 강조 갱신
         } // 남은 선택 대상 처리 종료
@@ -243,6 +267,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 비용 차감 전 카드 선택 취소
             return; // 부활 행동 중단
         } // 부활 대상 변경 처리 종료
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && // 적과 아군의 유효성을 비용 지불 직전에 재검사
+            (cardInstance.EffectType != CardEffectType.Damage || cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || // 올바른 카드 처리와 소유자 생존 및 두 대상 확인
+            !turnRuntime.CanSelectLivingUnit(targetUnits[0], BattleTeam.Enemy) || !turnRuntime.CanSelectLivingUnit(targetUnits[1], BattleTeam.Ally))) // 서로 다른 진영의 두 생존 참가자 확인
+        { // 적과 아군의 대상 변경 처리 시작
+            CancelSelection(); // 비용 지불 전에 미확정 입력 제거
+            return; // 잘못된 복합 카드 실행 중단
+        } // 적과 아군의 대상 변경 처리 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SplitBarrier && // 분할 방벽의 비용 지불 직전 검사
             (cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || targetUnits[0] == targetUnits[1] || // 소유자 생존과 서로 다른 대상 수 확인
             !IsValidTarget(cardInstance, targetUnits[0]) || !IsValidTarget(cardInstance, targetUnits[1]))) // 두 대상의 진영과 생존 상태 확인
@@ -309,7 +340,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 실제 카드 정산과 사용한 방어 할인 전달
     { // 카드 정산 범위 시작
-        turnRuntime.BeginCardResolution(); // 손패에 아직 사용 카드가 남았음을 기록
+        turnRuntime.BeginCardResolution(cardInstance.TargetType == CardTargetType.EnemyAndAlly); // 두 효과 카드에 한해 승리 결과를 정산 뒤로 예약
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount); // 실제 전투 효과와 사용 카드 이동 및 방어 할인 처리
@@ -323,7 +354,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 카드 충돌 시 효과와 첫 방어 사용 판정
     { // 카드 충돌 처리 시작
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
-        if (!usedFirstHealingCard && (cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 사용 확인
+        bool damagesAndHeals = cardInstance.TargetType == CardTargetType.EnemyAndAlly; // 직접 피해와 지정 회복을 함께 처리하는 카드 확인
+        if (!usedFirstHealingCard && (damagesAndHeals || cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 확인
         { // 첫 회복 카드 처리 시작
             usedFirstHealingCard = true; // 대상이 최대 체력이어도 첫 사용 기록
             bandageBonus = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FirstHealingCardBonus)?.EffectValue ?? 0; // 실제 보유한 붕대의 대상별 가산
@@ -350,7 +382,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         bool defensiveCard = cardInstance.HasDefensivePrimaryEffect; // 장갑과 방패끈이 공유하는 기본 방어 효과 확인
         bool appliedDefense = false; // 살아 있는 아군에게 실제 방어 효과를 주었는지 기록
-        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
+        if (damagesAndHeals) // 적에게만 피해를 주고 지정 아군에게만 회복하는 효과 분리
+        { // 두 대상 충돌 처리 시작
+            totalAppliedAmount = ApplyCardEffect(cardInstance, targetUnits[0]); // 선택한 적 한 명의 일반 직접 피해 처리
+            int healing = GetDirectCardHealing(cardInstance, cardInstance.SourceData.SecondaryEffectValue); // 기존 회복 보정을 포함한 원본 보조 회복량 계산
+            totalAppliedAmount += RestoreDirectCardHealth(cardInstance, targetUnits[1], healing); // 명중 여부와 별개로 선택한 아군 한 명의 회복 처리
+        } // 두 대상 충돌 처리 종료
+        else if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
             appliedDefense = totalAppliedAmount > 0; // 실제 공용 방어도 분배 성공 확인
@@ -661,6 +699,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 일반 카드 전투불능 대상 차단 시작
             return false; // 일반 카드 대상으로 선택 불가
         } // 일반 카드 전투불능 대상 차단 종료
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 순서가 정해진 적과 아군의 선택 검사
+        { // 현재 선택 단계 검사 시작
+            BattleTeam team = firstSequentialTarget == null ? BattleTeam.Enemy : BattleTeam.Ally; // 첫 적 지정 전후의 대상 진영 구분
+            return cardInstance.EffectType == CardEffectType.Damage && turnRuntime.CanSelectLivingUnit(targetUnit, team); // 자기 자신을 포함한 해당 진영의 생존 참가자 확인
+        } // 현재 선택 단계 검사 종료
         if ((cardInstance.SourceData.SwordRule == SwordCardRule.BloodTrail || cardInstance.SourceData.SwordRule == SwordCardRule.BloodBackflow) && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) == null) // 대상의 현재 출혈 여부 확인
         { // 추적 대상 제한 시작
             return false; // 출혈 없는 적의 선택 차단
@@ -681,7 +724,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
         } // 체력 비용 지불 불가 종료
-        if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasRemovableDebuff) // 실제 정화 가능한 디버프 확인
+        if ((cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) && !targetUnit.HasRemovableDebuff && // 제거할 디버프가 없는 정화 대상 확인
+            !(cardInstance.SourceData.CupRule == CupCardRule.PurifyingTouch && cardInstance.SourceData.SecondaryEffectValue > 0)) // 정화할 약화가 없어도 적용할 저항 효과 확인
         { // 정화 불필요 처리 시작
             return false; // 정화 대상 불가 반환
         } // 정화 불필요 처리 종료
@@ -689,7 +733,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 상태 설정 오류 처리 시작
             return false; // 상태 이상 대상 불가 반환
         } // 상태 설정 오류 처리 종료
-        if (cardInstance.EffectType == CardEffectType.ChangeMental && !targetUnit.CanChangeMental(cardInstance.MentalChangeValue) && !(cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.DrawCards && runtimeDeck.HasDrawableCards)) // 정신력 변화 또는 추가 드로우 가능 여부 확인
+        if (cardInstance.EffectType == CardEffectType.ChangeMental && !targetUnit.CanChangeMental(cardInstance.MentalChangeValue) && // 정신력이 실제로 바뀌지 않는 대상 확인
+            !(cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.DrawCards && runtimeDeck.HasDrawableCards) && // 기존 보조 드로우 가능 여부 확인
+            !(cardInstance.SourceData.CupRule == CupCardRule.Calming && targetUnit.GetStatusEffect(BattleStatusEffectType.Fear) != null)) // 정신력 상한에서도 제거할 공포 확인
         { // 정신력 변경 불가 처리 시작
             return false; // 정신력 대상 불가 반환
         } // 정신력 변경 불가 처리 종료
@@ -740,6 +786,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 대상 분기 시작
             case CardTargetType.Self: // 자신 대상 종류
                 return targetUnit == cardInstance.OwnerUnit; // 카드 소유자 여부 반환
+            case CardTargetType.LowestHealthAlly: // 현재 체력과 파티 순서로 자동 결정한 대상
+                return targetUnit == turnRuntime.GetLowestHealthLivingAlly(); // 같은 생존 자동 대상만 실제 사용 허용
             case CardTargetType.SingleAlly: // 단일 아군 대상 종류
             case CardTargetType.AllAllies: // 전체 아군 대상 종류
                 return targetUnit.Team == BattleTeam.Ally; // 아군 여부 반환
@@ -770,7 +818,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 목록 강조 시작
         foreach (BattleUnitView unitView in unitViews) // 유닛 화면 순회
         { // 유닛 강조 시작
-            bool targetable = unitView != null && unitView.RuntimeUnit != splitBarrierFirstTarget && IsValidTarget(selectedCard, unitView.RuntimeUnit); // 아직 고르지 않은 유효 대상 확인
+            bool targetable = unitView != null && unitView.RuntimeUnit != firstSequentialTarget && IsValidTarget(selectedCard, unitView.RuntimeUnit); // 아직 고르지 않은 현재 단계의 유효 대상 확인
             if (unitView != null) // 유닛 화면 존재 확인
             { // 대상 강조 적용 시작
                 unitView.SetTargetable(targetable); // 대상 강조 적용
@@ -1044,12 +1092,25 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults = statusEffectProcessor.CleanseDebuffs(targetUnit, maximumCount); // 지정 개수의 대상 디버프 정화
             int removedCount = cleanseResults.Count; // 제거된 디버프 수 계산
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
-            targetView?.ShowStatusFeedback(removedCount > 0 ? $"정화 {removedCount}" : "정화 실패", false); // 정화 결과 플로팅 문구 표시
+            bool grantsResistance = cardInstance.SourceData.CupRule == CupCardRule.PurifyingTouch && cardInstance.SourceData.SecondaryEffectValue > 0; // 정화의 손길의 실제 저항 수치 확인
+            if (removedCount > 0 || !grantsResistance) // 정화 결과 또는 정화 전용 카드 확인
+            { // 정화 결과 표시 시작
+                targetView?.ShowStatusFeedback(removedCount > 0 ? $"정화 {removedCount}" : "정화 실패", false); // 기존 정화 결과 플로팅 문구 표시
+            } // 정화 결과 표시 종료
             LogCleanseResults(targetUnit, cleanseResults); // 정화 상세 결과 출력
+            if (grantsResistance) // 약화 제거 여부와 독립된 마법 저항 효과 확인
+            { // 마법 저항 부여 시작
+                var resistance = targetUnit.ApplyStatusEffect(BattleStatusEffectType.ResistanceStance, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 기존 직접 마법 피해 경감 상태 부여
+                targetView?.ShowStatusApplyFeedback(BattleStatusEffectType.ResistanceStance, resistance); // 실제 저항 상태 적용 결과 표시
+            } // 마법 저항 부여 종료
             return removedCount; // 제거된 디버프 수 반환
         } // 디버프 해제 처리 종료
         if (cardInstance.EffectType == CardEffectType.ChangeMental) // 정신력 직접 효과 확인
         { // 정신력 효과 처리 시작
+            if (cardInstance.SourceData.CupRule == CupCardRule.Calming) // 선택한 진정 카드 확인
+            { // 공포 해제 시작
+                RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.Fear); // 실제 정신력 변화와 별개로 공포 해제
+            } // 공포 해제 종료
             BattleMentalChangeResult mentalResult = targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 대상 정신력 직접 변경
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
@@ -1195,6 +1256,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             baseOverride = BattleSupplyRelics.RollDamage(cardInstance); // 흑철 구슬과 강화가 반영된 정수 피해 선택
         } // 무작위 피해 굴림 종료
         long printedDamage = baseOverride.HasValue ? (long)baseOverride.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 가변 또는 고정 카드의 공격력 합산
+        if (cardInstance.SourceData.CupRule == CupCardRule.HolyWater && targetUnit.EnemySource?.IsUndead == true) // 성수가 실제 명중한 언데드 적 확인
+        { // 언데드 대상 추가 피해 시작
+            printedDamage += cardInstance.SourceData.SecondaryEffectValue; // 방어와 저항을 계산하기 전 성수의 원본 피해 가산
+        } // 언데드 대상 추가 피해 종료
         int baseDamage = (int)Math.Min(int.MaxValue, printedDamage + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
@@ -1424,6 +1489,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 두 진영에 효과를 주는 복합 카드 확인
+        { // 복합 효과 이름 시작
+            return "피해 및 회복"; // 실제 피해와 회복의 합계 로그 문구 반환
+        } // 복합 효과 이름 종료
         if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군의 부활 효과 확인
         { // 부활 문구 처리 시작
             return "부활"; // 실제 효과 로그 이름 반환
@@ -1512,7 +1581,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     public void CancelSelection() // 카드 선택 취소
     { // 선택 취소 시작
         selectedCard = null; // 선택 카드 제거
-        splitBarrierFirstTarget = null; // 미확정 분할 방벽 대상 제거
+        firstSequentialTarget = null; // 미확정 첫 대상 제거
+        handView.SetMixedTargetStage(null); // 적 또는 아군의 선택 단계 안내 제거
         handView.SetSelectedCard(null); // 카드 선택 표시 해제
         ClearTargetHighlights(allyUnitViews); // 아군 대상 강조 해제
         ClearTargetHighlights(enemyUnitViews); // 적 대상 강조 해제
@@ -1575,13 +1645,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작
             handView.CardClicked -= HandleCardClicked; // 카드 클릭 이벤트 해제
+            handView.SetMixedTargetStage(null); // 연결 해제 때 남은 복합 대상 안내 제거
         } // 손패 이벤트 해제 종료
         runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
         UnregisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 해제
         UnregisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 해제
         selectedCard = null; // 선택 카드 참조 제거
-        splitBarrierFirstTarget = null; // 연결 해제 시 분할 방벽 대상 제거
+        firstSequentialTarget = null; // 연결 해제 시 순차 카드의 첫 대상 제거
         actionPending = false; // 카드 행동 진행 상태 해제
         ClearTargetHighlights(allyUnitViews); // 아군 대상 강조 해제
         ClearTargetHighlights(enemyUnitViews); // 적 대상 강조 해제

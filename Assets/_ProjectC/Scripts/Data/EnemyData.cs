@@ -10,6 +10,7 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [TextArea(3, 6)]
     [SerializeField] private string description; // 적 설명
     [SerializeField] private Sprite portrait; // 적 표시 이미지
+    [SerializeField] private bool isUndead; // 원본에서 명시하는 언데드 분류
 
     [Header("기본 전투 수치")]
     [Min(1)]
@@ -60,6 +61,7 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public string DisplayName => displayName; // 적 이름 조회
     public string Description => description; // 적 설명 조회
     public Sprite Portrait => portrait; // 적 이미지 조회
+    public bool IsUndead => isUndead; // 언데드로 명시된 적인지 조회
     public int MaxHealth => maxHealth; // 최대 체력 조회
     public int PhysicalDefense => physicalDefense; // 물리 방어력 조회
     public int MagicalResistance => magicalResistance; // 마법 저항력 조회
