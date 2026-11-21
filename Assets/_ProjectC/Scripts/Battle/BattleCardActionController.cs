@@ -378,7 +378,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.ShieldBalance); // 시전자의 예약 할인 한 번 소모
         } // 사용이 확정된 방패 할인 제거 종료
         Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot, usedFirstDefenseDiscount); // 충돌에 확정 대상과 실제 방어 할인 사용 전달
-        bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
+        bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted, BattleMagicMissileEffect.Matches(cardInstance)); // 기존 카드 연출 중 실제 마력탄에만 전용 효과 연결
         if (started) // 연출 시작 결과 확인
         { // 연출 시작 성공 처리 시작
             return; // 충돌 시점까지 카드 실행 대기
@@ -1364,6 +1364,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
+        if (BattleMagicMissileEffect.Matches(cardInstance)) // 실제 적에게 명중한 원본 마력탄 확인
+        { // 해당 타격의 섬광 위치 기록 시작
+            actionSequenceRunner.RecordMagicMissileImpact(FindUnitView(targetUnit)); // 원래 피해 계산과 같은 화면 좌표에 한 번의 표시 예약
+        } // 해당 타격의 섬광 위치 기록 종료
         int? baseOverride = additionalBase; // 명시적인 추가 타격의 피해 수치 우선 사용
         if (!baseOverride.HasValue && cardInstance.SourceData.ShieldRule == ShieldCardRule.RendingShield) // 현재 방어도를 기본 피해로 쓰는 파열 방패 확인
         { // 방어도 기반 기본 피해 처리 시작

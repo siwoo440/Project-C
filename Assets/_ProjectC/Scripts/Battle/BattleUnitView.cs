@@ -35,6 +35,9 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private TMP_Text partnerText; // 파트너 상태 텍스트
     private bool statusTooltipHovered; // 상태 상세 대상에 마우스 진입 여부
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
+    internal Vector3 EffectAnchor => portraitImage != null // 실제 캐릭터 원화가 있는 경우 확인
+        ? portraitImage.rectTransform.TransformPoint(portraitImage.rectTransform.rect.center) // 이동과 화면 배율을 반영한 원화 중심
+        : transform.position; // 대체 표시에는 현재 유닛 중심 사용
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public event Action<BattleUnitRuntime> InformationRequested; // 카드 대상 처리 전 유닛 정보 요청 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
