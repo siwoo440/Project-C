@@ -11,6 +11,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int openingHandAfterAmbush = -1; // 적 선제 직후 첫 아군에게 줄 시작 손패 수
     private RelicInventoryRuntime openingRelics; // 현재 탐사 유물 보관함
     private bool openingAllySpeedActive; // 첫 적 턴까지 유지할 배지 상태
+    private bool openingDieResolved; // 흠집 난 주사위의 전투 시작 판정 여부
+    private BattleUnitRuntime openingDieAttackAlly; // 첫 실제 아군 턴에 공격력 보상 받을 선택 대상
     private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
     private readonly List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)> openingFearedEnemies = new List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)>(); // 포스터가 새로 공포를 부여한 적과 상태
     private int openingSpecimenActionPoints; // 첫 아군 턴에 지급할 탐사 표본병 행동력
@@ -141,6 +143,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningDroneWeakness); // 드론 약화를 첫 공격 예고 전에 적용
         ApplyOpeningAllySpeed(); // 전투 시작 시 생존 아군 속도 증가
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
+        ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
             openingHandAfterAmbush = initialHandSize; // 첫 아군 턴의 정상 시작 손패 보관
@@ -337,6 +340,37 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 약화 적용 종료
         return null; // 생존 적이 없는 경우의 대상 없음
     } // 시작 적 상태 처리 종료
+    private void ResolveOpeningDie() // 전투 시작 시 흠집 난 주사위의 독립 보상 결정
+    { // 시작 주사위 처리 시작
+        var die = openingRelics?.FindEffect(RelicEffectType.OpeningRandomAllyBoost); // 실제 이번 탐사에 보유한 주사위 원본
+        if (openingDieResolved || die == null) // 전투당 중복 판정과 유물 부재 확인
+        { // 시작 보상 없음 처리 시작
+            return; // 무작위 소비 없이 원래 전투 시작
+        } // 시작 보상 없음 처리 종료
+        openingDieResolved = true; // 보상 지급 알림보다 먼저 전투당 한 번 기록
+        var livingAllies = new List<BattleUnitRuntime>(); // 균등하게 선택할 생존 아군 후보
+        foreach (var ally in allyUnits) // 실제 현재 전투의 아군 명단 확인
+        { // 후보별 실제 생존 확인 시작
+            if (ally != null && ally.Team == BattleTeam.Ally && !ally.IsDead) // 쓰러진 대상과 잘못된 진영 제외
+            { // 생존 아군 후보 추가 시작
+                livingAllies.Add(ally); // 현재 전투에 생존한 개별 아군 등록
+            } // 생존 아군 후보 추가 종료
+        } // 후보별 실제 생존 확인 종료
+        if (livingAllies.Count == 0) // 전투 시작 보상을 받을 대상 확인
+        { // 생존 후보 없음 처리 시작
+            return; // 대상이 없을 때 무작위 추첨 미사용
+        } // 생존 후보 없음 처리 종료
+        var target = livingAllies[UnityEngine.Random.Range(0, livingAllies.Count)]; // 모든 생존 아군의 균등한 한 번 선택
+        if (UnityEngine.Random.Range(0, 2) == 0) // 같은 확률의 공격력 또는 방어도 선택
+        { // 첫 실제 아군 턴의 공격력이 선택된 경우
+            openingDieAttackAlly = target; // 선제가 끝나도 시작 때 고른 한 아군에만 보상 예약
+        } // 첫 실제 아군 턴의 공격력 예약 종료
+        else // 시작 방어도가 선택된 경우
+        { // 전투 진입과 동시에 보호 시작
+            target.GainBlock(die.EffectValue); // 첫 실제 공격부터 쓸 원래 방어도 획득
+        } // 전투 진입과 동시에 보호 종료
+    } // 시작 주사위 처리 종료
+
     private void ApplyFirstPlayerTurnEnemyStatuses() // 첫 실제 아군 턴의 적 약화 공통 시작
     { // 첫 아군 턴 전용 약화 시작
         openingVulnerableEnemy = ApplyOpeningEnemyStatus(RelicEffectType.OpeningVulnerable); // 기존 검은 왕관의 무작위 생존 적 약화
@@ -557,6 +591,12 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 체력 집계 종료
         else if (CurrentPhase == BattleTurnPhase.PlayerTurn) // 다음 아군 턴 도착 확인
         { // 지연 방어 감소 적용 시작
+            var openingAlly = openingDieAttackAlly; // 실제 첫 아군 턴에 도착한 공격력 대상 조회
+            openingDieAttackAlly = null; // 상태 알림 전에 이번 시작 보상의 재발동 방지
+            if (openingAlly != null && !openingAlly.IsDead) // 적 선제 중에도 선택한 아군이 살아 있는지 확인
+            { // 첫 아군 턴의 독립 일시 공격력 적용 시작
+                openingAlly.ApplyCurrentAllyTurnAttackPower(1, openingAlly); // 기존 한 턴 공격력 경로로 한 점 지급
+            } // 첫 아군 턴의 독립 일시 공격력 적용 종료
             foreach (var enemy in enemyUnits) // 적별 돌진 예약 확인
             { // 개별 약화 시작
                 enemy?.ApplyQueuedCharge(); // 피격한 적의 방어 감소 발동

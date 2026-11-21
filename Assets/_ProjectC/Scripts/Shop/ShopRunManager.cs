@@ -425,15 +425,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         { // 보관함 없음 처리 시작
             return price; // 원래 가격 반환
         } // 보관함 없음 처리 종료
-        foreach (RelicData relic in inventory.OwnedRelics) // 보유 유물 순회
-        { // 할인 유물 확인 시작
-            if (relic != null && relic.EffectType == RelicEffectType.ShopDiscount) // 상점 할인 효과 확인
-            { // 상점 할인 적용 시작
-                int percent = Mathf.Clamp(relic.EffectValue, 0, 100); // 유효 할인율 설정
-                return price - (int)((long)price * percent / 100); // 할인액 소수점 버림 후 가격 반환
-            } // 상점 할인 적용 종료
-        } // 할인 유물 확인 종료
-        return price; // 할인 유물 미보유 가격 반환
+        int existing = inventory.FindEffect(RelicEffectType.ShopDiscount)?.EffectValue ?? 0; // 기존 첫 상점 할인 유물의 수치 보존
+        int coins = inventory.FindEffect(RelicEffectType.AdditionalShopDiscount)?.EffectValue ?? 0; // 손때 묻은 동전줄의 상점 할인 수치
+        int percent = (int)System.Math.Min(100L, (long)Mathf.Max(0, existing) + Mathf.Max(0, coins)); // 두 보유 할인율의 합과 상한
+        return price - (int)((long)price * percent / 100L); // 실제 구매 및 서비스 금액에서 정수 할인액 한 번 차감
     } // 상점 할인 계산 종료
 
     public int GetRelicSellPrice(RelicData relic) // 현재 상점의 유물 판매 가격 조회
