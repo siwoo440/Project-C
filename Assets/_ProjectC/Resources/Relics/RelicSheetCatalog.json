@@ -1026,7 +1026,7 @@
     {
       "sourceRow": 95,
       "name": "녹슨 표지판",
-      "description": "탐사에서 보스 노드 등장 확률 소폭 증가",
+      "description": "새 일반 층에서 통로 끝의 선택 곁방에 추가 보스가 나타날 확률이 5%포인트 증가한다.",
       "buyMin": 263,
       "buyMax": 312,
       "buyVariance": 49,
@@ -1037,7 +1037,7 @@
     {
       "sourceRow": 96,
       "name": "순백 손수건",
-      "description": "전투 종료 시 무작위 디버프 1개 해제(확률)",
+      "description": "전투가 끝날 때 30% 확률로 생존 아군에게 남은 해제 가능한 디버프 중 무작위 하나를 해제한다.",
       "buyMin": 302,
       "buyMax": 351,
       "buyVariance": 49,
@@ -1059,7 +1059,7 @@
     {
       "sourceRow": 98,
       "name": "은빛 톱니",
-      "description": "턴 시작 드로우가 2 이상이면 추가로 보호막 +2",
+      "description": "아군 턴 시작에 기본 드로우로 실제 카드 2장 이상이 손에 들어오면 첫 생존 아군이 방어도 2를 얻는다.",
       "buyMin": 250,
       "buyMax": 290,
       "buyVariance": 40,
@@ -1070,7 +1070,7 @@
     {
       "sourceRow": 99,
       "name": "구겨진 포스터",
-      "description": "전투 시작 시 적 전체에게 공포 1턴(가칭 상태)",
+      "description": "전투가 시작하면 생존 적 전체에게 공포를 부여한다. 첫 아군 턴이 끝날 때 해제된다.",
       "buyMin": 300,
       "buyMax": 340,
       "buyVariance": 40,
@@ -1081,7 +1081,7 @@
     {
       "sourceRow": 100,
       "name": "끊어진 기도 끈",
-      "description": "전투 시작 시 정신력 3 회복",
+      "description": "전투 시작 시 생존 아군 각자의 정신력이 최대치까지 3 회복된다.",
       "buyMin": 180,
       "buyMax": 216,
       "buyVariance": 36,
@@ -1103,7 +1103,7 @@
     {
       "sourceRow": 102,
       "name": "마른 잉크병",
-      "description": "스킬 카드 사용 시 20% 확률로 카드 1장 드로우",
+      "description": "스킬 카드 한 장의 사용과 선택을 마치면 20% 확률로 카드 한 장을 뽑는다.",
       "buyMin": 214,
       "buyMax": 250,
       "buyVariance": 36,
@@ -1114,7 +1114,7 @@
     {
       "sourceRow": 103,
       "name": "구부러진 은못",
-      "description": "표식 상태 적에게 주는 피해 +2",
+      "description": "표식이 있는 적에게 직접 카드 공격이 명중할 때마다 피해가 2 증가한다.",
       "buyMin": 231,
       "buyMax": 274,
       "buyVariance": 43,
@@ -1125,7 +1125,7 @@
     {
       "sourceRow": 104,
       "name": "닳은 가죽 장갑",
-      "description": "방어 카드 사용 시 방어도 +2",
+      "description": "방어도를 부여하거나 아군을 보호하는 카드를 사용하면 그 카드의 소유자가 방어도 2를 얻는다.",
       "buyMin": 248,
       "buyMax": 284,
       "buyVariance": 36,

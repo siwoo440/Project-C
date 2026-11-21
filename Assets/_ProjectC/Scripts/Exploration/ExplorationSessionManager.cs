@@ -63,6 +63,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public int EncounterPoolVersion => encounterPoolVersion; // 저장된 탐사 조우 목록 버전 조회
     public int EventPoolVersion { get; private set; } = ExplorationEventCatalog.CurrentVersion; // 현재 층의 고정 이벤트 목록 버전
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
+    internal Vector2Int? CurrentFloorOptionalBossRoom { get; private set; } // 현재 층 최초 생성 때 확정한 선택 보스 방
     public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
     public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
     public bool IsExplorationCompleted => isExplorationCompleted; // 탐사 완료 여부 조회
@@ -301,15 +302,15 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
                 $"[Exploration][Day49] 조우 클리어 - " +
                 $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
 
-            if (clearedBattleType == BattleType.Boss &&
-                ExplorationFloorRules.IsFinalBossFloor(currentFloor))
+            bool clearedBossGate = clearedBattleType == BattleType.Boss && ExplorationFloorRules.IsBossFloor(currentFloor) && activeEncounter.EncounterId != OptionalBossPlacement.EncounterId; // 필수 보스층의 실제 진행 관문 승리
+            if (clearedBossGate && ExplorationFloorRules.IsFinalBossFloor(currentFloor)) // 선택 전투를 제외한 최종 관문 확인
             {
                 if (CompleteExplorationSuccess()) // 최종 탐사 성공 확인
                 { // 세계 해금 기록 시작
                     unlockProgress.RecordFinalClear(); // 최초 최종 탐사 승리 해금 기록
                 } // 세계 해금 기록 종료
             }
-            else if (clearedBattleType == BattleType.Boss)
+            else if (clearedBossGate) // 중간 필수 관문에만 다음 층 진행 안내
             {
                 Debug.Log(
                     $"[Exploration][Day57] 중간 보스 클리어 - " +
@@ -594,9 +595,19 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
     public void SetCurrentFloorSeed(int seed) // 현재 층 Seed 저장
     {
+        if (!hasCurrentFloorSeed || currentFloorSeed != seed) // 새로 지정된 현재 층 지도 확인
+        { // 이전 지도 상태 제거 시작
+            CurrentFloorOptionalBossRoom = null; // 다른 시드로 생성되는 지도의 이전 선택 좌표 제거
+        } // 이전 지도 상태 제거 종료
         currentFloorSeed = seed; // 현재 층 Seed 저장
         hasCurrentFloorSeed = true; // Seed 존재 상태 활성화
     }
+
+    internal void FreezeOptionalBossRoom(ExplorationMapData map, RelicInventoryRuntime relics) // 신규 지도에서 보유한 표지판 확률 확정
+    { // 현재 층 선택 보스 판정 시작
+        int chance = relics?.FindEffect(RelicEffectType.OptionalBossNodeChance)?.EffectValue ?? 0; // 생성 시점의 실제 보유 효과 수치
+        CurrentFloorOptionalBossRoom = OptionalBossPlacement.Select(map, currentFloor, chance); // 독립 추첨의 결과 좌표 보관
+    } // 현재 층 선택 보스 판정 종료
 
     public void ClearReturnPosition() // 전투 복귀 위치 초기화
     {
@@ -607,6 +618,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private void ClearCurrentFloorSeed() // 현재 층 Seed 초기화
     {
         currentFloorSeed = 0; // Seed 값 초기화
+        CurrentFloorOptionalBossRoom = null; // 다음 층의 선택 보스 판정 초기화
         EventPoolVersion = ExplorationEventCatalog.CurrentVersion; // 다음 층에 최신 이벤트 목록 배정
         hasCurrentFloorSeed = false; // Seed 존재 상태 해제
     }
@@ -647,6 +659,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         EventPoolVersion = snapshot.eventPoolVersion; // 저장 당시 층의 이벤트 목록 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
         currentFloorSeed = snapshot.seed; // 저장 맵 시드 적용
+        CurrentFloorOptionalBossRoom = snapshot.hasOptionalBossRoom ? snapshot.optionalBossRoom : (Vector2Int?)null; // 실패한 추첨과 구버전 지도는 선택 방 없이 복원
         hasCurrentFloorSeed = true; // 저장 시드 존재 표시
         returnPosition = snapshot.position; // 저장 플레이어 위치 적용
         hasReturnPosition = true; // 저장 위치 사용 표시

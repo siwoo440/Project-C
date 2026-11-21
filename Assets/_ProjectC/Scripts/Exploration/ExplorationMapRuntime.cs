@@ -50,6 +50,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private float nextFloorChangeAllowedTime; // 다음 층 이동 허용 시각
     private bool initialPlayerPlacementHandled; // 첫 플레이어 위치 처리 여부
 
+    private EncounterData optionalBossEncounter; // 선택 방 한 곳에만 연결된 보스 원본
     public ExplorationMapData CurrentMap { get; private set; } // 현재 생성된 논리 맵
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
     public int CurrentEncounterCount => encounterTypes.Count; // 현재 층 조우 개수 조회
@@ -152,6 +153,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                 seed,
                 CurrentFloor); // 지정 Seed와 현재 층 규칙으로 동일 논리 맵 생성
 
+        ApplyOptionalBossRoom(restoredFromSession); // 첫 층 생성의 추첨 또는 저장된 선택 방 적용
+
         RestoredFromSession =
             restoredFromSession; // 현재 생성이 복원인지 기록
 
@@ -177,6 +180,28 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             $"Start {CurrentMap.StartCoordinate} / " +
             $"Stairs {CurrentMap.StairsCoordinate}"); // Tilemap 생성·복원 결과 로그
     }
+
+    private void ApplyOptionalBossRoom(bool restoredFromSession) // 현재 지도에 저장된 선택 보스 한 곳 연결
+    { // 선택 보스 방 반영 시작
+        optionalBossEncounter = OptionalBossPlacement.LoadEncounter(); // 기존 관문에 섞이지 않는 전용 보스 로드
+        if (!restoredFromSession) // 현재 층을 처음 생성하는지 확인
+        { // 유물 보유 여부와 독립 추첨 시작
+            var inventory = optionalBossEncounter == null ? null : RelicRunManager.Instance?.Inventory; // 유효한 보스 원본이 있는 경우의 보유 유물 조회
+            sessionManager.FreezeOptionalBossRoom(CurrentMap, inventory); // 신규 층의 추첨 결과 확정
+        } // 유물 보유 여부와 독립 추첨 종료
+        var selected = sessionManager.CurrentFloorOptionalBossRoom; // 저장 또는 신규 생성에서 확정한 좌표
+        if (optionalBossEncounter != null && selected.HasValue && !ExplorationFloorRules.IsBossFloor(CurrentFloor) && CurrentMap.TryGetCell(selected.Value, out var room) && OptionalBossPlacement.IsEligibleRoom(CurrentMap, room)) // 필수 경로가 아닌 실제 막다른 일반 방 확인
+        { // 선택 조우의 논리 지도 반영 시작
+            room.SetRoomType(ExplorationRoomType.Boss); // 계단 구조를 유지한 선택 보스 방 표시
+            return; // 선택한 한 곳에 전용 조우 유지
+        } // 선택 조우의 논리 지도 반영 종료
+        optionalBossEncounter = null; // 선택 좌표나 원본이 유효하지 않은 경우 기존 전투 유지
+    } // 선택 보스 방 반영 종료
+
+    internal EncounterData GetOptionalBossEncounter(Vector2Int coordinate) // 현재 층의 확정 위치에 연결된 보스 원본 확인
+    { // 선택 방 원본 조회 시작
+        return sessionManager.CurrentFloorOptionalBossRoom == coordinate ? optionalBossEncounter : null; // 저장된 선택 좌표에서만 전용 원본 반환
+    } // 선택 방 원본 조회 종료
 
     private static int CreateSeed() // 신규 절차 맵 Seed 생성
     {

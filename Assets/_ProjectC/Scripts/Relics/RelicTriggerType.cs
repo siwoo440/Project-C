@@ -49,5 +49,6 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     ExplorationForcedBattleRoll, // 탐사의 확률 강제 전투 판정 직전
     BeforeShopPurchase, // 현재 상점에서 상품 골드 결제 직전
     ExplorationCompleted, // 성공한 탐사 완료를 정산할 때
-    BeforeMentalLoss // 실제 정신력 손실을 확정하기 직전
+    BeforeMentalLoss, // 실제 정신력 손실을 확정하기 직전
+    NewFloorLayout // 새 층의 선택 방 역할을 확정하는 시점
 }

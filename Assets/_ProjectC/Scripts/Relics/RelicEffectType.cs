@@ -92,4 +92,11 @@ public enum RelicEffectType // 유물 효과 종류
     ExplorationSuccessGoldPercent, // 정상 귀환에서 남은 회차 골드의 비율 추가
     FadeMentalLossReduction, // 침식지대 정신력 손실의 고정 감소
     ExtraShopSpecialCard, // 첫 방문 상점에서 특수 카드 추가 판매 판정
+    OptionalBossNodeChance, // 첫 층 생성의 선택 보스 방 확률
+    BattleEndCleanseOne, // 전투 종료 시 생존자 디버프 하나 해제
+    BaseTurnDrawBlock, // 아군 턴의 실제 기본 드로우 수 기준 방어도
+    OpeningEnemyFear, // 생존 적 전체의 첫 아군 턴 공포
+    ResolvedSkillDraw, // 스킬 카드 사용 정산 직후 확률 드로우
+    MarkedHitDamageBonus, // 표식 적에 대한 직접 카드 명중 피해 증가
+    ResolvedDefenseBlock, // 방어 카드 사용자의 방어도 추가
 }
