@@ -146,13 +146,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 적용 불가 처리 종료
         return mentalRuntime.ApplyPersistentMental(currentMental); // 저장 정신력 적용 결과 반환
     } // 저장 정신력 적용 종료
-    public BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason) // 정신력 증감 적용
+    public BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason, BattleUnitRuntime sourceUnit = null) // 발생 유닛을 포함한 실제 정신력 증감 적용
     { // 정신력 증감 시작
         if (IsDead) // 사망 상태 확인
         { // 사망 상태 처리 시작
             return BattleMentalChangeResult.NoChange(CurrentMental, MentalState, MentalRemainingTurns, delta, reason); // 변화 없음 반환
         } // 사망 상태 처리 종료
-        return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta); // 퇴색 교전 보정과 원래 변화 요청량 전달
+        return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta, sourceUnit); // 퇴색 보정과 원래 변화량 및 명시 발생 유닛 전달
     } // 정신력 증감 종료
     public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
     { // 변경 가능 확인 시작
@@ -643,6 +643,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 유닛 처리 시작
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
         } // 사망 유닛 처리 종료
+        damageAmount = ApplyHeartShardDamageBonus(damageAmount, sourceUnit); // 출처가 있는 아군 피해의 심장파편 증가를 예고와 실제에 함께 반영
         BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
         int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
@@ -854,6 +855,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 분담 피해 없음 처리 시작
             return 0; // 적용된 체력 피해 없음
         } // 분담 피해 없음 처리 종료
+        amount = ApplyHeartShardDamageBonus(amount, sourceUnit); // 공격자 출처가 명시된 무방어 피해의 심장파편 원본 증가
         int reduced = GetUnblockedDamageAfterReduction(amount); // 성역과 고정 감소가 반영된 실제 무방어 피해
         if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
         { // 무방어 피해 무효 시작
@@ -883,6 +885,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
+    private int ApplyHeartShardDamageBonus(int amount, BattleUnitRuntime sourceUnit) // 심장파편을 반영한 실제 아군 출처 피해
+    { // 저체력 아군 피해 계산 시작
+        if (amount <= 0 || Team != BattleTeam.Enemy || sourceUnit?.Team != BattleTeam.Ally || sourceUnit.IsDead || (long)sourceUnit.CurrentHealth * 2 > sourceUnit.MaxHealth) // 생존 아군이 적에게 준 양수 피해와 최대 체력 절반 확인
+        { // 심장파편 적용 조건 제외 시작
+            return amount; // 해당하지 않는 원래 피해 수치 보존
+        } // 심장파편 적용 조건 제외 종료
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.LowHealthOutgoingDamage)?.EffectValue ?? 0; // 보유한 심장파편에서 원본 피해 증가율 조회
+        return (int)Math.Min(int.MaxValue, (long)amount * (100L + bonus) / 100L); // 기존 원본 피해와 십오 퍼센트의 내림 및 정수 상한
+    } // 저체력 아군 피해 계산 종료
     private int ApplySurvivalProtection(int incoming, bool allowDefeatWard = true, bool consume = true) // 실제 피해와 순수 예고의 불굴 및 치명 피해 성배의 적용 순서
     { // 실제 생존 보호 확인 시작
         int survivableDamage = Math.Max(0, CurrentHealth - 1); // 체력 한 점을 남기는 최대 손실량
@@ -969,7 +980,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 교란 아님 처리 시작
             return; // 정신력 처리 중단
         } // 교란 아님 처리 종료
-        ChangeMental(-4, BattleMentalChangeReason.DisruptReceived); // 교란 대상 정신력 감소
+        ChangeMental(-4, BattleMentalChangeReason.DisruptReceived, sourceUnit); // 교란과 공포의 실제 발생자를 포함한 정신력 감소
         if (sourceUnit != null && sourceUnit != this && !sourceUnit.IsDead) // 교란 적용자 확인
         { // 교란 적용자 처리 시작
             sourceUnit.ChangeMental(2, BattleMentalChangeReason.DisruptInflicted); // 교란 가함 정신력 증가

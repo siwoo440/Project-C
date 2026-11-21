@@ -149,6 +149,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
         ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
         ApplyOpeningCorrosion(); // 선제 공격 전에 실제 생존 적에게 실금석의 마법 저항 약화 적용
+        ApplyOpeningStethoscopeMark(); // 기존 첫 턴 준비 중 최대 현재 체력 적에게 청진기 표식 적용
         ResolveOpeningPulse(); // 현재 실제 생존 아군 한 명과 시작 정신력 비용 확정
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
@@ -346,6 +347,24 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 약화 적용 종료
         return null; // 생존 적이 없는 경우의 대상 없음
     } // 시작 적 상태 처리 종료
+    private void ApplyOpeningStethoscopeMark() // 검게 물든 청진기가 정하는 첫 표식
+    { // 첫 표식 부여 시작
+        var relic = openingRelics?.FindEffect(RelicEffectType.OpeningStethoscopeMark); // 정상 회차에 실제로 보유한 유물의 수치
+        if (relic == null) // 시작 청진기 미보유 확인
+        { // 유물이 없는 경로 시작
+            return; // 같은 적 전투에 별도 상태 적용 생략
+        } // 유물이 없는 경로 종료
+        BattleUnitRuntime target = null; // 가장 높은 현재 체력의 첫 생존 적 보관
+        foreach (var enemy in enemyUnits) // 전투의 실제 적 배치 순서
+        { // 비교할 적 확인 시작
+            if (enemy != null && !enemy.IsDead && (target == null || enemy.CurrentHealth > target.CurrentHealth)) // 살아 있는 적의 현재 체력과 기존 최대값 확인
+            { // 더 높은 현재 체력의 적 확인 시작
+                target = enemy; // 동률에는 기존 출전 순서의 앞 적 유지
+            } // 더 높은 현재 체력의 적 확인 종료
+        } // 비교할 적 확인 종료
+        target?.ApplyStatusEffect(BattleStatusEffectType.StethoscopeMark, relic.EffectValue, relic.StatusDuration, 1); // 기존 면역을 적용해 한 적에만 상태 부여
+    } // 첫 표식 부여 종료
+
     private void ApplyOpeningCorrosion() // 전투 시작 시 생존 적 전원의 마법 저항 약화 적용
     { // 시작 실금석 처리 시작
         var relic = openingRelics?.FindEffect(RelicEffectType.OpeningCorrosionResistanceDown); // 실제 보유한 네크레이트 실금석 조회
@@ -693,6 +712,19 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             foreach (var enemy in enemyUnits) // 적별 활성 약화 확인
             { // 개별 약화 해제 시작
                 enemy?.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 해당 아군 턴이 끝나면 공명 표식 해제
+                var stethoscope = enemy?.GetStatusEffect(BattleStatusEffectType.StethoscopeMark); // 이번 아군 턴까지 적용된 독립 청진기 표식 조회
+                if (stethoscope != null) // 해당 적에게 청진기 표식이 적용됐는지 확인
+                { // 실제 청진기 기간 차감 시작
+                    stethoscope.AdvanceDuration(); // 이번 실제 아군 턴 종료 한 번만 기간에서 차감
+                    if (stethoscope.IsExpired) // 시트의 아군 턴 두 번을 모두 마쳤는지 확인
+                    { // 청진기 표식 제거 시작
+                        enemy.RemoveStatusEffect(BattleStatusEffectType.StethoscopeMark); // 실제 상태와 표식 피해 보너스 대상 해제
+                    } // 청진기 표식 제거 종료
+                    else // 두 번째 아군 턴까지 남는 표식 확인
+                    { // 남은 표시 갱신 시작
+                        enemy.NotifyStatusEffectsChanged(); // 새 잔여 턴을 실제 적 화면에 표시
+                    } // 남은 표시 갱신 종료
+                } // 실제 청진기 기간 차감 종료
                 enemy?.RemoveStatusEffect(BattleStatusEffectType.ChargeDefenseDown); // 이번 턴의 임시 방어 감소 제거
             } // 개별 약화 해제 종료
         } // 돌진 효과 해제 종료

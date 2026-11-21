@@ -30,7 +30,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 } // 소모한 예약의 지급 종료
                 continue; // 같은 턴의 일반 상태 처리에서 재발동 차단
             } // 예약 효과 소모 및 회복 종료
-            if (statusEffect.EffectType == BattleStatusEffectType.PublicMark || statusEffect.EffectType == BattleStatusEffectType.Burn || statusEffect.EffectType == BattleStatusEffectType.Blind || statusEffect.EffectType == BattleStatusEffectType.AttackPowerDown) // 턴 종료에 처리하는 상태 확인
+            if (statusEffect.EffectType == BattleStatusEffectType.StethoscopeMark || statusEffect.EffectType == BattleStatusEffectType.PublicMark || statusEffect.EffectType == BattleStatusEffectType.Burn || statusEffect.EffectType == BattleStatusEffectType.Blind || statusEffect.EffectType == BattleStatusEffectType.AttackPowerDown) // 턴 종료에 처리하는 상태 확인
             { // 턴 종료 상태 유지 시작
                 continue; // 턴 시작 지속 감소 생략
             } // 턴 종료 상태 유지 종료
@@ -114,7 +114,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.DuelMark || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.EffectType == BattleStatusEffectType.ShockAbsorption || effect.EffectType == BattleStatusEffectType.ResistanceStance || effect.EffectType == BattleStatusEffectType.ActionSpeedUp || effect.EffectType == BattleStatusEffectType.ShieldCounter || effect.EffectType == BattleStatusEffectType.RetributionBulwark || effect.EffectType == BattleStatusEffectType.GuardianCircle || effect.EffectType == BattleStatusEffectType.FocusedDefense || effect.EffectType == BattleStatusEffectType.BleedResistance || effect.EffectType == BattleStatusEffectType.UndyingGuard || effect.EffectType == BattleStatusEffectType.DistributedDefense || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || effect.EffectType == BattleStatusEffectType.PublicMark) // 분산 방어처럼 별도 시점에 해제하는 상태 제외
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.DuelMark || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.EffectType == BattleStatusEffectType.ShockAbsorption || effect.EffectType == BattleStatusEffectType.ResistanceStance || effect.EffectType == BattleStatusEffectType.ActionSpeedUp || effect.EffectType == BattleStatusEffectType.ShieldCounter || effect.EffectType == BattleStatusEffectType.RetributionBulwark || effect.EffectType == BattleStatusEffectType.GuardianCircle || effect.EffectType == BattleStatusEffectType.FocusedDefense || effect.EffectType == BattleStatusEffectType.BleedResistance || effect.EffectType == BattleStatusEffectType.UndyingGuard || effect.EffectType == BattleStatusEffectType.DistributedDefense || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || effect.EffectType == BattleStatusEffectType.PublicMark || effect.EffectType == BattleStatusEffectType.StethoscopeMark) // 분산 방어처럼 별도 시점에 해제하는 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
@@ -134,7 +134,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             bool triggered = renew || effect.EffectType == BattleStatusEffectType.Burn || effect.EffectType == BattleStatusEffectType.Bleed; // 재생과 지속 피해의 턴 종료 발동 확인
             if (effect.EffectType == BattleStatusEffectType.Bleed) // 방어도를 우회하는 고정 체력 손실 확인
             { // 출혈 처리 시작
-                applied = runtimeUnit.TakeUnblockedDamage(previousValue, BattleDamageType.None, null); // 현재 체력만 감소시키고 사망 알림 처리
+                int bonus = runtimeUnit.Team == BattleTeam.Enemy && previousValue > 0 ? BattleSupplyRelics.Find(RelicEffectType.EnemyBleedDamageBonus)?.EffectValue ?? 0 : 0; // 적이 실제로 받는 양수 출혈 틱의 유물 가산량
+                applied = runtimeUnit.TakeUnblockedDamage((int)System.Math.Min(int.MaxValue, (long)previousValue + bonus), BattleDamageType.None, null); // 원래 출혈 지속과 방어도 우회를 유지한 체력 피해
             } // 출혈 처리 종료
             else if (effect.EffectType == BattleStatusEffectType.Burn) // 기존 화상 피해 확인
             { // 화상 피해 처리 시작

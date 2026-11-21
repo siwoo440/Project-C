@@ -17,6 +17,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int lastRetainedDamageRound = -1; // 검은 깃털 펜던트의 마지막 발동 라운드
     private bool usedFirstCardDamageBonus; // 붉은 잉크병의 전투당 한 번 발동 기록
     private int pendingPentacleDraw; // 카드 선택이 끝난 뒤 받을 펜타클 드로우 수
+    private int pendingEventRelicDraw; // 카드 선택이나 사용 중 쌓인 공용 신호의 유물 드로우
     private bool pendingPentacleChanceDraw; // 실제 사용 후 최종 선택을 기다리는 펜촉 드로우
     private bool HasPendingEffectChoice => pendingCardChoices?.Count > 0 || pendingDebuffChoices?.Count > 0; // 카드나 상태 선택의 남은 효과 확인
     private CardInstance pendingSkillRelicCard; // 카드 이동과 마지막 선택이 끝난 뒤 검사할 스킬 카드
@@ -727,6 +728,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
+        pendingEventRelicDraw = 0; // 전투 종료나 선택 강제 해제 뒤 공용 신호 드로우 예약 해제
         pendingInspectionDraw = 0; // 전투 종료나 선택 강제 해제 뒤 남은 드로우 예약 정리
         pendingPentacleDraw = 0; // 전투 종료나 선택 강제 해제 뒤 펜타클 예약 정리
         pendingSkillRelicCard = null; // 종료나 강제 취소된 선택의 잉크병 예약 정리
@@ -1229,7 +1231,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             { // 공포 해제 시작
                 RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.Fear); // 실제 정신력 변화와 별개로 공포 해제
             } // 공포 해제 종료
-            BattleMentalChangeResult mentalResult = targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 대상 정신력 직접 변경
+            BattleMentalChangeResult mentalResult = targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect, cardInstance.OwnerUnit); // 대상 정신력의 직접 변화와 실제 카드 소유자 전달
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance)) // 악마 전용 체력 소모 공격 확인
@@ -1529,7 +1531,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 직접 명중 유물 확인 종료
     private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작
-        bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
+        bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.StethoscopeMark) != null || target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
         int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
         int pin = marked && card.DamageType == BattleDamageType.Magical ? BattleSupplyRelics.Find(RelicEffectType.MarkedMagicalCardDamage)?.EffectValue ?? 0 : 0; // 기존 표식이 있는 적을 명중한 직접 마법 타격의 가산 피해
         int nail = marked ? BattleSupplyRelics.Find(RelicEffectType.MarkedHitDamageBonus)?.EffectValue ?? 0 : 0; // 표식 적에게 명중한 각 직접 타격의 은못 추가 피해
@@ -1623,10 +1625,30 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             runtimeDeck.DrawCards(ink.EffectValue); // 기존 펜타클과 독립인 실제 드로우 지급
         } // 잉크병 드로우 지급 종료
     } // 보관한 스킬 드로우 처리 종료
+    internal bool TryDrawEventRelicCards(int count) // 유물 신호 드로우를 카드 이동과 최종 선택 뒤로 보호
+    { // 공용 효과 드로우 접수 시작
+        if (disposed || count <= 0 || turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition) // 전투 종료와 페이즈 전환 및 유효 수량 검사
+        { // 처리 불가 상태 시작
+            return false; // 종료된 전투의 손패 변경 제외
+        } // 처리 불가 상태 종료
+        if (actionPending || HasPendingEffectChoice || drawChoiceView != null || debuffChoiceView != null || remainingChoiceView != null) // 현재 카드 해결 및 화면의 선택 대기 확인
+        { // 최종 선택 후 드로우 예약 시작
+            pendingEventRelicDraw = (int)Math.Min(int.MaxValue, (long)pendingEventRelicDraw + count); // 서로 다른 성공 이벤트의 추가 드로우 합산
+            return true; // 현재 손패나 후보를 건드리지 않고 확정된 알림 보관
+        } // 최종 선택 후 드로우 예약 종료
+        return runtimeDeck.DrawRelicCardsIntoHand(count) > 0; // 일반 전투 시점에는 손패 여유 내 즉시 드로우
+    } // 공용 효과 드로우 접수 종료
+
     private void ApplyPostSelectionRelicDraws() // 모든 효과 선택을 마친 보호된 드로우 처리
     { // 독립 유물 드로우 정산 시작
         ApplyPendingSkillRelicDraw(); // 먼저 기존 스킬 드로우 처리
         ApplyPendingPentacleChanceDraw(); // 남은 손패 공간에서 펜촉의 독립 판정
+        int count = pendingEventRelicDraw; // 선택 완료로 수동 드로우 후보를 건드리지 않는 예약 수 확보
+        pendingEventRelicDraw = 0; // 덱 상태 변경 알림 전에 중복 지급 차단
+        if (count > 0 && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition) // 실제 전투가 계속되는 시점의 예약 확인
+        { // 공용 신호 유물 드로우 정산 시작
+            runtimeDeck.DrawRelicCardsIntoHand(count); // 기존 우선 드로우 뒤 남은 실제 손패 공간에만 지급
+        } // 공용 신호 유물 드로우 정산 종료
     } // 독립 유물 드로우 정산 종료
     private void ApplyPendingPentacleChanceDraw() // 실제 펜타클 사용으로 예약된 드로우 한 번 처리
     { // 펜촉 드로우 처리 시작

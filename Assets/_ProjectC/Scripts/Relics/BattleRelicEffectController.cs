@@ -11,6 +11,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 현재 적 목록
     private readonly BattleDeckRuntime battleDeck; // 유물 효과 연결 전투 덱
     private readonly BattleActionPointRuntime actionPoints; // 처치 유물이 회복할 공용 행동력
+    private readonly Func<int, bool> eventRelicDraw; // 사용 및 추가 선택과 양립하는 선택적 유물 드로우 연결
     private readonly List<IDisposable> subscriptions = new List<IDisposable>(); // 전투 이벤트 구독 목록
     private readonly Dictionary<string, int> turnTriggerCounts = new Dictionary<string, int>(); // 현재 턴 유물 발동 횟수
     private readonly Dictionary<string, int> battleTriggerCounts = new Dictionary<string, int>(); // 현재 전투 유물 발동 횟수
@@ -18,10 +19,12 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private bool journalVictoryChecked; // 한 전투 승리에서 이미 시도한 일지 추첨
     private bool endCleanseChecked; // 실제 전투 종료에서 이미 시도한 손수건 추첨
     private bool startCleanseChecked; // 전투 시작의 이미 사용한 향 주머니 판정
+    private const int DebuffApplicationsPerHealing = 5; // 공허의 잔뿌리 발동에 필요한 실제 적 약화 횟수
+    private int enemyDebuffApplications; // 현재 전투에서 다섯 회 단위로 쌓이는 적 약화 기록
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
-    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleDeckRuntime deck = null, BattleActionPointRuntime points = null) // 전투 유물 관리자 생성
+    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleDeckRuntime deck = null, BattleActionPointRuntime points = null, Func<int, bool> eventRelicDraw = null) // 안전한 추가 드로우를 포함한 전투 유물 관리자 생성
     {
         dispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher)); // 전투 이벤트 발행기 저장
         inventory = relicInventory ?? throw new ArgumentNullException(nameof(relicInventory)); // 유물 보관함 저장
@@ -30,6 +33,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
         battleDeck = deck; // 실제 전투 덱 저장
         actionPoints = points; // 실제 공용 행동력 연결
+        this.eventRelicDraw = eventRelicDraw; // 카드 해결과 선택 뒤의 상태 유물 드로우 연결
         inventory.RelicAcquired += HandleRelicAcquired; // 전투 중 신규 유물 획득 연결
         RegisterBattleEvents(); // 전투 공용 이벤트 구독
     }
@@ -187,10 +191,24 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 중복 추첨 차단 종료
             journalVictoryChecked = true; // 성공과 실패 모두 이번 전투의 기회 기록
         } // 승리 추첨 종료
+        if (relicData.EffectType == RelicEffectType.EnemyBleedDamageBonus) // 적 출혈 종료 처리기가 직접 적용하는 붉은 균열섬유 확인
+        { // 턴 종료 신호의 중복 처리 차단 시작
+            return false; // 일반 유물 경로의 중복 수치와 표시 없이 상태 처리기에 위임
+        } // 턴 종료 신호의 중복 처리 차단 종료
+        if (relicData.EffectType == RelicEffectType.MagicalHitMentalLoss && // 검은 별가루의 피해 이벤트 확인
+            (eventContext?.SourceUnit?.Team != BattleTeam.Ally || eventContext.TargetUnit?.Team != BattleTeam.Enemy || eventContext.TargetUnit.IsDead || // 확률 소비 전 실제 아군 출처와 살아 있는 적 대상 확인
+             eventContext.DamageResult is not { DamageType: BattleDamageType.Magical, AppliedDamage: > 0 })) // 체력에 적용된 양수 마법 피해만 허용
+        { // 별가루와 무관한 피해 제외 시작
+            return false; // 전투의 기존 무작위 판정과 발동 기록 보존
+        } // 별가루와 무관한 피해 제외 종료
         if (!CanTrigger(relicData)) // 발동 횟수 제한 확인
         {
             return false; // 유물 실행 실패 반환
         }
+        if (!MatchesEventRelicTrigger(relicData.EffectType, eventContext)) // 세 공용 신호 유물의 실제 대상과 출처 및 효과 검사
+        { // 무관한 공용 신호 제외 시작
+            return false; // 실제 발동 대상이 없을 때 난수와 발동 제한 보존
+        } // 무관한 공용 신호 제외 종료
         if (relicData.TriggerChancePercent <= 0 || (relicData.TriggerChancePercent < 100 && UnityEngine.Random.Range(0, 100) >= relicData.TriggerChancePercent)) // 확률형 유물 발동 판정
         { // 확률 발동 실패 시작
             if (relicData.TriggerType == RelicTriggerType.BattleStarted && relicData.MaximumTriggersPerBattle > 0) // 전투 시작 단회 판정 확인
@@ -216,6 +234,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicEffectType.BattleStartCleanseOne: // 향 주머니의 전투 시작 디버프 정화
             case RelicEffectType.BattleEndCleanseOne: // 손수건의 실제 종료 디버프 정화
                 return TryCleanseOneAllyStatus(); // 모든 생존 아군의 제거 가능한 일반 상태에서 한 개 추첨
+            case RelicEffectType.MagicalHitMentalLoss: // 실제 유효 마법 피해의 검은 별가루 확률 성공
+                return context.TargetUnit.ChangeMental(-relic.EffectValue, BattleMentalChangeReason.RelicEffect).WasApplied; // 실제 적 정신력의 음수 효과와 정상 하한 적용
             case RelicEffectType.HealthDamageBlock: // 파열된 방울의 실제 체력 피해 반응
                 var injured = context?.TargetUnit; // 방어도를 받을 실제 피격 아군
                 return injured != null && injured.Team == BattleTeam.Ally && !injured.IsDead && context.AppliedAmount > 0 && injured.GainBlock(relic.EffectValue) > 0; // 생존자에게 방어도를 지급한 경우만 전투 횟수 소모
@@ -254,6 +274,20 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                     return true; // 회복 상한에 닿아도 첫 성배 사용 기회 기록
                 } // 성배 사용 정신력 지급 종료
                 return false; // 무관한 카드의 발동 횟수 보존
+            case RelicEffectType.ActionPreventingStatusDraw: // 실제 적 제어 뒤 밀랍인장의 안전한 한 장 드로우
+                return eventRelicDraw?.Invoke(relic.EffectValue) ?? (battleDeck?.DrawRelicCardsIntoHand(relic.EffectValue) > 0); // 실전 선택 예약 또는 선택 화면 없는 전투의 손패 여유 사용
+            case RelicEffectType.FifthEnemyDebuffHeal: // 다섯 번째 약화 뒤 살아 있는 전체 아군 회복
+                bool restored = false; // 실제 회복 발생 여부 초기화
+                foreach (var ally in allyUnits) // 실제 전투의 아군 명단 순회
+                { // 아군별 회복 적용 시작
+                    if (ally != null && !ally.IsDead) // 현재 살아 있는 아군만 회복 대상으로 확인
+                    { // 생존 아군 회복 시작
+                        restored |= ally.RestoreHealth(relic.EffectValue) > 0; // 기존 회복량과 체력 상한을 사용하는 아군별 실제 회복
+                    } // 생존 아군 회복 종료
+                } // 아군별 회복 적용 종료
+                return restored; // 한 명 이상 실제로 회복했을 때만 일반 발동 기록
+            case RelicEffectType.EnemyMentalLossActionPoint: // 피해와 성공 확률이 확인된 공용 행동력 회복
+                return actionPoints.Gain(relic.EffectValue) > 0; // 현재 행동력 상한 안에서 실제 한 점 지급
             case RelicEffectType.JournalCardRemoval: // 승리 확률 판정 후 회차 카드 한 장 정제
                 var runDeck = RunDeckManager.Instance; // 현재 탐사의 실제 회차 덱
                 if (runDeck == null || runDeck.CardCount <= RunDeckManager.MinimumCardsAfterRemoval) // 열 장 하한과 실제 덱 확인
@@ -511,6 +545,36 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
         targets.Add(runtimeUnit); // 대상 목록에 유닛 추가
     }
+
+    private bool MatchesEventRelicTrigger(RelicEffectType effect, BattleEventContext context) // 실제 적용 여부를 추첨보다 앞서 확인
+    { // 공용 상태와 정신력 시점 검사 시작
+        switch (effect) // 데이터의 유물 효과별 실제 발동 조건 선택
+        { // 세 신규 공용 신호 유물 분기 시작
+            case RelicEffectType.ActionPreventingStatusDraw: // 어비스 밀랍인장의 실제 적 행동 제어 확인
+                return IsEnemyDebuffApplication(context) && context.SourceUnit?.Team == BattleTeam.Ally && context.StatusEffectType is BattleStatusEffectType.Stun or BattleStatusEffectType.Stagger; // 아군이 성공시킨 기절과 경직으로 제한
+            case RelicEffectType.FifthEnemyDebuffHeal: // 공허의 잔뿌리의 실제 약화 횟수 확인
+                if (!IsEnemyDebuffApplication(context)) // 일반 강화와 면역 및 무효 상태 제외
+                { // 횟수 미변경 처리 시작
+                    return false; // 성공하지 않은 약화는 횟수 제외
+                } // 횟수 미변경 처리 종료
+                enemyDebuffApplications = (enemyDebuffApplications + 1) % DebuffApplicationsPerHealing; // 전투 내 적 약화의 다섯 회마다 주기 초기화
+                return enemyDebuffApplications == 0; // 다섯 번째 실제 적용 때에만 전체 회복 기회
+            case RelicEffectType.EnemyMentalLossActionPoint: // 침식 방울목걸이의 명시적 적 정신력 피해 확인
+                return context?.Phase == BattleTurnPhase.PlayerTurn && context.SourceUnit?.Team == BattleTeam.Ally && context.TargetUnit?.Team == BattleTeam.Enemy && // 동료의 적 대상 실제 아군 턴 원인 확인
+                    context.MentalResult is { AppliedDelta: < 0, Reason: BattleMentalChangeReason.CardEffect or BattleMentalChangeReason.DisruptReceived } && // 단순 피격과 턴 유지 등 자동 정신력 변화 제외
+                    actionPoints != null && actionPoints.CurrentActionPoints < actionPoints.MaxActionPoints; // 실제 증가 공간이 있을 때만 25퍼센트 판정 가능
+            default: // 기존 모든 유물의 선언된 효과 유지
+                return true; // 나머지 유물은 원래 실행 규칙 사용
+        } // 세 신규 공용 신호 유물 분기 종료
+    } // 공용 상태와 정신력 시점 검사 종료
+
+    private static bool IsEnemyDebuffApplication(BattleEventContext context) // 실제 적의 성공한 약화 부여와 중첩만 확인
+    { // 상태 이벤트 유효성 검사 시작
+        return context?.EventType == BattleEventType.StatusApplied && context.TargetUnit?.Team == BattleTeam.Enemy && // 실제 적에게 도착한 상태 적용 시점 확인
+            context.Phase is not (BattleTurnPhase.Victory or BattleTurnPhase.Defeat or BattleTurnPhase.Escaped) && // 전투 종료 이후의 적용 제외
+            context.StatusApplyResult is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked && // 새 적용 또는 성공한 중첩 확인
+            BattleStatusEffectInstance.IsDebuffType(context.StatusEffectType); // 공통 상태 분류를 사용해 강화 제외
+    } // 상태 이벤트 유효성 검사 종료
 
     private static int GetCount(Dictionary<string, int> counts, string relicId) // 발동 횟수 조회
     {

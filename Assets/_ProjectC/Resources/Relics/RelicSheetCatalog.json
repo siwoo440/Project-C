@@ -1499,7 +1499,7 @@
     {
       "sourceRow": 138,
       "name": "검은 별가루",
-      "description": "마법 피해를 줄 때 20% 확률로 정신력 -2",
+      "description": "아군이 마법 피해로 적의 체력을 실제로 줄이면 20% 확률로 그 적의 정신력을 2 낮춘다.",
       "buyMin": 226,
       "buyMax": 262,
       "buyVariance": 36,
@@ -1510,7 +1510,7 @@
     {
       "sourceRow": 139,
       "name": "어긋난 심장파편",
-      "description": "체력 50% 이하일 때 모든 피해 +15%",
+      "description": "현재 체력이 최대값의 50% 이하인 생존 아군이 적에게 주는 피해를 15% 높인다.",
       "buyMin": 243,
       "buyMax": 286,
       "buyVariance": 43,
@@ -1521,7 +1521,7 @@
     {
       "sourceRow": 140,
       "name": "어비스 밀랍인장",
-      "description": "적을 행동 불가로 만들면 카드 1장 드로우",
+      "description": "아군이 적에게 행동 불가 상태를 실제로 부여하면 카드 한 장을 뽑는다.",
       "buyMin": 260,
       "buyMax": 296,
       "buyVariance": 36,
@@ -1532,7 +1532,7 @@
     {
       "sourceRow": 141,
       "name": "침묵 결정종",
-      "description": "공포 상태 적의 공격력 추가 -1",
+      "description": "공포 상태인 적의 공격력을 추가로 1 낮춘다.",
       "buyMin": 277,
       "buyMax": 320,
       "buyVariance": 43,
@@ -1543,7 +1543,7 @@
     {
       "sourceRow": 142,
       "name": "붉은 균열섬유",
-      "description": "출혈 피해 +1",
+      "description": "적의 출혈이 발동할 때 출혈 피해를 1 높인다.",
       "buyMin": 294,
       "buyMax": 330,
       "buyVariance": 36,
@@ -1554,7 +1554,7 @@
     {
       "sourceRow": 143,
       "name": "검게 물든 청진기",
-      "description": "전투 시작 시 체력이 가장 높은 적에게 표식(2턴)",
+      "description": "전투 시작에 현재 체력이 가장 높은 생존 적 하나에게 아군 턴 두 번 동안 표식을 부여한다.",
       "buyMin": 311,
       "buyMax": 354,
       "buyVariance": 43,
@@ -1565,7 +1565,7 @@
     {
       "sourceRow": 144,
       "name": "공허의 잔뿌리",
-      "description": "적이 디버프 5회 받을 때마다 아군 전체 체력 3 회복",
+      "description": "적이 약화를 새로 받거나 중첩하는 횟수가 전투 중 5회 늘어날 때마다 생존 아군의 체력을 각각 3 회복한다.",
       "buyMin": 328,
       "buyMax": 364,
       "buyVariance": 36,
@@ -1576,7 +1576,7 @@
     {
       "sourceRow": 145,
       "name": "침식 방울목걸이",
-      "description": "정신력 피해를 줄 때 25% 확률로 코스트 +1",
+      "description": "아군 턴에 아군이 적의 정신력을 실제로 줄이면 25% 확률로 현재 행동력을 1 회복한다.",
       "buyMin": 195,
       "buyMax": 238,
       "buyVariance": 43,

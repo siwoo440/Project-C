@@ -69,6 +69,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 공용 행동력 조회
     public BattleTurnRuntime BattleTurn => battleTurn; // 전투 턴 관리자 조회
     public BattleEnemyActionRuntime EnemyActionRuntime => enemyActionRuntime; // 적 행동 관리자 조회
+    internal BattleCardActionController CardActions => cardActionController; // 선택 창을 보호하는 유물 드로우의 실제 카드 행동 관리자
     public BattleEventDispatcher BattleEvents => battleEvents; // 전투 공용 이벤트 발행기 조회
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
