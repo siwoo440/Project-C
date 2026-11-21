@@ -293,7 +293,7 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
         portrait.preserveAspect = true; // 초상화 비율 유지
         TMP_Text nameText = CreateText(cardObject.transform, "Name", 17f, FontStyles.Bold); // 게이지 위 주요 이름 글자 생성
         nameText.enableAutoSizing = true; // 긴 이름에 맞춘 한 줄 글자 크기 조정
-        nameText.fontSizeMin = 13f; // 긴 이름의 최소 읽기 크기
+        nameText.fontSizeMin = 11f; // 긴 영어 이름까지 한 줄에 표시할 최소 크기
         nameText.fontSizeMax = 17f; // 짧은 이름의 기본 읽기 크기
         nameText.overflowMode = TextOverflowModes.Ellipsis; // 지나치게 긴 이름의 프로필 경계 보존
         SetRect(nameText.rectTransform, new Vector2(85f, 68f), new Vector2(111f, 24f)); // 초상화 오른쪽 상단 이름 배치
@@ -407,8 +407,7 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
             bool isDead =
                 currentHealth <= 0; // 현재 사망 여부 계산
 
-            memberView.NameText.text =
-                memberView.Character.DisplayName; // 캐릭터 이름 갱신
+            ProjectCLanguageDisplay.SetCaption(memberView.NameText, memberView.Character.DisplayName); // 파티 이름의 현재 언어 표시
 
             memberView.Portrait.color =
                 isDead

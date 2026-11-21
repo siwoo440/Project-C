@@ -62,7 +62,8 @@ public sealed class GraphicsAudioSettings // 지원하는 화면과 음량 설�
             new Option("damageNumbers", 2, 8, new[] { "켜기", "끄기" }, 0), // 피해 숫자 표시 설정
             new Option("detailTooltip", 2, 9, new[] { "항상", "키 누를 때", "끄기" }, 0), // 상세 툴팁 표시 방식 설정
             new Option("battleSpeed", 2, 3, new[] { "x1.0", "x1.5", "x2.0" }, 1), // 기획 전투 속도와 기본값
-            new Option("scrollSpeed", 3, 5, new[] { "느림", "보통", "빠름" }, 1) // 기획 스크롤 속도와 기본값
+            new Option("scrollSpeed", 3, 5, new[] { "느림", "보통", "빠름" }, 1), // 기획 스크롤 속도와 기본값
+            new Option("language", 4, 0, new[] { "한국어", "English" }, 0) // 한국어 기본값과 영어 선택 설정
         }; // 지원 설정 목록 종료
     } // 지원 선택값 생성 종료
     private static Option Find(int category, int row) // 설정 위치로 지원 항목 조회
@@ -110,6 +111,7 @@ public sealed class GraphicsAudioSettings // 지원하는 화면과 음량 설�
     } // 설정 변경 종료
     public void ApplyAll() // 시작 시 저장된 설정 전체 적용
     { // 저장 설정 적용 시작
+        applier.Apply("language", this); // 첫 화면 생성 전 저장된 언어 적용
         applier.Apply("quality", this); // 그래픽 품질 우선 적용
         applier.Apply("mode", this); // 화면 모드와 해상도 함께 적용
         applier.Apply("frame", this); // 프레임 제한 적용
@@ -138,7 +140,11 @@ public sealed class UnitySettingsApplier : ISettingsApplier // Unity 화면과 �
     private static readonly string[] QualityNames = { "Low", "Medium", "High", "Ultra" }; // 기획 품질에 대응하는 Unity 품질 이름
     public void Apply(string key, GraphicsAudioSettings settings) // 선택한 설정을 Unity에 반영
     { // Unity 설정 적용 시작
-        if (key == "mode" || key == "resolution") // 화면 모드 또는 해상도 변경 확인
+        if (key == "language") // 시작 또는 변경 요청의 언어 설정 확인
+        { // 언어 적용 시작
+            ProjectCLanguage.Apply(settings.GetIndex("language") == 1); // 선택한 언어를 게임 화면에 즉시 적용
+        } // 언어 적용 종료
+        else if (key == "mode" || key == "resolution") // 화면 모드 또는 해상도 변경 확인
         { // 화면 설정 적용 시작
             int modeIndex = settings.GetIndex("mode"); // 선택한 화면 모드 조회
             int resolution = settings.GetIndex("resolution"); // 선택한 해상도 조회

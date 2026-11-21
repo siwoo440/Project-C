@@ -180,15 +180,15 @@ public sealed class SettingsView : MonoBehaviour // 설정 탭과 항목 화면
         selectedOutline = row.GetComponent<Outline>(); // 새 선택 설정 강조선 보관
         selectedRow.color = new Color(0.14f, 0.25f, 0.25f, 1f); // 선택 설정 밝은 배경 적용
         selectedOutline.enabled = true; // 선택 설정 금색 강조 표시
-        helpTitle.text = SettingsCatalog.Items[category][index].Name; // 선택 설정 이름 표시
-        helpDescription.text = SettingsHelpCatalog.Get(category, index); // 선택 설정의 쉬운 설명 표시
+        ProjectCLanguageDisplay.SetCaption(helpTitle, SettingsCatalog.Items[category][index].Name); // 선택 설정 이름의 현재 언어 표시
+        ProjectCLanguageDisplay.SetCaption(helpDescription, SettingsHelpCatalog.Get(category, index)); // 선택 설정의 현재 언어 도움말
     } // 설정 선택 종료
     private void ChangeValue(GraphicsAudioSettings settings, int category, int index, int direction, TMP_Text value, RectTransform row) // 설정 변경과 표시 갱신
     { // 설정 값 변경 시작
         SelectSetting(category, index, row); // 변경하는 설정의 설명과 강조 표시
         if (settings.Change(category, index, direction)) // 설정 값 변경 성공 확인
         { // 변경 결과 표시 시작
-            value.text = settings.GetLabel(category, index); // 실제 적용된 설정 값 표시
+            ProjectCLanguageDisplay.SetCaption(value, settings.GetLabel(category, index)); // 실제 설정 값의 현재 언어 표시
             scroll.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(36f); // 변경한 스크롤 속도 즉시 반영
         } // 변경 결과 표시 종료
     } // 설정 값 변경 종료
