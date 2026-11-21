@@ -1015,6 +1015,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private static int ApplyPercentage(int baseAmount, int changePercent) // 비율 기반 수치 계산
     { // 비율 계산 시작
         int safeBaseAmount = Mathf.Max(0, baseAmount); // 음수 원본 수치 보정
-        return Mathf.Max(0, Mathf.RoundToInt(safeBaseAmount * (100 + changePercent) / 100f)); // 반올림 보정 수치 반환
+        float adjusted = (long)safeBaseAmount * (100L + changePercent) / 100f; // 큰 가변 회복량도 중간 곱셈 범위 안에서 계산
+        return adjusted >= int.MaxValue ? int.MaxValue : Mathf.Max(0, Mathf.RoundToInt(adjusted)); // 실제 정수 상한과 기존 반올림 보정 유지
     } // 비율 계산 종료
 } // 클래스 종료

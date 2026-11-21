@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetGrailMiracle
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_GRAIL_MIRACLE
+  displayName: "성배의 기적"
+  description: "현재 행동력을 모두 소모해 지불한 행동력마다 생존 아군 전체를 각각 체력 8 회복한다. 행동력을 4 이상 지불하면 각 대상에게서 디버프 하나도 해제한다."
+  artwork: {fileID: 21300000, guid: 4fccf7fb991e5585a7ff81f2d6deaff2, type: 3}
+  cardType: 2
+  targetType: 2
+  apCost: 0
+  effectType: 1
+  damageType: 0
+  effectValue: 8
+  mentalChangeValue: 0
+  cupRule: 14
+  secondaryEffectValue: 4
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

@@ -333,7 +333,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 연출 시작 불가 처리 종료
-        int cost = cardInstance.SourceData.SwordRule == SwordCardRule.Finisher ? sharedActionPoints.CurrentActionPoints : cardInstance.ApCost; // 실제 사용 순간의 행동력 비용 결정
+        int cost = cardInstance.SourceData.SpendsAllActionPoints ? sharedActionPoints.CurrentActionPoints : cardInstance.ApCost; // 실제 확정 순간의 일반 또는 가변 비용 결정
         bool usedFirstDefenseDiscount = cardInstance.EffectiveFirstDefenseDiscount > 0; // 다른 유물 비용이 바뀌기 전에 실제 적용한 방어 할인 기록
         if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime) || !sharedActionPoints.Spend(cost)) // 현재 대상 및 비용 재확인 후 한 번 지불
         { // 비용 차감 실패 처리 시작
@@ -341,9 +341,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
-        if (SwordCardCombat.HasUpfrontHealthCost(cardInstance)) // 소유자 체력을 먼저 지불하는 카드 확인
+        int healthCost = cardInstance.SourceData.CupRule == CupCardRule.MartyrsLight // 순교자의 빛의 시전자 체력 한 점 규칙 확인
+            ? cardInstance.OwnerUnit.CurrentHealth - 1 // 생존 하한까지의 실제 체력 비용 계산
+            : SwordCardCombat.HasUpfrontHealthCost(cardInstance) ? cardInstance.SourceData.SecondaryEffectValue : 0; // 기존 고정 체력 비용과 일반 카드 구분
+        if (healthCost > 0) // 지불할 실제 체력 대가 확인
         { // 실제 체력 대가 지불 시작
-            int healthCost = cardInstance.SourceData.SecondaryEffectValue; // 원본 카드의 고정 체력 대가 조회
             if (!cardInstance.OwnerUnit.TrySpendHealth(healthCost)) // 방어도를 우회한 생존 체력 비용의 실제 지불 확인
             { // 체력 비용 지불 실패 시작
                 sharedActionPoints.Gain(cost); // 지불 상태 변경으로 취소된 사용의 행동력 복원
@@ -352,6 +354,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 체력 비용 지불 실패 종료
             actorView.ShowStatusFeedback($"체력 -{healthCost}", true); // 카드 소유자의 실제 체력 소모 표시
         } // 실제 체력 대가 지불 종료
+        if (cardInstance.SourceData.CupRule == CupCardRule.LifeContract) // 생명의 계약을 실제로 사용한 시전자 확인
+        { // 원본 정신력 비용 지불 시작
+            cardInstance.OwnerUnit.ChangeMental(cardInstance.SourceData.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 치유에 앞선 기존 정신력 하한과 상태 변화 적용
+        } // 원본 정신력 비용 지불 종료
         preparedSwordDamage = 0; // 이전 카드의 칼날 정비 보너스 정리
         if (cardInstance.CardType == CardType.Sword && cardInstance.EffectType == CardEffectType.Damage) // 실제 비용을 지불한 검 피해 카드 확인
         { // 칼날 정비 소모 시작
@@ -425,7 +431,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 } // 방어도 파괴 표시 종료
             } // 적별 방어도 제거 종료
         } // 전체 적 방어도 제거 종료
-        int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
+        long totalAppliedAmount = 0; // 가변 광역 회복의 대상별 실제 적용량 합산 범위
         bool defensiveCard = cardInstance.HasDefensivePrimaryEffect; // 장갑과 방패끈이 공유하는 기본 방어 효과 확인
         bool appliedDefense = false; // 살아 있는 아군에게 실제 방어 효과를 주었는지 기록
         if (damagesAndHeals) // 적에게만 피해를 주고 지정 아군에게만 회복하는 효과 분리
@@ -1111,6 +1117,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 전투 부활 적용 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
+            if (cardInstance.SourceData.CupRule == CupCardRule.ArchangelBlessing) // 광역 회복 전에 모든 제거 가능한 디버프를 없애는 카드 확인
+            { // 대천사의 축복 정화 시작
+                int cleansed = statusEffectProcessor.CleanseDebuffs(targetUnit).Count; // 공통 상태 면역과 보호 규칙의 정화 처리
+                if (cleansed > 0) // 실제 제거된 상태 개수 확인
+                { // 아군 상태 피드백 시작
+                    FindUnitView(targetUnit)?.ShowStatusFeedback($"정화 {cleansed}", false); // 해당 아군의 실제 제거 수 표시
+                } // 아군 상태 피드백 종료
+            } // 대천사의 축복 정화 종료
             BattleStatusEffectType removed = cardInstance.SourceData.StatusRemovedByHealing; // 회복 전에 제거할 상태 조회
             RemoveCardTargetStatus(targetUnit, removed); // 응급 처치와 기존 카드 원본이 지정한 상태 해제
             var bleed = targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed); // 회복을 받는 생존 대상의 실제 출혈 확인
@@ -1127,8 +1141,22 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 } // 남은 출혈 표시 갱신 종료
             } // 붕대 매듭의 대상별 출혈 감소 종료
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
+            bool grailMiracle = cardInstance.SourceData.CupRule == CupCardRule.GrailMiracle; // 실제 지불량을 읽는 성배 회복 확인
+            if (grailMiracle) // 가변 회복의 배수 적용 여부 확인
+            { // 성배의 기적 회복량 계산 시작
+                baseHealing = (int)Math.Min(int.MaxValue, (long)baseHealing * paidActionPoints); // 실제로 지불한 행동력과 정수 상한을 반영한 기본 치유
+            } // 성배의 기적 회복량 계산 종료
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
             int restored = RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 기존 회복 유물과 실제 체력 상한 반영
+            if (grailMiracle && paidActionPoints >= cardInstance.SourceData.SecondaryEffectValue) // 시트의 실제 지불 행동력 정화 조건 확인
+            { // 실제 대상의 약화 제거 시작
+                var removedEffects = statusEffectProcessor.CleanseDebuffs(targetUnit, 1); // 회복 대상마다 정화 가능 약화 한 개 제거
+                if (removedEffects.Count > 0) // 실제로 약화가 제거된 경우 확인
+                { // 성공한 정화 표시 시작
+                    FindUnitView(targetUnit)?.ShowStatusFeedback("정화 1", false); // 제거한 디버프의 실제 화면 효과
+                    LogCleanseResults(targetUnit, removedEffects); // 기존 정화 결과 출력 재사용
+                } // 성공한 정화 표시 종료
+            } // 실제 대상의 약화 제거 종료
             if (cardInstance.SourceData.CupRule == CupCardRule.CelestialGrace) // 최대 체력과 무관한 은총의 긍정 강화 확인
             { // 이번 턴 아군 공격력 처리 시작
                 var result = targetUnit.ApplyCurrentAllyTurnAttackPower(cardInstance.SourceData.SecondaryEffectValue, cardInstance.OwnerUnit); // 장기 공격력과 독립인 실제 이번 턴 강화

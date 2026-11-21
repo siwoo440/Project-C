@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetMartyrsLight
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_MARTYRS_LIGHT
+  displayName: "순교자의 빛"
+  description: "시전자의 체력을 1로 낮춘 뒤 시전자를 포함한 생존 아군 전체를 체력 30씩 회복한다."
+  artwork: {fileID: 21300000, guid: 2b46f74987db50d6b7cf030dfd3db7c6, type: 3}
+  cardType: 2
+  targetType: 2
+  apCost: 4
+  effectType: 1
+  damageType: 0
+  effectValue: 30
+  mentalChangeValue: 0
+  cupRule: 13
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

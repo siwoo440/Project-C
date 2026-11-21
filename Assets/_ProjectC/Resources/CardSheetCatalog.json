@@ -1557,7 +1557,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 1명 체력 25 회복, 자신 정신력 -5",
+      "description": "시전자의 정신력 5를 소모하고 선택한 생존 아군의 체력을 25 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "생명의 계약.png"
@@ -1568,7 +1568,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 체력 25 회복, 디버프 모두 제거",
+      "description": "생존 아군 전체에서 제거 가능한 디버프를 모두 없애고 각각 체력 25를 회복한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "대천사의 축복.png"
@@ -1579,7 +1579,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "4",
-      "description": "자신 HP를 1로 만들고 아군 전체 체력 30 회복",
+      "description": "시전자의 체력을 1로 낮춘 뒤 시전자를 포함한 생존 아군 전체를 체력 30씩 회복한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "순교자의 빛.png"
@@ -1590,7 +1590,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "5",
-      "description": "쓰러진 아군 1명 체력 50%로 부활",
+      "description": "쓰러진 출전 아군 한 명을 최대 체력의 50%로 부활시킨다. 소수점은 올린다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "부활 성가.png"
@@ -1601,7 +1601,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 전투불능 방어 1회, 방어도 +10",
+      "description": "생존 아군마다 첫 치명 피해에서 체력 1로 버티는 보호 1회와 방어도 10을 준다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "불멸의 잔.png"
@@ -1612,7 +1612,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "X",
-      "description": "아군 전체 체력 X×8 회복, X가 4 이상이면 디버프 1개 제거",
+      "description": "현재 행동력을 모두 소모해 지불한 행동력마다 생존 아군 전체를 각각 체력 8 회복한다. 행동력을 4 이상 지불하면 각 대상에게서 디버프 하나도 해제한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "성배의 기적.png"
@@ -1623,7 +1623,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "6",
-      "description": "적 전체에게 25 피해, 아군 전체 체력 15 회복",
+      "description": "생존 적 전체에게 마법 피해 25를 주고 생존 아군 전체를 각각 체력 15만큼 회복한다.",
       "area": "전체",
       "targets": "적/아군",
       "imageFileName": "빛의 대심판.png"
