@@ -1817,6 +1817,54 @@
       "name": "영원의 방패",
       "description": "3회 적 턴 동안 생존 아군 전체가 받는 직접 피해가 30% 줄고 마법 피해 저항이 20% 높아진다.",
       "artworkKey": "e7732255a3b054df8e700ba716bc9bd9"
+    },
+    {
+      "category": 7,
+      "name": "축복",
+      "description": "생존 아군 모두의 물리 방어력을 2턴 동안 4 높인다.",
+      "artworkKey": "dbfef189352c5f048a10dc30b1adc53b"
+    },
+    {
+      "category": 7,
+      "name": "성스러운 방패",
+      "description": "생존 아군 각자가 받는 다음 피해를 한 번 무효로 한다.",
+      "artworkKey": "dd1d9e1ae7e55b86891ea369f484545a"
+    },
+    {
+      "category": 7,
+      "name": "생명의 빛",
+      "description": "이번 전투에서 쓰러진 지정 아군 한 명을 최대 체력의 30%로 되살린다. 체력의 소수점은 올린다.",
+      "artworkKey": "c1a06b51266f556ab6ae2673eed08a04"
+    },
+    {
+      "category": 7,
+      "name": "신성한 심판",
+      "description": "모든 적을 마법 피해 12로 공격한다. 명중한 적의 전투불능 방지와 불굴을 적용 직전에 해제한다.",
+      "artworkKey": "953420c20fb75b4db2d8fa27fa7ec3ba"
+    },
+    {
+      "category": 7,
+      "name": "천상의 은총",
+      "description": "생존 아군 모두의 체력을 각각 20 회복시키고, 이번 아군 턴 동안 공격력을 각각 2 높인다.",
+      "artworkKey": "bf4d747cf1c153188f7f0672731038bf"
+    },
+    {
+      "category": 7,
+      "name": "성배의 심판",
+      "description": "생존 아군 각자가 받는 치명적인 피해를 한 번 막아 체력 1로 생존하게 한다.",
+      "artworkKey": "92589918ba275fafbd045110244c4c5e"
+    },
+    {
+      "category": 7,
+      "name": "응급 처치",
+      "description": "지정한 생존 아군의 체력을 5 회복하고 출혈 상태를 하나 제거한다.",
+      "artworkKey": "3439e1bca0575548ac078818a46100ab"
+    },
+    {
+      "category": 7,
+      "name": "온기",
+      "description": "지정한 생존 아군의 화상을 제거하고 방어도 3을 부여한다.",
+      "artworkKey": "66bfee48f751568daf78cf18646534bd"
     }
   ]
 }

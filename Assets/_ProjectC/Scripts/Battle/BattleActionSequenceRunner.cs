@@ -20,14 +20,15 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
 
     public bool CanStartAction(
         BattleUnitView actorView,
-        IReadOnlyList<BattleUnitView> targetViews)
+        IReadOnlyList<BattleUnitView> targetViews, // 연출 대상 화면 목록
+        bool fallenTarget = false) // 부활 행동의 전투불능 대상 지정
     {
         return
             !IsBusy &&
             actorView != null &&
             actorView.RuntimeUnit != null &&
             !actorView.RuntimeUnit.IsDead &&
-            HasValidTarget(targetViews);
+            HasValidTarget(targetViews, fallenTarget); // 행동 종류에 맞는 대상 상태 확인
     }
 
     public bool TryStartPlayerAction(
@@ -38,7 +39,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         Action impactAction,
         Action completionAction)
     {
-        if (!CanStartAction(actorView, targetViews) ||
+        if (!CanStartAction(actorView, targetViews, effectType == CardEffectType.ReviveAlly) || // 부활 대상이 전투불능 상태인지 확인
             impactAction == null)
         {
             return false;
@@ -160,6 +161,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 effectType == CardEffectType.DrawThenDiscard || // 드로우 후 손패 정리 지원 연출
                 effectType == CardEffectType.ProtectAttackTarget || // 공격 예고 보호 지원 연출
                 effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
+                effectType == CardEffectType.ReviveAlly || // 전투불능 아군 부활 지원 연출
                 effectType == CardEffectType.Heal ||
                 effectType == CardEffectType.RemoveDebuffs ||
                 effectType == CardEffectType.RemoveOneDebuff || // 디버프 하나 해제 지원 연출
@@ -251,7 +253,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
     }
 
     private static bool HasValidTarget(
-        IReadOnlyList<BattleUnitView> targetViews)
+        IReadOnlyList<BattleUnitView> targetViews, // 확인할 대상 화면 목록
+        bool fallenTarget = false) // 전투불능 대상 필요 여부
     {
         if (targetViews == null ||
             targetViews.Count < 1)
@@ -263,9 +266,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
             BattleUnitView targetView
             in targetViews)
         {
-            if (targetView != null &&
-                targetView.RuntimeUnit != null &&
-                !targetView.RuntimeUnit.IsDead)
+            BattleUnitRuntime target = targetView == null ? null : targetView.RuntimeUnit; // 화면 연결 유닛 조회
+            if (target != null && (fallenTarget ? target.Team == BattleTeam.Ally && target.IsDead : !target.IsDead)) // 부활용 아군과 일반 행동의 생존 대상 구분
             {
                 return true;
             }

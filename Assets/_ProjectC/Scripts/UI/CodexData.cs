@@ -163,6 +163,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 수호자의 심장 도감 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 수호자의 심장의 실제 카드 기본 수치와 설명
                     } // 수호자의 심장 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.DefeatWard) // 성배의 전투불능 방지 상태 확인
+                    { // 전투불능 방지 상세 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
+                    } // 전투불능 방지 상세 종료
                     else if (effect == BattleStatusEffectType.Vulnerable) // 검은 왕관의 받는 피해 증가 확인
                     { // 취약 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 검은 왕관의 기본 취약 20퍼센트 설명

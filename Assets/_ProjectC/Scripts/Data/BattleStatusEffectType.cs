@@ -57,5 +57,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     EternalShield = 54, // 정해진 적 턴 동안 받는 직접 피해 경감
     EternalShieldResistance = 55, // 영원의 방패의 독립적인 받는 마법 피해 경감
     ReflectionCitadel = 56, // 실제 받은 피해를 해당 적 턴 종료에 한 번 반사
-    GuardianHeart = 57 // 아군이 쓰러지려 할 때 생존하는 치명 피해 대체
+    GuardianHeart = 57, // 아군이 쓰러지려 할 때 생존하는 치명 피해 대체
+    DefeatWard = 58 // 실제 전투불능이 될 피해를 한 번 막는 보호
 } // 열거형 종료

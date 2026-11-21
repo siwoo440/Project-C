@@ -32,6 +32,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 장화 횟수 연결 종료
         RegisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 등록
         RegisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 등록
+        foreach (BattleUnitRuntime ally in allyUnits) // 현재 전투 아군 순회
+        { // 부활 이벤트 등록 시작
+            if (ally != null) // 연결할 아군 확인
+            { // 유효 아군 등록 시작
+                ally.Revived += HandleAllyRevived; // 아군 부활 때 광역 예고 갱신 연결
+            } // 유효 아군 등록 종료
+        } // 부활 이벤트 등록 종료
     } // 생성자 종료
     public bool RegisterSummonedEnemy(BattleUnitRuntime enemyUnit) // 소환 적 행동 연결
     { // 소환 적 연결 시작
@@ -687,6 +694,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             StateChanged?.Invoke(); // 예정 행동 변경 알림
         } // 변경 알림 종료
     } // 아군 사망 처리 종료
+    private void HandleAllyRevived(BattleUnitRuntime ally) // 부활 이후 예정 공격 표시 갱신
+    { // 아군 부활 예고 처리 시작
+        if (plannedActions.Exists(action => action.IsAreaAttack && action.HitsTarget(ally))) // 부활 아군을 다시 포함하는 광역 공격 확인
+        { // 광역 예정 대상 갱신 시작
+            StateChanged?.Invoke(); // 공격 순서와 단일 지정 대상을 보존한 예고 갱신
+        } // 광역 예정 대상 갱신 종료
+    } // 아군 부활 예고 처리 종료
     private static void RegisterDeathEvents(IReadOnlyList<BattleUnitRuntime> units, Action<BattleUnitRuntime> handler) // 사망 이벤트 일괄 등록
     { // 이벤트 등록 시작
         foreach (BattleUnitRuntime runtimeUnit in units) // 유닛 목록 순회
@@ -732,6 +746,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 장화 횟수 해제 종료
         UnregisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 해제
         UnregisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 해제
+        foreach (BattleUnitRuntime ally in allyUnits) // 현재 전투 아군 순회
+        { // 부활 이벤트 해제 시작
+            if (ally != null) // 해제할 아군 확인
+            { // 유효 아군 해제 시작
+                ally.Revived -= HandleAllyRevived; // 현재 전투의 아군 부활 연결 해제
+            } // 유효 아군 해제 종료
+        } // 부활 이벤트 해제 종료
         SetShieldTaunter(null); // 종료한 전투의 도발자 연결 해제
         plannedActions.Clear(); // 예정 행동 목록 비우기
         bodyGuards.Clear(); // 전투에 남아 있는 대신 받기 보호 제거

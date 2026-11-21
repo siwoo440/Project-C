@@ -87,6 +87,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return "자신"; // 자신 문구 반환
             case CardTargetType.SingleAlly: // 단일 아군 대상
                 return "아군 1명"; // 단일 아군 문구 반환
+            case CardTargetType.FallenAlly: // 전투불능 아군 대상
+                return "전투불능 아군 1명"; // 부활 대상 문구 반환
             case CardTargetType.AllAllies: // 전체 아군 대상
                 return "모든 아군"; // 전체 아군 문구 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상
@@ -155,6 +157,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군의 부활 효과 확인
+        { // 부활 상세 문구 처리 시작
+            return $"최대 체력의 {cardInstance.SourceData.EffectValue}%로 부활 · 소수점 올림"; // 실제 부활 체력 계산 방식 표시
+        } // 부활 상세 문구 처리 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GuardianHeart) // 치명적인 적 직접 타격을 기다리는 보호 확인
         { // 수호자의 심장 상세 시작
             return "다른 아군 1명의 치명적인 적 직접 타격 1회 대신 받기 · 시전자 체력 최소 1"; // 지정 대상과 발동 조건 및 생존 한도 표시

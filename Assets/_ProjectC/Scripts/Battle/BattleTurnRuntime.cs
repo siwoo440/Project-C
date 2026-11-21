@@ -36,6 +36,29 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     public bool HasPendingBossPhaseTransition { get; private set; } // 보스 페이즈 전환 예약 여부
     public bool CanEscape => !disposed && (BattleType == BattleType.Normal || BattleType == BattleType.Elite) && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 일반과 정예 전투의 도주 가능 여부
+    private bool CanReviveInCurrentPhase => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 진행 중인 아군 턴의 부활 가능 여부
+    internal bool HasFallenAlly() // 손패 카드가 부활시킬 수 있는 아군 존재 확인
+    { // 전투불능 아군 검사 시작
+        if (CanReviveInCurrentPhase) // 이번 턴 부활 가능 여부 확인
+        { // 전투 참가 명단 검사 시작
+            foreach (BattleUnitRuntime ally in allyUnits) // 현재 전투 아군 순회
+            { // 개별 아군 검사 시작
+                if (ally?.Team == BattleTeam.Ally && ally.IsDead) // 현재 명단의 전투불능 아군 확인
+                { // 부활 후보 발견 시작
+                    return true; // 부활 가능 카드 표시
+                } // 부활 후보 발견 종료
+            } // 개별 아군 검사 종료
+        } // 전투 참가 명단 검사 종료
+        return false; // 현재 부활 가능한 대상 없음 반환
+    } // 전투불능 아군 검사 종료
+    internal bool CanReviveFallenAlly(BattleUnitRuntime ally) // 클릭과 드래그가 공유하는 실제 부활 조건
+    { // 대상 검증 시작
+        return CanReviveInCurrentPhase && ally?.Team == BattleTeam.Ally && ally.IsDead && ContainsUnit(allyUnits, ally); // 전투 단계와 현재 참가 명단의 사망 상태 확인
+    } // 대상 검증 종료
+    internal int TryReviveFallenAlly(BattleUnitRuntime ally, int healthPercent) // 기존 아군 런타임의 부활 처리
+    { // 부활 요청 처리 시작
+        return CanReviveFallenAlly(ally) ? ally.Revive(healthPercent) : 0; // 실제 충돌 시에도 같은 대상과 단계 재검사
+    } // 부활 요청 처리 종료
     public bool HasOtherLivingAlly(BattleUnitRuntime owner) // 본인 외 생존 아군 확인
     { // 생존 동료 확인 시작
         foreach (BattleUnitRuntime ally in allyUnits) // 아군 목록 순회
