@@ -22,6 +22,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
+    private BattleGroundShadow groundShadow; // 살아 있는 유닛의 석재 바닥 접지 그림자
     private Outline targetOutline; // 선택 가능 대상 윤곽선
     private Outline fallenTargetOutline; // 전투불능 표시에 붙는 부활 대상 윤곽선
     private bool isTargetable; // 현재 선택할 수 있는 유닛 여부
@@ -62,6 +63,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
+        if (portraitImage != null && portraitImage.sprite != null) // 실제 원화가 있는 캐릭터의 바닥 접점 준비
+        { // 그림자 연결 시작
+            groundShadow ??= gameObject.AddComponent<BattleGroundShadow>(); // 재연결에도 재사용할 접지 표시기
+            groundShadow.Bind(portraitImage, RuntimeUnit); // 현재 원화와 실제 생존 상태에 그림자 연결
+        } // 그림자 연결 종료
         EnsureMentalStateBacklight(); // 정신 상태 머리 역광 준비
         RefreshMentalStateBacklight(); // 초기 정신 상태 역광 반영
         RefreshHealth(); // 체력 표시 갱신
@@ -150,6 +156,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             mentalStateBacklight.gameObject.SetActive(false); // 연결 해제 시 역광 숨김
         } // 정신 상태 역광 숨김 종료
         RuntimeUnit = null; // 런타임 참조 제거
+        groundShadow?.Bind(null, null); // 교체된 유닛의 접지 그림자 해제
         statusTooltipHovered = false; // 이전 유닛 마우스 상태 초기화
         if (blockRoot != null) // 방어도 화면 존재 확인
         { // 방어도 화면 숨김 시작
@@ -390,6 +397,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             Sprite battleArt = RuntimeUnit.CharacterSource != null ? RuntimeUnit.CharacterSource.BattleIllustration : null; // 아군 전투 전용 그림 조회
             Sprite displayArt = battleArt != null ? battleArt : RuntimeUnit.Portrait; // 전용 그림 또는 기존 초상화 선택
             portraitImage.sprite = displayArt; // 유닛 그림 적용
+            portraitImage.type = Image.Type.Simple; // 원래 비율과 투명한 발 여백을 사용하는 원화 표시
             portraitImage.preserveAspect = displayArt != null; // 그림 원본 비율 유지
             portraitImage.enabled = true; // 초상화 또는 임시 표시 활성화
             Color placeholderColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 진영별 임시 초상화 색상 계산

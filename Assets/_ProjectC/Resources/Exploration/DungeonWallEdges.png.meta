@@ -1,0 +1,1339 @@
+fileFormatVersion: 2
+guid: d141936d0f10570a9cea95e71b678cb8
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -477401615033882804
+    second: DungeonWallEdges_00
+  - first:
+      213: 7663200853869527275
+    second: DungeonWallEdges_01
+  - first:
+      213: 8166513786731865306
+    second: DungeonWallEdges_02
+  - first:
+      213: 6510694111186474416
+    second: DungeonWallEdges_03
+  - first:
+      213: -7036915420657435057
+    second: DungeonWallEdges_04
+  - first:
+      213: -119927868311156455
+    second: DungeonWallEdges_05
+  - first:
+      213: -117947118785354735
+    second: DungeonWallEdges_06
+  - first:
+      213: 1608656319591248404
+    second: DungeonWallEdges_07
+  - first:
+      213: -6244000846184749305
+    second: DungeonWallEdges_08
+  - first:
+      213: 170430661871855094
+    second: DungeonWallEdges_09
+  - first:
+      213: -189545514106609653
+    second: DungeonWallEdges_10
+  - first:
+      213: -3939426453248015631
+    second: DungeonWallEdges_11
+  - first:
+      213: 6366247196872026263
+    second: DungeonWallEdges_12
+  - first:
+      213: -1558448790439681292
+    second: DungeonWallEdges_13
+  - first:
+      213: -4081363323274205849
+    second: DungeonWallEdges_14
+  - first:
+      213: 2908252375593142006
+    second: DungeonWallEdges_15
+  - first:
+      213: -8190549347916351956
+    second: DungeonWallEdges_16
+  - first:
+      213: 8525987305229078094
+    second: DungeonWallEdges_17
+  - first:
+      213: 4277390396020267453
+    second: DungeonWallEdges_18
+  - first:
+      213: -6891385276298775051
+    second: DungeonWallEdges_19
+  - first:
+      213: -2568432584364259263
+    second: DungeonWallEdges_20
+  - first:
+      213: -6820001973037251497
+    second: DungeonWallEdges_21
+  - first:
+      213: 387297563123101213
+    second: DungeonWallEdges_22
+  - first:
+      213: -5162165522810083503
+    second: DungeonWallEdges_23
+  - first:
+      213: 6006849170088898449
+    second: DungeonWallEdges_24
+  - first:
+      213: 6799445201642692225
+    second: DungeonWallEdges_25
+  - first:
+      213: 4708189763430563584
+    second: DungeonWallEdges_26
+  - first:
+      213: -5020135601239047670
+    second: DungeonWallEdges_27
+  - first:
+      213: -839071681512447118
+    second: DungeonWallEdges_28
+  - first:
+      213: 2257830313982079259
+    second: DungeonWallEdges_29
+  - first:
+      213: 5069187416606647795
+    second: DungeonWallEdges_30
+  - first:
+      213: -264824308365838262
+    second: DungeonWallEdges_31
+  - first:
+      213: 6727208023135191595
+    second: DungeonWallEdges_32
+  - first:
+      213: 6293001706614599346
+    second: DungeonWallEdges_33
+  - first:
+      213: 7519153614338413326
+    second: DungeonWallEdges_34
+  - first:
+      213: 7231112253856425192
+    second: DungeonWallEdges_35
+  - first:
+      213: -985477208864780655
+    second: DungeonWallEdges_36
+  - first:
+      213: -3002006713264846832
+    second: DungeonWallEdges_37
+  - first:
+      213: 4346797413254119489
+    second: DungeonWallEdges_38
+  - first:
+      213: 5574382498709609888
+    second: DungeonWallEdges_39
+  - first:
+      213: -4515420251356307377
+    second: DungeonWallEdges_40
+  - first:
+      213: -120869896754936690
+    second: DungeonWallEdges_41
+  - first:
+      213: 5283975081549665781
+    second: DungeonWallEdges_42
+  - first:
+      213: -6818574620856035272
+    second: DungeonWallEdges_43
+  - first:
+      213: 8670681532643934746
+    second: DungeonWallEdges_44
+  - first:
+      213: -8334744667761918647
+    second: DungeonWallEdges_45
+  - first:
+      213: -2999534970148777611
+    second: DungeonWallEdges_46
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 1024
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 120
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 0
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 1024
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: DungeonWallEdges_00
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c27b5b0c2ed5ff98df0595ccc44cd5e
+      internalID: -477401615033882804
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_01
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb005d419328596a9ba3b4184d459c8e
+      internalID: 7663200853869527275
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_02
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: daa47b5f05495571950ad0a3a959af24
+      internalID: 8166513786731865306
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_03
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0557f8acca15a5a90362e744606c0b4
+      internalID: 6510694111186474416
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_04
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fbe3e45b5da579e81a030e5120924be
+      internalID: -7036915420657435057
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_05
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 19c9a43a3dee55fe8df2d7c2d780126e
+      internalID: -119927868311156455
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_06
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11a4846ab8f75cfea3844e75652a6a4e
+      internalID: -117947118785354735
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_07
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 644
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1472ec4e66185316981a1646e5156a71
+      internalID: 1608656319591248404
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_08
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0767eb0150da58a99dda02936996fc1f
+      internalID: -6244000846184749305
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_09
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6e5b4b3c87d5d028b682d922015722c
+      internalID: 170430661871855094
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_10
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b20e8f25b995efd8500c60188490a72
+      internalID: -189545514106609653
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_11
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1026043835854c99f86407a4f53bec4
+      internalID: -3939426453248015631
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_12
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9728e281187459588195b5321af1285d
+      internalID: 6366247196872026263
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_13
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f4a2340515475feab75641ab1b5e5cc3
+      internalID: -1558448790439681292
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_14
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 67e5ee74ae155cc7a31ef9e12aa91ddd
+      internalID: -4081363323274205849
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_15
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 516
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6466a8420305c288d5e2f80b7371f83
+      internalID: 2908252375593142006
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_16
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c762372c352558ebe45372275740f08
+      internalID: -8190549347916351956
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_17
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e4eab0f48645276853b67c6efcdd262
+      internalID: 8525987305229078094
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_18
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd997410e7575c3bae3a9ab071cde5ef
+      internalID: 4277390396020267453
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_19
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5b5da739ae15ca09c723b7ccb623339
+      internalID: -6891385276298775051
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_20
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41086e332c185bdca7af68dcc6576d5d
+      internalID: -2568432584364259263
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_21
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57c4a6e5567c5aa1abd6a0d0015397b6
+      internalID: -6820001973037251497
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_22
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1dae53e814f55f05bd27e6ac16854043
+      internalID: 387297563123101213
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_23
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 388
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 51e722adce4d5cb8afc0b1686b0dff55
+      internalID: -5162165522810083503
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_24
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91af7f9a7e9d5c539783514c93374cbf
+      internalID: 6006849170088898449
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_25
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 819ea5c9627b5c5e8c63ed9368577696
+      internalID: 6799445201642692225
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_26
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00bf6810a5d95641baf5a969708e6ff1
+      internalID: 4708189763430563584
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_27
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ac2dabb44e554babe67e78088ced249
+      internalID: -5020135601239047670
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_28
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72635c52c0045bf4837b518dabec9582
+      internalID: -839071681512447118
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_29
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1bb10244b56c551f9401a04eb5a00a54
+      internalID: 2257830313982079259
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_30
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f325b802195f59468f2271a368d225a2
+      internalID: 5069187416606647795
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_31
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 260
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a38f7d3b12753fcbda0da1c7858261f
+      internalID: -264824308365838262
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_32
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b8221050ed85b5d97de7cd309f30778
+      internalID: 6727208023135191595
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_33
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b2aeb0ddb53b5557a389cdf7bc2a6cf0
+      internalID: 6293001706614599346
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_34
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e533cc25f665968917f163ff8d6a831
+      internalID: 7519153614338413326
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_35
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e824166648125a64ac62fa92b6b8d38e
+      internalID: 7231112253856425192
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_36
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 910e5f27b3e152f2928d442cf4c16141
+      internalID: -985477208864780655
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_37
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10c882b2ccba56d6b9a9a1fa40d14dff
+      internalID: -3002006713264846832
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_38
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4140998f37ed523ca91e1101fb000502
+      internalID: 4346797413254119489
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_39
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 132
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a09dbd25592f5c4da0fc3b0c9f8376a9
+      internalID: 5574382498709609888
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_40
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f604d82340156c1bb30b3cbf3aac688
+      internalID: -4515420251356307377
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_41
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e44e223789552fe9b194f8618f3fd40
+      internalID: -120869896754936690
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_42
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f595c84957735449aeb9e1b42576b311
+      internalID: 5283975081549665781
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_43
+      rect:
+        serializedVersion: 2
+        x: 388
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38d86139828e5fa1aee285776eed4fa3
+      internalID: -6818574620856035272
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_44
+      rect:
+        serializedVersion: 2
+        x: 516
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a02c829ea7254789c4193de9bb25d1f
+      internalID: 8670681532643934746
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_45
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 493d7850e209558cbb1d1ee6ab56bfad
+      internalID: -8334744667761918647
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DungeonWallEdges_46
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 4
+        width: 120
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7591eb3cd6825fd68f74dc4bc7d0233a
+      internalID: -2999534970148777611
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID:
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      DungeonWallEdges_00: -477401615033882804
+      DungeonWallEdges_01: 7663200853869527275
+      DungeonWallEdges_02: 8166513786731865306
+      DungeonWallEdges_03: 6510694111186474416
+      DungeonWallEdges_04: -7036915420657435057
+      DungeonWallEdges_05: -119927868311156455
+      DungeonWallEdges_06: -117947118785354735
+      DungeonWallEdges_07: 1608656319591248404
+      DungeonWallEdges_08: -6244000846184749305
+      DungeonWallEdges_09: 170430661871855094
+      DungeonWallEdges_10: -189545514106609653
+      DungeonWallEdges_11: -3939426453248015631
+      DungeonWallEdges_12: 6366247196872026263
+      DungeonWallEdges_13: -1558448790439681292
+      DungeonWallEdges_14: -4081363323274205849
+      DungeonWallEdges_15: 2908252375593142006
+      DungeonWallEdges_16: -8190549347916351956
+      DungeonWallEdges_17: 8525987305229078094
+      DungeonWallEdges_18: 4277390396020267453
+      DungeonWallEdges_19: -6891385276298775051
+      DungeonWallEdges_20: -2568432584364259263
+      DungeonWallEdges_21: -6820001973037251497
+      DungeonWallEdges_22: 387297563123101213
+      DungeonWallEdges_23: -5162165522810083503
+      DungeonWallEdges_24: 6006849170088898449
+      DungeonWallEdges_25: 6799445201642692225
+      DungeonWallEdges_26: 4708189763430563584
+      DungeonWallEdges_27: -5020135601239047670
+      DungeonWallEdges_28: -839071681512447118
+      DungeonWallEdges_29: 2257830313982079259
+      DungeonWallEdges_30: 5069187416606647795
+      DungeonWallEdges_31: -264824308365838262
+      DungeonWallEdges_32: 6727208023135191595
+      DungeonWallEdges_33: 6293001706614599346
+      DungeonWallEdges_34: 7519153614338413326
+      DungeonWallEdges_35: 7231112253856425192
+      DungeonWallEdges_36: -985477208864780655
+      DungeonWallEdges_37: -3002006713264846832
+      DungeonWallEdges_38: 4346797413254119489
+      DungeonWallEdges_39: 5574382498709609888
+      DungeonWallEdges_40: -4515420251356307377
+      DungeonWallEdges_41: -120869896754936690
+      DungeonWallEdges_42: 5283975081549665781
+      DungeonWallEdges_43: -6818574620856035272
+      DungeonWallEdges_44: 8670681532643934746
+      DungeonWallEdges_45: -8334744667761918647
+      DungeonWallEdges_46: -2999534970148777611
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

@@ -10,6 +10,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     internal bool HasCartAmbushSlot { get; set; } // 수레 매복에만 허용하는 추가 초기 출전 자리
     private const float BattlefieldUnitScale = 0.85f; // 배경 영역에 맞춘 전투 유닛 배율
     private const float BattlefieldVerticalOffset = -55f; // 배경 영역에 맞춘 전투 유닛 세로 이동
+    private const float BattleHudHeight = 0.42f; // 상단 전장과 하단 카드 배경의 기준 경계
     [Header("전투 데이터")] // 전투 데이터 구역
     [SerializeField] private BattleLoadoutData battleLoadout; // 출전 파티와 덱 데이터
     [SerializeField] private List<EnemyData> enemies = new List<EnemyData>(); // 출전 적 목록
@@ -72,37 +73,45 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
-        InstallBattleBackground(); // 캐릭터와 카드 뒤 석상 배경 배치
+        InstallBattleBackground(); // 상단 전장과 하단 손패 배경 배치
         InitializeBattle(); // 전투 전체 초기화
     } // 시작 처리 종료
 
-    private void InstallBattleBackground() // 전투 화면 석상 배경 준비
+    private void InstallBattleBackground() // 전투 화면의 위아래 배경 분리
     { // 전투 배경 준비 시작
         Canvas canvas = handView != null ? handView.GetComponentInParent<Canvas>() : null; // 실제 전투 캔버스 조회
-        Texture2D texture = Resources.Load<Texture2D>("UI/Battle/StatueBackground"); // 제작한 석상 배경 이미지 조회
-        if (canvas == null || texture == null) // 캔버스와 배경 원본 확인
+        if (canvas == null) // 배경을 그릴 실제 전투 캔버스 확인
         { // 배경 연결 불가 처리 시작
-            Debug.LogWarning("[Battle] 석상 배경을 표시할 수 없습니다."); // 배경 원본 누락 안내
-            return; // 배경 연결 중단
+            return; // 캔버스가 없는 씬에서 배경 생성 생략
         } // 배경 연결 불가 처리 종료
-        Transform existing = canvas.transform.Find("BattleStatueBackground"); // 기존 전투 배경 조회
-        if (existing != null) // 기존 배경 존재 확인
-        { // 중복 배경 방지 시작
-            existing.SetAsFirstSibling(); // 기존 배경을 화면 맨 뒤로 이동
-            return; // 중복 배경 생성 방지
-        } // 중복 배경 방지 종료
-        GameObject background = new GameObject("BattleStatueBackground", typeof(RectTransform), typeof(RawImage)); // 전투 배경 객체 생성
-        RectTransform rect = background.GetComponent<RectTransform>(); // 배경 화면 위치 조회
-        rect.SetParent(canvas.transform, false); // 전투 캔버스에 배경 연결
-        rect.SetAsFirstSibling(); // 캐릭터와 카드 뒤 배치
-        rect.anchorMin = Vector2.zero; // 화면 왼쪽 아래 고정
-        rect.anchorMax = Vector2.one; // 화면 오른쪽 위 고정
-        rect.offsetMin = Vector2.zero; // 화면 왼쪽 아래 여백 제거
-        rect.offsetMax = Vector2.zero; // 화면 오른쪽 위 여백 제거
-        RawImage image = background.GetComponent<RawImage>(); // 배경 이미지 구성 조회
-        image.texture = texture; // 석상 배경 이미지 연결
-        image.raycastTarget = false; // 카드와 버튼 입력 방해 방지
+        Texture2D stage = Resources.Load<Texture2D>("UI/Battle/SunkenVaultStage"); // 새 지하 전투 공간 원화 조회
+        Texture2D hud = Resources.Load<Texture2D>("UI/Battle/SunkenVaultHud"); // 손패와 행동력 뒤의 독립 흑색 원화 조회
+        InstallBackgroundLayer(canvas, "BattleHudBackground", hud, 0f, BattleHudHeight, new Rect(0f, 0f, 1f, 1f)); // 하단 HUD의 검은 배경 준비
+        Texture2D battleArt = stage != null ? stage : Resources.Load<Texture2D>("UI/Battle/StatueBackground"); // 배경 누락 시 기존 그림 사용
+        Rect stageCrop = new Rect(0f, 0.30f, 1f, 1f - BattleHudHeight); // 발 높이에 석재 발판을 맞춘 상단 원화 창
+        InstallBackgroundLayer(canvas, "BattleStageBackground", battleArt, BattleHudHeight, 1f, stageCrop); // 하단을 가리지 않는 실제 상단 전장 배경
     } // 전투 배경 준비 종료
+
+    private static void InstallBackgroundLayer(Canvas canvas, string objectName, Texture2D texture, float start, float end, Rect crop) // 하나의 전투 배경 레이어 생성 또는 갱신
+    { // 배경 레이어 배치 시작
+        var image = canvas.transform.Find(objectName)?.GetComponent<RawImage>(); // 기존에 설치된 같은 배경 재사용
+        if (image == null) // 처음 그리는 배경인지 확인
+        { // 배경을 담을 그림 생성 시작
+            var background = new GameObject(objectName, typeof(RectTransform), typeof(RawImage)); // 배경 그림 오브젝트
+            background.transform.SetParent(canvas.transform, false); // 전투 캔버스에 배경 설치
+            image = background.GetComponent<RawImage>(); // 배경에 쓸 전투 그림 컴포넌트
+        } // 배경을 담을 그림 생성 종료
+        RectTransform rect = image.rectTransform; // 배경 영역의 해상도 반응형 배치
+        rect.SetAsFirstSibling(); // 카드와 캐릭터 뒤쪽으로 배치
+        rect.anchorMin = new Vector2(0f, start); // 이 배경의 왼쪽 아래 영역
+        rect.anchorMax = new Vector2(1f, end); // 이 배경의 오른쪽 위 영역
+        rect.offsetMin = Vector2.zero; // 전체 폭과 영역을 빈틈없이 적용
+        rect.offsetMax = Vector2.zero; // 위쪽과 아래쪽 배경 사이 여백 제거
+        image.texture = texture; // 각 영역에 별도로 제작한 원화 적용
+        image.uvRect = crop; // 원화에서 실제로 사용하는 영역 선택
+        image.color = texture != null ? Color.white : Color.black; // 자산 로드 실패에도 필요한 어두운 바탕색
+        image.raycastTarget = false; // 카드·캐릭터 입력을 방해하지 않는 장식 배경
+    } // 배경 레이어 배치 종료
     public void InitializeBattle() // 전투 초기화
     { // 초기화 시작
         if (PartyLoadoutRuntime.Active != null) // 탐사 출발 편성 존재 확인
