@@ -85,7 +85,8 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
             BattleUnitRuntime boss = battle.EnemyUnits.Single(); // 등장한 보스 한 명 조회
             Assert.AreEqual("ENM_WF_ASHSTORM_CORE", boss.UnitId); // 실제 재폭풍의 심핵 식별자 확인
             Assert.AreEqual(BattleType.Boss, battle.BattleTurn.BattleType); // 보스전 등급 확인
-            Assert.AreEqual(ExplorationDifficultyCalculator.ScaleHealth(boss.EnemySource.MaxHealth, 5, BattleType.Boss), boss.CurrentHealth); // 실제 5층 보스 체력 확인
+            Assert.AreEqual(648, boss.MaxHealth); // 기존 5층 보스 체력 1295의 절반 올림 확인
+            Assert.AreEqual(648, boss.CurrentHealth); // 실제 5층 보스 시작 체력 확인
             CollectionAssert.AreEqual(PartyIds, battle.AllyUnits.Select(unit => unit.UnitId)); // 출전 네 명과 편성 순서 확인
             Assert.IsTrue(battle.AllyUnits.All(unit => unit.CurrentHealth == unit.MaxHealth)); // 사전 피해 없는 출전 조건 확인
             bool rewards = scenario == FirstBossScenario.WithRewards; // 실제 카드와 유물을 받은 회차 확인

@@ -409,7 +409,17 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 적 유닛 생성 종료
     private BattleUnitRuntime CreateEnemyUnit(EnemyData enemyData) // 적 런타임과 화면 생성
     { // 적 유닛 생성 시작
-        BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
+        int floor = ExplorationDifficultyCalculator.GetCurrentBattleFloor(); // 현재 조우가 열린 탐사 층
+        BattleType encounterType = ExplorationDifficultyCalculator.GetCurrentBattleType(); // 현재 탐사 조우 등급
+        int zoneLevel = ExplorationDifficultyCalculator.GetCurrentBattleZoneLevel(); // 출정에서 선택한 지역 난이도
+        int baseHealth = Mathf.Max(1, enemyData.MaxHealth); // 유효한 원본 최대 체력
+        int previousHealth = ExplorationDifficultyCalculator.ScaleHealth(baseHealth, floor, encounterType, zoneLevel); // 기존 층과 조우 등급 및 지역 레벨을 적용한 체력
+        int maximumHealth = previousHealth / 2 + previousHealth % 2; // 정수 범위를 지키는 절반 올림
+        BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemyWithHealth(enemyData, maximumHealth); // 첫 턴과 화면 등록 전 최종 체력으로 적 생성
+        if (previousHealth > baseHealth) // 기존 난이도에서 체력 증가가 발생한 경우
+        { // 기존 시작 정신력 보존 시작
+            runtimeUnit.ChangeMental(1, BattleMentalChangeReason.HealingReceived); // 난이도 초기화 때 얻던 정신력 한 점 유지
+        } // 기존 시작 정신력 보존 종료
         runtimeUnit.Died += HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 등록
         BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
         unitView.transform.localScale = Vector3.one * BattlefieldUnitScale; // 소환 적을 포함한 적 화면 배율 적용

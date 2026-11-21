@@ -102,13 +102,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 누락 처리 종료
         return new BattleUnitRuntime(characterData.CharacterId, characterData.DisplayName, BattleTeam.Ally, characterData.Portrait, characterData.MaxHealth, characterData.PhysicalDefense, characterData.MagicalResistance, characterData.InitialMental, characterData.AwakeningDamagePercent, characterData.AwakeningHealingPercent, characterData.CollapseDamagePercent, characterData.CollapseHealingPercent, characterData, null); // 아군 상태 반환
     } // 아군 생성 종료
-    public static BattleUnitRuntime CreateEnemy(EnemyData enemyData) // 적 런타임 생성
+    public static BattleUnitRuntime CreateEnemy(EnemyData enemyData) // 원본 수치로 적 런타임 생성
+    { // 원본 적 생성 시작
+        return CreateEnemyWithHealth(enemyData, null); // 기본 최대 체력으로 생성
+    } // 원본 적 생성 종료
+    internal static BattleUnitRuntime CreateEnemyWithHealth(EnemyData enemyData, int? maximumHealth) // 전투의 최종 최대 체력으로 적 런타임 생성
     { // 적 생성 시작
         if (enemyData == null) // 적 원본 누락 확인
         { // 누락 처리 시작
             throw new ArgumentNullException(nameof(enemyData)); // 잘못된 인수 예외
         } // 누락 처리 종료
-        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, enemyData.InitialMental, enemyData.AwakeningDamagePercent, enemyData.AwakeningHealingPercent, enemyData.CollapseDamagePercent, enemyData.CollapseHealingPercent, null, enemyData); // 적 상태 반환
+        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, maximumHealth ?? enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, enemyData.InitialMental, enemyData.AwakeningDamagePercent, enemyData.AwakeningHealingPercent, enemyData.CollapseDamagePercent, enemyData.CollapseHealingPercent, null, enemyData); // 적 상태 반환
     } // 적 생성 종료
     public bool ApplyPersistentHealth(int currentHealth) // Scene 간 저장 체력 적용
     { // 저장 체력 적용 시작

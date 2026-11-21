@@ -66,6 +66,9 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
         Assert.AreEqual(4, normalBattle.AllyUnits.Count); // 선택한 네 명 출전 확인
         foreach (BattleUnitRuntime enemy in new List<BattleUnitRuntime>(normalBattle.EnemyUnits)) // 일반 전투 적 순회
         { // 일반 전투 신속 진행 시작
+            int previousHealth = ExplorationDifficultyCalculator.ScaleHealth(enemy.EnemySource.MaxHealth, 1, normalBattle.BattleTurn.BattleType); // 실제 첫 조우의 기존 난이도 체력 계산
+            Assert.AreEqual(System.Math.Ceiling(previousHealth / 2d), enemy.MaxHealth); // 실제 첫 조우 적의 최대 체력 절반 올림 확인
+            Assert.AreEqual(enemy.MaxHealth, enemy.CurrentHealth); // 첫 조우 적의 시작 체력 확인
             enemy.TakeDamage(100000, BattleDamageType.None); // 검사용 일반 적 처치
         } // 일반 전투 신속 진행 종료
         yield return null; // 일반 전투 결과 표시 대기
@@ -103,9 +106,9 @@ public sealed class ExpeditionCompleteFlowTests // 거점부터 최종 귀환까
         BattleSceneSetup bossBattle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 실제 보스 전투 조회
         Assert.IsNotNull(bossBattle); // 보스 전투 존재 확인
         Assert.AreEqual("ENM_WF_ASHSTORM_CORE", bossBattle.EnemyUnits[0].EnemySource.EnemyId); // 실제 최종 보스 확인
-        yield return null; // 실제 층과 보스 배율 반영 대기
         EnemyData bossSource = bossBattle.EnemyUnits[0].EnemySource; // 보스 원본 수치 조회
-        Assert.AreEqual(ExplorationDifficultyCalculator.ScaleHealth(bossSource.MaxHealth, 10, BattleType.Boss), bossBattle.EnemyUnits[0].MaxHealth); // 실제 보스 체력의 층과 등급 배율 확인
+        Assert.AreEqual(910, bossBattle.EnemyUnits[0].MaxHealth); // 기존 10층 보스 체력 1820의 절반 확인
+        Assert.AreEqual(910, bossBattle.EnemyUnits[0].CurrentHealth); // 최종 보스의 시작 체력 확인
         Assert.AreEqual(ExplorationDifficultyCalculator.ScaleAttack(bossSource.GetActionPattern(0).ActionAmount, 10, BattleType.Boss), bossBattle.EnemyActionRuntime.FindAction(bossBattle.EnemyUnits[0]).Amount); // 실제 첫 예고 공격의 층과 등급 배율 확인
         CardData basicAttack = Resources.Load<CardData>("StarterCards/Attack"); // 비교용 기본 공격 카드 조회
         Assert.IsNotNull(basicAttack); // 비교 카드 존재 확인
