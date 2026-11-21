@@ -1135,6 +1135,54 @@
       "artworkKey": "d3ea2f549b9d5dee9c0d95e4b6837e1f"
     },
     {
+      "category": 3,
+      "name": "찢어진 초대장",
+      "description": "아군이 살아 있는 적에게 공포를 걸거나 갱신하면 해당 적의 회피율을 한 적 턴 동안 5%p 낮춘다.",
+      "artworkKey": "19f45236f97c5359b3797d9c682f5b77"
+    },
+    {
+      "category": 3,
+      "name": "녹슨 포크 장식",
+      "description": "아군이 적에게 확률로 부여하는 출혈의 발동 확률이 5%p 증가한다.",
+      "artworkKey": "2a98a7ac0ce2576c8bfa9d4d59f4a82a"
+    },
+    {
+      "category": 3,
+      "name": "흐린 거울못",
+      "description": "전투에서 아군이 적에게 처음으로 제거 가능한 약화를 받으면 20% 확률로 그 적에게 같은 약화를 부여한다.",
+      "artworkKey": "32de83fb6e04517aa396c98279349b4e"
+    },
+    {
+      "category": 3,
+      "name": "낡은 하인 장갑",
+      "description": "아군이 실제로 체력을 회복할 때마다 그 아군이 방어도 3을 얻는다.",
+      "artworkKey": "494287fae62c5cdca77cc317151d622b"
+    },
+    {
+      "category": 3,
+      "name": "고해실의 못",
+      "description": "실제 정신 피해를 받은 생존 적의 다음 유효한 아군 직접 카드 명중 피해를 3 높인다. 피해에 한 번 소모된다.",
+      "artworkKey": "01f611adba715e1d95dd3e78cbd91d91"
+    },
+    {
+      "category": 3,
+      "name": "검은 예배포",
+      "description": "성배 카드를 사용하여 정산하면 그 카드를 사용한 생존 아군이 방어도 4를 얻는다.",
+      "artworkKey": "9dfc206311675e88844b498285f058a4"
+    },
+    {
+      "category": 3,
+      "name": "피 묻은 초상 못",
+      "description": "표식이 걸린 생존 적이 출혈 피해를 받을 때 해당 피해가 2 증가한다.",
+      "artworkKey": "0ff5dfb51fc25b759d1c350ee120ab72"
+    },
+    {
+      "category": 3,
+      "name": "은제 식탁종",
+      "description": "적 소환이 완료되면 소환된 적을 포함한 생존 적 전체의 회피율을 두 적 턴 동안 5%p 낮춘다.",
+      "artworkKey": "6fa30b0a45df560a8a99685ffcc361c0"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

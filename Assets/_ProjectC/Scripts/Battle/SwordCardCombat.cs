@@ -184,11 +184,11 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             case SwordCardRule.Thrust: // 이십 퍼센트 출혈
             case SwordCardRule.KneeSlash: // 이십오 퍼센트 행동 취소
             case SwordCardRule.PommelStrike: // 십오 퍼센트 기절
-                if (target.IsDead || !supplyRelics.RollOptionalStatus(target, value)) // 생존과 유리 구슬을 반영한 상태 확률 확인
+                type = card.SourceData.SwordRule == SwordCardRule.Thrust ? BattleStatusEffectType.Bleed : card.SourceData.SwordRule == SwordCardRule.KneeSlash ? BattleStatusEffectType.Stagger : BattleStatusEffectType.Stun; // 실제 명중 후 적용할 출혈과 기존 행동 제어 분리
+                if (target.IsDead || !supplyRelics.RollOptionalStatus(target, value, type, card.OwnerUnit)) // 생존 대상과 실제 상태 종류 및 발생자를 포함한 확률 확인
                 { // 상태 미발동 시작
-                    return BattleStatusEffectType.None; // 추가 상태 없음
+                    return BattleStatusEffectType.None; // 추가 상태 없음 반환
                 } // 상태 미발동 종료
-                type = card.SourceData.SwordRule == SwordCardRule.Thrust ? BattleStatusEffectType.Bleed : card.SourceData.SwordRule == SwordCardRule.KneeSlash ? BattleStatusEffectType.Stagger : BattleStatusEffectType.Stun; // 확률에 당첨된 상태 선택
                 value = type == BattleStatusEffectType.Bleed ? 2 : 1; // 고정 출혈 피해 또는 한 번의 행동 제한
                 break; // 확률 상태 선택 완료
             case SwordCardRule.IntimidatingCharge: // 위협 돌진의 공포 확률

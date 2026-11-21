@@ -16,6 +16,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool openingPulseResolved; // 침식된 맥박줄의 첫 추첨 완료 여부
     private (BattleUnitRuntime Target, RelicData Relic) openingPulse; // 첫 실제 아군 턴에 부여할 맥박줄의 아군과 원본
     private int lastDustClockRound; // 어비스 먼지시계의 마지막 발동 아군 턴
+    private bool firstHostileDebuffReflectAttempted; // 이번 전투의 첫 적 약화 반사 확률 사용 여부
     private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
     private readonly List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)> openingFearedEnemies = new List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)>(); // 포스터가 새로 공포를 부여한 적과 상태
     private int openingSpecimenActionPoints; // 첫 아군 턴에 지급할 탐사 표본병 행동력
@@ -1148,6 +1149,42 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             RegisterUnitEvent(runtimeUnit); // 개별 유닛 사망 이벤트 등록
         } // 유닛 이벤트 등록 종료
     } // 이벤트 등록 종료
+    private void HandleRelicAppliedStatus(BattleUnitRuntime source, BattleUnitRuntime target, BattleStatusEffectType type, BattleStatusEffectApplyResult result) // 실제 적용 또는 갱신이 남은 전투 상태 유물 처리
+    { // 상태 적용 유물 정산 시작
+        if (disposed || IsBattleEnded || CurrentRound <= 0 || target == null || target.IsDead || result is not (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked)) // 활성 전투에서 남은 유효한 신규 또는 갱신 상태 확인
+        { // 무효 상태 신호 제외 시작
+            return; // 저항, 즉시 정화 및 전투 밖 상태의 발동 제외
+        } // 무효 상태 신호 제외 종료
+        if (type == BattleStatusEffectType.Fear && source?.Team == BattleTeam.Ally && target.Team == BattleTeam.Enemy && target.GetStatusEffect(type) is { IsExpired: false }) // 생존 적에게 남은 실제 아군 공포 확인
+        { // 초대장의 실제 회피 감소 처리 시작
+            var invitation = openingRelics?.FindEffect(RelicEffectType.FearGrantedEvasionLoss); // 현재 보유한 찢어진 초대장 조회
+            if (invitation != null) // 현재 전투에서 원본 효과를 사용할 수 있는지 확인
+            { // 초대장의 정상 약화 적용 시작
+                target.ApplyStatusEffect(BattleStatusEffectType.EvasionDown, invitation.EffectValue, invitation.StatusDuration, 1, source); // 한 적 턴의 회피 감소를 기존 면역과 상태 수명에 연결
+            } // 초대장의 정상 약화 적용 종료
+            return; // 같은 적 대상의 원래 공포 효과 처리 유지
+        } // 초대장의 실제 회피 감소 처리 종료
+        if (firstHostileDebuffReflectAttempted || target.Team != BattleTeam.Ally || source?.Team != BattleTeam.Enemy) // 공용 미사용 기회와 실제 적이 부여한 아군 약화 확인
+        { // 반사 대상이 아닌 상태 확인 시작
+            return; // 이미 시도했거나 적이 원인이 아닌 상태에서 확률 소모 제외
+        } // 반사 대상이 아닌 상태 확인 종료
+        var debuff = target.GetStatusEffect(type); // 이미 보정을 마친 실제 대상의 활성 약화 조회
+        if (!BattleUnitRuntime.IsRemovableActiveDebuff(debuff)) // 자연 제거 가능한 실제 기간제 약화 확인
+        { // 영구 상태 및 강화 제외 시작
+            return; // 반사할 수 없는 상태와 원본 상태가 없는 경우의 미사용
+        } // 영구 상태 및 강화 제외 종료
+        int chance = openingRelics?.FindEffect(RelicEffectType.ReflectFirstAllyDebuff)?.TriggerChancePercent ?? 0; // 현재 보유한 거울못의 원본 반사 확률
+        if (chance <= 0) // 실제로 발동할 수 있는 보유 유물 확인
+        { // 반사 유물 미보유 처리 시작
+            return; // 유물 없는 전투에서 사용 기록과 난수 유지
+        } // 반사 유물 미보유 처리 종료
+        firstHostileDebuffReflectAttempted = true; // 확률 실패와 반사 중의 다른 상태 사건보다 먼저 이번 전투의 시도 사용
+        if ((chance < 100 && UnityEngine.Random.Range(0, 100) >= chance) || source.IsDead || !registeredUnits.Contains(source)) // 확률 성공 뒤 실제로 살아 있는 원래 적 발생자 확인
+        { // 최초 시도의 실패 또는 대상 무효 처리 시작
+            return; // 다른 적 선택과 남은 전투의 재시도 생략
+        } // 최초 시도의 실패 또는 대상 무효 처리 종료
+        source.ApplyReflectedDebuff(debuff, target); // 실제 발생자에게만 기존 상태 부여 면역을 거친 정확한 복사 시도
+    } // 상태 적용 유물 정산 종료
     private void HandleAllyStealthEnded(BattleUnitRuntime ally) // 살아 있는 아군의 실제 은신 종료 정산
     { // 팔찌 피해 예약 확인 시작
         if (disposed || CurrentPhase is not (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn) || ally.IsDead) // 진행 중 전투의 생존 아군만 확인
@@ -1172,6 +1209,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 아군 은신 종료 연결 종료
         runtimeUnit.SeedRevivalSettled += HandleUnitDied; // 씨앗 부활 뒤 남은 생존 명단으로 승패 재판정 등록
         runtimeUnit.Defeated += HandleUnitDefeated; // 발생자와 대상을 포함한 처치 등록
+        runtimeUnit.StatusEffectResolved += HandleRelicAppliedStatus; // 양 진영에서 실제로 성공한 상태 부여 유물 처리 구독
         if (runtimeUnit.Team == BattleTeam.Ally) // 실제 아군의 손실과 부활 정산 연결 확인
         { // 아군 전투 유물 연결 시작
             runtimeUnit.AllyDefeatReady += HandleUnitDied; // 모든 사망 알림 뒤 아군 부활과 승패 정산
@@ -1201,6 +1239,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeUnit.StealthEnded -= HandleAllyStealthEnded; // 전투를 떠난 아군의 은신 종료 구독 해제
         runtimeUnit.SeedRevivalSettled -= HandleUnitDied; // 전투 밖으로 나간 유닛의 부활 판정 해제
         runtimeUnit.Defeated -= HandleUnitDefeated; // 회전 깃발의 처치 구독 해제
+        runtimeUnit.StatusEffectResolved -= HandleRelicAppliedStatus; // 전투를 떠난 개체의 상태 유물 구독 해제
         if (runtimeUnit.PreventIncomingMentalLoss == (Func<BattleMentalChangeReason, bool>)TryNullifyFirstMentalDamage) // 현재 전투가 연결한 보호인지 확인
         { // 공용 보호 연결 해제 시작
             runtimeUnit.PreventIncomingMentalLoss = null; // 전투를 떠난 아군의 공용 보호 해제

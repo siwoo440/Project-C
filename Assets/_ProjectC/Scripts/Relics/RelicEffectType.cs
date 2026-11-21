@@ -153,4 +153,12 @@ public enum RelicEffectType // 유물 효과 종류
     PermanentAttackPerEliteBoss, // 정예 및 보스 처치로 얻는 회차 영구 공격력
     FirstTurnBlindResistance, // 첫 적 턴까지 적의 실명 효과에 저항
     OpeningEnemyAttackReduction, // 조우 시작 무작위 적의 기간제 공격력 감소
+    FearGrantedEvasionLoss, // 적 공포 상태 부여 뒤 한 적 턴 회피 감소
+    BleedApplicationChanceBonus, // 아군의 확률형 출혈 부여에 퍼센트포인트 추가
+    ReflectFirstAllyDebuff, // 첫 아군 약화 받기에 같은 적에게 상태 반사 기회
+    ServantGloveHealBlock, // 실제 아군 회복 대상에 방어도 추가
+    ConfessionMentalDamageMark, // 실제 적 정신 피해 뒤 다음 유효 타격 증폭
+    ChapelClothChaliceBlock, // 성배 카드 사용 정산 뒤 사용자의 방어도 추가
+    PortraitNailMarkedBleedDamage, // 표식 상태인 적의 실제 출혈 피해 증가
+    DiningBellSummonEvasionLoss, // 새 소환 적을 포함한 생존 적 전체 회피 감소
 }

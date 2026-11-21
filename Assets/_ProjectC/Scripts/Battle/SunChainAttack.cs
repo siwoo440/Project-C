@@ -49,7 +49,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         { // 두 번째 공격 적용 시작
             damage = SwordCardCombat.RollCritical(card, target, damage, out _); // 독립적인 두 번째 적의 실제 약화를 포함한 치명타 계산
             damage = applyFlatTargetBonus?.Invoke(target, damage) ?? damage; // 이번 명중의 고정 가산량 적용
-            target.TakeDamage(damage, card.DamageType, card.OwnerUnit); // 다른 적의 방어도와 약점을 반영한 피해 적용
+            target.TakeDamage(damage, card.DamageType, card.OwnerUnit, alliedDirectAttack: true); // 추가 직접 명중의 표식과 방어도 및 약점 반영
         } // 두 번째 공격 적용 종료
         finally // 카드 피해 문맥 정리
         { // 피해 문맥 정리 시작

@@ -455,6 +455,17 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 연결 실패 복구 종료
         summonedEnemy.StatusEffectsChanged += HandleAllyStatusEffectsChanged; // 소환 적의 상태 변경 예고 갱신
         summonedEnemy.MentalChanged += HandleMentalIntentChanged; // 소환 적 정신 상태 예고 갱신 등록
+        var bell = BattleSupplyRelics.Find(RelicEffectType.DiningBellSummonEvasionLoss); // 모든 전투 연결을 끝낸 뒤 실제 식탁종 보유 확인
+        if (bell != null) // 소환 완료 보유 유물 확인
+        { // 기존 적과 소환된 적의 회피 약화 시작
+            foreach (var enemy in new List<BattleUnitRuntime>(enemyUnits)) // 소환된 적을 포함한 현재 전투 명단 복사
+            { // 개별 생존 적 확인 시작
+                if (enemy?.Team == BattleTeam.Enemy && !enemy.IsDead) // 실제 생존 적에게만 회피 약화 적용
+                { // 기존 상태 약화 적용 시작
+                    enemy.ApplyStatusEffect(bell.StatusEffectType, bell.EffectValue, bell.StatusDuration, bell.StatusMaximumStacks); // 상태 면역과 실제 적 턴 지속을 따르는 회피 감소
+                } // 기존 상태 약화 적용 종료
+            } // 개별 생존 적 확인 종료
+        } // 기존 적과 소환된 적의 회피 약화 종료
         Debug.Log($"[BattleSceneSetup] 적 소환 - {summonedEnemy.DisplayName} / 현재 생존 적 {CountLivingEnemies()}명 / 다음 행동 준비부터 참여", this); // 적 소환 결과 출력
         return true; // 적 소환 성공 반환
     } // 적 소환 종료

@@ -78,5 +78,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     StealthBreakDamageUp = 75, // 은신 종료 뒤 다음 직접 카드 명중 보정
     ManaConcentration = 76, // 다음 지팡이 피해 카드의 실제 피해 증가
     IncomingMagicDamageUp = 77, // 대상이 받는 실제 마법 피해 증가
-    EvasionDown = 78 // 적의 현재 회피율 감소
+    EvasionDown = 78, // 적의 현재 회피율 감소
+    ConfessionDamageMark = 79 // 실제 적 정신력 피해 이후 다음 명중의 표식
 } // 열거형 종료

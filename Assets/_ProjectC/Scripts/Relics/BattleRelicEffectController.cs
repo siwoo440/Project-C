@@ -166,7 +166,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
-        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive) // 체력 손실 및 실제 부활이 별도 정산되는 전용 유물 확인
+        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage) // 체력 손실과 부활 및 출혈 처리기가 적용하는 전용 유물 확인
         { // 공용 발동에서 전용 유물 제외 시작
             return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
         } // 공용 발동에서 전용 유물 제외 종료
@@ -182,6 +182,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 잘못된 정화 판정 종료
             endCleanseChecked = true; // 성공과 실패 모두 한 전투의 추첨 기회 기록
         } // 전투 종료 정화 판정 종료
+        if (relicData.EffectType is RelicEffectType.CleanseReceivedDebuff or RelicEffectType.FearGrantedEvasionLoss or RelicEffectType.BleedApplicationChanceBonus or RelicEffectType.ReflectFirstAllyDebuff) // 실제 상태 처리와 카드 확률에서 이미 별도 정산하는 유물 확인
+        { // 공용 상태 유물 중복 정산 차단 시작
+            return false; // 관련 없는 상태 이벤트와 별개 공용 추첨의 난수 소모 방지
+        } // 공용 상태 유물 중복 정산 차단 종료
         if (relicData.EffectType == RelicEffectType.SutureCorrosionHealing) // 전투 결과 생성 시 적용하는 전용 회복 유물
         { // 일반 실행 제외 시작
             return false; // 일반 유물 실행과 성공 로그 생략
@@ -238,8 +242,13 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicEffectType.BattleStartCleanseOne: // 향 주머니의 전투 시작 디버프 정화
             case RelicEffectType.BattleEndCleanseOne: // 손수건의 실제 종료 디버프 정화
                 return TryCleanseOneAllyStatus(); // 모든 생존 아군의 제거 가능한 일반 상태에서 한 개 추첨
+            case RelicEffectType.ConfessionMentalDamageMark: // 실제 적 정신력 손실의 일회 피해 표식
+                var mark = context.TargetUnit.ApplyStatusEffect(BattleStatusEffectType.ConfessionDamageMark, relic.EffectValue, 1, 1, context.SourceUnit); // 일반 약화 면역에 따르는 턴 독립 표식 한 개 부여
+                return mark is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked; // 실제 부여 결과만 발동으로 기록
             case RelicEffectType.MagicalHitMentalLoss: // 실제 유효 마법 피해의 검은 별가루 확률 성공
                 return context.TargetUnit.ChangeMental(-relic.EffectValue, BattleMentalChangeReason.RelicEffect).WasApplied; // 실제 적 정신력의 음수 효과와 정상 하한 적용
+            case RelicEffectType.ServantGloveHealBlock: // 체력을 실제 회복한 아군의 방어도
+                return context.TargetUnit.GainBlock(relic.EffectValue) > 0; // 적용된 실제 회복 대상에게 보유 유물 방어도 지급
             case RelicEffectType.HealthDamageBlock: // 파열된 방울의 실제 체력 피해 반응
                 var injured = context?.TargetUnit; // 방어도를 받을 실제 피격 아군
                 return injured != null && injured.Team == BattleTeam.Ally && !injured.IsDead && context.AppliedAmount > 0 && injured.GainBlock(relic.EffectValue) > 0; // 생존자에게 방어도를 지급한 경우만 전투 횟수 소모
@@ -554,6 +563,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 공용 상태와 정신력 시점 검사 시작
         switch (effect) // 데이터의 유물 효과별 실제 발동 조건 선택
         { // 세 신규 공용 신호 유물 분기 시작
+            case RelicEffectType.ServantGloveHealBlock: // 실제 회복의 유효 대상 확인
+                return context is { EventType: BattleEventType.HealingApplied, AppliedAmount: > 0, TargetUnit: { Team: BattleTeam.Ally, IsDead: false } }; // 양수 회복을 실제로 받은 생존 아군만 발동 허용
             case RelicEffectType.ActionPreventingStatusDraw: // 어비스 밀랍인장의 실제 적 행동 제어 확인
                 return IsEnemyDebuffApplication(context) && context.SourceUnit?.Team == BattleTeam.Ally && context.StatusEffectType is BattleStatusEffectType.Stun or BattleStatusEffectType.Stagger; // 아군이 성공시킨 기절과 경직으로 제한
             case RelicEffectType.FifthEnemyDebuffHeal: // 공허의 잔뿌리의 실제 약화 횟수 확인
@@ -563,6 +574,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 } // 횟수 미변경 처리 종료
                 enemyDebuffApplications = (enemyDebuffApplications + 1) % DebuffApplicationsPerHealing; // 전투 내 적 약화의 다섯 회마다 주기 초기화
                 return enemyDebuffApplications == 0; // 다섯 번째 실제 적용 때에만 전체 회복 기회
+            case RelicEffectType.ConfessionMentalDamageMark: // 고해실의 못을 발동시킨 실제 전투 정신력 손실 확인
+                return context is { EventType: BattleEventType.MentalChanged, Phase: BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn } && // 진행 중인 실제 진영의 정신력 변화
+                    context.SourceUnit is { Team: BattleTeam.Ally, IsDead: false } && context.TargetUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 정신력 비용이나 발생자가 없는 지속 피해 제외
+                    context.MentalResult is { AppliedDelta: < 0, Reason: BattleMentalChangeReason.CardEffect or BattleMentalChangeReason.ReceiveDamage } && // 아군 명시 카드 효과와 실피격으로 실제 감소한 정신력
+                    context.TargetUnit.GetStatusEffect(BattleStatusEffectType.ConfessionDamageMark) is not { IsExpired: false }; // 기존 표식을 중복 부여하거나 갱신하지 않는 확인
             case RelicEffectType.EnemyMentalLossActionPoint: // 침식 방울목걸이의 명시적 적 정신력 피해 확인
                 return context?.Phase == BattleTurnPhase.PlayerTurn && context.SourceUnit?.Team == BattleTeam.Ally && context.TargetUnit?.Team == BattleTeam.Enemy && // 동료의 적 대상 실제 아군 턴 원인 확인
                     context.MentalResult is { AppliedDelta: < 0, Reason: BattleMentalChangeReason.CardEffect or BattleMentalChangeReason.DisruptReceived } && // 단순 피격과 턴 유지 등 자동 정신력 변화 제외

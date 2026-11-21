@@ -76,8 +76,25 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
             card.SourceData.SwordRule is not (SwordCardRule.BladeWhirlwind or SwordCardRule.HorizontalSlash or SwordCardRule.SwordDance or SwordCardRule.LastBreakthrough); // 인접 공격과 추가 공격 및 범위 연타 제외
     } // 단일 공격 분류 종료
 
-    internal bool RollOptionalStatus(BattleUnitRuntime target, int chance) // 명중 후 0회 또는 1회 적용되는 약화 굴림
+    internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null) // 실제 상태 종류와 출처를 포함한 명중 후 약화 굴림
     { // 명중 후 효과 굴림 시작
+        if (type == BattleStatusEffectType.Bleed && source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy) // 실제 아군이 적에게 시도한 확률형 출혈 확인
+        { // 녹슨 포크 장식의 출혈 확률 처리 시작
+            if (target.IsDead || chance <= 0) // 생존 적과 실제 선택 출혈 확률 여부 확인
+            { // 무효 출혈 처리 시작
+                return false; // 무효 상태에 유물 및 난수 사용 제외
+            } // 무효 출혈 처리 종료
+            if (target.HasStatusImmunity) // 정상 상태 부여의 출혈 면역 확인
+            { // 원래 면역 결과 처리 시작
+                return true; // 확률을 소비하지 않고 원래 상태 부여에서 면역 결과 반환
+            } // 원래 면역 결과 처리 종료
+            int bonus = Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0; // 원본에 더할 현재 포크 장식의 오 퍼센트포인트 조회
+            chance = (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 기존 확률의 수치와 원본 보정을 합친 정수 범위 확인
+            if (chance == 100) // 기존 확률과 유물 보정으로 완전히 보장된 출혈 확인
+            { // 확정 출혈 처리 시작
+                return true; // 다른 확률 유물과 무작위 없이 확정 적용 반환
+            } // 확정 출혈 처리 종료
+        } // 녹슨 포크 장식의 출혈 확률 처리 종료
         if (!usedGlassMarble && chance > 0 && chance < 100 && !target.HasStatusImmunity && Find(RelicEffectType.GuaranteeOptionalCardEffect) != null) // 발동 가능한 확률 효과와 전투 최초 유물 확인
         { // 유리 구슬 발동 시작
             usedGlassMarble = true; // 같은 전투의 두 번째 보정 차단
