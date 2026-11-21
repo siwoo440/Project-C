@@ -1231,6 +1231,54 @@
       "artworkKey": "c747f8b2fe01595bab22ad902f980129"
     },
     {
+      "category": 3,
+      "name": "서고 먼지갈피",
+      "description": "첫 아군 턴에 드로우 더미 맨 위 세 장까지 확인한다. 그중 한 장을 골라 손패에 넣고 나머지 순서를 보존한다.",
+      "artworkKey": "2edf30df01d65b3bad712c1ccb30f2b0"
+    },
+    {
+      "category": 3,
+      "name": "거울 뒤의 웃음",
+      "description": "적이 살아 있는 아군에게 제거 가능한 약화를 걸면 40% 확률로 그 적에게 같은 약화를 돌려준다.",
+      "artworkKey": "e2a6b27276f1593aa02d64ab819bb977"
+    },
+    {
+      "category": 3,
+      "name": "영주의 봉랍",
+      "description": "일반 또는 정예 전투가 시작되면 생존 적 전체의 공격력을 두 적 턴 동안 2 낮춘다.",
+      "artworkKey": "e1ff52168326510eadaac99a7e48bb54"
+    },
+    {
+      "category": 3,
+      "name": "만찬장의 기름등",
+      "description": "아군의 네 번째 턴마다 30% 확률을 한 번 판정한다. 성공하면 생존 적 전체에 중독 2를 두 적 턴 동안 부여한다.",
+      "artworkKey": "e72befd051f95cf587caa0cac718337d"
+    },
+    {
+      "category": 3,
+      "name": "검은 식기함",
+      "description": "생존 적 전체의 활성 출혈 중첩 합이 3 이상이면 아군 턴에 한 번 카드 한 장을 뽑는다.",
+      "artworkKey": "5a9479e6f7b358fc9cad902f7cef466b"
+    },
+    {
+      "category": 3,
+      "name": "파손된 오페라 가면",
+      "description": "공포 상태인 적을 처치하면 다른 생존 적 전체의 정신력이 4 감소한다.",
+      "artworkKey": "f0b5ac512f5053b8b1a574d02302b8fa"
+    },
+    {
+      "category": 3,
+      "name": "낡은 종복 계약서",
+      "description": "전투 시작에 첫 생존 아군에게 종복의 표식을 부여한다. 그 아군은 표식이 남는 두 아군 턴 동안 공격력이 5 증가한다.",
+      "artworkKey": "81656424b006568094454719332cb7f3"
+    },
+    {
+      "category": 3,
+      "name": "서늘한 창문못",
+      "description": "실명 상태인 적의 직접 명중으로 아군이 받는 피해가 10% 감소한다.",
+      "artworkKey": "73c62bad882c5aeb98635ca0cb1ff4d0"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

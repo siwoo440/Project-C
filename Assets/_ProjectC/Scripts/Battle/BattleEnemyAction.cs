@@ -55,8 +55,12 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         get // 동일한 공격 약화와 왕관못의 전투 등급 반영
         { // 현재 적 공격력 계산 시작
             int damage = (int)Math.Max(0L, (long)Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty - FearAttackPenalty); // 기존 정신 상태와 매 타격 공격 약화 계산
-            bool crownPenalty = damage > 0 && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && encounterType == BattleType.Normal && BattleSupplyRelics.Find(RelicEffectType.CrownNailBossDamage) != null; // 일반 조우 적 직접 공격과 보유 왕관못 확인
-            return crownPenalty ? BattleUnitRuntime.ApplyPercentage(damage, 10) : damage; // 방어와 분담 이전 동일 원본에 한 번만 십 퍼센트 가산
+            bool directEnemyAttack = damage > 0 && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack; // 현재 양수인 적의 직접 공격 여부
+            bool crownPenalty = directEnemyAttack && encounterType == BattleType.Normal && BattleSupplyRelics.Find(RelicEffectType.CrownNailBossDamage) != null; // 일반 조우에서만 보유 왕관못 확인
+            damage = crownPenalty ? BattleUnitRuntime.ApplyPercentage(damage, 10) : damage; // 원래 조우 효과를 공통 방어 전 수치에 먼저 적용
+            int blindReduction = directEnemyAttack && IntendedTarget?.Team == BattleTeam.Ally && Actor.GetStatusEffect(BattleStatusEffectType.Blind) is { IsExpired: false } // 자기 대상이나 단순 상태 행동을 제외한 실제 실명 적의 아군 직접 타격
+                ? BattleSupplyRelics.Find(RelicEffectType.ColdWindowBlindEnemyProtection)?.EffectValue ?? 0 : 0; // 보유한 차가운 창문의 원본 피해 감소율
+            return blindReduction > 0 ? BattleUnitRuntime.ApplyPercentage(damage, -Math.Min(100, blindReduction)) : damage; // 명중한 실제 타격과 예고에 동일한 방어 전 보호 계산
         } // 현재 적 공격력 계산 종료
     } // 적 공격 피해 조회 종료
 

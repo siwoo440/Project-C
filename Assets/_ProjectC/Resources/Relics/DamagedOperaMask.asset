@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: DamagedOperaMask
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_DAMAGED_OPERA_MASK
+  displayName: 파손된 오페라 가면
+  description: "공포 상태인 적을 처치하면 다른 생존 적 전체의 정신력이 4 감소한다."
+  icon: {fileID: 21300000, guid: f0b5ac512f5053b8b1a574d02302b8fa, type: 3}
+  rarity: 0
+  triggerType: 10
+  effectType: 174
+  targetType: 4
+  triggerChancePercent: 100
+  effectValue: 4
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 30
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

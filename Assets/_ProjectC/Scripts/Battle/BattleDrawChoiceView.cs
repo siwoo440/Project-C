@@ -6,6 +6,7 @@ using UnityEngine.UI; // 버튼과 이미지 사용
 public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로우 화면
 { // 선택 화면 시작
     private const int CardsPerPage = 2; // 페이지당 후보 카드 수
+    private const int ChoiceSortingOrder = 480; // 전투 레벨 표시와 유닛 안내 위의 선택창 순서
     private readonly List<GameObject> choiceObjects = new List<GameObject>(); // 후보 버튼 목록
     private Button previousButton; // 이전 페이지 버튼
     private Button nextButton; // 다음 페이지 버튼
@@ -13,13 +14,16 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
     private int currentPage; // 현재 페이지 번호
     public static BattleDrawChoiceView Show(Transform parent, IReadOnlyList<CardInstance> cards, Action<CardInstance> selected, string titleText = "가져올 카드 한 장 선택", Action cancelled = null) // 닫고 되돌아갈 수 있는 선택 화면 생성
     { // 화면 생성 시작
-        GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Image)); // 화면 가림막 생성
+        GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(Image)); // 별도 그리기와 입력을 갖는 화면 가림막 생성
         RectTransform rootRect = root.GetComponent<RectTransform>(); // 가림막 영역 조회
         rootRect.SetParent(parent, false); // 전투 화면에 연결
         rootRect.anchorMin = Vector2.zero; // 가림막 시작점 설정
         rootRect.anchorMax = Vector2.one; // 가림막 끝점 설정
         rootRect.offsetMin = Vector2.zero; // 가림막 시작 여백 제거
         rootRect.offsetMax = Vector2.zero; // 가림막 끝 여백 제거
+        Canvas choiceCanvas = root.GetComponent<Canvas>(); // 카드 선택을 그리는 독립 캔버스
+        choiceCanvas.overrideSorting = true; // 아래 전투 화면의 계층과 독립된 순서 사용
+        choiceCanvas.sortingOrder = ChoiceSortingOrder; // 설명을 가리지 않는 레벨 표시 위 배치
         root.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.82f); // 가림막 색상 설정
         BattleDrawChoiceView view = root.AddComponent<BattleDrawChoiceView>(); // 선택 화면 컴포넌트 추가
         TMP_Text title = CreateText("Title", rootRect, titleText, 26f); // 선택 화면 제목 생성

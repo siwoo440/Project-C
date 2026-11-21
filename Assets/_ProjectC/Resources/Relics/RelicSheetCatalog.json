@@ -1939,7 +1939,7 @@
     {
       "sourceRow": 178,
       "name": "서고 먼지갈피",
-      "description": "전투 시작 시 덱 맨 위 카드 3장 중 1장 선택",
+      "description": "첫 아군 턴에 드로우 더미 맨 위 세 장까지 확인한다. 그중 한 장을 골라 손패에 넣고 나머지 순서를 보존한다.",
       "buyMin": 306,
       "buyMax": 342,
       "buyVariance": 36,
@@ -1950,7 +1950,7 @@
     {
       "sourceRow": 179,
       "name": "거울 뒤의 웃음",
-      "description": "적이 아군에게 약화를 부여하면 40% 확률로 같은 약화 반사",
+      "description": "적이 살아 있는 아군에게 제거 가능한 약화를 걸면 40% 확률로 그 적에게 같은 약화를 돌려준다.",
       "buyMin": 323,
       "buyMax": 366,
       "buyVariance": 43,
@@ -1961,7 +1961,7 @@
     {
       "sourceRow": 180,
       "name": "영주의 봉랍",
-      "description": "정예 이하 적 전투 시작 공격력 -2 (2턴)",
+      "description": "일반 또는 정예 전투가 시작되면 생존 적 전체의 공격력을 두 적 턴 동안 2 낮춘다.",
       "buyMin": 190,
       "buyMax": 226,
       "buyVariance": 36,
@@ -1972,7 +1972,7 @@
     {
       "sourceRow": 181,
       "name": "만찬장의 기름등",
-      "description": "4턴마다 적 전체 중독(2턴) 30%",
+      "description": "아군의 네 번째 턴마다 30% 확률을 한 번 판정한다. 성공하면 생존 적 전체에 중독 2를 두 적 턴 동안 부여한다.",
       "buyMin": 207,
       "buyMax": 250,
       "buyVariance": 43,
@@ -1983,7 +1983,7 @@
     {
       "sourceRow": 182,
       "name": "검은 식기함",
-      "description": "적 전체에게 출혈이 3개 이상이면 카드 1장 드로우",
+      "description": "생존 적 전체의 활성 출혈 중첩 합이 3 이상이면 아군 턴에 한 번 카드 한 장을 뽑는다.",
       "buyMin": 224,
       "buyMax": 260,
       "buyVariance": 36,
@@ -1994,7 +1994,7 @@
     {
       "sourceRow": 183,
       "name": "파손된 오페라 가면",
-      "description": "공포 상태 적 처치 시 적 전체 정신력 -4",
+      "description": "공포 상태인 적을 처치하면 다른 생존 적 전체의 정신력이 4 감소한다.",
       "buyMin": 241,
       "buyMax": 284,
       "buyVariance": 43,
@@ -2005,7 +2005,7 @@
     {
       "sourceRow": 184,
       "name": "낡은 종복 계약서",
-      "description": "전투 시작 시 아군 1명 표식(2턴), 그 아군 공격력 +5",
+      "description": "전투 시작에 첫 생존 아군에게 종복의 표식을 부여한다. 그 아군은 표식이 남는 두 아군 턴 동안 공격력이 5 증가한다.",
       "buyMin": 258,
       "buyMax": 294,
       "buyVariance": 36,
@@ -2016,7 +2016,7 @@
     {
       "sourceRow": 185,
       "name": "서늘한 창문못",
-      "description": "실명 상태 적에게 받는 피해 -10%",
+      "description": "실명 상태인 적의 직접 명중으로 아군이 받는 피해가 10% 감소한다.",
       "buyMin": 275,
       "buyMax": 318,
       "buyVariance": 43,
