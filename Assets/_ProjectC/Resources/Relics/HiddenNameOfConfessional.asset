@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: HiddenNameOfConfessional
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_HIDDEN_NAME_OF_CONFESSIONAL
+  displayName: 고해실의 숨은 이름
+  description: "전투 시작에 생존 아군 전원이 각자 처음 받는 치명 피해를 체력 1로 한 번 버틸 수 있게 한다."
+  icon: {fileID: 21300000, guid: 4bec028eaaa65b2ebb821f6689256288, type: 3}
+  rarity: 0
+  triggerType: 34
+  effectType: 183
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 58
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

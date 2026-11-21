@@ -3277,4 +3277,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: f37d8b8ea6c95c0e816da2f0c09dcd74, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_COLLAPSED_THRONE_SCREW
+    offerType: 1
+    price: 310
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 598d61c032c4559486507c4b2aace625, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RED_EYE_IN_PORTRAIT
+    offerType: 1
+    price: 331
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 50eae957c2c45b7dbd8d985f53ee9ed4, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LORDS_FINAL_ORDER
+    offerType: 1
+    price: 344
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: a0c2ef2145fd590893db0a5133a4b0d8, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_CROWN_OF_MIRROR_DUKE
+    offerType: 1
+    price: 215
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: e75966a41d5258ad963addc254518f12, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BANQUET_HEART_ROOT
+    offerType: 1
+    price: 228
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 9555c3f18b1451e3a614ddffc160d94c, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_CHANDELIER_CORE
+    offerType: 1
+    price: 249
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: b7af3ca2d15952f885d555e258122fc5, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_HIDDEN_NAME_OF_CONFESSIONAL
+    offerType: 1
+    price: 262
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 48062042949f5b8fb935f789c0f72ade, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LAST_BEAT_OF_BALLROOM
+    offerType: 1
+    price: 283
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: f4ac41ce7c8d50e9942b930f4486356e, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

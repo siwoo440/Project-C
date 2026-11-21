@@ -1279,6 +1279,54 @@
       "artworkKey": "73c62bad882c5aeb98635ca0cb1ff4d0"
     },
     {
+      "category": 3,
+      "name": "붕괴 왕좌의 나사",
+      "description": "보스전의 첫 실제 아군 턴에 최대 행동력과 현재 행동력을 각각 2 높인다.",
+      "artworkKey": "224d15438da550a9a994306db129463d"
+    },
+    {
+      "category": 3,
+      "name": "초상화 속 붉은 눈",
+      "description": "전투 시작에 35% 확률로 생존 적 전체에게 한 적 턴 동안 공포를 부여한다.",
+      "artworkKey": "89ae6e383b27529ea39c473c4ce3813d"
+    },
+    {
+      "category": 3,
+      "name": "영주의 마지막 명령서",
+      "description": "생존 아군 전체의 공격력이 첫 두 아군 턴 동안 3 증가한다. 이어지는 적 턴에는 생존 아군 전체의 물리 방어력이 2 감소한다.",
+      "artworkKey": "120983a13b99516cb3af661fdb3e65f3"
+    },
+    {
+      "category": 3,
+      "name": "거울 공작의 깨진 왕관",
+      "description": "생존 아군이 적에게 제거 가능한 약화를 받으면 50% 확률로 같은 약화를 발생시킨 적에게 돌려준다.",
+      "artworkKey": "609b758ab98f5820b87a9fd3b42b3926"
+    },
+    {
+      "category": 3,
+      "name": "만찬 심장의 잔뿌리",
+      "description": "아군 턴 시작에 중독된 생존 적 한 명당 생존 아군 전원의 체력이 2 회복된다.",
+      "artworkKey": "225a4629b256591384dd694c0589e116"
+    },
+    {
+      "category": 3,
+      "name": "검은 샹들리에 핵",
+      "description": "세 번째 아군 턴마다 생존 적 전체에게 일반 피해 10을 주고 그 아군 턴 동안 생존 아군 전체의 명중률을 5%p 낮춘다.",
+      "artworkKey": "78e96e3c32fb5dac93778c43c5734ce2"
+    },
+    {
+      "category": 3,
+      "name": "고해실의 숨은 이름",
+      "description": "전투 시작에 생존 아군 전원이 각자 처음 받는 치명 피해를 체력 1로 한 번 버틸 수 있게 한다.",
+      "artworkKey": "4bec028eaaa65b2ebb821f6689256288"
+    },
+    {
+      "category": 3,
+      "name": "무도회의 마지막 박자",
+      "description": "같은 적 턴에 아군이 두 번째 실제 회피를 하면 생존 적 전체에게 일반 피해 12를 준다. 적 턴마다 한 번 발동한다.",
+      "artworkKey": "463e42e5c06056ef9f865e01044588de"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

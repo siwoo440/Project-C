@@ -84,5 +84,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     DanceShoeDamageUp = 81, // 실제 회피 뒤 다음 직접 공격의 피해 증가
     WandOverload = 82, // 이번 턴 시전자의 실제 지팡이 마법 공격 피해 증가
     IllusionHitReduction = 83, // 다음 유효 적 직접 공격의 한 번 피해 감소
-    ServantContractMark = 84 // 전투 시작 한 아군의 계약에 따른 공격력 증가
+    ServantContractMark = 84, // 전투 시작 한 아군의 계약에 따른 공격력 증가
+    LordFinalOrderAttack = 85, // 처음 두 아군 턴의 명령서 공격력 증가
+    LordFinalOrderWeakenedDefense = 86 // 뒤이어 오는 적 턴의 물리 방어 감소
 } // 열거형 종료

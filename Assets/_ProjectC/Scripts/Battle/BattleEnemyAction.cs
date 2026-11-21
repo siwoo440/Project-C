@@ -365,6 +365,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 { // 개별 광역 타격 시작
                     BattleEnemyActionResult hit = ExecuteHit(target, attackDamage, preventHealthDamage, reduceHealthDamage, null, out BattleUnitRuntime recipient); // 명중 뒤 수호 전환을 포함한 광역 개별 결과
                     areaHitResults.Add((recipient, hit)); // 실제로 피해와 후속 효과를 받은 아군 기록
+                    if (hit.WasMissed && Actor.IsDead) // 실제 회피 반응으로 쓰러진 광역 공격자 확인
+                    { // 남은 공격 중단 시작
+                        break; // 쓰러진 적의 같은 행동에서 남은 아군 공격 중단
+                    } // 남은 공격 중단 종료
                 } // 개별 광역 타격 종료
             } // 광역 대상 확인 종료
             return areaHitResults.Count > 0 ? areaHitResults[0].Result : BattleEnemyActionResult.Empty(ActionType, DamageType); // 기존 호출용 대표 광역 결과
@@ -382,7 +386,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             int roll = rollPercent(); // 빗나감과 회피 판단에서 공유하는 원래 한 번의 난수
             if (!BattleHitChance.Hits(Actor, roll, attackTarget)) // 기존 회피와 적 명중 약화가 반영된 실제 빗나감 확인
             { // 실제 공격 빗나감 시작
-                ApplyDanceShoeEvade(attackTarget, attackDamage, roll); // 적 자체 실패와 아군의 실제 회피 구분
+                if (attackDamage > 0 && Actor.Team == BattleTeam.Enemy && attackTarget.Team == BattleTeam.Ally && !attackTarget.IsDead && BattleHitChance.Hits(Actor, roll)) // 같은 굴림에서 적 자체 빗나감이 아닌 양수 공격 회피 확인
+                { // 실제 아군 회피의 공용 유물 알림 시작
+                    ApplyDanceShoeEvade(attackTarget); // 원래 회피 아군의 무도화 공격 강화 예약
+                    attackTarget.NotifyEnemyAttackEvaded(Actor); // 등록된 피해 대상의 실제 회피 구독자 통지
+                } // 실제 아군 회피의 공용 유물 알림 종료
                 return BattleEnemyActionResult.Missed(DamageType); // 명중 피해와 후속 상태가 없는 기존 결과 반환
             } // 실제 공격 빗나감 종료
         } // 실제 대상에 대한 명중 판정 종료
@@ -417,10 +425,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     } // 개별 피격 처리 종료
 
-    private void ApplyDanceShoeEvade(BattleUnitRuntime target, int attackDamage, int roll) // 회피로만 피한 양수 적 공격의 후속 보상
-    { // 무도화의 실제 회피 원인 확인 시작
-        if (attackDamage <= 0 || Actor.Team != BattleTeam.Enemy || target.Team != BattleTeam.Ally || target.IsDead || // 적과 생존 아군 사이의 실제 피해 공격 확인
-            !BattleHitChance.Hits(Actor, roll) || target.GetStatusEffect(BattleStatusEffectType.DanceShoeDamageUp) is { IsExpired: false }) // 적 자체 명중 실패와 이미 예약된 한 번의 강화 제외
+    private void ApplyDanceShoeEvade(BattleUnitRuntime target) // 공통 실제 회피 이후 무도화의 독립 보상 처리
+    { // 무도화의 기존 강화 확인 시작
+        if (target.GetStatusEffect(BattleStatusEffectType.DanceShoeDamageUp) is { IsExpired: false }) // 이미 예약된 한 번의 기존 강화 제외
         { // 보상 없는 빗나감 제외 시작
             return; // 기존 적 명중 약화 또는 아직 남은 강화 보존
         } // 보상 없는 빗나감 제외 종료

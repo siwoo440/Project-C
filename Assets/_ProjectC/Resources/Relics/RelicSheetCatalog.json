@@ -2027,7 +2027,7 @@
     {
       "sourceRow": 186,
       "name": "붕괴 왕좌의 나사",
-      "description": "보스전에서 첫 턴 코스트 +2",
+      "description": "보스전의 첫 실제 아군 턴에 최대 행동력과 현재 행동력을 각각 2 높인다.",
       "buyMin": 292,
       "buyMax": 328,
       "buyVariance": 36,
@@ -2038,7 +2038,7 @@
     {
       "sourceRow": 187,
       "name": "초상화 속 붉은 눈",
-      "description": "전투 시작 시 적 전체 공포(1턴) 35%",
+      "description": "전투 시작에 35% 확률로 생존 적 전체에게 한 적 턴 동안 공포를 부여한다.",
       "buyMin": 309,
       "buyMax": 352,
       "buyVariance": 43,
@@ -2049,7 +2049,7 @@
     {
       "sourceRow": 188,
       "name": "영주의 마지막 명령서",
-      "description": "아군 전체가 첫 2턴 동안 공격력 +3, 이후 방어력 -2 (1턴)",
+      "description": "생존 아군 전체의 공격력이 첫 두 아군 턴 동안 3 증가한다. 이어지는 적 턴에는 생존 아군 전체의 물리 방어력이 2 감소한다.",
       "buyMin": 326,
       "buyMax": 362,
       "buyVariance": 36,
@@ -2060,7 +2060,7 @@
     {
       "sourceRow": 189,
       "name": "거울 공작의 깨진 왕관",
-      "description": "디버프를 받을 때 50% 확률로 공격자에게 복사",
+      "description": "생존 아군이 적에게 제거 가능한 약화를 받으면 50% 확률로 같은 약화를 발생시킨 적에게 돌려준다.",
       "buyMin": 193,
       "buyMax": 236,
       "buyVariance": 43,
@@ -2071,7 +2071,7 @@
     {
       "sourceRow": 190,
       "name": "만찬 심장의 잔뿌리",
-      "description": "중독 상태 적 수만큼 턴 시작 시 아군 전체 체력 2 회복",
+      "description": "아군 턴 시작에 중독된 생존 적 한 명당 생존 아군 전원의 체력이 2 회복된다.",
       "buyMin": 210,
       "buyMax": 246,
       "buyVariance": 36,
@@ -2082,7 +2082,7 @@
     {
       "sourceRow": 191,
       "name": "검은 샹들리에 핵",
-      "description": "3턴마다 적 전체 10 피해, 아군 전체 명중률 -5% (1턴)",
+      "description": "세 번째 아군 턴마다 생존 적 전체에게 일반 피해 10을 주고 그 아군 턴 동안 생존 아군 전체의 명중률을 5%p 낮춘다.",
       "buyMin": 227,
       "buyMax": 270,
       "buyVariance": 43,
@@ -2093,7 +2093,7 @@
     {
       "sourceRow": 192,
       "name": "고해실의 숨은 이름",
-      "description": "전투당 1회 아군 전원이 받는 치명적 피해를 체력 1로 버팀",
+      "description": "전투 시작에 생존 아군 전원이 각자 처음 받는 치명 피해를 체력 1로 한 번 버틸 수 있게 한다.",
       "buyMin": 244,
       "buyMax": 280,
       "buyVariance": 36,
@@ -2104,7 +2104,7 @@
     {
       "sourceRow": 193,
       "name": "무도회의 마지막 박자",
-      "description": "한 턴에 아군이 2회 이상 회피하면 적 전체 12 피해",
+      "description": "같은 적 턴에 아군이 두 번째 실제 회피를 하면 생존 적 전체에게 일반 피해 12를 준다. 적 턴마다 한 번 발동한다.",
       "buyMin": 261,
       "buyMax": 304,
       "buyVariance": 43,

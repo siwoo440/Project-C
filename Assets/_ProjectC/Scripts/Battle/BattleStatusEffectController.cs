@@ -148,6 +148,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.SanctuaryWard); // 성역의 피해 경감이 남는 실제 적 턴 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.FearResistance); // 고요한 찬가의 공포 저항이 남는 실제 적 턴 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.PainDistribution); // 고통 분산에 남은 실제 적 턴 한 번 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.LordFinalOrderWeakenedDefense); // 두 아군 턴 뒤 받은 명령서 약화의 실제 적 턴 만료
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료

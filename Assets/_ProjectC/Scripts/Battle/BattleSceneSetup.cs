@@ -952,7 +952,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 적 턴 완료 실패 처리 시작
             yield break; // 적 턴 실행 종료
         } // 적 턴 완료 실패 처리 종료
-        bool bossTransitioned = bossPhaseRuntime != null && bossPhaseRuntime.CompleteAfterEnemyTurn(); // 적 턴 중 보스 페이즈 전환 처리
+        bool bossTransitioned = bossPhaseRuntime != null && // 실제 전투에 연결된 보스 전환 관리자 확인
+            (bossPhaseRuntime.CompleteAfterEnemyTurn() || bossPhaseRuntime.CompletePendingTransition()); // 적 턴 피해나 바로 다음 아군 턴 유물의 보스 페이즈 전환 처리
         int preparedActionCount = bossTransitioned ? enemyActionRuntime.PlannedActions.Count : enemyActionRuntime.PrepareActions(); // 새 페이즈 예고 유지 또는 일반 행동 준비
         Debug.Log($"[BattleSceneSetup] 플레이어 턴 시작 - 라운드 {battleTurn.CurrentRound}, 드로우 {battleTurn.LastDrawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}, 적 예고 {preparedActionCount}개", this); // 플레이어 턴 시작 출력
     } // 적 턴 실행 종료
