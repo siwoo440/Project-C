@@ -166,6 +166,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
+        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive) // 체력 손실 및 실제 부활이 별도 정산되는 전용 유물 확인
+        { // 공용 발동에서 전용 유물 제외 시작
+            return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
+        } // 공용 발동에서 전용 유물 제외 종료
         if (relicData.EffectType == RelicEffectType.PeriodicEnemyMentalLoss) // 실제 아군 턴 런타임이 이미 처리한 먼지시계 확인
         { // 공용 발동 제외 시작
             return false; // 상태 알림과 실제 감소의 중복 처리 방지

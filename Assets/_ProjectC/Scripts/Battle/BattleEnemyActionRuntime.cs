@@ -470,7 +470,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return null; // 행동 생성 실패 반환
             } // 패턴 대상 없음 처리 종료
             int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed); // 패턴 행동 속도 결정
-            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue, null, patternData.MentalChangeOnHit); // 순차 패턴과 공격 후 상태 및 정신력 변화 전달
+            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue, null, patternData.MentalChangeOnHit, turns?.BattleType); // 순차 패턴의 상태와 정신력 및 실제 조우 등급 전달
         } // 패턴 행동 생성 종료
         if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
         { // 미지원 행동 처리 시작
@@ -484,7 +484,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         int actionSpeed = RollActionSpeed(enemyData.MinimumActionSpeed, enemyData.MaximumActionSpeed); // 이번 턴 행동 속도 결정
         int actionAmount = enemyData.ActionType == EnemyActionType.Attack ? enemyData.BasicAttackPower : enemyData.StatusEffectValue; // 행동 종류별 수치 결정
         string actionDisplayName = GetLegacyActionDisplayName(enemyData); // 호환 행동 이름 계산
-        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, enemyData.TargetRule, actionDisplayName, 1, 1, actionSpeed, creationOrder); // 호환 예정 행동 반환
+        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, enemyData.TargetRule, actionDisplayName, 1, 1, actionSpeed, creationOrder, battleType: turns?.BattleType); // 일반 예정 행동과 실제 조우 등급 전달
     } // 행동 생성 종료
     private EnemyActionPatternData SelectNextActionPattern(BattleUnitRuntime enemyUnit, EnemyData enemyData, out int patternIndex, out int patternCount) // 다음 유효 패턴 선택
     { // 패턴 선택 시작

@@ -1087,6 +1087,54 @@
       "artworkKey": "d438b28826d95af0a6cdb60522392236"
     },
     {
+      "category": 3,
+      "name": "공허 순환장치",
+      "description": "전투에서 아군이 실제로 체력을 잃을 때 15% 확률로 현재 행동력을 1 회복한다.",
+      "artworkKey": "293ae22db57151dc9fb5bb9b8513f65c"
+    },
+    {
+      "category": 3,
+      "name": "붉은 심연의 등잔",
+      "description": "전투 시작에 생존 적 전체의 공격력을 두 적 턴 동안 2 낮추고, 생존 아군 전체의 정신력을 5 낮춘다.",
+      "artworkKey": "bea9979fd062572b8aefe9d87afed811"
+    },
+    {
+      "category": 3,
+      "name": "네크레이트 왕관못",
+      "description": "보스에게 직접 명중으로 주는 피해가 20% 증가한다. 일반 전투에서 적의 직접 공격으로 받는 피해가 10% 증가한다.",
+      "artworkKey": "3a45e2cfedf853019454265c8edf418d"
+    },
+    {
+      "category": 3,
+      "name": "어비스 성배 조각",
+      "description": "전투에서 처음 쓰러진 아군을 최대 체력의 30%로 즉시 부활시킨다. 그 뒤 생존 아군 전체의 정신력을 10 낮춘다.",
+      "artworkKey": "2bac34f8740752318cfd6ed6c23c4be2"
+    },
+    {
+      "category": 3,
+      "name": "무명자의 검은 서약",
+      "description": "전투 동안 생존 아군 전체의 공격력이 5 증가한다. 승리하거나 도주하면 생존 아군이 잃은 체력의 20%를 추가로 잃고 체력 1 이상을 유지한다.",
+      "artworkKey": "835d5547b719556891728d9aa34aba6d"
+    },
+    {
+      "category": 3,
+      "name": "침식핵의 작은 심장",
+      "description": "정예나 보스를 처치할 때마다 이번 탐사 동안 아군 전체의 공격력이 영구적으로 1 증가한다.",
+      "artworkKey": "9bc198fc6c5259b7b8cb92db2aead8fa"
+    },
+    {
+      "category": 3,
+      "name": "먼지 먹은 손수건",
+      "description": "첫 적 턴이 끝날 때까지 아군 전체의 적 실명 저항이 20%p 증가한다.",
+      "artworkKey": "bd692e01c3b758369a55ab759108aec5"
+    },
+    {
+      "category": 3,
+      "name": "금 간 접시 장식",
+      "description": "전투 시작에 무작위 생존 적 한 명의 공격력을 두 적 턴 동안 1 낮춘다.",
+      "artworkKey": "d3ea2f549b9d5dee9c0d95e4b6837e1f"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",
