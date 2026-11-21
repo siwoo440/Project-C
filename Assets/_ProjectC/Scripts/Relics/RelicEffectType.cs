@@ -99,4 +99,12 @@ public enum RelicEffectType // 유물 효과 종류
     ResolvedSkillDraw, // 스킬 카드 사용 정산 직후 확률 드로우
     MarkedHitDamageBonus, // 표식 적에 대한 직접 카드 명중 피해 증가
     ResolvedDefenseBlock, // 방어 카드 사용자의 방어도 추가
+    BattleStartCleanseOne, // 전투 시작의 일반 디버프 한 가지 정화
+    WandDirectHitBonus, // 직접 명중한 지팡이 피해 증가
+    FirstDefensiveCardDiscount, // 첫 유료 방어 카드의 기본 행동력 할인
+    SwordThenShieldBlock, // 검 사용 뒤 다음 방패 카드 소유자 방어도
+    ExtendAllyAppliedBurn, // 아군이 적에게 적용하는 화상 지속 시간 증가
+    BlindTargetDirectDamage, // 실명 적의 카드 직접 피격 보너스
+    ShortenBleedOnHeal, // 회복 카드의 출혈 지속 시간 감소
+    RepeatTargetHitBonus, // 같은 적 연속 명중 이후 다음 카드 피해 증가
 }

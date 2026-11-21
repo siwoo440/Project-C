@@ -8,6 +8,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     internal int FirstDrawRelicApDiscount { get; set; } // 첫 드로우 카드의 턴 한정 유물 할인
     internal int OpeningRandomRelicApDiscount { get; set; } // 퇴색한 왕관이 선택한 카드의 독립 할인
     internal int NextCardRelicApDiscount { get; set; } // 다음 유료 카드에 적용할 유물 할인
+    internal int FirstDefensiveRelicApDiscount { get; set; } // 전투의 첫 유료 방어 카드에 예약된 할인
     private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
 
     public string InstanceId { get; }
@@ -25,7 +26,15 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => (int)Math.Min(int.MaxValue, (long)Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount) + SourceData.AdditionalActionPointCost); // 할인된 기본 비용과 의무 행동력 대가 합산
+    public int ApCost => (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount + SourceData.AdditionalActionPointCost); // 기존 할인과 방패끈을 적용한 기본 비용에 의무 행동력 대가 합산
+    private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
+    internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && SourceData.SwordRule != SwordCardRule.Finisher && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
+    internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인
+        EffectType == CardEffectType.ApplyStatusEffect && CardType == CardType.Shield && StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(StatusEffectType); // 방패 카드의 양의 상태 효과 확인
+    private bool HasFriendlyTarget => TargetType is CardTargetType.Self or CardTargetType.SingleAlly or CardTargetType.AllAllies; // 본인과 일반 아군 대상 확인
+    private bool HasAuthoredDefense => HasFriendlyTarget && HasDefensivePrimaryEffect || // 아군에게 주는 기본 방어 효과 확인
+        SourceData.SecondaryEffectValue > 0 && (SourceData.FollowUpEffect == CardFollowUpEffect.GainOwnerBlock || // 실제 사용자의 명시적 후속 방어도 확인
+        HasFriendlyTarget && (SourceData.FollowUpEffect == CardFollowUpEffect.GainTargetBlock || SourceData.SwordRule == SwordCardRule.BattlefieldResolve)); // 아군 대상의 후속 방어도와 전장의 결의 확인
     internal int ApCostBeforeNextCardDiscount // 다음 카드 할인 적용 전의 고정 비용
     { // 고정 비용 계산 시작
         get // 현재 카드 비용 조회

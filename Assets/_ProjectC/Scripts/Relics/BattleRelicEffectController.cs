@@ -17,6 +17,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly Queue<KeyValuePair<RelicTriggerType, BattleEventContext>> pendingTriggers = new Queue<KeyValuePair<RelicTriggerType, BattleEventContext>>(); // 중첩 유물 발동 대기열
     private bool journalVictoryChecked; // 한 전투 승리에서 이미 시도한 일지 추첨
     private bool endCleanseChecked; // 실제 전투 종료에서 이미 시도한 손수건 추첨
+    private bool startCleanseChecked; // 전투 시작의 이미 사용한 향 주머니 판정
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
@@ -131,6 +132,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             { // 무관한 처치 제외 시작
                 continue; // 턴당 발동 횟수 보존
             } // 무관한 처치 제외 종료
+            if (relicData.EffectType == RelicEffectType.FirstDefensiveCardDiscount) // 실제 카드 지불과 정산이 다루는 방패끈 확인
+            { // 일반 사용 이벤트 제외 시작
+                continue; // 카드 종류 확인 이전의 발동 기록과 표시 방지
+            } // 일반 사용 이벤트 제외 종료
             int interval = relicData.PlayerTurnInterval; // 유물이 요구하는 아군 턴 간격 조회
             if (interval > 0 && (eventContext == null || eventContext.Phase != BattleTurnPhase.PlayerTurn || eventContext.Round <= 0 || eventContext.Round % interval != 0)) // 지정 라운드의 아군 턴 여부 확인
             { // 발동 주기 확인 시작
@@ -149,6 +154,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private bool TryExecuteRelic(RelicData relicData, int orderNumber, BattleEventContext eventContext) // 단일 유물 실행 시도
     {
+        if (relicData.EffectType == RelicEffectType.BattleStartCleanseOne) // 전투 시작 향 주머니의 단일 판정 확인
+        { // 시작 정화 횟수 확인 시작
+            if (startCleanseChecked) // 시작 이벤트 또는 기존 보정 경로의 반복 여부 확인
+            { // 반복된 전투 시작 처리 시작
+                return false; // 같은 전투에서 향 주머니 확률 재시도 차단
+            } // 반복된 전투 시작 처리 종료
+            startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
+        } // 시작 정화 횟수 확인 종료
         if (relicData.EffectType == RelicEffectType.BattleEndCleanseOne) // 순백 손수건의 실제 종료 추첨 확인
         { // 전투 종료 정화 판정 시작
             if (endCleanseChecked || eventContext == null || eventContext.Result == BattleResult.None) // 유효한 실제 종료와 한 번의 판정 확인
@@ -191,8 +204,9 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 조건부 효과 시작
         switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
         { // 효과 선택 시작
+            case RelicEffectType.BattleStartCleanseOne: // 향 주머니의 전투 시작 디버프 정화
             case RelicEffectType.BattleEndCleanseOne: // 손수건의 실제 종료 디버프 정화
-                return TryCleanseOneStatusAfterBattle(); // 모든 생존 아군의 제거 가능한 상태에서 한 개 추첨
+                return TryCleanseOneAllyStatus(); // 모든 생존 아군의 제거 가능한 일반 상태에서 한 개 추첨
             case RelicEffectType.HealthDamageBlock: // 파열된 방울의 실제 체력 피해 반응
                 var injured = context?.TargetUnit; // 방어도를 받을 실제 피격 아군
                 return injured != null && injured.Team == BattleTeam.Ally && !injured.IsDead && context.AppliedAmount > 0 && injured.GainBlock(relic.EffectValue) > 0; // 생존자에게 방어도를 지급한 경우만 전투 횟수 소모
@@ -269,8 +283,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return true; // 기존 유물 발동 완료
         } // 효과 선택 종료
     } // 조건부 효과 종료
-    private bool TryCleanseOneStatusAfterBattle() // 생존 아군의 실제 제거 가능한 약화 한 가지 정화
-    { // 종료 정화 후보 준비 시작
+    private bool TryCleanseOneAllyStatus() // 전투 시작과 종료에서 생존 아군의 일반 약화 한 가지 정화
+    { // 생존 아군 정화 후보 준비 시작
         var candidates = new List<(BattleUnitRuntime Ally, BattleStatusEffectType Type)>(); // 아군별 약화가 각각 같은 확률을 갖는 후보 목록
         foreach (var ally in allyUnits) // 전투에 참가한 아군 순회
         { // 정화 대상 확인 시작
@@ -292,7 +306,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         } // 후보 없음 처리 종료
         var selected = candidates[UnityEngine.Random.Range(0, candidates.Count)]; // 현재 모든 약화 인스턴스 가운데 하나 균등 선택
         return selected.Ally.RemoveStatusEffect(selected.Type); // 기존 정화 경로에 따른 한 가지 제거
-    } // 종료 정화 후보 준비 종료
+    } // 생존 아군 정화 후보 준비 종료
     private bool CanTrigger(RelicData relicData) // 유물 발동 제한 검사
     {
         if (relicData == null || !relicData.IsValidData()) // 유물 데이터 유효성 확인

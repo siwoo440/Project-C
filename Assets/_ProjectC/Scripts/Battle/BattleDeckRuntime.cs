@@ -9,6 +9,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private readonly List<CardInstance> excludedPile = new List<CardInstance>(); // 이번 전투에서만 제외된 카드 목록
     private int relicApDiscount; // 현재 턴의 모든 카드에 적용하는 비용 감소량
     private int nextCardRelicApDiscount; // 다음 유료 카드 한 장에 적용하는 비용 감소량
+    private int firstDefensiveRelicApDiscount; // 첫 유료 방어 카드에 남은 전투 한정 비용 감소량
     private bool firstDrawCompleted; // 이번 전투 첫 실제 손패 드로우 기록
     private bool discardedUnplayableDraw; // 봉인테이프의 전투 발동 기록
     private bool recoveredRandomDiscard; // 회수용 자석의 전투 발동 기록
@@ -392,6 +393,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         battleCopy = CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 비용과 소유자 및 강화 단계 복사
         battleCopy.RelicApDiscount = relicApDiscount; // 현재 첫 턴의 유물 할인 물려주기
         battleCopy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 다음 카드 유물 할인 물려주기
+        battleCopy.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 아직 남은 전투의 첫 방어 할인 물려주기
         cards.Add(battleCopy); // 전투 전용 카드 등록
         hand.Add(battleCopy); // 복사본을 실제 손패에 추가
         StateChanged?.Invoke(); // 변경된 손패 표시
@@ -401,6 +403,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     { // 전투 카드 정리 시작
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
         ClearOpeningRandomRelicDiscount(); // 종료된 전투의 왕관 할인 복원
+        SetFirstDefensiveRelicApDiscount(0); // 전투가 종료될 때 미사용 방어 할인 정리
         openingRetainedCard = null; // 전투를 끝낸 미사용 시작 손패 유지 해제
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
@@ -530,6 +533,19 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 카드의 다음 사용 표시 갱신 종료
         StateChanged?.Invoke(); // 현재 손패의 비용 숫자와 사용 가능 여부 갱신
     } // 다음 카드 할인 갱신 종료
+    internal void SetFirstDefensiveRelicApDiscount(int amount) // 첫 유료 방어 카드 할인 표시 갱신
+    { // 방어 할인 갱신 시작
+        if (firstDefensiveRelicApDiscount == amount) // 기존 방어 할인과 갱신값 비교
+        { // 같은 할인 처리 시작
+            return; // 중복 손패 갱신 생략
+        } // 같은 할인 처리 종료
+        firstDefensiveRelicApDiscount = amount; // 새 복사본에 넘길 전투 한정 할인 기록
+        foreach (CardInstance card in cards) // 현재 전투 전체 카드 순회
+        { // 카드별 유물 할인 갱신 시작
+            card.FirstDefensiveRelicApDiscount = amount; // 손패 밖 카드도 동일한 사용 비용 적용
+        } // 카드별 유물 할인 갱신 종료
+        StateChanged?.Invoke(); // 실제 손패의 행동력 배지와 사용 가능 여부 갱신
+    } // 방어 할인 갱신 종료
     public int DiscardHand() // 일반 손패 전체 버리기
     { // 손패 정리 시작
         CardInstance retainedAtOpening = openingRetainedCard; // 첫 자동 버림에서만 확인할 유물 유지 대상
