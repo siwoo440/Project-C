@@ -6,11 +6,15 @@ using UnityEngine.UI; // 선택 버튼과 카드 이미지 확인
 
 public sealed class MinorCardSelectionViewTests // 마이너 카드 선택의 세부 영역과 버튼 표시 검사
 { // 마이너 카드 화면 검사 시작
+    private const string ArtPath = "UI/Battle/MinorCards/"; // 전용 프레임과 마이너 삽화의 원래 리소스 경로
+
     [Test] // 실제 선택지 데이터 검사 등록
     public void AuthoredChoices_FitSeparateRegionsAndRemainSelectable() // 실제 제목·설명·효과의 글자 범위와 선택 버튼 확인
     { // 실제 카드 선택지 확인 시작
         string[] guids = AssetDatabase.FindAssets("t:MinorCardData", new[] { "Assets/_ProjectC/Data/MinorCards" }); // 실제 선택에 쓰이는 마이너 카드 데이터 목록
-        Assert.GreaterOrEqual(guids.Length, 3); // 실제 세 선택지 이상 존재 확인
+        Assert.AreEqual(6, guids.Length); // 독립 삽화를 가진 마이너 카드 여섯 장 확인
+        Sprite frame = Resources.Load<Sprite>(ArtPath + "Frame"); // 실제 마이너 카드 전용 프레임 조회
+        Assert.IsNotNull(frame); // Unity에서 불러올 수 있는 전용 프레임 검사
         GameObject canvas = new GameObject("MinorCardLayoutTest", typeof(RectTransform), typeof(Canvas)); // 격리된 시험용 캔버스 생성
 
         try // 시험 화면 정리 보장
@@ -25,8 +29,12 @@ public sealed class MinorCardSelectionViewTests // 마이너 카드 선택의 �
                 Image icon = card.Find("Icon").GetComponent<Image>(); // 카드 그림 또는 대체 원화 조회
                 TMP_Text description = card.Find("Description").GetComponent<TMP_Text>(); // 분리된 카드 설명 영역 조회
                 TMP_Text effect = card.Find("Effect").GetComponent<TMP_Text>(); // 분리된 카드 효과 영역 조회
-                Assert.IsNotNull(choice.image.sprite, data.MinorCardId); // 기존 금속 카드 프레임 원화 확인
-                Assert.IsNotNull(icon.sprite, data.MinorCardId); // 아이콘이 비어 있는 원본 카드의 대체 그림 확인
+                Sprite art = Resources.Load<Sprite>(ArtPath + GetArtName(data.MinorCardId)); // 선택한 카드에 대응하는 실제 삽화 조회
+                Assert.IsNotNull(art, data.MinorCardId); // 마이너 카드마다 원래 지정한 그림 로드 확인
+                Assert.AreSame(art, data.Icon, data.MinorCardId); // 기존 카드 데이터의 실제 원화 참조 검사
+                Assert.AreSame(frame, choice.image.sprite, data.MinorCardId); // 기존 공용 카드와 분리된 전용 프레임 검사
+                Assert.AreSame(art, icon.sprite, data.MinorCardId); // 실제 화면에 해당 카드의 전용 삽화 적용 확인
+                Assert.Greater(icon.rectTransform.rect.width, 136f, data.MinorCardId); // 원화가 실제로 예전 아이콘보다 크게 표시되는지 확인
                 Assert.IsFalse(icon.raycastTarget); // 그림 위에서도 카드 선택 입력 통과 확인
 
                 Assert.Greater(LowerY(card, name.rectTransform), UpperY(card, icon.rectTransform)); // 제목이 그림 위에 분리된 위치 확인
@@ -51,7 +59,7 @@ public sealed class MinorCardSelectionViewTests // 마이너 카드 선택의 �
     [Test] // 원본에 지정된 카드 그림 검사 등록
     public void CardWithSuppliedArt_PrefersThatSpriteAndFitsLongerCopy() // 원화 우선순위와 긴 설명의 별도 영역 확인
     { // 지정 그림 우선순위 검사 시작
-        MinorCardData source = AssetDatabase.LoadAssetAtPath<MinorCardData>("Assets/_ProjectC/Data/MinorCards/MINOR_LIFE_EMBER.asset"); // 그림 없는 실제 카드 원본 조회
+        MinorCardData source = AssetDatabase.LoadAssetAtPath<MinorCardData>("Assets/_ProjectC/Data/MinorCards/MINOR_LIFE_EMBER.asset"); // 실제 생명의 불씨 카드 원본 조회
         Assert.IsNotNull(source); // 시험 기준 마이너 카드 조회 확인
         MinorCardData data = Object.Instantiate(source); // 원본을 편집하지 않는 시험용 카드 사본
         GameObject canvas = new GameObject("MinorCardArtTest", typeof(RectTransform), typeof(Canvas)); // 독립 그림 시험 캔버스
@@ -76,6 +84,47 @@ public sealed class MinorCardSelectionViewTests // 마이너 카드 선택의 �
             Object.DestroyImmediate(texture); // 시험 그림 텍스처 제거
         } // 시험 객체 제거 종료
     } // 지정 그림 우선순위 검사 종료
+
+    [Test] // 전용 삽화가 없는 카드의 기존 대체 동작 등록
+    public void CardWithoutSuppliedArt_UsesOriginalEffectIcon() // 전용 원화가 빈 카드의 원래 효과별 대체 표시 확인
+    { // 기존 대체 원화 검사 시작
+        var source = AssetDatabase.LoadAssetAtPath<MinorCardData>("Assets/_ProjectC/Data/MinorCards/MINOR_LIFE_EMBER.asset"); // 전용 삽화가 있는 실제 최대 체력 카드 조회
+        Assert.IsNotNull(source); // 원래 마이너 카드 시리얼라이즈 자료 확인
+        var data = Object.Instantiate(source); // 원본 카드 참조를 보존하는 시험용 사본
+        var canvas = new GameObject("MinorCardFallbackTest", typeof(RectTransform), typeof(Canvas)); // 대체 원화 시험 캔버스 생성
+        try // 독립 시험 객체 청소 보장
+        { // 기존 대체 원화 확인 시작
+            var serialized = new SerializedObject(data); // 카드 사본의 기존 그림 필드 조회
+            serialized.FindProperty("icon").objectReferenceValue = null; // 전용 삽화가 빈 카드 설정 재현
+            serialized.ApplyModifiedPropertiesWithoutUndo(); // 원본 카드에 영향 없는 시험 자료 적용
+            var button = MinorCardSelectionView.CreateCardButton((RectTransform)canvas.transform, data, () => Assert.Fail("대체 이미지 확인 중 선택 입력")); // 실제 정상 카드 생성 경로 실행
+            var icon = button.transform.Find("Icon").GetComponent<Image>(); // 정상 대체 이미지가 들어갈 렌더러 조회
+            var fallback = Resources.Load<Texture2D>("UI/Battle/HealthGaugeIcon"); // 기존 최대 체력 효과의 원래 하트 텍스처 조회
+            Assert.IsNotNull(fallback); // 기존 효과별 대체 원본 존재 검사
+            Assert.IsNotNull(icon.sprite); // 그림 없는 카드의 표시 스프라이트 확인
+            Assert.AreSame(fallback, icon.sprite.texture); // 기존 최대 체력 하트 그림이 실제로 적용됐는지 확인
+            Assert.AreEqual(136f, icon.rectTransform.rect.width); // 기존 효과 그림의 원래 아이콘 크기 유지 확인
+        } // 기존 대체 원화 확인 종료
+        finally // 원본과 분리한 시험 오브젝트 제거
+        { // 독립 시험 종료 시작
+            Object.DestroyImmediate(canvas); // 별도 시험 캔버스와 선택 버튼 제거
+            Object.DestroyImmediate(data); // 테스트에서 만든 카드 사본 제거
+        } // 독립 시험 종료 끝
+    } // 기존 대체 원화 검사 종료
+
+    private static string GetArtName(string cardId) // 실제 마이너 카드 ID에 맞는 전용 삽화 이름 조회
+    { // 원본 카드와 전용 삽화 표 시작
+        return cardId switch // 저장된 게임 카드의 의미 식별자 확인
+        { // 전용 삽화 매핑 시작
+            "MINOR_BATTLE_FERVOR" => "BattleFervor", // 전투의 열기 검격 실루엣
+            "MINOR_ARMOR_CRACK" => "ArmorCrack", // 갑옷 균열 피격 실루엣
+            "MINOR_IRON_WILL" => "IronWill", // 강철의 의지 방패 실루엣
+            "MINOR_MAGIC_VEIL" => "MagicVeil", // 마력 장막 보호막 실루엣
+            "MINOR_MAGIC_EROSION" => "MagicErosion", // 마력 침식 붕괴 실루엣
+            "MINOR_LIFE_EMBER" => "LifeEmber", // 생명의 불씨 회복 실루엣
+            _ => throw new System.InvalidOperationException(cardId) // 전용 삽화가 없는 추가 카드 식별
+        }; // 전용 삽화 매핑 종료
+    } // 원본 카드와 전용 삽화 표 끝
 
     private static float LowerY(RectTransform card, RectTransform child) // 카드 기준 영역의 하단 위치 조회
     { // 하단 계산 시작

@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\uAC15\uCCA0\uC758 \uC758\uC9C0"
   description: "\uBAA8\uB4E0 \uC544\uAD70\uC758 \uBB3C\uB9AC \uBC29\uC5B4\uB825\uC744
     \uC62C\uB9B0\uB2E4."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 7caf345aa9b95ef791129db43bdb632e, type: 3}
   targetType: 1
   effectType: 3
   effectValue: 3

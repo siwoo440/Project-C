@@ -113,7 +113,16 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
     internal static Button CreateCardButton(RectTransform parent, MinorCardData cardData, UnityAction select) // 원본 데이터와 선택 동작으로 카드 선택지 생성
     { // 카드 선택지 구성 시작
         Button cardButton = CreateButton($"Minor_{cardData.MinorCardId}", parent, new Color(0.040f, 0.11f, 0.13f, 1f)); // 실제 선택 버튼 생성
-        BattleUiArt.Apply(cardButton.image, "CardFrame"); // 기존 전투 카드 원화의 금속 테두리 적용
+        Sprite frame = Resources.Load<Sprite>("UI/Battle/MinorCards/Frame"); // 마이너 카드 전용 금속 프레임 조회
+        if (frame != null) // 전용 프레임의 정상 로드 확인
+        { // 전용 카드 프레임 적용 시작
+            cardButton.image.sprite = frame; // 청록색 황동 테두리의 전용 원화 연결
+            cardButton.image.color = Color.white; // 생성 원화 고유 색상 유지
+        } // 전용 카드 프레임 적용 종료
+        else // 전용 프레임 리소스 누락 확인
+        { // 기존 공용 프레임 대체 시작
+            BattleUiArt.Apply(cardButton.image, "CardFrame"); // 전용 리소스 부재 시 기존 전투 프레임 사용
+        } // 기존 공용 프레임 대체 종료
         ColorBlock buttonColors = cardButton.colors; // 상호작용별 프레임 색상 조회
         buttonColors.highlightedColor = new Color(1.16f, 1.13f, 1.06f, 1f); // 마우스가 가리킨 카드의 프레임 밝기 강조
         buttonColors.selectedColor = buttonColors.highlightedColor; // 키보드가 선택한 카드에 동일 강조 적용
@@ -125,20 +134,22 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
 
         TMP_Text nameText = CreateText("Name", cardRect, 28f, new Color(1f, 0.86f, 0.59f, 1f), TextAlignmentOptions.Center); // 카드 상단의 금빛 이름 생성
         nameText.fontStyle = FontStyles.Bold; // 제목과 본문을 구분하는 굵은 글자
-        Stretch(nameText.rectTransform, new Vector2(0f, 0.837f), new Vector2(1f, 0.95f), new Vector2(34f, 0f), new Vector2(-34f, 0f)); // 프레임 안쪽의 독립 제목 영역
+        Stretch(nameText.rectTransform, new Vector2(0f, 0.865f), new Vector2(1f, 0.950f), new Vector2(34f, 0f), new Vector2(-34f, 0f)); // 전용 프레임 안쪽의 제목 영역
         nameText.text = cardData.DisplayName; // 카드 이름 적용
 
         Image iconImage = CreateImage("Icon", cardRect, Color.white); // 배경 없는 카드 원화 영역 생성
-        Vector2 artAnchor = new Vector2(0.5f, 0.665f); // 제목 아래의 그림 중앙 위치
-        SetRect(iconImage.rectTransform, artAnchor, artAnchor, new Vector2(136f, 136f), Vector2.zero, new Vector2(0.5f, 0.5f)); // 본문과 떨어진 그림 표시 영역
+        Vector2 artAnchor = new Vector2(0.5f, 0.635f); // 제목과 본문 사이의 그림 중앙 위치
+        float artSize = cardData.Icon != null ? 184f : 136f; // 전용 삽화의 확대 및 기존 대체 그림 크기 유지
+        SetRect(iconImage.rectTransform, artAnchor, artAnchor, Vector2.one * artSize, Vector2.zero, new Vector2(0.5f, 0.5f)); // 위아래 글자와 분리된 삽화 영역
         iconImage.sprite = cardData.Icon; // 카드에 지정된 원화 우선 적용
         iconImage.enabled = iconImage.sprite != null || BattleUiArt.Apply(iconImage, GetFallbackIcon(cardData.EffectType)); // 원화가 없을 때 효과 종류에 대응하는 기존 그림 적용
         iconImage.preserveAspect = true; // 카드 원화와 대체 그림의 원본 비율 유지
         iconImage.raycastTarget = false; // 그림 위에서도 카드 버튼 클릭 허용
 
         TMP_Text descriptionText = CreateText("Description", cardRect, 23f, new Color(0.91f, 0.94f, 0.92f), TextAlignmentOptions.Center); // 카드의 독립 상세 설명 생성
-        Stretch(descriptionText.rectTransform, new Vector2(0f, 0.205f), new Vector2(1f, 0.49f), new Vector2(28f, 0f), new Vector2(-28f, 0f)); // 그림 아래와 효과 위의 넉넉한 설명 영역
+        Stretch(descriptionText.rectTransform, new Vector2(0f, 0.194f), new Vector2(1f, 0.401f), new Vector2(28f, 0f), new Vector2(-28f, 0f)); // 큰 삽화 아래와 효과 위의 고정 설명 영역
         descriptionText.text = cardData.Description; // 원본 카드 설명 문구 적용
+        descriptionText.fontSizeMin = 16f; // 다국어의 긴 설명을 위한 최소 가독 크기
         descriptionText.textWrappingMode = TextWrappingModes.Normal; // 설명 너비에 따른 한국어 줄바꿈
 
         bool targetsAllies = cardData.TargetType == MinorCardTargetType.AllAllies; // 대상에 따른 효과 영역의 색상 선택

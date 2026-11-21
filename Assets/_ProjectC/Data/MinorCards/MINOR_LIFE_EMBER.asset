@@ -15,7 +15,7 @@ MonoBehaviour:
   minorCardId: MINOR_LIFE_EMBER
   displayName: "생명의 불씨"
   description: "모든 아군의 최대 체력을 올린다."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d9d121fc069355e48642f74d01a0b07b, type: 3}
   targetType: 1
   effectType: 1
   effectValue: 10
