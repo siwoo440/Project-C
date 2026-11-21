@@ -62,7 +62,9 @@ public sealed class FacilityUpgradePanel : MonoBehaviour // 확대된 설비 강
         title.alignment = TextAlignmentOptions.MidlineLeft; // 도면 왼쪽 끝과 함께 읽는 제목
         CreateSurface("HeaderRule", panel, new Vector2(0.025f, 0.875f), new Vector2(0.976f, 0.879f), Brass); // 보유 자원과 기술 도면 사이 얇은 구분선
         BuildResourceRow(panel); // 원래 과금과 연결된 네 보유 자원 표시
-        CreateButton("CloseButton", panel, "닫기", new Vector2(0.886f, 0.903f), new Vector2(0.975f, 0.963f), Close); // 기존 실제 설비 화면 닫기
+        var closeButton = CreateButton("CloseButton", panel, "X", new Vector2(0.914f, 0.888f), new Vector2(0.976f, 0.950f), Close); // 자원 프레임 오른쪽의 즉시 닫기 버튼
+        LobbyUiArt.Apply(closeButton.image, "Button"); // 기존 거점의 금속 버튼 이미지 재사용
+        closeButton.GetComponentInChildren<TMP_Text>().fontSizeMax = 29f; // 어두운 버튼 위의 읽기 쉬운 X 크기
         BuildBlueprint(panel); // 배경과 독립 버튼을 합친 열 개 설비 도면
         BuildFacilityDetail(panel); // 선택한 원래 설비의 설명과 효과 및 비용
         BuildFacilityList(panel); // 설비와 같은 순서의 아래 가로 목록
@@ -74,10 +76,9 @@ public sealed class FacilityUpgradePanel : MonoBehaviour // 확대된 설비 강
 
     private void BuildResourceRow(Transform parent) // 보유 자원 아이콘과 수량 생성
     { // 보유 자원 생성 시작
-        GameObject groupObject = new GameObject("Resources", typeof(RectTransform)); // 보유 자원 묶음 생성
-        groupObject.transform.SetParent(parent, false); // 설비 패널 자식 배치
-        RectTransform group = groupObject.GetComponent<RectTransform>(); // 자원 묶음 위치 조회
-        PreparationUi.Stretch(group, new Vector2(0.36f, 0.897f), new Vector2(0.852f, 0.965f)); // 제목과 닫기 사이에서 실제 보유 자원 정렬
+        var group = CreateSurface("Resources", parent, new Vector2(0.595f, 0.882f), new Vector2(0.875f, 0.940f), Ink); // 표시된 오른쪽 상단의 네 칸 보유 자원 영역
+        var frame = group.GetComponent<Image>(); // 네 아이콘과 수량 뒤의 공용 배경 컴포넌트
+        LobbyUiArt.Apply(frame, "ExplorationResourceFrame"); // 기존 탐사 화면의 네 칸 자원 프레임 재사용
         string[] iconNames = { "Gold", "Screw", "Iron", "Wire" }; // 기존 자원 아이콘 이름 목록
         for (int index = 0; index < iconNames.Length; index++) // 네 자원 종류 순회
         { // 개별 자원 표시 생성 시작
@@ -85,16 +86,14 @@ public sealed class FacilityUpgradePanel : MonoBehaviour // 확대된 설비 강
             itemObject.transform.SetParent(group, false); // 자원 묶음 자식 배치
             RectTransform item = itemObject.GetComponent<RectTransform>(); // 개별 자원 위치 조회
             PreparationUi.Stretch(item, new Vector2(index / 4f, 0f), new Vector2((index + 1) / 4f, 1f)); // 자원별 독립 영역 배치
-            GameObject iconObject = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 자원 아이콘 객체 생성
-            iconObject.transform.SetParent(item, false); // 개별 자원 자식 배치
-            Image icon = iconObject.GetComponent<Image>(); // 자원 아이콘 이미지 조회
-            PreparationUi.Place(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(22f, 0f), new Vector2(40f, 40f)); // 정사각형 아이콘 위치 설정
+            var icon = CreateSurface("Icon", item, new Vector2(0.075f, 0.16f), new Vector2(0.39f, 0.84f), Color.clear).GetComponent<Image>(); // 프레임 각 칸 왼쪽의 아이콘 자리
             LobbyUiArt.Apply(icon, iconNames[index]); // 기존 자원 아이콘 이미지 적용
             icon.preserveAspect = true; // 아이콘 원본 비율 유지
-            icon.raycastTarget = false; // 아이콘 입력 차단 해제
-            TMP_Text value = CreateText("Value", item, string.Empty, 22f, new Vector2(0f, 0f), Vector2.one); // 자원 수량 문구 생성
-            value.rectTransform.offsetMin = new Vector2(44f, 0f); // 아이콘 옆 수량 간격 설정
-            value.alignment = TextAlignmentOptions.MidlineLeft; // 수량 왼쪽 정렬
+            TMP_Text value = CreateText("Value", item, string.Empty, 23f, new Vector2(0.42f, 0.12f), new Vector2(0.91f, 0.88f)); // 아이콘 오른쪽의 현재 보유 수량
+            value.color = Cream; // 공용 어두운 자원 프레임에 맞춘 밝은 수량 색
+            value.alignment = TextAlignmentOptions.MidlineRight; // 프레임 칸마다 오른쪽 수량 정렬
+            value.textWrappingMode = TextWrappingModes.NoWrap; // 자원 수량을 한 줄로 표시
+            value.fontSizeMin = 8f; // 작은 창에서도 긴 수량을 한 칸에 표시
             resourceValues[index] = value; // 자원별 수량 문구 보관
         } // 개별 자원 표시 생성 종료
     } // 보유 자원 생성 종료

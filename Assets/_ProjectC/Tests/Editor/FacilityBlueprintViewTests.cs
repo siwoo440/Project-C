@@ -23,8 +23,29 @@ public sealed class FacilityBlueprintViewTests // 설비 도면과 가로 선택
         { // 실제 두 선택 경로의 비교 시작
             facilities.ResetFacilities(); // 실제 모든 설비의 시작 단계 재현
             resources.RestoreResources(100, 20, 20, 20); // 기존 강화가 가능한 실제 자원 지급
-            var overlay = FacilityUpgradePanel.Create(root.GetComponent<Canvas>(), null); // 로비가 쓰는 원래 설비 모달 생성
+            int closeCount = 0; // 닫기 알림의 실제 호출 횟수
+            var overlay = FacilityUpgradePanel.Create(root.GetComponent<Canvas>(), () => closeCount++); // 원래 설비 모달과 닫힘 알림 연결
             var panel = overlay.transform.Find("FacilityPanel"); // 실제 기존 최상위 설비 패널
+            var header = (RectTransform)panel.Find("Resources"); // 우측 상단의 네 자원 영역
+            var resourceFrame = header.GetComponent<Image>(); // 네 자원에 한 번 연결하는 탐사 배경
+            Assert.IsNotNull(resourceFrame); // 네 자원 뒤에 실제 이미지 컴포넌트가 있는지 확인
+            Assert.AreSame(Resources.Load<Texture2D>("UI/Lobby/ExplorationResourceFrame"), resourceFrame.sprite.texture); // 기존 탐사 화면의 정확한 자원 프레임 재사용 확인
+            Assert.IsFalse(resourceFrame.raycastTarget); // 자원 배경의 마우스 입력 통과 확인
+            Assert.GreaterOrEqual(header.anchorMin.x, 0.58f); // 표시 기준의 우측 상단 시작 위치 확인
+            Assert.AreEqual(4, header.childCount); // 하나의 자원 프레임 안에 네 칸 확인
+            string[] resourceNames = { "Gold", "Screw", "Iron", "Wire" }; // 사용자가 보는 네 자원 순서
+            string[] initialValues = { "100", "20", "20", "20" }; // 기존 보유 자원의 실제 표시 수량
+            for (int index = 0; index < resourceNames.Length; index++) // 같은 프레임 안의 네 자원 표시 순회
+            { // 자원 순서와 카운터 검증 시작
+                var slot = header.GetChild(index); // 원래 순서의 개별 자원 칸 조회
+                Assert.AreEqual("Resource_" + resourceNames[index], slot.name); // 네 칸의 실제 자원 순서 확인
+                Assert.AreSame(Resources.Load<Texture2D>("UI/Lobby/" + resourceNames[index]), slot.Find("Icon").GetComponent<Image>().sprite.texture); // 기존 자원 아이콘의 정확한 참조 확인
+                Assert.AreEqual(initialValues[index], slot.Find("Value").GetComponent<TMP_Text>().text); // 초기 현재 보유 자원의 화면 수량 확인
+            } // 자원 순서와 카운터 검증 종료
+            var close = panel.Find("CloseButton").GetComponent<Button>(); // 우측 상단의 실제 닫기 버튼
+            Assert.Less(header.anchorMax.x, ((RectTransform)close.transform).anchorMin.x); // 자원 프레임과 X 버튼 간 여백 확인
+            Assert.AreSame(Resources.Load<Texture2D>("UI/Lobby/Button"), close.image.sprite.texture); // 기존 거점 버튼 이미지 재사용 확인
+            Assert.AreEqual("X", close.GetComponentInChildren<TMP_Text>().text); // 닫기 버튼의 X 표시 확인
             var board = panel.Find("Blueprint/Board"); // 원본 도면과 좌표를 공유하는 실제 보드
             Assert.IsNotNull(board.Find("BlueprintTexture").GetComponent<RawImage>().texture); // 실제 별도 기술 도면의 리소스 연결
             var nodes = board.Find("BlueprintNodes"); // 도면에 표시되는 실제 열 설비의 부모
@@ -61,10 +82,15 @@ public sealed class FacilityBlueprintViewTests // 설비 도면과 가로 선택
             Assert.AreEqual(1, facilities.GetLevel(FacilityType.DefenseBarrier)); // 기존 원래 강화 관리자에 같은 단계 반영
             Assert.AreEqual(15, resources.Screw); // 실제 지급 비용의 나사 차감
             Assert.AreEqual(10, resources.IronPlate); // 실제 지급 비용의 철판 차감
+            Assert.AreEqual("15", header.Find("Resource_Screw/Value").GetComponent<TMP_Text>().text); // 기존 헤더 나사 수량의 즉시 갱신 확인
+            Assert.AreEqual("10", header.Find("Resource_Iron/Value").GetComponent<TMP_Text>().text); // 기존 헤더 철판 수량의 즉시 갱신 확인
             Assert.IsFalse(upgrade.interactable); // 원래 다음 단계 철판 부족 처리
             facilities.RestoreFacilityLevel(FacilityType.DefenseBarrier, FacilityUpgradeManager.MaximumLevel); // 원래 최대 단계 진행 조건의 실제 구성
             StringAssert.Contains("최대 단계", detail.Find("NextEffect").GetComponent<TMP_Text>().text); // 기존 최대 단계의 한글 안내
             Assert.IsFalse(upgrade.interactable); // 실제 최대 단계 강화 차단
+            close.onClick.Invoke(); // 실제 X 버튼의 닫기 동작 실행
+            Assert.IsFalse(overlay.gameObject.activeSelf); // 닫기 직후 설비 창과 입력 비활성 확인
+            Assert.AreEqual(1, closeCount); // 원래 로비의 닫힘 알림 한 번 확인
         } // 실제 두 선택 경로의 비교 종료
         finally // 실제 플레이어의 원래 상태 및 테스트 모달 복원
         { // 검사 전 자원과 각 설비 단계 복원 시작
