@@ -26,6 +26,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private int queuedChargeDefense; // 다음 아군 턴의 방어 감소량
     private BattleUnitRuntime queuedChargeSource; // 돌진을 사용한 아군
     public int HealthLostSinceEnemyTurn { get; private set; } // 직전 적 턴부터 누적한 실제 체력 손실
+    internal bool HasLostHealthToCorrosion { get; private set; } // 침식으로 실제 체력을 잃은 기록
     public int CurrentHealth { get; private set; } // 현재 체력
     public int CurrentBlock { get; private set; } // 현재 피해 흡수 방어도
     public bool IsDead { get; private set; } // 사망 여부
@@ -34,6 +35,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public int ActionSpeedModifier => GetStatusEffectValue(BattleStatusEffectType.ActionSpeedUp) - GetStatusEffectValue(BattleStatusEffectType.ActionSpeedDown); // 행동 속도 증가와 감소의 차이
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
     public bool HasRemovableDebuff => ContainsRemovableDebuff(); // 정화 가능한 디버프 존재 여부
+    internal bool HasActiveRemovableDebuff => ContainsRemovableDebuff(activeOnly: true); // 현재 만료되지 않은 정화 가능 디버프 확인
     public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
     public int CurrentMental => mentalRuntime.CurrentMental; // 현재 정신력
     public BattleMentalState MentalState => mentalRuntime.CurrentState; // 현재 정신 상태
@@ -186,9 +188,19 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int changePercent = MentalState == BattleMentalState.Awakening ? awakeningHealingPercent : MentalState == BattleMentalState.Collapse ? collapseHealingPercent : 0; // 현재 상태 회복 변화율 선택
         return ApplyPercentage(baseHealing, changePercent); // 보정 회복량 반환
     } // 회복량 계산 종료
-    public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit = null) // 상태 이상 적용
+    public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit = null, bool corrosionFamily = false) // 명시 침식 계열을 포함한 상태 이상 적용
     { // 일반 상태 적용 시작
-        return ApplyStatusEffectCore(effectType, value, duration, maximumStacks, sourceUnit, null); // 기존 개별 상태 적용 규칙 사용
+        BattleStatusEffectApplyResult result = ApplyStatusEffectCore(effectType, value, duration, maximumStacks, sourceUnit, null); // 기존 면역과 신규 및 중첩의 실제 적용 결과 확인
+        if (corrosionFamily && Team == BattleTeam.Enemy && !IsDead && sourceUnit?.Team == BattleTeam.Ally && // 명시 침식 상태의 생존 적과 아군 부여자 확인
+            BattleStatusEffectInstance.IsDebuffType(effectType) && result is (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked)) // 실제로 성공한 약화 적용만 확인
+        { // 맥동핵의 성공 침식 피해 처리 시작
+            int damage = BattleSupplyRelics.Find(RelicEffectType.CorrosionDebuffDamage)?.EffectValue ?? 0; // 실제 보유한 맥동핵의 원본 피해량
+            if (damage > 0) // 실제 가산 피해가 존재하는지 확인
+            { // 침식 부가 피해 시작
+                TakeDamage(damage, BattleDamageType.None, sourceUnit); // 직접 명중 유물을 거치지 않는 일반 피해와 방어도 처리
+            } // 침식 부가 피해 종료
+        } // 맥동핵의 성공 침식 피해 처리 종료
+        return result; // 부모 효과에 기존 실제 상태 결과 그대로 반환
     } // 일반 상태 적용 종료
     internal bool IsTransientTurnBuff(BattleStatusEffectInstance status) // 일반 강화와 독립인 현재 턴 전용 상태 확인
     { // 독립 강화 확인 시작
@@ -467,11 +479,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return null; // 제거 가능한 강화 없음
     } // 강화 탐색 종료
 
-    private bool ContainsRemovableDebuff() // 정화 가능한 디버프 존재 확인
+    private bool ContainsRemovableDebuff(bool activeOnly = false) // 정화 가능한 디버프 존재와 적용 시간 확인
     { // 정화 가능 디버프 확인 시작
         foreach (BattleStatusEffectInstance effect in statusEffects) // 현재 상태 목록 순회
         { // 정화 가능 상태 확인 시작
-            if (effect.IsDebuff && !effect.IsProtectedMentalState) // 일반 디버프 여부 확인
+            if (effect.IsDebuff && !effect.IsProtectedMentalState && (!activeOnly || !effect.IsExpired)) // 보호 정신 상태 및 선택적 만료 상태 제외
             { // 정화 가능 상태 처리 시작
                 return true; // 정화 가능 상태 존재 반환
             } // 정화 가능 상태 처리 종료
@@ -483,7 +495,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int totalBonus = 0; // 전체 공격력 증가 초기화
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
-            if (statusEffect.EffectType == BattleStatusEffectType.AttackPowerUp) // 공격력 증가 상태 확인
+            if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp) // 일반 강화와 맥박줄의 독립 공격력 증가 확인
             { // 공격력 증가 누적 시작
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
@@ -495,7 +507,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int increasedDefense = GetStatusEffectValue(increaseType); // 방어 증가 수치 조회
         int decreasedDefense = GetStatusEffectValue(decreaseType); // 방어 감소 수치 조회
         int charge = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.ChargeDefenseDown) : 0; // 돌진의 물리 방어 감소량 확인
-        return (int)Math.Max(0L, (long)baseDefense + increasedDefense - decreasedDefense - charge); // 영 이상 현재 방어력 반환
+        var crystal = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? FindStatusEffect(BattleStatusEffectType.CrystalMarkDefenseDown) : null; // 일반 물리 방어 약화와 독립인 결정눈 상태 조회
+        int crystalLoss = crystal is { IsExpired: false } ? crystal.EffectiveValue : 0; // 아직 활성인 표식 연계 방어 감소량
+        return (int)Math.Clamp((long)baseDefense + increasedDefense - decreasedDefense - charge - crystalLoss, 0L, int.MaxValue); // 두 방어 약화와 기존 본래 방어를 합친 정수 범위 결과
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작
@@ -634,7 +648,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
         int vulnerability = GetStatusEffectValue(BattleStatusEffectType.Vulnerable); // 대상에게 적용된 받는 피해 증가율
         int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 정수 범위 안에서 원본 피해 증가율 적용과 내림
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance); // 취약을 적용한 원본 피해에 방어력과 저항력 반영
+        int corrosion = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.CorrosionResistanceDown) is { IsExpired: false } corrosionStatus ? corrosionStatus.EffectiveValue : 0; // 실제 활성 실금석 약화의 경감 퍼센트포인트 조회
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, corrosion); // 예상과 실제 피해의 공통 마법 저항 감소 반영
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
@@ -697,6 +712,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 실제 적 타격 처리 시작
         return TakeDamageCore(damageAmount, damageType, source, sharingAlly, preventHealthDamage, 0, reduceHealthDamage, true, isAreaAttack, onRedirect, false, party); // 실제 명중과 대상의 피해 분배 및 기존 보호 전환
     } // 실제 적 타격 처리 종료
+    private void RecordCorrosionHealthDamage(BattleDamageResult damageResult) // 유물용 침식 체력 손실 기록
+    { // 침식 기록 시작
+        if (Team == BattleTeam.Ally && damageResult.DamageType == BattleDamageType.Corrosion && damageResult.AppliedDamage > 0) // 아군의 양수 침식 체력 손실
+        { // 적격 피해 처리 시작
+            HasLostHealthToCorrosion = true; // 전투 종료까지 피격 이력 유지
+        } // 적격 피해 처리 끝
+    } // 침식 기록 끝
+
     private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null) // 직접 피해와 대신 받기 및 실제 파티 분산의 정산
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
@@ -775,6 +798,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 직접 피해 출처 지정 시작
             damageResult = damageResult.FromResolvedEnemyAttack(); // 실제 피해 신호 전에 직접 적 공격 출처 고정
         } // 직접 피해 출처 지정 종료
+        RecordCorrosionHealthDamage(damageResult); // 일반 피해의 침식 체력 손실 기록
         DamageTaken?.Invoke(this, damageResult); // 피해 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
         if (damageResult.AbsorbedDamage > 0) // 방어도 소모 여부 확인
@@ -848,6 +872,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             MarkDefeated(); // 방어도 없는 피해의 실제 전투불능 상태 저장
             result = result.WithDefeatedTarget(); // 실제 전투불능을 피해 이벤트에 기록
         } // 사망 상태 기록 종료
+        RecordCorrosionHealthDamage(result); // 방어도 미적용 침식 체력 손실 기록
         DamageTaken?.Invoke(this, result); // 분담 피해 화면 알림
         HealthChanged?.Invoke(this); // 분담자 체력 갱신 알림
         DamageResolved?.Invoke(sourceUnit, this, result); // 발생자 포함 분담 피해 알림

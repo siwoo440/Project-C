@@ -13,6 +13,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool openingAllySpeedActive; // 첫 적 턴까지 유지할 배지 상태
     private bool openingDieResolved; // 흠집 난 주사위의 전투 시작 판정 여부
     private BattleUnitRuntime openingDieAttackAlly; // 첫 실제 아군 턴에 공격력 보상 받을 선택 대상
+    private bool openingPulseResolved; // 침식된 맥박줄의 첫 추첨 완료 여부
+    private (BattleUnitRuntime Target, RelicData Relic) openingPulse; // 첫 실제 아군 턴에 부여할 맥박줄의 아군과 원본
+    private int lastDustClockRound; // 어비스 먼지시계의 마지막 발동 아군 턴
     private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
     private readonly List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)> openingFearedEnemies = new List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)>(); // 포스터가 새로 공포를 부여한 적과 상태
     private int openingSpecimenActionPoints; // 첫 아군 턴에 지급할 탐사 표본병 행동력
@@ -29,6 +32,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
     private long reflectionDamageNumerator; // 이번 적 턴에 누적한 체력 피해와 반사 비율의 곱
     private BattleUnitRuntime reflectionSource; // 처음 반사 대상으로 기록한 피격 아군
+    private bool corrosionSutureSettled; // 전투 종료 침식 회복 적용 여부
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
@@ -144,6 +148,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyOpeningAllySpeed(); // 전투 시작 시 생존 아군 속도 증가
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
         ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
+        ApplyOpeningCorrosion(); // 선제 공격 전에 실제 생존 적에게 실금석의 마법 저항 약화 적용
+        ResolveOpeningPulse(); // 현재 실제 생존 아군 한 명과 시작 정신력 비용 확정
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
             openingHandAfterAmbush = initialHandSize; // 첫 아군 턴의 정상 시작 손패 보관
@@ -340,6 +346,22 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 약화 적용 종료
         return null; // 생존 적이 없는 경우의 대상 없음
     } // 시작 적 상태 처리 종료
+    private void ApplyOpeningCorrosion() // 전투 시작 시 생존 적 전원의 마법 저항 약화 적용
+    { // 시작 실금석 처리 시작
+        var relic = openingRelics?.FindEffect(RelicEffectType.OpeningCorrosionResistanceDown); // 실제 보유한 네크레이트 실금석 조회
+        if (relic == null) // 실금석 보유 여부 확인
+        { // 실금석 미보유 처리 시작
+            return; // 적 상태 변경 없이 전투 시작
+        } // 실금석 미보유 처리 종료
+        foreach (var enemy in enemyUnits) // 실제 전투 적 목록 순회
+        { // 생존 적별 약화 확인 시작
+            if (enemy?.Team == BattleTeam.Enemy && !enemy.IsDead) // 전투에 참가한 생존 적만 확인
+            { // 개별 부식 약화 부여 시작
+                enemy.ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks); // 평소 상태 면역과 적 턴 만료 규칙의 약화 부여
+            } // 개별 부식 약화 부여 종료
+        } // 생존 적별 약화 확인 종료
+    } // 시작 실금석 처리 종료
+
     private void ResolveOpeningDie() // 전투 시작 시 흠집 난 주사위의 독립 보상 결정
     { // 시작 주사위 처리 시작
         var die = openingRelics?.FindEffect(RelicEffectType.OpeningRandomAllyBoost); // 실제 이번 탐사에 보유한 주사위 원본
@@ -348,19 +370,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return; // 무작위 소비 없이 원래 전투 시작
         } // 시작 보상 없음 처리 종료
         openingDieResolved = true; // 보상 지급 알림보다 먼저 전투당 한 번 기록
-        var livingAllies = new List<BattleUnitRuntime>(); // 균등하게 선택할 생존 아군 후보
-        foreach (var ally in allyUnits) // 실제 현재 전투의 아군 명단 확인
-        { // 후보별 실제 생존 확인 시작
-            if (ally != null && ally.Team == BattleTeam.Ally && !ally.IsDead) // 쓰러진 대상과 잘못된 진영 제외
-            { // 생존 아군 후보 추가 시작
-                livingAllies.Add(ally); // 현재 전투에 생존한 개별 아군 등록
-            } // 생존 아군 후보 추가 종료
-        } // 후보별 실제 생존 확인 종료
-        if (livingAllies.Count == 0) // 전투 시작 보상을 받을 대상 확인
+        var target = PickOpeningLivingAlly(); // 기존과 동일한 전투 시작 생존자 추첨
+        if (target == null) // 전투 시작 보상을 받을 대상 확인
         { // 생존 후보 없음 처리 시작
             return; // 대상이 없을 때 무작위 추첨 미사용
         } // 생존 후보 없음 처리 종료
-        var target = livingAllies[UnityEngine.Random.Range(0, livingAllies.Count)]; // 모든 생존 아군의 균등한 한 번 선택
         if (UnityEngine.Random.Range(0, 2) == 0) // 같은 확률의 공격력 또는 방어도 선택
         { // 첫 실제 아군 턴의 공격력이 선택된 경우
             openingDieAttackAlly = target; // 선제가 끝나도 시작 때 고른 한 아군에만 보상 예약
@@ -370,6 +384,65 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             target.GainBlock(die.EffectValue); // 첫 실제 공격부터 쓸 원래 방어도 획득
         } // 전투 진입과 동시에 보호 종료
     } // 시작 주사위 처리 종료
+
+    private BattleUnitRuntime PickOpeningLivingAlly() // 시작 유물이 공유하는 무작위 생존 아군 선택
+    { // 시작 생존 아군 선택 시작
+        var livingAllies = new List<BattleUnitRuntime>(); // 균등하게 선택할 생존 아군 후보
+        foreach (var ally in allyUnits) // 실제 현재 전투의 아군 명단 확인
+        { // 후보별 실제 생존 확인 시작
+            if (ally != null && ally.Team == BattleTeam.Ally && !ally.IsDead) // 쓰러진 대상과 잘못된 진영 제외
+            { // 생존 아군 후보 추가 시작
+                livingAllies.Add(ally); // 현재 전투에 생존한 개별 아군 등록
+            } // 생존 아군 후보 추가 종료
+        } // 후보별 실제 생존 확인 종료
+        return livingAllies.Count == 0 ? null : livingAllies[UnityEngine.Random.Range(0, livingAllies.Count)]; // 생존 후보가 있을 때만 균등한 한 번 선택
+    } // 시작 생존 아군 선택 종료
+
+    private void ResolveOpeningPulse() // 전투 시작 시 맥박줄의 실제 정신력 비용과 아군 확정
+    { // 시작 맥박줄 처리 시작
+        var relic = openingRelics?.FindEffect(RelicEffectType.OpeningPulseCord); // 실제 보유한 침식된 맥박줄 원본 조회
+        if (openingPulseResolved || relic == null) // 이미 시작 추첨을 끝냈거나 미보유인 경우 확인
+        { // 시작 맥박줄 제외 시작
+            return; // 다시 추첨하지 않는 전투 시작
+        } // 시작 맥박줄 제외 종료
+        openingPulseResolved = true; // 새 상태 알림 전에 전투 시작 한 번 기록
+        var target = PickOpeningLivingAlly(); // 주사위와 같은 기준의 독립적인 생존 아군 선택
+        openingPulse = (target, relic); // 적 선제 뒤에도 같은 아군에게만 공격력 부여 예약
+        target?.ChangeMental(-3, BattleMentalChangeReason.RelicEffect); // 선택한 아군의 표준 정신력 비용 세 점 즉시 적용
+    } // 시작 맥박줄 처리 종료
+
+    private void ApplyOpeningPulseAttack() // 첫 실제 아군 턴에 독립 맥박줄 공격력 부여
+    { // 첫 실제 아군 강화 준비 시작
+        var (target, relic) = openingPulse; // 전투 시작 당시 선택한 아군과 유물 확보
+        openingPulse = default; // 공격력 부여 알림 전에 시작 예약 소모
+        if (target == null || target.IsDead) // 같은 대상의 실제 생존 확인
+        { // 공격력을 줄 대상 없음 처리 시작
+            return; // 선제 중 쓰러진 대상의 보상을 다른 아군에게 이전하지 않음
+        } // 공격력을 줄 대상 없음 처리 종료
+        var result = target.ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks, target); // 기존 공격력 상승과 독립인 두 아군 턴의 강화 적용
+        if (result is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked) // 실제 공격력 상태 적용 확인
+        { // 첫 실제 아군 턴 포함 처리 시작
+            target.GetStatusEffect(relic.StatusEffectType)?.ConsumeDurationDecreaseSkip(); // 첫 실제 아군 턴 종료부터 기간 차감
+        } // 첫 실제 아군 턴 포함 처리 종료
+    } // 첫 실제 아군 강화 준비 종료
+
+    private void ApplyDustClock() // 세 번째마다 실제 아군 턴의 적 정신력 감소
+    { // 어비스 먼지시계 처리 시작
+        var relic = openingRelics?.FindEffect(RelicEffectType.PeriodicEnemyMentalLoss); // 현재 보유한 먼지시계 원본 조회
+        int interval = relic?.PlayerTurnInterval ?? 0; // 실제 원본의 아군 턴 간격 조회
+        if (interval <= 0 || CurrentRound == lastDustClockRound || CurrentRound % interval != 0) // 미보유와 잘못된 간격 및 중복 턴 판정
+        { // 정신력 감소 비발동 시작
+            return; // 지정한 실제 아군 턴 외에는 정신력 유지
+        } // 정신력 감소 비발동 종료
+        lastDustClockRound = CurrentRound; // 변경 이벤트 전에 같은 실제 턴의 중복 발동 차단
+        foreach (var enemy in enemyUnits) // 효과를 받을 실제 적 목록 순회
+        { // 적별 생존 확인 시작
+            if (enemy?.Team == BattleTeam.Enemy && !enemy.IsDead) // 생존한 잘못된 진영 없는 적만 확인
+            { // 개별 적 정신력 감소 시작
+                enemy.ChangeMental(-relic.EffectValue, BattleMentalChangeReason.RelicEffect); // 원본 감소량과 기존 정신력 하한 적용
+            } // 개별 적 정신력 감소 종료
+        } // 적별 생존 확인 종료
+    } // 어비스 먼지시계 처리 종료
 
     private void ApplyFirstPlayerTurnEnemyStatuses() // 첫 실제 아군 턴의 적 약화 공통 시작
     { // 첫 아군 턴 전용 약화 시작
@@ -597,6 +670,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             { // 첫 아군 턴의 독립 일시 공격력 적용 시작
                 openingAlly.ApplyCurrentAllyTurnAttackPower(1, openingAlly); // 기존 한 턴 공격력 경로로 한 점 지급
             } // 첫 아군 턴의 독립 일시 공격력 적용 종료
+            ApplyOpeningPulseAttack(); // 첫 실제 아군 턴의 독립 맥박줄 공격력 부여
+            ApplyDustClock(); // 지정 주기의 실제 아군 턴에 생존 적 정신력 감소
             foreach (var enemy in enemyUnits) // 적별 돌진 예약 확인
             { // 개별 약화 시작
                 enemy?.ApplyQueuedCharge(); // 피격한 적의 방어 감소 발동
@@ -759,6 +834,35 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 개별 부활 여부 확인 종료
         return false; // 모든 실제 사망의 씨앗 정산 종료 반환
     } // 부활 대기 상태 검사 종료
+    internal BattleResultData CaptureBattleResult(IReadOnlyList<string> defeatedEnemyIds) // 전투 종료 회복 반영 결과 생성
+    { // 결과 생성 시작
+        ApplyCorrosionSutureHealing(); // 저장 이전 침식 회복 적용
+        return new BattleResultData(Result, BattleType, CurrentRound, allyUnits, defeatedEnemyIds); // 회복 반영 전투 결과
+    } // 결과 생성 끝
+
+    private void ApplyCorrosionSutureHealing() // 균열 봉합실 전투 종료 회복
+    { // 유물 회복 처리 시작
+        if (!IsBattleEnded || corrosionSutureSettled) // 미종료 전투 또는 이미 처리한 종료
+        { // 처리 제외 시작
+            return; // 회복 처리 생략
+        } // 처리 제외 끝
+
+        corrosionSutureSettled = true; // 재진입과 저장 재시도 중복 방지
+        int healing = BattleSupplyRelics.Find(RelicEffectType.SutureCorrosionHealing)?.EffectValue ?? 0; // 보유 유물의 기본 회복량
+        if (healing <= 0) // 유물 미보유 또는 회복량 없음
+        { // 적용 제외 시작
+            return; // 회복 대상 탐색 생략
+        } // 적용 제외 끝
+
+        foreach (BattleUnitRuntime ally in allyUnits) // 현재 전투 아군 순회
+        { // 아군 확인 시작
+            if (ally != null && !ally.IsDead && ally.HasLostHealthToCorrosion) // 실제 침식 체력 손실을 겪은 생존 아군
+            { // 회복 적용 시작
+                ally.RestoreHealth(healing); // 일반 회복 규칙으로 체력 복원
+            } // 회복 적용 끝
+        } // 아군 확인 끝
+    } // 유물 회복 처리 끝
+
     private void SetBattleResult(BattleResult battleResult) // 전투 결과 확정
     { // 결과 확정 시작
         Result = battleResult; // 최종 전투 결과 저장

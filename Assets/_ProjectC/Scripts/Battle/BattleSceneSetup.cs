@@ -711,7 +711,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             return; // 결과 저장 중단
         } // 저장 불가 처리 종료
         resultManager = resultManager == null ? BattleResultManager.EnsureInstance() : resultManager; // 영구 결과 관리자 확인
-        BattleResultData resultData = new BattleResultData(battleTurn.Result, battleTurn.BattleType, battleTurn.CurrentRound, allyUnits, defeatedEnemyIds); // 현재 전투 결과 스냅샷 생성
+        BattleResultData resultData = battleTurn.CaptureBattleResult(defeatedEnemyIds); // 종료 회복 반영 전투 결과 생성
         if (!resultManager.StoreResult(resultData)) // 영구 결과 저장 확인
         { // 저장 실패 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 결과 저장에 실패했습니다.", this); // 결과 저장 오류 출력

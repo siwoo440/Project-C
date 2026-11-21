@@ -213,15 +213,16 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 대상 사망 처리 시작
             return BattleStatusEffectType.None; // 전투불능 대상의 신규 상태 차단
         } // 대상 사망 처리 종료
-        result = target.ApplyStatusEffect(type, value, card.StatusDuration, 1, card.OwnerUnit); // 면역과 지속 갱신을 거친 실제 상태 적용
+        result = target.ApplyStatusEffect(type, value, card.StatusDuration, 1, card.OwnerUnit, corrosionFamily: card.SourceData.IsCorrosionStatus && card.StatusEffectType == type); // 원본에 같은 침식 상태가 명시된 경우의 실제 상태 적용
         return type; // 피격과 면역 피드백 종류 반환
     } // 후속 상태 처리 종료
 
-    internal static int RollCritical(CardInstance card, int damage, out bool critical) // 명중한 직접 카드 타격의 치명타 판정
+    internal static int RollCritical(CardInstance card, BattleUnitRuntime target, int damage, out bool critical) // 명중한 직접 카드 타격의 대상별 치명타 판정
     { // 치명타 계산 시작
         int personal = card.SourceData.SwordRule == SwordCardRule.CriticalStrike ? card.SourceData.SecondaryEffectValue : 0; // 이번 카드 전용 추가 확률 조회
         int buff = card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.CriticalChanceUp)?.EffectiveValue ?? 0; // 현재 소유자의 치명타 증가 상태 조회
-        int chance = (int)Math.Min(100L, Math.Max(0L, (long)personal + buff)); // 기본 영 퍼센트에 추가 확률 합산
+        int relicBonus = target?.Team == BattleTeam.Enemy && target.HasActiveRemovableDebuff ? BattleSupplyRelics.Find(RelicEffectType.DebuffedTargetCriticalChance)?.EffectValue ?? 0 : 0; // 실제 적 대상의 현재 정화 가능 약화와 보유한 균열침 확인
+        int chance = (int)Math.Clamp((long)personal + buff + relicBonus, 0L, 100L); // 카드와 소유자 및 피격 상태의 치명타 확률 합산
         critical = chance > 0 && UnityEngine.Random.Range(0, 100) < chance; // 추가 확률 없는 기존 공격의 난수 보존
         return critical ? (int)Math.Min(int.MaxValue, (long)damage * 3 / 2) : damage; // 치명타는 정수 피해의 일점오 배 내림
     } // 치명타 계산 종료

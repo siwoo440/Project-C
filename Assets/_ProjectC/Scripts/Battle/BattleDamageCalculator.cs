@@ -6,7 +6,8 @@ public static class BattleDamageCalculator // 공통 피해 계산기
         int rawDamage,
         BattleDamageType damageType,
         int physicalDefense,
-        int magicalResistance) // 최종 피해 계산
+        int magicalResistance, // 일반 마법 저항 수치 전달
+        int magicalResistanceLossPoints = 0) // 일반 저항과 독립인 마법 피해 경감 퍼센트포인트 감소
     {
         int safeRawDamage = Math.Max(0, rawDamage); // 원본 피해 음수 방지
         int safePhysicalDefense = Math.Max(0, physicalDefense); // 물리 방어력 음수 방지
@@ -18,7 +19,13 @@ public static class BattleDamageCalculator // 공통 피해 계산기
                 safeMagicalResistance); // 피해 유형별 방어값 선택
 
         double defenseAdjustedValue = (double)safeRawDamage * 100d / (100d + defenseValue); // 확정 방어 비율 적용값 계산
-        int defenseAdjustedDamage = safeRawDamage > 0 ? Math.Max(1, (int)Math.Floor(defenseAdjustedValue)) : 0; // 표시용 방어 적용 피해 계산
+        if (damageType == BattleDamageType.Magical && magicalResistanceLossPoints > 0) // 실금석의 마법 피해 전용 퍼센트포인트 확인
+        { // 마법 피해 경감 비율 감소 시작
+            long denominator = 100L + defenseValue; // 일반 마법 저항이 결정한 기존 피해 비율의 분모
+            long numerator = 10_000L + denominator * Math.Min(100, magicalResistanceLossPoints); // 기존 비율에 원본 대비 손실된 퍼센트포인트 합산
+            defenseAdjustedValue = (double)safeRawDamage * numerator / (100L * denominator); // 저항 영에서도 추가 피해를 허용하는 마법 피해 계산
+        } // 마법 피해 경감 비율 감소 종료
+        int defenseAdjustedDamage = safeRawDamage > 0 ? (int)Math.Clamp(Math.Floor(defenseAdjustedValue), 1d, int.MaxValue) : 0; // 정수 상한을 보존한 표시용 방어 적용 피해
 
         CardInstance card; // 카드 피해 문맥 카드
         BattleUnitRuntime target; // 카드 피해 문맥 대상

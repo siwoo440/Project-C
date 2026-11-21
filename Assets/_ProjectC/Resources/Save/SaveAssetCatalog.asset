@@ -349,6 +349,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a941bf677ced51d5ae261eceaa3d9eb6, type: 2}
   - {fileID: 11400000, guid: 36873e8a5fe25b1dbe6e3b3ec3fcc78f, type: 2}
   - {fileID: 11400000, guid: af988dc82d445e4486aa09cf780ecad2, type: 2}
+  - {fileID: 11400000, guid: 7488a5a1efdd51a8a9e79692cb0d5281, type: 2}
+  - {fileID: 11400000, guid: 2a991f163c9254648662cc6e54ef7754, type: 2}
+  - {fileID: 11400000, guid: 87acd2ab5d0857079c0b5bdbe8ac5632, type: 2}
+  - {fileID: 11400000, guid: bf087083de685913947c90cfedaf5db9, type: 2}
+  - {fileID: 11400000, guid: ce9da3ceab4b58159fba91e1fe93ad10, type: 2}
+  - {fileID: 11400000, guid: a3662ea43045525998984896696fd1d3, type: 2}
+  - {fileID: 11400000, guid: 32ca9dfe3c015cc09e8b83be824f1841, type: 2}
+  - {fileID: 11400000, guid: 52b15daee71c5b4183fc30f4eb42bd87, type: 2}
   consumables:
   - {fileID: 11400000, guid: 45f2df39a8eb4ba1950ca04e30ca71cc, type: 2}
   - {fileID: 11400000, guid: 2516d23cf829422d92957bc7f2aabdd9, type: 2}

@@ -13,11 +13,11 @@ public sealed class ChariotConcentrationRuntime : IDisposable // 전차의 턴�
         enemies = enemyUnits ?? throw new ArgumentNullException(nameof(enemyUnits)); // 적 목록 저장
         turns.PhaseEnded += HandlePhaseEnded; // 턴 종료 이벤트 연결
     } // 관리자 생성 종료
-    public void RecordAttack(CardInstance card, BattleUnitRuntime target) // 전차의 카드 공격 기록
+    public BattleStatusEffectApplyResult RecordAttack(CardInstance card, BattleUnitRuntime target) // 전차의 공격 기록과 전용 카드 표식의 실제 결과 반환
     { // 공격 기록 시작
         if (disposed || !turns.IsPlayerTurn || card == null || card.EffectType != CardEffectType.Damage || card.OwnerUnit == null || card.OwnerUnit.IsDead || card.OwnerUnit.CharacterSource == null || card.OwnerUnit.CharacterSource.CharacterId != "ARC_07" || target == null || target.Team != BattleTeam.Enemy) // 유효 전차 공격 확인
         { // 기록 불가 처리 시작
-            return; // 공격 기록 중단
+            return BattleStatusEffectApplyResult.Invalid; // 전용 카드 표식 없음 반환
         } // 기록 불가 처리 종료
         foreach (BattleUnitRuntime enemy in enemies) // 전투 적 목록 순회
         { // 이전 대상 표식 정리 시작
@@ -28,7 +28,7 @@ public sealed class ChariotConcentrationRuntime : IDisposable // 전차의 턴�
         } // 이전 대상 표식 정리 종료
         if (target.IsDead) // 공격 대상 생존 확인
         { // 사망 대상 처리 시작
-            return; // 표식 적용 중단
+            return BattleStatusEffectApplyResult.Invalid; // 사망 대상의 전용 카드 표식 없음 반환
         } // 사망 대상 처리 종료
         BattleUnitRuntime owner = card.OwnerUnit; // 전차 소유자 조회
         if (!attackCounts.TryGetValue(owner, out Dictionary<BattleUnitRuntime, int> counts)) // 소유자 공격 기록 확인
@@ -39,14 +39,16 @@ public sealed class ChariotConcentrationRuntime : IDisposable // 전차의 턴�
         counts.TryGetValue(target, out int previousCount); // 해당 대상 기존 공격 횟수 조회
         int nextCount = previousCount + 1; // 새 공격 횟수 계산
         counts[target] = nextCount; // 해당 대상 공격 횟수 저장
+        BattleStatusEffectApplyResult result = BattleStatusEffectApplyResult.Invalid; // 전용 카드 표식의 기본 결과
         if (card.StatusEffectType == BattleStatusEffectType.ChariotMark) // 전용 표식 카드 확인
         { // 전용 표식 적용 시작
-            target.ApplyStatusEffect(BattleStatusEffectType.ChariotMark, 1, 1, int.MaxValue, owner); // 전용 카드 표식 한 개 적용
+            result = target.ApplyStatusEffect(BattleStatusEffectType.ChariotMark, 1, 1, int.MaxValue, owner); // 전용 카드 표식 한 개의 실제 적용 결과 기록
         } // 전용 표식 적용 종료
         if (nextCount == 2 && passiveTriggered.Add(owner)) // 같은 적 두 번째 공격과 턴당 최초 발동 확인
         { // 집중 패시브 적용 시작
             target.ApplyStatusEffect(BattleStatusEffectType.ChariotMark, 1, 1, int.MaxValue, owner); // 패시브 표식 한 개 적용
         } // 집중 패시브 적용 종료
+        return result; // 자동 패시브와 구별한 전용 카드 표식 결과 반환
     } // 공격 기록 종료
     private void HandlePhaseEnded(BattleTurnPhase phase, int round) // 턴 종료 표식 정리
     { // 턴 종료 처리 시작

@@ -67,5 +67,8 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Stealth = 64, // 실제 전투에서 은신 중인 상태
     ResurrectionSeed = 65, // 실제 전투불능에서 아군을 한 번 되살리는 상태
     PainDistribution = 66, // 적 직접 피해를 생존 아군과 나누는 상태
-    MiracleEcho = 67 // 현재 아군 턴의 직접 카드 회복 증가
+    MiracleEcho = 67, // 현재 아군 턴의 직접 카드 회복 증가
+    CorrosionResistanceDown = 68, // 실금석의 마법 피해 저항률 감소 상태
+    PulseCordAttackPowerUp = 69, // 맥박줄이 지정한 아군의 별도 공격력 증가
+    CrystalMarkDefenseDown = 70 // 결정눈이 부여하는 별도 표식 방어 약화
 } // 열거형 종료

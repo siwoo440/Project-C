@@ -1411,7 +1411,7 @@
     {
       "sourceRow": 130,
       "name": "네크레이트 실금석",
-      "description": "전투 시작 시 적 전체 저항력 -5% (2턴)",
+      "description": "전투 시작에 생존 적 전체의 마법 피해 저항을 적 턴 두 번 동안 5%p 낮춘다.",
       "buyMin": 240,
       "buyMax": 276,
       "buyVariance": 36,
@@ -1422,7 +1422,7 @@
     {
       "sourceRow": 131,
       "name": "보랏빛 맥동핵",
-      "description": "침식 계열 디버프를 부여할 때 대상에게 3 피해",
+      "description": "아군이 침식 계열로 지정된 디버프를 적에게 적용하면 그 적에게 일반 피해 3을 준다.",
       "buyMin": 257,
       "buyMax": 300,
       "buyVariance": 43,
@@ -1433,7 +1433,7 @@
     {
       "sourceRow": 132,
       "name": "어비스 먼지시계",
-      "description": "3턴마다 적 전체 정신력 -3",
+      "description": "세 번째 아군 턴마다 생존 적 전체의 정신력을 3 낮춘다.",
       "buyMin": 274,
       "buyMax": 310,
       "buyVariance": 36,
@@ -1444,7 +1444,7 @@
     {
       "sourceRow": 133,
       "name": "검은 균열침",
-      "description": "약화 상태 적에게 치명타 확률 +10%",
+      "description": "활성 약화가 있는 적에게 카드가 직접 명중하면 치명타 확률을 10%p 높인다.",
       "buyMin": 291,
       "buyMax": 334,
       "buyVariance": 43,
@@ -1455,7 +1455,7 @@
     {
       "sourceRow": 134,
       "name": "공허에 닿은 렌즈",
-      "description": "실명 부여 확률 +15%",
+      "description": "아군 카드가 적에게 실명을 부여할 확률을 사용하는 경우 그 확률을 15%p 높인다.",
       "buyMin": 308,
       "buyMax": 344,
       "buyVariance": 36,
@@ -1466,7 +1466,7 @@
     {
       "sourceRow": 135,
       "name": "침식된 맥박줄",
-      "description": "전투 시작 시 자신 정신력 -3, 공격력 +2 (2턴)",
+      "description": "전투 시작에 무작위 생존 아군의 정신력을 3 낮춘다. 같은 아군의 첫 두 아군 턴 공격력을 2 높인다.",
       "buyMin": 325,
       "buyMax": 368,
       "buyVariance": 43,
@@ -1477,7 +1477,7 @@
     {
       "sourceRow": 136,
       "name": "보라색 결정눈",
-      "description": "표식 부여 시 대상 방어력 -1 (2턴)",
+      "description": "아군 카드의 표식이 적에게 적용되면 표식 방어 약화로 적의 물리 방어력을 두 적 턴 동안 1 낮춘다.",
       "buyMin": 192,
       "buyMax": 228,
       "buyVariance": 36,
@@ -1488,7 +1488,7 @@
     {
       "sourceRow": 137,
       "name": "균열 봉합실",
-      "description": "전투 종료 시 침식 피해를 받은 아군 체력 6 회복",
+      "description": "전투가 끝날 때 침식 피해로 실제 체력을 잃었던 생존 아군의 체력을 각각 6 회복한다.",
       "buyMin": 209,
       "buyMax": 252,
       "buyVariance": 43,
