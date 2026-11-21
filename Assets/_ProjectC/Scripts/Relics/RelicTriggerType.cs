@@ -50,5 +50,7 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforeShopPurchase, // 현재 상점에서 상품 골드 결제 직전
     ExplorationCompleted, // 성공한 탐사 완료를 정산할 때
     BeforeMentalLoss, // 실제 정신력 손실을 확정하기 직전
-    NewFloorLayout // 새 층의 선택 방 역할을 확정하는 시점
+    NewFloorLayout, // 새 층의 선택 방 역할을 확정하는 시점
+    BeforeMentalDamage, // 처음 받을 정신 피해를 확정하기 전
+    StatusRemoved // 살아 있는 유닛의 활성 상태가 해제된 시점
 }

@@ -233,6 +233,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             ShowStatusFeedback("면역", false); // 면역 차단 문구 표시
             return; // 적용 결과 표시 종료
         } // 면역 표시 종료
+        if (applyResult == BattleStatusEffectApplyResult.CleansedByRelic) // 유물이 적용 직후 제거한 약화 확인
+        { // 유물 정화 표시 시작
+            ShowStatusFeedback($"{effectName} 정화", false); // 실제 제거된 약화 이름과 정화 문구 표시
+            return; // 정화 결과 표시 완료
+        } // 유물 정화 표시 종료
         ShowStatusFeedback("적용 실패", true); // 잘못된 적용 문구 표시
     } // 적용 결과 표시 종료
     public void ResetMotion() // 유닛 움직임 초기화

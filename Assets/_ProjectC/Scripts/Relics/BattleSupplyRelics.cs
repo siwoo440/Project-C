@@ -32,6 +32,7 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         bonus += card.CardType == CardType.Wand && card.EffectType == CardEffectType.Damage ? Find(RelicEffectType.WandDirectHitBonus)?.EffectValue ?? 0 : 0; // 지팡이 피해 카드의 각 명중에 수정못 가산
         bonus += target.GetStatusEffect(BattleStatusEffectType.Blind) != null ? Find(RelicEffectType.BlindTargetDirectDamage)?.EffectValue ?? 0 : 0; // 실제 실명 상태인 적에게 안경 렌즈 가산
         bonus += target.GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false } ? Find(RelicEffectType.FearTargetDirectDamage)?.EffectValue ?? 0 : 0; // 현재 공포가 활성인 적의 실제 타격마다 피리구멍 가산
+        bonus += card.CardType == CardType.Sword && target.GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false } ? Math.Max(0, Find(RelicEffectType.SwordDamageAgainstPoison)?.EffectValue ?? 0) : 0; // 활성 중독 적에게 명중한 검의 방어 판정 전 피해 가산
         if (!usedFirstMechanicalHitBonus && target.EnemySource?.IsMechanical == true) // 전투에서 아직 가산을 쓰지 않은 기계형 적의 직접 명중 확인
         { // 회로핀의 첫 기계형 명중 시작
             int circuit = Find(RelicEffectType.FirstMechanicalDirectHitBonus)?.EffectValue ?? 0; // 보유한 회로핀의 실제 가산 피해량 조회

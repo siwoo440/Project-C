@@ -137,4 +137,12 @@ public enum RelicEffectType // 유물 효과 종류
     OpeningStethoscopeMark, // 시작의 최고 체력 생존 적에게 표식 부여
     FifthEnemyDebuffHeal, // 다섯 번째 유효한 적 약화마다 생존 아군 회복
     EnemyMentalLossActionPoint, // 아군이 적에게 준 정신력 손실의 행동력 회복
+    SwordDamageAgainstPoison, // 중독 적에 대한 실제 검 명중 피해 증가
+    OpeningBottleActionPoints, // 시작 아군 정신 비용과 첫 아군 턴의 임시 행동력
+    NullifyFirstMentalDamage, // 아군 파티의 첫 유효한 정신 피해 무효
+    DrawOnThreeCardSuits, // 동일 아군 턴의 서로 다른 카드 세 속성 뒤 드로우
+    DebuffedEnemyTurnDamage, // 적 턴 시작의 복수 대상 약화 피해
+    WandResonanceDamage, // 전투의 세 번째 지팡이 카드마다 생존 적 피해
+    CleanseReceivedDebuff, // 생존 아군에게 걸리는 약화의 즉시 확률 정화
+    StealthBreakDamage, // 은신이 풀린 아군의 다음 직접 명중 피해 증가
 }

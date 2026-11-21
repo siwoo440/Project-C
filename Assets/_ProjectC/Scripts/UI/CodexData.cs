@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.StealthBreakDamageUp) // 은신이 풀린 뒤 실제 타격을 기다리는 상태
+                    { // 별도 팔찌 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 8); // 유물에 지정된 원본 피해 증가량 전달
+                    } // 별도 팔찌 상태 설명 종료
                     else if (effect == BattleStatusEffectType.ArcaneWard || effect == BattleStatusEffectType.MagicAttackPowerUp || effect == BattleStatusEffectType.Shock) // 새 지팡이 상태의 실제 도감 등록
                     { // 상태의 시트 수치 전달 시작
                         int amount = effect == BattleStatusEffectType.ArcaneWard ? 6 : effect == BattleStatusEffectType.MagicAttackPowerUp ? 5 : 1; // 각 상태에 적용되는 원본 카드 수치
