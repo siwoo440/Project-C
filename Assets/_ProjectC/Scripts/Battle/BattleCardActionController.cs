@@ -337,7 +337,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 적별 방어도 제거 종료
         } // 전체 적 방어도 제거 종료
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
-        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly) // 전체 합계를 나누는 방어 카드 확인
+        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
         } // 효과 적용 종료
@@ -735,7 +735,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 보호 조건 조회 시작
         return card.SourceData.ShieldRule switch // 기본 보호와 방패의 직접 공격 보호 규칙 구분
         { // 보호 카드 종류 분기 시작
-            ShieldCardRule.BodyGuard => enemyActions.CanBodyGuard(card.OwnerUnit, target), // 이후 한 공격을 대신 받을 수 있는 동료 확인
+            ShieldCardRule.BodyGuard or ShieldCardRule.GuardianHeart => enemyActions.CanBodyGuard(card.OwnerUnit, target), // 이후 대신 받을 수 있는 다른 생존 동료 확인
             ShieldCardRule.ShieldOath => enemyActions.CanShieldOath(card.OwnerUnit, target), // 두 적 턴 동안 보호할 생존 동료 확인
             _ => enemyActions.CanProtectAlly(card.OwnerUnit, target) // 예정 공격을 바로 바꾸는 기존 힘 카드 확인
         }; // 보호 카드 종류 분기 종료
@@ -800,6 +800,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 return ShieldCardCombat.ApplyIndomitableFront(cardInstance, targetUnit, FindUnitView(targetUnit)); // 선택된 생존 아군의 방어도와 정화 처리
             case ShieldCardRule.Impenetrable: // 아군의 방어도와 다음 피해 무효
                 return ShieldCardCombat.ApplyImpenetrable(cardInstance, targetUnit, FindUnitView(targetUnit)); // 선택된 생존 아군의 방어도와 개인 보호 적용
+            case ShieldCardRule.EternalShield: // 영원의 방패 복합 경감 규칙
+                return ShieldCardCombat.ApplyEternalShield(cardInstance, targetUnit, FindUnitView(targetUnit)); // 생존 아군에게 직접 피해 감소와 마법 저항 적용
         } // 복합 방패 효과 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우와 손패 정리 확인
         { // 달 카드 드로우 처리 시작
@@ -823,6 +825,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 동료 피해 분담 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 힘의 동료 보호 효과 확인
         { // 동료 보호 처리 시작
+            if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GuardianHeart) // 지정 아군의 치명 피해 보호 카드 확인
+            { // 수호자의 심장 사용 시작
+                var result = targetUnit.ApplyGuardianHeart(cardInstance.OwnerUnit); // 이 아군이 받는 치명 피해 한 번에 시전자 연결
+                FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.GuardianHeart, result); // 실제 보호를 받은 아군에게 표식 안내
+                return result == BattleStatusEffectApplyResult.Applied || result == BattleStatusEffectApplyResult.Stacked ? 1 : 0; // 보호 예약의 실제 성공 여부 반환
+            } // 수호자의 심장 사용 종료
             if (cardInstance.SourceData.ShieldRule == ShieldCardRule.ShieldOath) // 두 적 턴을 지키는 수호 맹세의 적용 확인
             { // 수호 맹세 처리 시작
                 var defender = cardInstance.OwnerUnit; // 대신 피해를 받을 카드 소유자

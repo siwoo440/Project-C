@@ -155,6 +155,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GuardianHeart) // 치명적인 적 직접 타격을 기다리는 보호 확인
+        { // 수호자의 심장 상세 시작
+            return "다른 아군 1명의 치명적인 적 직접 타격 1회 대신 받기 · 시전자 체력 최소 1"; // 지정 대상과 발동 조건 및 생존 한도 표시
+        } // 수호자의 심장 상세 종료
         string shieldDetail = ShieldCardCombat.GetEffectDetail(cardInstance); // 복합 방패 카드와 일회성 보호의 실제 효과 표시
         if (shieldDetail != null) // 방패 전용 설명이 있는 카드 확인
         { // 방패 카드 상세 반환 시작

@@ -22,6 +22,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool springReady; // 다음 유료 고정 카드에 남은 할인
     private bool resolvingCard; // 사용 카드가 손패를 떠날 때까지의 정산 상태
     private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
+    private long reflectionDamageNumerator; // 이번 적 턴에 누적한 체력 피해와 반사 비율의 곱
+    private BattleUnitRuntime reflectionSource; // 처음 반사 대상으로 기록한 피격 아군
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
@@ -44,6 +46,23 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 생존 동료 검사 종료
         return false; // 생존 동료 없음 반환
     } // 생존 동료 확인 종료
+    internal bool AreAllLivingAlliesAtOrBelowHealthPercent(int percentage) // 모든 생존 아군의 개별 체력 비율 확인
+    { // 생존 아군 체력 확인 시작
+        bool foundLivingAlly = false; // 검사한 생존 아군 여부
+        foreach (BattleUnitRuntime ally in allyUnits) // 현재 아군 목록 순회
+        { // 아군별 현재 체력 검사 시작
+            if (ally == null || ally.Team != BattleTeam.Ally || ally.IsDead) // 생존 아군 대상 여부
+            { // 생존 아군 외 대상 제외 시작
+                continue; // 다음 아군 확인
+            } // 생존 아군 외 대상 제외 종료
+            if ((long)ally.CurrentHealth * 100 > (long)ally.MaxHealth * percentage) // 소수점 반올림 없는 개별 체력 한도 비교
+            { // 개별 체력 한도 초과 시작
+                return false; // 파티 전체 조건 불충족 반환
+            } // 개별 체력 한도 초과 종료
+            foundLivingAlly = true; // 생존 아군 존재 기록
+        } // 아군별 현재 체력 검사 종료
+        return foundLivingAlly; // 한 명 이상 생존한 파티의 조건 충족 여부
+    } // 생존 아군 체력 확인 종료
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
@@ -183,6 +202,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 완료 불가 처리 종료
         NotifyPhaseEnded(); // 적 턴 종료 알림
         ClearOpeningAllySpeed(); // 첫 적 턴이 끝나면 배지 속도 회수
+        ResolveReflectionCitadel(); // 마지막 적 행동과 일반 턴 종료 효과 뒤 성채 전체 반사 정산
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
@@ -210,6 +230,44 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
+    internal void RecordReflectionCitadelDamage(BattleEventContext context) // 실제 적 턴의 체력 피해 공용 프레임 집계
+    { // 성채 피해 집계 시작
+        if (context.Phase != BattleTurnPhase.EnemyTurn || context.SourceUnit?.Team != BattleTeam.Enemy || context.TargetUnit?.Team != BattleTeam.Ally || context.AppliedAmount <= 0 || context.DamageResult?.FromEnemyDirectAttack != true) // 실제 직접 적중 및 연결된 아군 피해 확인
+        { // 반사에 포함되지 않는 피해 처리 시작
+            return; // 조기 피격과 흡수 및 지속 피해 제외
+        } // 반사에 포함되지 않는 피해 처리 종료
+        int percent = Math.Min(100, context.TargetUnit.GetStatusEffect(BattleStatusEffectType.ReflectionCitadel)?.EffectiveValue ?? 0); // 피격 아군이 이번 적 턴에 받은 성채의 반사 비율
+        if (percent > 0) // 실제 아군 보호 상태 적용 확인
+        { // 반사량 누적 시작
+            reflectionDamageNumerator = Math.Min((long)int.MaxValue * 100L, reflectionDamageNumerator + (long)context.AppliedAmount * percent); // 소수점을 남겨 둔 파티 실제 체력 손실 누적
+            reflectionSource ??= context.TargetUnit; // 반사의 최초 피격 아군 보관
+        } // 반사량 누적 종료
+    } // 성채 피해 집계 종료
+    private void ResolveReflectionCitadel() // 적 행동을 마친 뒤 한 번에 반사 피해 정산
+    { // 성채 반사 정산 시작
+        int reflected = (int)(reflectionDamageNumerator / 100L); // 한 적 턴의 전체 피해를 합친 뒤 한 번만 내림
+        BattleUnitRuntime source = reflectionSource; // 정산으로 상태를 제거하기 전 피격 아군 보관
+        ClearReflectionCitadel(); // 반사 신호를 발행하기 전에 누적값과 상태 소비
+        if (reflected <= 0 || IsBattleEnded) // 반사할 양수 피해와 진행 중인 전투 확인
+        { // 반사 불가 처리 시작
+            return; // 다음 턴의 정상 흐름 유지
+        } // 반사 불가 처리 종료
+        var recipients = new List<BattleUnitRuntime>(enemyUnits); // 정산 시작 시 배치된 적 목록 보관
+        recipients.RemoveAll(enemy => enemy == null || enemy.Team != BattleTeam.Enemy || enemy.IsDead); // 이번 반사를 받을 실제 생존 적 확정
+        foreach (var enemy in recipients) // 같은 파티 피해를 받을 생존 적 순회
+        { // 적별 고정 반사 처리 시작
+            enemy.TakeUnblockedDamage(reflected, BattleDamageType.Physical, source); // 방어력과 방어도를 우회하는 한 번의 고정 물리 체력 피해 적용
+        } // 적별 고정 반사 처리 종료
+    } // 성채 반사 정산 종료
+    private void ClearReflectionCitadel() // 적 턴 한정 성채 효과와 미사용 누적 정리
+    { // 성채 상태 정리 시작
+        reflectionDamageNumerator = 0; // 다른 라운드와 반사 피해의 중복 집계 차단
+        reflectionSource = null; // 지난 적 턴의 최초 피격 아군 참조 해제
+        foreach (var ally in allyUnits) // 이번 적 턴이 끝난 아군 순회
+        { // 개별 성채 해제 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.ReflectionCitadel); // 이미 정산했거나 종료된 반사 상태 제거
+        } // 개별 성채 해제 종료
+    } // 성채 상태 정리 종료
     private BattleUnitRuntime ApplyOpeningEnemyStatus(RelicEffectType effectType) // 무작위 적 상태 적용과 실제 대상 반환
     { // 시작 적 상태 처리 시작
         var relic = openingRelics?.FindEffect(effectType); // 지정 시작 유물의 보유 여부 조회
@@ -529,6 +587,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
         ClearOpeningAllySpeed(); // 첫 적 턴을 마치지 않은 전투의 배지 상태 회수
         ClearOpeningVulnerability(); // 첫 아군 턴 중 승리나 도주 시에도 취약 회수
+        ClearReflectionCitadel(); // 승리와 패배 및 도주 이후의 반사 상태 초기화
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
         sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
@@ -595,6 +654,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         disposed = true; // 연결 해제 상태 저장
         ClearOpeningAllySpeed(); // 전투 관리자 해제 시 배지 상태 회수
         ClearOpeningVulnerability(); // 전투 관리자 해제 시 왕관 상태 회수
+        ClearReflectionCitadel(); // 전투 관리자 해제 시 성채 집계와 임시 상태 정리
         for (int unitIndex = registeredUnits.Count - 1; unitIndex >= 0; unitIndex--) // 등록 유닛 역순 순회
         { // 이벤트 일괄 해제 시작
             UnregisterUnitEvent(registeredUnits[unitIndex]); // 개별 사망 이벤트 해제

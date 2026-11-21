@@ -9,6 +9,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
     public int AbsorbedDamage { get; } // 방어도 흡수 피해 조회
     public int PreparedBlock { get; } // 공격 직전 준비로 획득할 방어도
     public bool WasDamageNullified { get; } // 양수 피해가 한 번 무효화된 결과
+    internal bool FromEnemyDirectAttack { get; } // 실제 적의 직접 명중과 연결된 체력 피해
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public bool IsWeakness { get; } // 약점 적중 여부 조회
     public float WeaknessMultiplier { get; } // 약점 피해 배율 조회
@@ -47,7 +48,8 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         float weaknessMultiplier, // 약점 피해 배율 전달
         int absorbedDamage = 0, // 방어도 흡수량 전달
         int preparedBlock = 0, // 준비 방어도 전달
-        bool wasDamageNullified = false) // 피해 무효화 여부 전달
+        bool wasDamageNullified = false, // 피해 무효화 여부 전달
+        bool fromEnemyDirectAttack = false) // 직접 적 공격에서 발생한 실제 피해 여부 전달
     {
         RawDamage = rawDamage; // 원본 피해 저장
         DefenseValue = defenseValue; // 적용 방어값 저장
@@ -57,6 +59,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         AbsorbedDamage = absorbedDamage; // 방어도 흡수량 저장
         PreparedBlock = preparedBlock; // 준비 방어도 저장
         WasDamageNullified = wasDamageNullified; // 피해 무효화 여부 저장
+        FromEnemyDirectAttack = fromEnemyDirectAttack; // 실제 직접 명중 출처 저장
         ReducedDamage =
             rawDamage > defenseAdjustedDamage
                 ? rawDamage - defenseAdjustedDamage
@@ -104,17 +107,22 @@ public readonly struct BattleDamageResult // 피해 계산 결과
             WeaknessMultiplier, // 약점 배율 유지
             AbsorbedDamage, // 기존 흡수량 유지
             PreparedBlock, // 기존 준비 방어도 유지
-            WasDamageNullified); // 기존 피해 무효 기록 유지
+            WasDamageNullified, // 기존 피해 무효 기록 유지
+            FromEnemyDirectAttack); // 체력 피해 조정에서 기존 공격 출처 유지
     }
+    internal BattleDamageResult FromResolvedEnemyAttack() // 확정된 적 공격 출처가 포함된 실제 피해 결과 생성
+    { // 직접 공격 피해 출처 지정 시작
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, AppliedDamage, DamageType, IsWeakness, WeaknessMultiplier, AbsorbedDamage, PreparedBlock, WasDamageNullified, fromEnemyDirectAttack: true); // 모든 피해 내역을 보존한 출처 표시
+    } // 직접 공격 피해 출처 지정 종료
     internal BattleDamageResult WithoutDamage() // 체력과 방어도 손실이 모두 없는 피해 무효 결과
     { // 피해 무효 결과 작성 시작
-        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, 0, 0, DamageType, IsWeakness, WeaknessMultiplier, wasDamageNullified: true); // 원본 계산 정보와 무효 표시 반환
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, 0, 0, DamageType, IsWeakness, WeaknessMultiplier, wasDamageNullified: true, fromEnemyDirectAttack: FromEnemyDirectAttack); // 원본 정보와 무효 표시 및 기존 출처의 피해 반환
     } // 피해 무효 결과 작성 종료
     public BattleDamageResult WithBlock(int block, int currentHealth, int preparedBlock = 0, int beforeBlockReduction = 0) // 보호 효과와 방어도 및 체력 적용
     { // 방어도 반영 시작
         int final = System.Math.Max(0, FinalDamage - System.Math.Max(0, beforeBlockReduction)); // 물리 방어와 저항 계산 뒤 코일의 고정 감소
         int absorbed = System.Math.Min(System.Math.Max(0, block), final); // 실제 흡수량 계산
         int applied = System.Math.Min(System.Math.Max(0, currentHealth), final - absorbed); // 실제 체력 피해 계산
-        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, final, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed, preparedBlock); // 흡수량과 준비 방어도 포함 결과 반환
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, final, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed, preparedBlock, fromEnemyDirectAttack: FromEnemyDirectAttack); // 흡수량과 준비 방어도 및 기존 출처 포함 결과 반환
     } // 방어도 반영 종료
 }

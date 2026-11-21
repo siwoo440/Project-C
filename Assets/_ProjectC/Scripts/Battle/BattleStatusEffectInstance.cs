@@ -14,7 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification; // 정해진 행동이나 실제 피해 한 번을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart; // 정해진 행동이나 실제 피해 한 번을 기다리는 상태
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -181,6 +181,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "응징 방벽"; // 응징 방벽 표시 문구 반환
             case BattleStatusEffectType.FortifyResistance: // 요새화 저항 상태 분기
                 return "요새화 저항"; // 요새화 저항 표시 문구 반환
+            case BattleStatusEffectType.EternalShield: // 영원의 방패 상태 분기
+                return "영원의 방패"; // 영원의 방패 표시 문구 반환
+            case BattleStatusEffectType.EternalShieldResistance: // 영원의 방패 저항 상태 분기
+                return "영원의 방패 저항"; // 영원의 방패 저항 표시 문구 반환
+            case BattleStatusEffectType.ReflectionCitadel: // 반사의 성채 상태 분기
+                return "반사의 성채"; // 반사의 성채 표시 문구 반환
+            case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
+                return "수호자의 심장"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -299,6 +307,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "응징"; // 응징 방벽 표시 문구 반환
             case BattleStatusEffectType.FortifyResistance: // 요새화 저항 상태 분기
                 return "요새"; // 요새화 저항 표시 문구 반환
+            case BattleStatusEffectType.EternalShield: // 영원의 방패 상태 분기
+                return "영원"; // 영원의 방패 표시 문구 반환
+            case BattleStatusEffectType.EternalShieldResistance: // 영원의 방패 저항 상태 분기
+                return "영원 저항"; // 영원의 방패 저항 표시 문구 반환
+            case BattleStatusEffectType.ReflectionCitadel: // 반사의 성채 상태 분기
+                return "반사"; // 반사의 성채 표시 문구 반환
+            case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
+                return "수호"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -417,6 +433,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"직접 공격을 맞으면 공격자에게 고정 물리 피해 {effectiveValue}"; // 응징 방벽 표시 문구 반환
             case BattleStatusEffectType.FortifyResistance: // 요새화 저항 상태 분기
                 return $"받는 마법 피해 {effectiveValue}% 감소"; // 요새화 저항 표시 문구 반환
+            case BattleStatusEffectType.EternalShield: // 영원의 방패 상태 분기
+                return $"받는 직접 피해 {effectiveValue}% 감소"; // 영원의 방패 표시 문구 반환
+            case BattleStatusEffectType.EternalShieldResistance: // 영원의 방패 저항 상태 분기
+                return $"받는 마법 피해 {effectiveValue}% 감소"; // 영원의 방패 저항 표시 문구 반환
+            case BattleStatusEffectType.ReflectionCitadel: // 반사의 성채 상태 분기
+                return $"다음 적 턴에 잃은 체력을 모아 그 {effectiveValue}%만큼 모든 적에게 반사"; // 반사의 성채 표시 문구 반환
+            case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
+                return "이 아군이 적의 직접 피해로 쓰러지려 하면 사용자가 한 번 대신 맞고 체력 1 이상으로 생존"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.Vulnerable: // 방어도 적용 전 받는 피해 증가
