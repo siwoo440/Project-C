@@ -372,6 +372,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 버릴 카드 후보 준비 종료
         if (discarded) // 사용 카드의 손패 이탈 확인
         { // 사용 후 드로우 유물 처리 시작
+            if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GiantsShield) // 정산을 끝낸 거인의 방패 확인
+            { // 다음 턴 행동력 감소 예약 시작
+                turnRuntime.QueueNextPlayerTurnActionPointLoss(cardInstance.SourceData.SecondaryEffectValue); // 다음 아군 턴 한 번의 공용 행동력 감소 예약
+            } // 다음 턴 행동력 감소 예약 종료
             QueuePentacleUseDraw(cardInstance); // 카드 사용 위치 정산 뒤 펜타클 보너스 확인
         } // 사용 후 드로우 유물 처리 종료
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
@@ -788,6 +792,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        switch (cardInstance.SourceData.ShieldRule) // 아군에게 복합 효과를 주는 방패 카드의 대상별 분기
+        { // 복합 방패 효과 시작
+            case ShieldCardRule.Fortify: // 물리 방어력과 별도의 마법 피해 경감
+                return ShieldCardCombat.ApplyFortify(cardInstance, targetUnit, FindUnitView(targetUnit)); // 선택된 생존 아군의 두 효과 처리
+            case ShieldCardRule.IndomitableFront: // 아군의 방어도와 공포 해제
+                return ShieldCardCombat.ApplyIndomitableFront(cardInstance, targetUnit, FindUnitView(targetUnit)); // 선택된 생존 아군의 방어도와 정화 처리
+            case ShieldCardRule.Impenetrable: // 아군의 방어도와 다음 피해 무효
+                return ShieldCardCombat.ApplyImpenetrable(cardInstance, targetUnit, FindUnitView(targetUnit)); // 선택된 생존 아군의 방어도와 개인 보호 적용
+        } // 복합 방패 효과 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우와 손패 정리 확인
         { // 달 카드 드로우 처리 시작
             pendingChoiceEffect = CardEffectType.DrawThenDiscard; // 드로우 후 손패 선택 효과 저장

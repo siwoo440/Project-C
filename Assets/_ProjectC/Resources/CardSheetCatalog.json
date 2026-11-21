@@ -952,7 +952,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "적에게 16 피해, 자신 방어도 +10",
+      "description": "적 하나에게 물리 피해 16을 주고 자신은 방어도 10을 얻는다.",
       "area": "단일",
       "targets": "적/아군",
       "imageFileName": "철갑 돌진.png"
@@ -963,7 +963,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 1명 다음 피해 1회 무효",
+      "description": "아군 한 명이 받는 다음 피해를 한 번 무효로 한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "절대 가드.png"
@@ -974,7 +974,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 방어력 +3, 저항력 +10% (3턴)",
+      "description": "아군 전체의 물리 방어력과 마법 피해 저항을 3턴 동안 각각 3과 10% 높인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "요새화.png"
@@ -985,7 +985,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "이번 턴 아군 피격 시 공격자에게 5 피해",
+      "description": "이번 적 턴에 생존 아군이 직접 공격을 맞으면 공격자에게 고정 물리 피해 5를 준다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "응징 방벽.png"
@@ -996,7 +996,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체가 받는 광역 피해 -35% (2턴)",
+      "description": "2회 적 턴 동안 아군 전체가 받는 적 광역 공격 피해를 35% 줄인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "분산 방어.png"
@@ -1007,7 +1007,7 @@
       "attribute": "방패",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 방어도 +10, 공포 제거",
+      "description": "생존 아군 전체에게 각각 방어도 10을 부여하고 공포를 제거한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "불굴의 전열.png"
@@ -1018,7 +1018,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 피해 1회 무효, 방어도 +12",
+      "description": "생존 아군 전체에게 각각 방어도 12를 부여하고 각자의 다음 피해를 한 번 무효로 한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "난공불락.png"
@@ -1029,7 +1029,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "4",
-      "description": "자신 방어도 +40, 다음 턴 행동력 -1",
+      "description": "자신에게 방어도 40을 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 감소한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "거인의 방패.png"

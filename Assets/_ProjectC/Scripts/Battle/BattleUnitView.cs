@@ -1,5 +1,6 @@
 using System; // 기본 이벤트 기능 사용
 using System.Collections; // 코루틴 자료형 사용
+using System.Collections.Generic; // 광역 피격 대상별 예고 문구 목록
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
@@ -250,6 +251,18 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             string statusPreview = blockedByImmunity ? "면역 예상" : $"{effectName} {action.Amount} · {action.StatusDuration}T"; // 상태 적용 예고 문구 계산
             enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {statusPreview}\n→ {action.Target.DisplayName}"; // 상태 행동 예고 내용 적용
         } // 상태 예고 처리 종료
+        else if (action.IsAreaAttack) // 생존 인원과 무관한 명시적 광역 공격 확인
+        { // 광역 피해 예고 시작
+            var previews = new List<string>(); // 생존 대상과 예상 피해 문구 준비
+            foreach (var target in action.AreaTargets) // 실제 광역 대상 목록 순회
+            { // 개별 광역 피해 예고 확인
+                if (target != null && !target.IsDead) // 표시할 생존 대상 확인
+                { // 생존 대상 피해 예고 시작
+                    previews.Add($"{target.DisplayName} {action.PreviewDamage(target).AppliedDamage}"); // 실제 대상별 보호를 반영한 예상 체력 피해
+                } // 생존 대상 피해 예고 종료
+            } // 개별 광역 피해 예고 종료
+            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n광역 공격 {action.AttackAmount}\n→ {string.Join(" · ", previews)}"; // 모든 생존 대상의 광역 피해 예고 표시
+        } // 광역 피해 예고 종료
         else // 공격 행동 처리
         { // 공격 예고 처리 시작
             string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산

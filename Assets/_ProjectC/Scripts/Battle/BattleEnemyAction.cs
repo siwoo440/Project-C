@@ -1,10 +1,13 @@
 using System; // 기본 예외 기능 사용
+using System.Collections.Generic; // 광역 공격의 대상과 개별 결과 목록
+using System.Linq; // 광역 공격의 대상 소속 조회
 
 public sealed class BattleEnemyAction // 적 예정 행동 정보
 { // 행동 정보 시작
-    private Func<BattleEnemyAction, bool> canPreviewPreparation; // 방어 준비 예고 순서 확인
-    private Func<BattleEnemyAction, int> getBootReduction; // 현재 예고 순서에서 사용할 수 있는 장화 경감량
-    private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
+    private Func<BattleEnemyAction, BattleUnitRuntime, (int Block, bool Preparation, bool Interception, bool Nullification)> getPreviewDefense; // 피격 대상별 순서와 남은 방어 조회
+    private Func<BattleEnemyAction, BattleUnitRuntime, int> getBootReduction; // 현재 생존 대상의 순서별 장화 경감량
+    private IReadOnlyList<BattleUnitRuntime> areaTargets = Array.Empty<BattleUnitRuntime>(); // 광역 공격의 실제 전투 대상 목록
+    private readonly List<(BattleUnitRuntime Target, BattleEnemyActionResult Result)> areaHitResults = new List<(BattleUnitRuntime Target, BattleEnemyActionResult Result)>(); // 이번 광역 공격의 대상별 실제 결과
     private Func<BattleEnemyAction, BattleUnitRuntime> getBodyGuardPreviewTarget; // 대신 받을 아군 예고 조회
     private BattleUnitRuntime executedAttackTarget; // 실행 당시의 실제 공격 대상
     private BattleUnitRuntime shieldTauntTarget; // 이번 공격의 살아 있는 도발 대상
@@ -28,6 +31,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public int AdditionalStatusValue => statusValue; // 공격 후 상태 효과 수치 조회
     public int AdditionalMentalChange { get; } // 공격 적중 시 정신력 변화 조회
     public EnemyTargetRule TargetRule { get; } // 대상 선택 규칙 조회
+    public bool IsAreaAttack => ActionType == EnemyActionType.Attack && TargetRule == EnemyTargetRule.AllLiving; // 생존 인원과 무관한 명시적 광역 공격 의도
+    public IReadOnlyList<BattleUnitRuntime> AreaTargets => areaTargets; // 광역 공격의 현재 배치 파티 조회
+    public IReadOnlyList<(BattleUnitRuntime Target, BattleEnemyActionResult Result)> AreaHitResults => areaHitResults; // 광역 피격과 부가 효과 결과 조회
     public string PatternDisplayName { get; } // 패턴 행동 이름 조회
     public int PatternIndex { get; } // 현재 패턴 순번 조회
     public int PatternCount { get; } // 전체 패턴 수 조회
@@ -90,6 +96,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         StatusDuration = Math.Max(1, statusDuration); // 보정된 상태 지속 횟수 저장
         StatusMaximumStacks = Math.Max(1, statusMaximumStacks); // 보정된 상태 최대 중첩 저장
         TargetRule = targetRule; // 대상 선택 규칙 저장
+        if (IsAreaAttack) // 단독 생성에서도 명시된 광역 대상 확인
+        { // 광역 대표 대상 준비 시작
+            areaTargets = new[] { target }; // 관리자 연결 전의 기본 광역 대상
+        } // 광역 대표 대상 준비 종료
 
         PatternDisplayName =
             string.IsNullOrWhiteSpace(patternDisplayName)
@@ -146,7 +156,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     internal bool SetDamageShare(BattleUnitRuntime recipient) // 생존 동료를 피해 분담자로 설정
     { // 피해 분담 설정 시작
         BattleUnitRuntime target = PrioritizedTarget; // 현재 우선 공격 대상 조회
-        if (target == null || recipient == null || recipient.IsDead || recipient == target || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 대상과 분담자 유효성 확인
+        if (target == null || recipient == null || recipient.IsDead || recipient == target || recipient.Team != BattleTeam.Ally || !IsSingleTargetEnemyAttack) // 단일 공격의 대상과 분담자 유효성 확인
         { // 분담 설정 불가 시작
             return false; // 설정 실패 반환
         } // 분담 설정 불가 종료
@@ -165,15 +175,19 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         return true; // 해제 성공 반환
     } // 피해 분담 해제 종료
 
-    internal void SetPreparationPreviewRule(Func<BattleEnemyAction, bool> rule) // 방어 준비 예고 규칙 연결
-    { // 예고 규칙 연결 시작
-        canPreviewPreparation = rule; // 공격 순서 확인 규칙 저장
-    } // 예고 규칙 연결 종료
-    internal void SetBlockPreviewRule(Func<BattleEnemyAction, int> rule) // 방어도 예고 규칙 연결
-    { // 방어도 규칙 연결 시작
-        getPreviewBlock = rule; // 방어도 예측 규칙 저장
-    } // 방어도 규칙 연결 종료
-    internal void SetBootPreviewRule(Func<BattleEnemyAction, int> rule) // 장화 잔여 횟수를 반영한 예고 연결
+    internal void SetAreaTargets(IReadOnlyList<BattleUnitRuntime> allies) // 적의 광역 공격 대상 목록 연결
+    { // 광역 대상 연결 시작
+        areaTargets = allies; // 현재 탐사의 전체 전투 아군 보관
+    } // 광역 대상 연결 종료
+    internal bool HitsTarget(BattleUnitRuntime target) // 예정 공격의 현재 대상 포함 여부
+    { // 공격 대상 조회 시작
+        return target != null && !target.IsDead && (IsAreaAttack ? areaTargets.Contains(target) : Target == target); // 단일 보호 지정 또는 광역 목록의 생존 대상 확인
+    } // 공격 대상 조회 종료
+    internal void SetDefensePreviewRule(Func<BattleEnemyAction, BattleUnitRuntime, (int Block, bool Preparation, bool Interception, bool Nullification)> rule) // 대상별 방어 예고 규칙 연결
+    { // 방어 순서 규칙 연결 시작
+        getPreviewDefense = rule; // 현재 공격 순서의 방어 확인 규칙 저장
+    } // 방어 순서 규칙 연결 종료
+    internal void SetBootPreviewRule(Func<BattleEnemyAction, BattleUnitRuntime, int> rule) // 대상별 장화 잔여 횟수 예고 연결
     { // 경감 예고 연결 시작
         getBootReduction = rule; // 현재 파티의 이번 턴 경감 기회 조회
     } // 경감 예고 연결 종료
@@ -183,48 +197,53 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     } // 보호 예고 연결 종료
     public BattleDamageResult PreviewDamage() // 예정 피해 계산
     { // 예정 피해 계산 시작
-        return PreviewDamageWithBlock(Target == null ? 0 : getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this)); // 공격 순서별 방어도 반영
+        return PreviewDamage(Target); // 기존 대표 대상의 피해 예고 반환
     } // 예정 피해 계산 종료
+    public BattleDamageResult PreviewDamage(BattleUnitRuntime target) // 광역과 단일 대상의 개별 예상 피해 계산
+    { // 개별 피해 예고 시작
+        var preview = PreviewWithDefense(target); // 공격 순서별 방어와 일회성 상태 반영
+        int primary = GetPrimaryHealthDamage(preview); // 분담 뒤 이 대상에 남는 체력 피해
+        int reduction = primary > 0 && getBootReduction != null ? getBootReduction(this, target) : 0; // 대상 순서의 장화 경감량 조회
+        return preview.WithAppliedDamage(Math.Min(target?.CurrentHealth ?? 0, Math.Max(0, primary - reduction))); // 대상 체력과 장화를 반영한 예고 반환
+    } // 개별 피해 예고 종료
     public int PreviewSharedDamage() // 분담자가 받을 실제 피해 예고
     { // 분담 피해 예고 시작
-        if (Target == null || Target.IsDead || SharedDamageRecipient == null || SharedDamageRecipient.IsDead) // 공격 대상과 생존 분담자 확인
+        if (IsAreaAttack || Target == null || Target.IsDead || SharedDamageRecipient == null || SharedDamageRecipient.IsDead || SharedDamageRecipient.GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 단일 공격의 생존 분담자와 피해 보호 확인
         { // 분담 피해 없음 처리 시작
             return 0; // 분담 피해 없음 반환
         } // 분담 피해 없음 처리 종료
-        int block = getPreviewBlock == null ? Target.CurrentBlock : getPreviewBlock(this); // 공격 전 대상의 예상 방어도 조회
-        BattleDamageResult preview = PreviewDamageBeforeShare(block); // 분담 전 대상의 방어 적용 피해 계산
+        BattleDamageResult preview = PreviewWithDefense(Target); // 분담 전 대상의 순서별 방어 적용 피해 계산
         int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 방어 적용 후 남은 피해 계산
         return Math.Min(SharedDamageRecipient.CurrentHealth, remaining / 2); // 분담자의 남은 체력을 반영한 피해 반환
     } // 분담 피해 예고 종료
-    internal BattleDamageResult PreviewDamageWithBlock(int block) // 지정 방어도 기준 예정 피해 계산
-    { // 분담을 포함한 피해 예고 시작
-        var preview = PreviewDamageBeforeShare(block); // 방어도와 물리·마법 방어를 적용한 예정 결과
-        int primary = GetPrimaryHealthDamage(preview); // 분담 후 주 대상에게 남는 체력 피해
-        int reduction = primary > 0 && getBootReduction != null ? getBootReduction(this) : 0; // 이번 순서의 장화 경감량
-        return preview.WithAppliedDamage(Math.Min(Target?.CurrentHealth ?? 0, Math.Max(0, primary - reduction))); // 대상 유무와 현재 체력 및 장화를 적용한 예고
-    } // 지정 방어도 예고 종료
+    internal BattleDamageResult PreviewWithDefense(BattleUnitRuntime target) // 장화 이전의 대상별 예상 피해 계산
+    { // 분담 이전 예고 시작
+        if (!HitsTarget(target)) // 살아 있는 실제 지정 대상 여부 확인
+        { // 잘못된 대상 예고 시작
+            return BattleDamageResult.Empty(DamageType); // 현재 피격 대상이 아닌 유닛의 빈 피해
+        } // 잘못된 대상 예고 종료
+        var (block, preparation, interception, nullification) = getPreviewDefense?.Invoke(this, target) ?? (target.CurrentBlock, true, true, true); // 공격 직전 순서별 예상 방어 상태
+        return PreviewDamageBeforeShare(target, block, preparation, interception, nullification); // 순서별 보호와 광역 의도를 반영한 예고
+    } // 분담 이전 예고 종료
     internal int GetPrimaryHealthDamage(BattleDamageResult preview) // 방어도와 분담 뒤 주 대상에게 남은 피해
     { // 주 대상 체력 피해 계산 시작
         int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 방어도 흡수 뒤 남은 피해
-        return SharedDamageRecipient != null && !SharedDamageRecipient.IsDead ? remaining - remaining / 2 : remaining; // 분담 시 홀수 한 점은 원래 대상 몫
+        return !IsAreaAttack && SharedDamageRecipient != null && !SharedDamageRecipient.IsDead ? remaining - remaining / 2 : remaining; // 단일 분담 시 홀수 한 점은 원래 대상 몫
     } // 분담을 포함한 피해 예고 종료
-    internal BattleDamageResult PreviewDamageBeforeShare(int block) // 지정 방어도 기준 분담 전 예정 피해 계산
+    internal BattleDamageResult PreviewDamageBeforeShare(BattleUnitRuntime target, int block, bool preparation, bool interception, bool nullification) // 순서별 방어 상태의 분담 전 예정 피해 계산
     { // 분담 전 피해 예고 시작
-        if (BlockingStatus != BattleStatusEffectType.None || Target == null || // 행동 차단 또는 대상 누락 확인
-            Target.IsDead)
+        if (BlockingStatus != BattleStatusEffectType.None || !HitsTarget(target)) // 행동 차단이나 대상 변경 상태 확인
         {
             return BattleDamageResult.Empty(
                 DamageType); // 피해 없음 결과 반환
         }
 
         int modifiedAmount = AttackAmount; // 실제 공격 약화와 정신 상태를 반영한 피해
-        bool firstImpact = canPreviewPreparation == null || canPreviewPreparation(this); // 대상의 첫 유효 직접 공격 여부
-
-        return Target.PreviewDamage( // 적 공격 예상 피해 계산
+        return target.PreviewDamage( // 현재 대상의 예상 피해 계산
             modifiedAmount, // 정신 상태 포함 피해량 전달
             DamageType, // 공격 피해 유형 전달
-            firstImpact ? Actor : null, // 첫 공격에만 방어 준비 포함
-            block, enemyDirectAttack: true, applyDangerInterception: firstImpact); // 예고 순서와 첫 위험 차단을 반영한 피해 계산
+            preparation ? Actor : null, // 아직 남은 방어 준비만 포함
+            block, enemyDirectAttack: true, applyDangerInterception: interception, enemyAreaAttack: IsAreaAttack, applyDamageNullification: nullification); // 광역 의도와 남은 일회성 보호 반영
     }
 
     public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null, Func<int, int> reduceHealthDamage = null) // 예정 행동 실행
@@ -234,6 +253,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
     internal BattleEnemyActionResult Execute(Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, BattleUnitRuntime guard, Action consumeBodyGuard) // 대신 받기를 포함한 행동 실행
     { // 보호 포함 실행 시작
+        areaHitResults.Clear(); // 새 행동의 광역 실행 기록 초기화
         if (BlockingStatus == BattleStatusEffectType.Stagger) // 다음 행동 한 번을 취소하는 상태 확인
         { // 행동 한 번 취소 시작
             Actor.RemoveStatusEffect(BattleStatusEffectType.Stagger); // 취소한 예고 한 번에만 상태 소모
@@ -263,20 +283,31 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         int attackDamage = AttackAmount; // 약화 소모 전 이번 공격 수치 보관
         BattleUnitRuntime prioritizedTarget = PrioritizedTarget; // 명중 판정 전에 우선 공격 대상 저장
         Actor.RemoveStatusEffect(BattleStatusEffectType.NextAttackDown); // 적이 실제 공격을 시도하면 명중과 관계없이 한 번 소모
+        if (IsAreaAttack) // 명시적으로 전체 생존자를 향한 공격 확인
+        { // 광역 공격 시작
+            foreach (BattleUnitRuntime target in areaTargets) // 현재 배치 순서의 모든 아군 확인
+            { // 광역 대상 확인 시작
+                if (target != null && !target.IsDead) // 각 피격 시점의 실제 생존 대상 확인
+                { // 개별 광역 타격 시작
+                    areaHitResults.Add((target, ExecuteHit(target, attackDamage, preventHealthDamage, reduceHealthDamage, null))); // 같은 원본 피해로 현재 대상의 명중과 손실 처리
+                } // 개별 광역 타격 종료
+            } // 광역 대상 확인 종료
+            return areaHitResults.Count > 0 ? areaHitResults[0].Result : BattleEnemyActionResult.Empty(ActionType, DamageType); // 기존 호출용 대표 광역 결과
+        } // 광역 공격 종료
         BattleUnitRuntime attackTarget = attackDamage > 0 && guard != null && !guard.IsDead ? guard : prioritizedTarget; // 도발 또는 보호 상태의 최종 대상 선택
         executedAttackTarget = attackTarget; // 연출과 결과 표시용 피격 대상 고정
+        return ExecuteHit(attackTarget, attackDamage, preventHealthDamage, reduceHealthDamage, attackTarget != prioritizedTarget ? consumeBodyGuard : null); // 기존 단일 공격의 실제 피격 처리
+    } // 보호 포함 실행 종료
+    private BattleEnemyActionResult ExecuteHit(BattleUnitRuntime attackTarget, int attackDamage, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, Action consumeBodyGuard) // 개별 대상의 명중과 실제 피해 처리
+    { // 개별 피격 처리 시작
         int hitChance = BattleHitChance.GetPercent(Actor, attackTarget); // 실제 대상 회피를 포함한 명중률
         if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), attackTarget)) // 실제 대상에 대한 명중 판정
         { // 공격 빗나감 처리 시작
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료
 
-        if (attackTarget != prioritizedTarget) // 도발 이후 보호자가 실제로 막아선 경우 확인
-        { // 대신 받기 소모 시작
-            consumeBodyGuard?.Invoke(); // 피격 이벤트 전 이번 효과 소모
-        } // 대신 받기 소모 종료
-
-        BattleDamageResult damageResult = attackTarget.TakeDamage(attackDamage, DamageType, Actor, SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true); // 실제 피격 대상의 방어와 피해 처리
+        consumeBodyGuard?.Invoke(); // 대신 받기로 실제로 명중한 경우 보호 한 번 소모
+        BattleDamageResult damageResult = attackTarget.TakeDamage(attackDamage, DamageType, Actor, IsAreaAttack ? null : SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true, enemyAreaAttack: IsAreaAttack); // 대상과 광역 의도를 반영한 실제 피해
 
         bool applyAdditionalStatus = !attackTarget.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 실제 피격 대상의 추가 상태 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? attackTarget.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 실제 피격 대상의 추가 상태 적용
@@ -284,8 +315,13 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         { // 정신력 압박 적용 시작
             attackTarget.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived); // 실제 피격 대상의 정신력 변화 적용
         } // 정신력 압박 적용 종료
+        var retaliation = attackTarget.GetStatusEffect(BattleStatusEffectType.RetributionBulwark); // 원래 타격의 실제 피격 아군에 남은 응징 방벽
+        if (retaliation != null && !Actor.IsDead && Actor.Team == BattleTeam.Enemy && !attackTarget.IsDead && attackTarget.Team == BattleTeam.Ally && !damageResult.WasDamageNullified && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0)) // 무효와 비명중을 제외한 실제 방어도 또는 체력 피해 확인
+        { // 응징 방벽 반격 시작
+            Actor.TakeUnblockedDamage(retaliation.EffectiveValue, BattleDamageType.Physical, attackTarget); // 원래 공격 정산 뒤 방어 계산 없는 고정 물리 반격
+        } // 응징 방벽 반격 종료
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
-    } // 보호 포함 실행 종료
+    } // 개별 피격 처리 종료
 
     private static int GetScaledActionAmount(
         EnemyActionType actionType,

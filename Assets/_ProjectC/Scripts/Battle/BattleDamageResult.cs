@@ -8,6 +8,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
     public int AppliedDamage { get; } // 실제 체력 피해 조회
     public int AbsorbedDamage { get; } // 방어도 흡수 피해 조회
     public int PreparedBlock { get; } // 공격 직전 준비로 획득할 방어도
+    public bool WasDamageNullified { get; } // 양수 피해가 한 번 무효화된 결과
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public bool IsWeakness { get; } // 약점 적중 여부 조회
     public float WeaknessMultiplier { get; } // 약점 피해 배율 조회
@@ -45,7 +46,8 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         bool isWeakness,
         float weaknessMultiplier, // 약점 피해 배율 전달
         int absorbedDamage = 0, // 방어도 흡수량 전달
-        int preparedBlock = 0) // 준비 방어도 포함 결과 생성
+        int preparedBlock = 0, // 준비 방어도 전달
+        bool wasDamageNullified = false) // 피해 무효화 여부 전달
     {
         RawDamage = rawDamage; // 원본 피해 저장
         DefenseValue = defenseValue; // 적용 방어값 저장
@@ -54,6 +56,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         AppliedDamage = appliedDamage; // 실제 피해 저장
         AbsorbedDamage = absorbedDamage; // 방어도 흡수량 저장
         PreparedBlock = preparedBlock; // 준비 방어도 저장
+        WasDamageNullified = wasDamageNullified; // 피해 무효화 여부 저장
         ReducedDamage =
             rawDamage > defenseAdjustedDamage
                 ? rawDamage - defenseAdjustedDamage
@@ -100,8 +103,13 @@ public readonly struct BattleDamageResult // 피해 계산 결과
             IsWeakness,
             WeaknessMultiplier, // 약점 배율 유지
             AbsorbedDamage, // 기존 흡수량 유지
-            PreparedBlock); // 기존 준비 방어도 유지 결과 반환
+            PreparedBlock, // 기존 준비 방어도 유지
+            WasDamageNullified); // 기존 피해 무효 기록 유지
     }
+    internal BattleDamageResult WithoutDamage() // 체력과 방어도 손실이 모두 없는 피해 무효 결과
+    { // 피해 무효 결과 작성 시작
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, 0, 0, DamageType, IsWeakness, WeaknessMultiplier, wasDamageNullified: true); // 원본 계산 정보와 무효 표시 반환
+    } // 피해 무효 결과 작성 종료
     public BattleDamageResult WithBlock(int block, int currentHealth, int preparedBlock = 0, int beforeBlockReduction = 0) // 보호 효과와 방어도 및 체력 적용
     { // 방어도 반영 시작
         int final = System.Math.Max(0, FinalDamage - System.Math.Max(0, beforeBlockReduction)); // 물리 방어와 저항 계산 뒤 코일의 고정 감소

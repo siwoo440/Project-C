@@ -1649,6 +1649,54 @@
       "name": "방패 파동",
       "description": "모든 적에게 현재 자신의 방어도의 절반만큼 물리 피해를 준다. 소수점은 버리며 방어도는 소모하지 않는다.",
       "artworkKey": "7234ae3a2de859f4acd5656bbd4c56a8"
+    },
+    {
+      "category": 7,
+      "name": "철갑 돌진",
+      "description": "적 하나에게 물리 피해 16을 주고 자신은 방어도 10을 얻는다.",
+      "artworkKey": "37134c4fab5a5feda228b3c1fe284553"
+    },
+    {
+      "category": 7,
+      "name": "절대 가드",
+      "description": "아군 한 명이 받는 다음 피해를 한 번 무효로 한다.",
+      "artworkKey": "d3320c90331c5e3283044c29408bd675"
+    },
+    {
+      "category": 7,
+      "name": "요새화",
+      "description": "아군 전체의 물리 방어력과 마법 피해 저항을 3턴 동안 각각 3과 10% 높인다.",
+      "artworkKey": "bdb8d60c450855d58411e4024ab5dcbe"
+    },
+    {
+      "category": 7,
+      "name": "응징 방벽",
+      "description": "이번 적 턴에 생존 아군이 직접 공격을 맞으면 공격자에게 고정 물리 피해 5를 준다.",
+      "artworkKey": "d831f0d9d18d5124ab5208e81abf9eee"
+    },
+    {
+      "category": 7,
+      "name": "분산 방어",
+      "description": "2회 적 턴 동안 아군 전체가 받는 적 광역 공격 피해를 35% 줄인다.",
+      "artworkKey": "4143a7a9cb6451d4a3af6a02a976bbfb"
+    },
+    {
+      "category": 7,
+      "name": "불굴의 전열",
+      "description": "생존 아군 전체에게 각각 방어도 10을 부여하고 공포를 제거한다.",
+      "artworkKey": "81eb85a1f68151659e777011746322ac"
+    },
+    {
+      "category": 7,
+      "name": "난공불락",
+      "description": "생존 아군 전체에게 각각 방어도 12를 부여하고 각자의 다음 피해를 한 번 무효로 한다.",
+      "artworkKey": "1161ab467453582caa0675fd84d8ea85"
+    },
+    {
+      "category": 7,
+      "name": "거인의 방패",
+      "description": "자신에게 방어도 40을 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 감소한다.",
+      "artworkKey": "f843359bde1d5d3890553444cfcb041e"
     }
   ]
 }

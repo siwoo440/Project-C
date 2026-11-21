@@ -131,6 +131,22 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                         int amount = effect == BattleStatusEffectType.FocusedDefense ? 50 : effect == BattleStatusEffectType.BleedResistance ? 20 : 1; // 기본 방패 카드의 원본 수치
                         description = BattleStatusEffectInstance.GetDescription(effect, amount); // 새 방패 상태 도감 설명 연결
                     } // 새 방패 상태 상세 안내 종료
+                    else if (effect == BattleStatusEffectType.DamageNullification) // 피해 무효 상태 확인
+                    { // 피해 무효 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 피해 무효의 실제 카드 기본 수치와 설명
+                    } // 피해 무효 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.DistributedDefense) // 분산 방어 상태 확인
+                    { // 분산 방어 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 35); // 분산 방어의 실제 카드 기본 수치와 설명
+                    } // 분산 방어 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.RetributionBulwark) // 응징 방벽 상태 확인
+                    { // 응징 방벽 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 5); // 응징 방벽의 실제 카드 기본 수치와 설명
+                    } // 응징 방벽 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.FortifyResistance) // 요새화 저항 상태 확인
+                    { // 요새화 저항 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 10); // 요새화 저항의 실제 카드 기본 수치와 설명
+                    } // 요새화 저항 도감 설명 종료
                     else if (effect == BattleStatusEffectType.Vulnerable) // 검은 왕관의 받는 피해 증가 확인
                     { // 취약 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 검은 왕관의 기본 취약 20퍼센트 설명

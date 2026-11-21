@@ -880,7 +880,17 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 행동 취소 처리 종료
             BattleUnitView targetView = FindUnitView(enemyAction.Target, allyUnitViews); // 대상 아군 화면 조회
             List<BattleUnitView> targetViews = new List<BattleUnitView>(); // 적 행동 대상 화면 목록 생성
-            if (targetView != null) // 대상 아군 화면 확인
+            if (enemyAction.IsAreaAttack) // 광역 공격의 대상별 충돌 연출 확인
+            { // 광역 대상 연출 목록 시작
+                foreach (var target in enemyAction.AreaTargets) // 실제 광역 공격 아군 순회
+                { // 광역 피격 화면 확인 시작
+                    if (target != null && !target.IsDead && FindUnitView(target, allyUnitViews) is BattleUnitView areaView) // 생성된 생존 대상 화면 확인
+                    { // 개별 충돌 연출 추가 시작
+                        targetViews.Add(areaView); // 실제 광역 피격 화면 추가
+                    } // 개별 충돌 연출 추가 종료
+                } // 광역 피격 화면 확인 종료
+            } // 광역 대상 연출 목록 종료
+            else if (targetView != null) // 단일 대상 아군 화면 확인
             { // 대상 화면 추가 시작
                 targetViews.Add(targetView); // 적 행동 대상 화면 추가
             } // 대상 화면 추가 종료
@@ -893,7 +903,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 즉시 공격 처리 시작
                 impactAction.Invoke(); // 적 공격 즉시 적용
             } // 즉시 공격 처리 종료
-            if (actionResult.IsStatusAction) // 상태 적용 행동 결과 확인
+            if (enemyAction.IsAreaAttack) // 한 행동에서 여러 대상의 결과 처리 확인
+            { // 광역 공격 피드백 시작
+                foreach (var hit in enemyAction.AreaHitResults) // 실제 피격 결과를 받은 대상 순회
+                { // 개별 피격 피드백 시작
+                    ShowEnemyAttackResult(enemyAction, hit.Target, FindUnitView(hit.Target, allyUnitViews), hit.Result); // 기존 피해와 상태 결과를 각 대상에게 표시
+                } // 개별 피격 피드백 종료
+            } // 광역 공격 피드백 종료
+            else if (actionResult.IsStatusAction) // 상태 적용 행동 결과 확인
             { // 상태 결과 처리 시작
                 targetView?.ShowStatusApplyFeedback(enemyAction.StatusEffectType, actionResult.StatusApplyResult); // 상태 적용 결과 화면 표시
                 string effectName = BattleStatusEffectInstance.GetDisplayName(enemyAction.StatusEffectType); // 상태 이상 이름 조회
@@ -901,17 +918,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 상태 결과 처리 종료
             else // 공격 행동 결과 처리
             { // 피해 결과 처리 시작
-                if (actionResult.WasMissed) // 공격 빗나감 확인
-                { // 빗나감 피드백 시작
-                    targetView?.ShowStatusFeedback("빗나감", false); // 대상에 빗나감 표시
-                } // 빗나감 피드백 종료
-                if (actionResult.HasAdditionalStatus) // 공격 후 상태 적용 시도 확인
-                { // 추가 상태 피드백 시작
-                    targetView?.ShowStatusApplyFeedback(enemyAction.StatusEffectType, actionResult.StatusApplyResult); // 상태 적용 또는 면역 결과 표시
-                } // 추가 상태 피드백 종료
-                BattleDamageResult damageResult = actionResult.DamageResult; // 적 피해 결과 조회
-                string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-                Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 패턴 {enemyAction.PatternIndex}/{enemyAction.PatternCount} {enemyAction.PatternDisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
+                ShowEnemyAttackResult(enemyAction, enemyAction.Target, targetView, actionResult); // 단일 공격의 기존 피해와 상태 결과 표시
             } // 피해 결과 처리 종료
         } // 개별 적 행동 종료
         enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
@@ -928,6 +935,24 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         int preparedActionCount = bossTransitioned ? enemyActionRuntime.PlannedActions.Count : enemyActionRuntime.PrepareActions(); // 새 페이즈 예고 유지 또는 일반 행동 준비
         Debug.Log($"[BattleSceneSetup] 플레이어 턴 시작 - 라운드 {battleTurn.CurrentRound}, 드로우 {battleTurn.LastDrawnCardCount}장, 공용 AP {sharedActionPoints.CurrentActionPoints}, 적 예고 {preparedActionCount}개", this); // 플레이어 턴 시작 출력
     } // 적 턴 실행 종료
+    private void ShowEnemyAttackResult(BattleEnemyAction action, BattleUnitRuntime target, BattleUnitView view, BattleEnemyActionResult result) // 단일 피격의 피해와 상태 결과 표시
+    { // 개별 적 공격 결과 시작
+        if (result.WasMissed) // 공격 빗나감 확인
+        { // 빗나감 피드백 시작
+            view?.ShowStatusFeedback("빗나감", false); // 피격 대상의 빗나감 표시
+        } // 빗나감 피드백 종료
+        else if (result.DamageResult.WasDamageNullified) // 이번 피해의 일회성 무효 확인
+        { // 피해 무효 표시 시작
+            view?.ShowStatusFeedback("피해 무효", false); // 보호받은 대상의 무효 결과 표시
+        } // 피해 무효 표시 종료
+        if (result.HasAdditionalStatus) // 공격 후 상태 적용 결과 확인
+        { // 추가 상태 피드백 시작
+            view?.ShowStatusApplyFeedback(action.StatusEffectType, result.StatusApplyResult); // 상태 적용과 면역 결과 표시
+        } // 추가 상태 피드백 종료
+        BattleDamageResult damage = result.DamageResult; // 피격 대상의 실제 피해 결과
+        string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름
+        Debug.Log($"[BattleDamage] 적 / {action.Actor.DisplayName} / 패턴 {action.PatternIndex}/{action.PatternCount} {action.PatternDisplayName} / 대상 {target?.DisplayName} / {damageLabel} / 원본 {damage.RawDamage} / 방어 {damage.DefenseValue} / 감소 {damage.ReducedDamage} / 최종 {damage.FinalDamage} / 실제 {damage.AppliedDamage}", this); // 개별 적 피해의 계산 결과
+    } // 개별 적 공격 결과 종료
     private static BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit, IReadOnlyList<BattleUnitView> unitViews) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
         foreach (BattleUnitView unitView in unitViews) // 유닛 화면 목록 순회

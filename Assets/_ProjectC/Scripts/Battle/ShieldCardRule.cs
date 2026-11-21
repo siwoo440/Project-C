@@ -11,5 +11,10 @@ public enum ShieldCardRule // 방패 카드의 전용 전투 규칙
     RendingShield, // 현재 방어도 절반의 기본 피해
     FrontlineProtection, // 아군 전체 방어도와 출혈 저항
     SuppressionStrike, // 명중한 적의 공격력 약화
-    ShieldOath // 지정 아군의 두 적 턴 동안 직접 피해 대신 받기
+    ShieldOath, // 지정 아군의 두 적 턴 동안 직접 피해 대신 받기
+    IroncladRush, // 적 공격 뒤 카드 소유자에게 별도의 방어도 지급
+    Fortify, // 생존 아군 전체의 물리 방어력과 마법 피해 저항 증가
+    IndomitableFront, // 생존 아군 전체 방어도와 공포 제거
+    Impenetrable, // 생존 아군 전체 방어도와 개별 피해 무효
+    GiantsShield // 자기 방어도와 다음 아군 턴 행동력 감소
 } // 방패 규칙 목록 종료

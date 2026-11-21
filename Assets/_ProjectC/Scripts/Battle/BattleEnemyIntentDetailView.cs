@@ -244,20 +244,31 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
         if (currentAction.ActionType == EnemyActionType.Attack)
         {
             int modifiedDamage = currentAction.AttackAmount; // 정신 상태와 공격 약화를 반영한 수치
-
-            BattleDamageResult previewResult =
-                currentAction.PreviewDamage(); // 대상 방어 포함 예상 피해 계산
-
             builder.AppendLine(
                 $"유형 : {GetDamageTypeText(currentAction.DamageType)}"); // 피해 유형 표시
-
-            builder.AppendLine(
-                $"예상 피해 : {modifiedDamage} → {previewResult.AppliedDamage}"); // 예상 실제 피해 표시
-            int hitChance = BattleHitChance.GetPercent(currentAction.Actor, currentAction.Target); // 공격 대상과 실명을 반영한 실제 명중률
-            if (hitChance < 100) // 빗나갈 수 있는 공격 확인
-            { // 명중률 안내 시작
-                builder.AppendLine($"명중률 : {hitChance}%"); // 실제 적 행동에 쓰이는 명중률 표시
-            } // 명중률 안내 종료
+            if (currentAction.IsAreaAttack) // 명시적 광역 공격의 대상별 상세 표시 확인
+            { // 광역 예상 피해 표시 시작
+                builder.AppendLine($"광역 공격 원본 피해 {modifiedDamage}"); // 한 광역 공격의 공통 원본 피해 표시
+                foreach (var target in currentAction.AreaTargets) // 당시 배치된 전체 공격 대상 순회
+                { // 대상별 예상 피해 계산 시작
+                    if (target != null && !target.IsDead) // 실제 공격을 받을 생존자 확인
+                    { // 생존 대상 표시 시작
+                        int damage = currentAction.PreviewDamage(target).AppliedDamage; // 개별 방어를 반영한 체력 피해 예고
+                        int chance = BattleHitChance.GetPercent(currentAction.Actor, target); // 각 생존 아군의 명중률 대조
+                        builder.AppendLine($"{target.DisplayName} · 피해 {damage} · 명중률 {chance}%"); // 대상별 피해와 명중률 표시
+                    } // 생존 대상 표시 종료
+                } // 대상별 예상 피해 계산 종료
+            } // 광역 예상 피해 표시 종료
+            else // 단일 공격의 기존 예상 피해 표시
+            { // 단일 예상 피해 표시 시작
+                int damage = currentAction.PreviewDamage().AppliedDamage; // 단일 대상의 예상 체력 피해 합계
+                builder.AppendLine($"예상 피해 : {modifiedDamage} → {damage}"); // 기존 단일 공격 예고 표시
+                int hitChance = BattleHitChance.GetPercent(currentAction.Actor, currentAction.Target); // 실제 피격 대상과 실명을 반영한 명중률
+                if (hitChance < 100) // 빗나갈 수 있는 공격 확인
+                { // 명중률 안내 시작
+                    builder.AppendLine($"명중률 : {hitChance}%"); // 단일 공격에 쓰이는 명중률 표시
+                } // 명중률 안내 종료
+            } // 단일 예상 피해 표시 종료
             if (currentAction.StatusEffectType != BattleStatusEffectType.None && currentAction.AdditionalStatusChancePercent > 0) // 공격 후 추가 상태 존재 확인
             { // 추가 상태 안내 시작
                 string effectName = BattleStatusEffectInstance.GetDisplayName(currentAction.StatusEffectType); // 상태 이상 이름 조회
@@ -285,8 +296,8 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
                 $"지속 : {currentAction.StatusDuration}T"); // 상태 이상 지속 시간 표시
         }
 
-        builder.AppendLine(
-            $"대상 : {(currentAction.Target != null ? currentAction.Target.DisplayName : "없음")}"); // 현재 대상 표시
+        string targets = currentAction.IsAreaAttack ? "생존 아군 전체" : currentAction.Target?.DisplayName ?? "없음"; // 명시된 공격 의도 또는 현재 단일 대상 이름
+        builder.AppendLine($"대상 : {targets}"); // 공격이 지정한 대상 범위 표시
 
         if (currentSpecialPattern)
         {

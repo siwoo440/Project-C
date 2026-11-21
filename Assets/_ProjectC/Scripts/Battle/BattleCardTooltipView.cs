@@ -155,6 +155,11 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        string shieldDetail = ShieldCardCombat.GetEffectDetail(cardInstance); // 복합 방패 카드와 일회성 보호의 실제 효과 표시
+        if (shieldDetail != null) // 방패 전용 설명이 있는 카드 확인
+        { // 방패 카드 상세 반환 시작
+            return shieldDetail; // 실제 카드 수치와 상태 수명에 맞춘 효과 문구
+        } // 방패 카드 상세 반환 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.RendingShield) // 현재 방어도를 기본 피해에 연결하는 카드 확인
         { // 방어도 피해 상세 표시 시작
             return $"기본 물리 피해 {cardInstance.OwnerUnit.CurrentBlock / 2} · 현재 방어도의 절반"; // 현재 방어도로 계산한 실제 기본 피해 표시

@@ -608,6 +608,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_IRONCLAD_RUSH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5cb9afd24c675b20bb4fa43049b3be7d, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ABSOLUTE_GUARD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: bf795f13a35f590591ae9076a221df40, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FORTIFY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 754e8a25e0da540080eb3a93070ead19, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RETRIBUTION_BULWARK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5aafb9f6c6a351d2897023e0f6a89975, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DISTRIBUTED_DEFENSE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: fe99b64794135bb390f6efa557ea246a, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_INDOMITABLE_FRONT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 3a91d3a8c1535c3f8c133c1490ed4f76, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_IMPENETRABLE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ee46e23b4c8652d6b60485ee0041fab9, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GIANTS_SHIELD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: cbabb537af4d5fb392af1b2bf45c7d82, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

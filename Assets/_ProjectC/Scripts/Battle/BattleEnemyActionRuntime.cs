@@ -71,9 +71,12 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             BattleEnemyAction action = CreateAction(enemyUnit, enemyIndex); // 적 예정 행동 생성
             if (action != null) // 생성 행동 확인
             { // 유효 행동 처리 시작
-                action.SetPreparationPreviewRule(IsFirstAttackAgainstTarget); // 방어 준비 예고 순서 연결
-                action.SetBootPreviewRule(GetBootPreviewReduction); // 남은 장화 횟수와 예고된 순서 반영
-                action.SetBlockPreviewRule(GetBlockBeforeAttack); // 방어도 예고 순서 연결
+                if (action.IsAreaAttack) // 명시적 광역 공격 대상 연결 여부 확인
+                { // 광역 대상 연결 시작
+                    action.SetAreaTargets(allyUnits); // 실제 아군 전체를 향한 광역 공격 설정
+                } // 광역 대상 연결 종료
+                action.SetDefensePreviewRule(GetDefenseBeforeAttack); // 방어도와 일회성 보호의 예고 순서 연결
+                action.SetBootPreviewRule(GetBootPreviewReduction); // 광역 순서를 포함한 남은 장화 횟수 반영
                 action.SetBodyGuardPreviewRule(GetBodyGuardPreviewTarget); // 대신 받을 대상 예고 연결
                 action.SetShieldTauntTarget(shieldTaunter); // 새 예정 공격에도 현재 도발 반영
                 plannedActions.Add(action); // 예정 행동 목록 추가
@@ -84,41 +87,33 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
-    private bool IsFirstAttackAgainstTarget(BattleEnemyAction action) // 대상별 첫 예정 공격 확인
-    { // 첫 공격 확인 시작
-        foreach (BattleEnemyAction candidate in plannedActions) // 행동 순서대로 예정 행동 순회
+    private (int Block, bool Preparation, bool Interception, bool Nullification) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 개별 아군의 예정 피격 전 보호 상태 계산
+    { // 보호 순서 검사 시작
+        int block = target.CurrentBlock; // 현재 대상의 실제 방어도
+        bool preparation = true; // 첫 피해 적용 전 방어 준비 확인
+        bool interception = true; // 지정 대상의 첫 직접 공격 경감 확인
+        bool nullification = true; // 지정 대상의 첫 양수 피해 무효 확인
+        foreach (BattleEnemyAction candidate in plannedActions) // 남은 적 행동 순서대로 예고 확인
         { // 앞선 공격 검사 시작
-            if (candidate == action) // 현재 공격 도달 확인
-            { // 첫 공격 처리 시작
-                return true; // 앞선 공격 없음 반환
-            } // 첫 공격 처리 종료
-            if (candidate != executingAction && CanPreviewAttackImpact(candidate) && candidate.Target == action.Target) // 같은 피격 대상의 앞선 유효 공격 확인
-            { // 앞선 공격 처리 시작
-                return false; // 방어 준비 선행 소모 반환
-            } // 앞선 공격 처리 종료
+            if (candidate == action) // 이번 예고의 실제 순서 도달 확인
+            { // 예고 중단 시작
+                break; // 이전 공격만 반영
+            } // 예고 중단 종료
+            if (candidate == executingAction || !CanPreviewAttackImpact(candidate, target)) // 현재 실행 중이거나 이 대상을 공격하지 않는 예고 확인
+            { // 피해 미포함 처리 시작
+                continue; // 다음 공격 확인
+            } // 피해 미포함 처리 종료
+            var preview = candidate.PreviewDamageBeforeShare(target, block, preparation, interception, nullification); // 이전 타격의 대상별 방어 계산
+            block += preview.PreparedBlock - preview.AbsorbedDamage; // 준비 방어와 흡수량을 반영한 잔여 방어도
+            preparation &= preview.WasDamageNullified; // 실제 무효화된 공격에서만 방어 준비 보존
+            interception = false; // 앞선 양수 직접 공격의 위험 차단 소모 반영
+            nullification &= !preview.WasDamageNullified; // 실제 무효화 이후의 보호 소모 반영
         } // 앞선 공격 검사 종료
-        return false; // 예정 목록 밖 공격 제외
-    } // 첫 공격 확인 종료
-    private int GetBlockBeforeAttack(BattleEnemyAction action) // 공격 전 예상 잔여 방어도 계산
-    { // 잔여 방어도 계산 시작
-        int block = action.Target == null ? 0 : action.Target.CurrentBlock; // 현재 방어도 조회
-        foreach (BattleEnemyAction candidate in plannedActions) // 예정 공격 순회
-        { // 앞선 공격 검사 시작
-            if (candidate == action) // 현재 공격 도달 확인
-            { // 결과 반환 시작
-                break; // 앞선 공격 검사 종료
-            } // 결과 반환 종료
-            if (candidate != executingAction && CanPreviewAttackImpact(candidate) && candidate.Target == action.Target) // 같은 피격 대상의 앞선 유효 공격 확인
-            { // 방어도 소모 예측 시작
-                BattleDamageResult preview = candidate.PreviewDamageBeforeShare(block); // 장화 경감과 무관한 앞선 방어도 흡수량
-                block = block + preview.PreparedBlock - preview.AbsorbedDamage; // 준비 획득과 흡수 후 예상 방어도 계산
-            } // 방어도 소모 예측 종료
-        } // 앞선 공격 검사 종료
-        return block; // 공격 전 예상 방어도 반환
-    } // 잔여 방어도 계산 종료
-    private static bool CanPreviewAttackImpact(BattleEnemyAction action) // 예고에서 피해가 가능한 직접 공격 확인
+        return (block, preparation, interception, nullification); // 이번 대상의 순서별 피해 보호 반환
+    } // 보호 순서 검사 종료
+    private static bool CanPreviewAttackImpact(BattleEnemyAction action, BattleUnitRuntime target) // 지정 대상에게 명중 가능한 직접 공격 확인
     { // 유효 명중 예고 시작
-        return action.IsPositiveDirectAttack && BattleHitChance.GetPercent(action.Actor, action.Target) > 0; // 양수 피해와 영보다 높은 명중률 확인
+        return action.IsPositiveDirectAttack && action.HitsTarget(target) && BattleHitChance.GetPercent(action.Actor, target) > 0; // 광역 포함 실제 대상과 양수 명중률 확인
     } // 유효 명중 예고 종료
     public BattleEnemyActionResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
@@ -144,7 +139,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
-        bool canIntercept = action.IsPositiveDirectAttack; // 양수 직접 적 공격의 보호 가능 여부
+        bool canIntercept = action.IsPositiveDirectAttack && action.IsSingleTargetEnemyAttack; // 보호로 바꿀 수 있는 양수 단일 공격 확인
         BattleUnitRuntime oathGuard = canIntercept ? FindShieldOathGuard(action) : null; // 우선 대상으로 향한 공격의 맹세 보호자
         int guardIndex = canIntercept && oathGuard == null ? FindBodyGuardIndex(action.PrioritizedTarget) : -1; // 맹세가 없는 공격의 한 차례 보호 검색
         BattleEnemyActionResult actionResult; // 적 행동 적용 결과
@@ -177,7 +172,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 유도 실패 반환
         } // 유도 불가 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 해당 적의 예정 행동 조회
-        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget != targetUnit; // 현재 우선 대상 변경 가능 확인
+        return action != null && action != executingAction && action.IsExecutable && action.IsSingleTargetEnemyAttack && action.PrioritizedTarget != targetUnit; // 현재 단일 공격의 우선 대상 변경 가능 확인
     } // 유도 가능 확인 종료
     public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
     { // 공격 유도 시작
@@ -230,7 +225,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 분담 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 동료 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally && action.SetDamageShare(protector)) // 현재 지정 동료를 향한 첫 공격에 분담자 설정
+            if (action != executingAction && action.IsExecutable && action.IsSingleTargetEnemyAttack && action.PrioritizedTarget == ally && action.SetDamageShare(protector)) // 지정 동료를 향한 첫 단일 공격의 분담자 설정
             { // 분담 설정 완료 시작
                 StateChanged?.Invoke(); // 변경된 피해 예고 알림
                 return true; // 분담 설정 성공 반환
@@ -360,7 +355,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     } // 보호 검색 종료
     private BattleUnitRuntime GetBodyGuardPreviewTarget(BattleEnemyAction action) // 순서에 맞는 보호자 예고 조회
     { // 보호자 예고 시작
-        if (!action.IsPositiveDirectAttack) // 유효한 양수 적 공격 확인
+        if (!action.IsPositiveDirectAttack || !action.IsSingleTargetEnemyAttack) // 보호할 수 있는 양수 단일 공격 확인
         { // 보호 예고 제외 시작
             return null; // 기존 대상 예고 유지
         } // 보호 예고 제외 종료
@@ -377,7 +372,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 보호자 예고 반환 시작
                 return guardIndex < 0 ? null : bodyGuards[guardIndex].Guard; // 남은 첫 보호자 반환
             } // 보호자 예고 반환 종료
-            if (candidate != executingAction && candidate.PrioritizedTarget == target && candidate.IsPositiveDirectAttack && BattleHitChance.GetPercent(candidate.Actor, bodyGuards[guardIndex].Guard) > 0) // 같은 우선 대상의 앞선 보호 소모 예측
+            if (candidate != executingAction && candidate.PrioritizedTarget == target && candidate.IsPositiveDirectAttack && candidate.IsSingleTargetEnemyAttack && BattleHitChance.GetPercent(candidate.Actor, bodyGuards[guardIndex].Guard) > 0) // 같은 우선 대상의 앞선 단일 보호 소모 예측
             { // 예고용 보호 이동 시작
                 guardIndex = FindBodyGuardIndex(target, guardIndex + 1); // 다음 보호 위치 조회
             } // 예고용 보호 이동 종료
@@ -392,7 +387,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 공격 가능 확인 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally) // 현재 동료를 향한 유효 공격 확인
+            if (action != executingAction && action.IsExecutable && action.IsSingleTargetEnemyAttack && action.PrioritizedTarget == ally) // 동료를 향한 유효 단일 공격 확인
             { // 보호 가능 처리 시작
                 return true; // 대신 받을 공격 존재 반환
             } // 보호 가능 처리 종료
@@ -407,7 +402,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally && OverridePlannedAttackTarget(action, guard)) // 현재 동료의 첫 공격만 보호자로 전환
+            if (action != executingAction && action.IsExecutable && action.IsSingleTargetEnemyAttack && action.PrioritizedTarget == ally && OverridePlannedAttackTarget(action, guard)) // 동료의 첫 단일 공격만 보호자로 전환
             { // 공격 전환 처리 시작
                 StateChanged?.Invoke(); // 변경된 공격 예고 알림
                 return true; // 보호 성공 반환
@@ -524,42 +519,50 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         bootUses++; // 주 대상의 실제 체력 피해 한 건에만 기회 소모
         return Math.Max(0, incoming - boots.EffectValue); // 영 미만으로 내려가지 않는 피해 반환
     } // 경감 정산 종료
-    private int GetBootPreviewReduction(BattleEnemyAction current) // 앞선 적 공격들이 사용할 장화 횟수 계산
-    { // 장화 예고 계산 시작
-        var inventory = RelicRunManager.Instance?.Inventory; // 현재 실제 유물 보관함
-        var boots = inventory?.FindEffect(RelicEffectType.ReduceIncomingAttack); // 현재 경감 원본
-        if (boots == null || bootUses >= boots.MaximumTriggersPerTurn) // 횟수와 보유 여부 확인
-        { // 예고 경감 없음 시작
-            return 0; // 기존 적 행동 예고 유지
-        } // 예고 경감 없음 종료
-        int available = boots.MaximumTriggersPerTurn - bootUses; // 앞으로 사용할 파티 공용 횟수
-        bool dogTag = !dogTagUsed && inventory.FindEffect(RelicEffectType.PreventFirstHealthDamage) != null; // 먼저 발동할 군번줄의 남은 보호
-        foreach (var action in plannedActions) // 실제로 예정된 적 행동 순서 순회
-        { // 앞선 소모 예상 시작
-            if (action == executingAction || !CanPreviewAttackImpact(action)) // 실행 중인 행동과 피해가 불가능한 공격 제외
-            { // 수치 미소모 시작
-                continue; // 다음 예고 행동 확인
-            } // 수치 미소모 종료
-            var preview = action.PreviewDamageBeforeShare(GetBlockBeforeAttack(action)); // 앞선 공격 뒤의 방어도를 반영한 예정 손실
-            if (action.GetPrimaryHealthDamage(preview) <= 0) // 주 대상의 체력 피해 발생 여부 확인
-            { // 방어도 전량 흡수 시작
-                continue; // 유물 횟수 보존
-            } // 방어도 전량 흡수 종료
-            if (action == current) // 표시 대상 순서 도착
-            { // 현재 공격 예고 시작
-                return dogTag ? preview.FinalDamage : available > 0 ? boots.EffectValue : 0; // 군번줄 우선 또는 남은 장화 경감
-            } // 현재 공격 예고 종료
-            if (dogTag) // 앞선 공격에서 군번줄이 먼저 보호하는 경우
-            { // 군번줄 예고 시작
-                dogTag = false; // 장화 기회는 보존하고 군번줄만 소진
-            } // 군번줄 예고 종료
-            else // 장화 경감 대상 공격 확인
-            { // 잔여 횟수 예측 시작
-                available--; // 실제 보유 상태에는 영향을 주지 않는 예정 차감
-            } // 잔여 횟수 예측 종료
-        } // 앞선 소모 예상 종료
-        return 0; // 아직 연결되지 않은 예정 행동
-    } // 장화 예고 계산 종료
+    private int GetBootPreviewReduction(BattleEnemyAction current, BattleUnitRuntime currentTarget) // 피격 순서별 파티 피해 보호 횟수 계산
+    { // 장화와 군번줄 예고 시작
+        var inventory = RelicRunManager.Instance?.Inventory; // 현재 회차의 실제 유물 조회
+        var boots = inventory?.FindEffect(RelicEffectType.ReduceIncomingAttack); // 현재 장화 보호 원본 조회
+        bool dogTag = !dogTagUsed && inventory?.FindEffect(RelicEffectType.PreventFirstHealthDamage) != null; // 군번줄의 남은 일회 보호 확인
+        int available = (boots?.MaximumTriggersPerTurn ?? 0) - bootUses; // 파티의 실제 장화 잔여 횟수
+        if (!dogTag && available <= 0) // 아직 남은 파티 피해 보호 확인
+        { // 피해 보호 없음 시작
+            return 0; // 유물 경감 없는 예상 피해 반환
+        } // 피해 보호 없음 종료
+        foreach (var action in plannedActions) // 실제 적 행동의 계획 순서 순회
+        { // 개별 행동의 피격 순서 시작
+            if (action == executingAction) // 이미 현재 피해를 적용 중인 예고 확인
+            { // 실행 중인 행동 제외 시작
+                continue; // 이전 실제 피해는 현재 상태에서 반영
+            } // 실행 중인 행동 제외 종료
+            IReadOnlyList<BattleUnitRuntime> targets = action.IsAreaAttack ? action.AreaTargets : new[] { action.Target }; // 광역 배치 또는 기존 단일 피격 순서
+            foreach (var target in targets) // 같은 행동의 개별 피격 대상 순회
+            { // 개별 대상의 공용 보호 조회 시작
+                if (!CanPreviewAttackImpact(action, target)) // 대상별 양수 명중 가능성 확인
+                { // 피해 없는 대상 제외 시작
+                    continue; // 다음 피격 대상 확인
+                } // 피해 없는 대상 제외 종료
+                var preview = action.PreviewWithDefense(target); // 해당 대상의 실제 방어도와 무효 상태 반영
+                if (action.GetPrimaryHealthDamage(preview) <= 0) // 주 대상의 실제 체력 피해 여부 확인
+                { // 유물 기회 보존 시작
+                    continue; // 남은 유물 보호 기회 유지
+                } // 유물 기회 보존 종료
+                if (action == current && target == currentTarget) // 이번 예고의 정확한 행동과 대상 확인
+                { // 현재 대상 결과 시작
+                    return dogTag ? preview.FinalDamage : available > 0 ? boots.EffectValue : 0; // 군번줄 우선 또는 남은 장화 감소량
+                } // 현재 대상 결과 종료
+                if (dogTag) // 앞선 대상의 군번줄 보호 확인
+                { // 군번줄 소모 예고 시작
+                    dogTag = false; // 다음 피해에 적용할 군번줄 기회 소모
+                } // 군번줄 소모 예고 종료
+                else // 앞선 대상의 장화 보호 차감
+                { // 장화 소모 예고 시작
+                    available--; // 이미 예정된 실제 피해의 장화 기회 소모
+                } // 장화 소모 예고 종료
+            } // 개별 대상의 공용 보호 조회 종료
+        } // 개별 행동의 피격 순서 종료
+        return 0; // 예고 목록의 현재 유효 유물 보호 없음
+    } // 장화와 군번줄 예고 종료
     private bool TryPreventFirstHealthDamage() // 전투 중 처음 발생한 적 직접 체력 피해 차단
     { // 군번줄 소비 검사 시작
         if (dogTagUsed || RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.PreventFirstHealthDamage) == null) // 이번 전투의 잔여 횟수와 실제 보유 확인
@@ -671,6 +674,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 continue; // 대상 재선택 제외
             } // 실행 행동 처리 종료
             changed |= action.ClearDamageShare(allyUnit); // 사망한 분담자의 연결 해제
+            changed |= action.IsAreaAttack; // 광역 예고의 생존 대상 목록 갱신 예약
             if (action.IntendedTarget != allyUnit) // 사망한 지정 대상 일치 확인
             { // 다른 대상 처리 시작
                 continue; // 다음 행동 이동

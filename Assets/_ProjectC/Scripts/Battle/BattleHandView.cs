@@ -662,7 +662,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         actionPointText.text = sharedActionPoints == null ? "AP --/--" : $"AP {sharedActionPoints.CurrentActionPoints}/{sharedActionPoints.MaxActionPoints}"; // 공용 행동력 수량 표시
         if (actionPointFill != null) // 행동력 구체 존재 확인
         { // 행동력 충전량 갱신 시작
-            actionPointFill.fillAmount = sharedActionPoints == null ? 0f : (float)sharedActionPoints.CurrentActionPoints / sharedActionPoints.MaxActionPoints; // 실제 행동력 비율 반영
+            actionPointFill.fillAmount = sharedActionPoints == null || sharedActionPoints.MaxActionPoints == 0 ? 0f : (float)sharedActionPoints.CurrentActionPoints / sharedActionPoints.MaxActionPoints; // 상한 영을 포함한 실제 행동력 비율 표시
         } // 행동력 충전량 갱신 종료
     } // 행동력 수량 갱신 종료
     private void EnsureTurnStatusAtTop() // 턴 상태를 화면 상단에 배치
