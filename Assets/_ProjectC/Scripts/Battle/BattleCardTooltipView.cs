@@ -43,6 +43,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 현재 기본 피해 미리보기 시작
             effectDetail += $" · 현재 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, availableActionPoints.Value)}"; // 타격과 같은 계산식의 다음 행동 기본 수치 표시
         } // 현재 기본 피해 미리보기 종료
+        if (cardInstance.IsBattleOnlySingleUse) // 실제 전투 한정으로 생성된 무료 카드 확인
+        { // 임시 카드 안내 표시 시작
+            effectDetail += " · 전투 임시 · 사용 후 제외"; // 원본 효과 뒤에 생성 카드의 실제 수명과 제외 안내
+        } // 임시 카드 안내 표시 종료
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시

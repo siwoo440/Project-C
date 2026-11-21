@@ -495,7 +495,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan) // 실제 카드 정산의 방어 할인과 확정 반향 자료 전달
     { // 카드 정산 범위 시작
         bool resolveHealingBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies; // 피해와 회복을 함께 처리하는 카드 확인
-        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory || cardInstance.SourceData.WandRule == WandCardRule.ChainLightning); // 복합 효과와 연쇄 번개의 카드 이동까지 기다린 뒤 승리 확정
+        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory || cardInstance.IsBattleOnlySingleUse || cardInstance.SourceData.WandRule == WandCardRule.ChainLightning); // 임시 카드와 복합 효과의 실제 이동을 마친 뒤 승리 정산
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan); // 실제 전투 효과와 독립 타격 및 사용 카드 이동 처리
@@ -1913,7 +1913,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중 가산 제외 종료
         var stealthBonus = owner.GetStatusEffect(BattleStatusEffectType.StealthBreakDamageUp); // 은신 종료로 예약된 실제 피해 상태
         int stealthDamage = stealthBonus is { IsExpired: false } && owner.RemoveStatusEffect(BattleStatusEffectType.StealthBreakDamageUp) ? stealthBonus.EffectiveValue : 0; // 첫 유효 직접 명중의 일회 피해 수치 소모
-        long preparedDamage = (long)stealthDamage + (card.CardType == CardType.Wand ? preparedWandDamage : 0); // 같은 명중의 팔찌와 첫 지팡이 집중 가산 합계
+        var danceBonus = owner.GetStatusEffect(BattleStatusEffectType.DanceShoeDamageUp); // 실제 회피에서 대기 중인 공격 가산 상태
+        int danceDamage = danceBonus is { IsExpired: false } && owner.RemoveStatusEffect(BattleStatusEffectType.DanceShoeDamageUp) ? danceBonus.EffectiveValue : 0; // 처음 명중한 직접 적 공격에만 무도화 상태 소모
+        long preparedDamage = (long)stealthDamage + danceDamage + (card.CardType == CardType.Wand ? preparedWandDamage : 0); // 같은 명중의 무도화와 팔찌 및 첫 지팡이 집중 가산 합계
         if (damage <= 0) // 기존 양수 피해가 필요한 추가 유물 확인
         { // 영 피해 카드 타격의 예약 보정 시작
             int preparedHit = (int)Math.Min(int.MaxValue, damage + preparedDamage); // 적 명중에서 실제 예약된 피해 합계

@@ -20,6 +20,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
     private CardInstance battleCopy; // 전투 종료 시 모든 더미에서 지울 복사본
+    private CardInstance openingTemporaryCard; // 첫 아군 손패에 한 번 들어오는 전투 한정 무료 찌르기
     private CardInstance pendingHandDiscard; // 현재 한 번의 버림 판정을 기다리는 손패
     private int nextPlayerTurnDraw; // 다음 아군 턴 시작에 추가할 드로우 수
     internal int HandCountBeforeCleanup { get; private set; } // 자동 버리기 전의 실제 손패 수
@@ -395,7 +396,9 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 복사 불가 시작
             return false; // 원래 손패와 미사용 기회 유지
         } // 복사 불가 종료
-        battleCopy = CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 비용과 소유자 및 강화 단계 복사
+        battleCopy = source.IsBattleOnlySingleUse // 다른 유물이 복사한 실제 카드의 무료 및 일회 규칙 확인
+            ? CardInstance.CreateBattleOnlySingleUse(source.SourceData, source.OwnerUnit, cards.Count) // 복사한 실제 임시 카드의 무료 비용과 사용 제외 유지
+            : CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 카드의 정상 비용과 소유자 및 강화 단계 복사
         battleCopy.RelicApDiscount = relicApDiscount; // 현재 첫 턴의 유물 할인 물려주기
         battleCopy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 다음 카드 유물 할인 물려주기
         battleCopy.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 아직 남은 전투의 첫 방어 할인 물려주기
@@ -404,6 +407,20 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 변경된 손패 표시
         return true; // 전투당 한 번 복사 성공
     } // 복사 종료
+    internal bool TryAddOpeningTemporaryCard(CardData source, BattleUnitRuntime owner) // 첫 아군 손패의 실제 전투 한정 찌르기 생성
+    { // 새 임시 손패 생성 시작
+        if (source == null || owner == null || owner.IsDead || owner.Team != BattleTeam.Ally || openingTemporaryCard != null || hand.Count >= MaxHandSize) // 첫 한 번의 실제 주인과 정상 손패 상한 확인
+        { // 손패 또는 생존 조건 실패 시작
+            return false; // 기존 손패와 정상 드로우에 영향 없는 생성 실패 반환
+        } // 손패 또는 생존 조건 실패 종료
+        openingTemporaryCard = CardInstance.CreateBattleOnlySingleUse(source, owner, cards.Count); // 표준 찌르기 효과를 가진 별도 비용 영 전투 카드 생성
+        cards.Add(openingTemporaryCard); // 현재 전투의 정상 카드 영역 목록에만 한 장 등록
+        hand.Add(openingTemporaryCard); // 표준 정상 드로우와 별개인 임시 카드의 실제 손패 도착
+        EnsureValidState(); // 생성 뒤 카드 더미의 수와 배치 일치 확인
+        StateChanged?.Invoke(); // 무료 원본 카드의 실제 손패 화면 갱신
+        return true; // 첫 실제 임시 카드 생성 성공 반환
+    } // 새 임시 손패 생성 종료
+
     internal void ClearBattleRelicCards() // 전투가 끝난 뒤 임시 카드와 예약 정리
     { // 전투 카드 정리 시작
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
@@ -411,16 +428,27 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         SetFirstDefensiveRelicApDiscount(0); // 전투가 종료될 때 미사용 방어 할인 정리
         openingRetainedCard = null; // 전투를 끝낸 미사용 시작 손패 유지 해제
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
-        if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
-        { // 복사본 제거 시작
-            hand.Remove(battleCopy); // 손패 복사본 제거
-            drawPile.Remove(battleCopy); // 뽑을 더미 복사본 제거
-            discardPile.Remove(battleCopy); // 버린 더미 복사본 제거
-            excludedPile.Remove(battleCopy); // 제외된 전투 복사본도 정리
-            battleCopy = null; // 제거한 전투 카드 참조 해제
-            StateChanged?.Invoke(); // 실제 더미 변화 알림
-        } // 복사본 제거 종료
+        bool removed = RemoveBattleOnlyCard(ref battleCopy); // 기존 유물의 전투 전용 복사본 정리
+        removed |= RemoveBattleOnlyCard(ref openingTemporaryCard); // 모든 전투 더미에서 단추의 무료 찌르기 정리
+        if (removed) // 실제로 손패 또는 전투 더미가 바뀐 경우 확인
+        { // 전투 임시 덱 변경 알림 시작
+            StateChanged?.Invoke(); // 완전히 정리한 실제 카드 상태 화면 갱신
+        } // 전투 임시 덱 변경 알림 종료
     } // 전투 카드 정리 종료
+
+    private bool RemoveBattleOnlyCard(ref CardInstance temporary) // 전투 한정 카드 하나를 실제 더미에서 모두 제거
+    { // 별도 전투 카드 제거 시작
+        if (temporary == null || !cards.Remove(temporary)) // 실제 존재하는 현재 전투 카드와 별도 소유 조회
+        { // 지울 카드 없음 처리 시작
+            return false; // 기존 카드와 사용 전투 더미 그대로 반환
+        } // 지울 카드 없음 처리 종료
+        hand.Remove(temporary); // 남은 현재 손패의 임시 카드 제거
+        drawPile.Remove(temporary); // 새로 뽑을 전투 더미의 임시 카드 제거
+        discardPile.Remove(temporary); // 아직 쓰지 않고 버린 임시 카드 제거
+        excludedPile.Remove(temporary); // 사용해 전투에서 제외한 임시 카드까지 제거
+        temporary = null; // 해당 전투 카드의 별도 관리 참조 해제
+        return true; // 현재 더미에 실제로 있었던 임시 카드 정리 결과
+    } // 별도 전투 카드 제거 종료
     internal void QueuePlayerTurnDraw(int count) // 다음 아군 턴에 추가 드로우 보관
     { // 드로우 예약 시작
         nextPlayerTurnDraw = (int)Math.Clamp((long)nextPlayerTurnDraw + count, 0L, int.MaxValue); // 정수 범위에서 추가 드로우 합산
@@ -504,7 +532,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private void PlacePlayedCard(CardInstance card) // 손패에서 빠진 사용 카드 정산
     { // 사용 위치 처리 시작
         ForgetOpeningRetention(card); // 정상 사용 정산 후 같은 카드의 개시 유지 해제
-        if (card.SourceData.ExcludeOnUse) // 사용 후 제외 규칙 확인
+        if (card.SourceData.ExcludeOnUse || card.IsBattleOnlySingleUse) // 원본 규칙 또는 별도 생성 카드의 실제 사용 후 제외 확인
         { // 전투 제외 시작
             excludedPile.Add(card); // 제외 더미에 사용 카드 보관
             CardExcluded?.Invoke(card, false); // 실제 제외 알림

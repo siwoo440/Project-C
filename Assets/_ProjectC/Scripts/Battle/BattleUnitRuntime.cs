@@ -56,6 +56,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> AllyDefeatReady; // 사망 알림을 마친 아군의 유물 부활 정산
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
+    internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
@@ -597,6 +598,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private void MarkDefeated() // 실제 체력 영의 전투불능과 씨앗 보존
     { // 전투불능 상태 기록 시작
         IsDead = true; // 피해 이벤트부터 쓰러진 아군 상태 확정
+        DefeatedWhileBurning = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 화상 저장
         var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
         pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
     } // 전투불능 상태 기록 종료
@@ -700,7 +702,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 방어도 부분 제거 종료
     public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false, bool alliedDirectAttack = false) // 직접 공격과 방어도를 반영한 순수 피해 예고
     { // 기본 피해 예고 시작
-        damageAmount = alliedDirectAttack ? ApplyConfessionDamageMark(damageAmount, sourceUnit, out _) : damageAmount; // 현재 표식을 소비하지 않는 직접 카드 타격 예고
+        damageAmount = alliedDirectAttack ? ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out _) : damageAmount; // 표식을 소비하지 않는 실제 직접 타격 보정 예고
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true); // 현재 위험 차단을 포함한 피해 예고
     } // 기본 피해 예고 종료
     internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, bool enemyAreaAttack = false, bool applyDamageNullification = true) // 공격 의도와 순서의 보호를 반영한 피해 예고
@@ -807,7 +809,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleStatusEffectInstance confession = null; // 명중 전에 확정할 이번 직접 피해의 표식 참조
         if (alliedDirectAttack) // 출혈과 반사 및 고정 피해를 제외한 직접 카드 명중 확인
         { // 고해실의 못 피해 가산 시작
-            damageAmount = ApplyConfessionDamageMark(damageAmount, sourceUnit, out confession); // 예고와 같은 고해실 표식의 방어 전 피해 가산
+            damageAmount = ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out confession); // 예고와 같은 방어 이전 고해 표식과 은신 보정
         } // 고해실의 못 피해 가산 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
@@ -978,12 +980,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
-    private int ApplyConfessionDamageMark(int amount, BattleUnitRuntime sourceUnit, out BattleStatusEffectInstance mark) // 살아 있는 적의 다음 아군 타격 가산과 표식 확인
-    { // 고해실 표식의 공통 계산 시작
-        mark = amount > 0 && !IsDead && Team == BattleTeam.Enemy && sourceUnit is { Team: BattleTeam.Ally, IsDead: false } && // 양수 원본 피해를 주는 실제 생존 시전자와 적 확인
-            GetStatusEffect(BattleStatusEffectType.ConfessionDamageMark) is { IsExpired: false } activeMark ? activeMark : null; // 다음 명중을 기다리는 실제 활성 표식 참조
-        return mark == null ? amount : (int)Math.Min(int.MaxValue, (long)amount + mark.EffectiveValue); // 동일한 방어 전 가산과 정수 상한 처리
-    } // 고해실 표식의 공통 계산 종료
+    private int ApplyAlliedDirectDamageBonuses(int amount, BattleUnitRuntime sourceUnit, out BattleStatusEffectInstance mark) // 살아 있는 적의 실제 명중과 예고가 공유하는 방어 전 가산
+    { // 아군 직접 피해 가산 시작
+        mark = null; // 적용하지 않은 타격의 기본 고해 표식 없음
+        if (amount <= 0 || IsDead || Team != BattleTeam.Enemy || sourceUnit is not { Team: BattleTeam.Ally, IsDead: false }) // 양수 원본 피해와 실제 살아 있는 적 및 아군 확인
+        { // 가산 제외 시작
+            return amount; // 일반 피해와 대상에 어긋난 원래 피해 유지
+        } // 가산 제외 종료
+        mark = GetStatusEffect(BattleStatusEffectType.ConfessionDamageMark) is { IsExpired: false } activeMark ? activeMark : null; // 기존 고해의 다음 명중 소비 참조 보존
+        int curtain = GetStatusEffect(BattleStatusEffectType.Stealth) is { IsExpired: false } ? BattleSupplyRelics.Find(RelicEffectType.CurtainPinStealthDamage)?.EffectValue ?? 0 : 0; // 실제 활성 은신 적의 커튼 고정핀 가산 조회
+        return (int)Math.Min(int.MaxValue, (long)amount + (mark?.EffectiveValue ?? 0) + curtain); // 양쪽 독립 가산과 원래 정수 피해 상한 적용
+    } // 아군 직접 피해 가산 종료
 
     private int ApplyHeartShardDamageBonus(int amount, BattleUnitRuntime sourceUnit) // 심장파편을 반영한 실제 아군 출처 피해
     { // 저체력 아군 피해 계산 시작
@@ -1020,6 +1027,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 준비 미적용 처리 종료
         return GetStatusEffect(BattleStatusEffectType.GuardPreparation); // 현재 방어 준비 반환
     } // 준비 적용 확인 종료
+    private bool HasActiveHealingBuff() // 회복 직전 살아 있는 기존 긍정 상태 확인
+    { // 활성 강화 확인 시작
+        foreach (var effect in statusEffects) // 원래 회복 대상의 정상 상태 목록 순회
+        { // 개별 강화 확인 시작
+            if (!effect.IsExpired && !effect.IsDebuff && (effect.EffectType == BattleStatusEffectType.Awakening || !effect.IsProtectedMentalState)) // 기존 강화 분류와 긍정 각성만 포함
+            { // 실제 대상 강화 발견 시작
+                return true; // 하나 이상으로 발동하는 금실 효과 확인
+            } // 실제 대상 강화 발견 종료
+        } // 개별 강화 확인 종료
+        return false; // 활성 강화가 없는 기존 회복 확인
+    } // 활성 강화 확인 종료
     public int RestoreHealth(int healAmount, BattleUnitRuntime sourceUnit = null) // 체력 회복 처리
     { // 체력 회복 시작
         if (healAmount <= 0 || IsDead || CurrentHealth >= MaxHealth) // 무효 회복 확인
@@ -1031,11 +1049,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int bonus = BattleSupplyRelics.Find(RelicEffectType.LowHealthHealing)?.EffectValue ?? 0; // 실제 보유한 은빛 심장핀의 수치 조회
             healAmount = (int)Math.Min(int.MaxValue, (long)healAmount + bonus); // 받는 회복 감소 처리 전 가산
         } // 저체력 회복 가산 종료
+        var embroidery = Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.GoldEmbroideryBuffedHealing) : null; // 생존 아군의 실제 받는 회복 유물 조회
+        int embroideryPercent = embroidery != null && HasActiveHealingBuff() ? Math.Max(0, embroidery.EffectValue) : 0; // 현재 회복 이벤트 이전 활성 강화와 실제 증가량 확보
         int increase = GetStatusEffectValue(BattleStatusEffectType.HealingReceivedUp); // 대상에 적용된 잔잔한 축복의 수신 회복 증가율
         int reduction = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.HealingReceivedDown)); // 기존 수신 회복 감소율과 최대 백 보정
-        if (increase > 0 || reduction > 0) // 현재 대상에게 적용할 수신 회복 보정 확인
+        if (increase > 0 || reduction > 0 || embroideryPercent > 0) // 현재 대상의 기존 수신 보정과 금실 증가 확인
         { // 수신 회복 증가와 감소 공통 처리 시작
-            healAmount = (int)Math.Min(int.MaxValue, (decimal)healAmount * (100L + increase) * (100 - reduction) / 10_000m); // 모든 수신 비율을 곱한 뒤 한 번 내림과 정수 상한
+            healAmount = (int)Math.Min(int.MaxValue, healAmount * ((100L + increase) / 100m) * ((100 - reduction) / 100m) * ((100L + embroideryPercent) / 100m)); // 기존 수신 비율과 금실 비율의 곱을 한 번만 내림 및 정수 범위 적용
             if (healAmount == 0) // 실제 적용할 회복량이 없는 조건 확인
             { // 미회복 처리 시작
                 return 0; // 기존 회복 알림과 정신력 미발동

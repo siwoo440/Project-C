@@ -10,6 +10,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     internal int NextCardRelicApDiscount { get; set; } // 다음 유료 카드에 적용할 유물 할인
     internal int FirstDefensiveRelicApDiscount { get; set; } // 전투의 첫 유료 방어 카드에 예약된 할인
     private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
+    internal bool IsBattleOnlySingleUse { get; private set; } // 원본 덱에 저장하지 않는 고정 비용 영의 전투 일회 카드
 
     public string InstanceId { get; }
     public CardData SourceData { get; }
@@ -26,7 +27,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SpendsAllActionPoints ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount + SourceData.AdditionalActionPointCost); // 기존 할인과 방패끈을 적용한 기본 비용에 의무 행동력 대가 합산
+    public int ApCost => IsBattleOnlySingleUse ? 0 : (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount + SourceData.AdditionalActionPointCost); // 전투 임시 찌르기의 고정 무료 및 기존 원본 카드 비용
     private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
     internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && !SourceData.SpendsAllActionPoints && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
     internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인
@@ -39,6 +40,10 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     { // 고정 비용 계산 시작
         get // 현재 카드 비용 조회
         { // 지속 할인 계산 시작
+            if (IsBattleOnlySingleUse) // 턴마다 할인으로 계산하지 않는 실제 무료 전투 카드 확인
+            { // 고정 무료 기본 비용 적용 시작
+                return 0; // 다음 유료 카드 할인의 발동 조건에서도 이미 무료인 비용 반환
+            } // 고정 무료 기본 비용 적용 종료
             int upgradedCost = CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 강화 단계 반영 기본 비용
             long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount; // 서로 독립인 지속 할인 합계
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
@@ -152,6 +157,13 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             ownerUnit,
             upgradeLevel); // 카드 인스턴스 반환
     }
+
+    internal static CardInstance CreateBattleOnlySingleUse(CardData cardData, BattleUnitRuntime owner, int sequence) // 실제 원본에서 강화 없는 전투 일회 카드 생성
+    { // 전투 한정 카드 생성 시작
+        var instance = Create(cardData, owner, sequence, 0); // 원본 효과와 소유권은 유지하면서 회차 강화 없이 생성
+        instance.IsBattleOnlySingleUse = true; // 실제 사용 시 제외되고 전투에서만 보관하는 카드 표시
+        return instance; // 이 전투의 별도 카드 한 장 반환
+    } // 전투 한정 카드 생성 종료
 
     public static int CalculateUpgradedEffectValue(
         int baseValue,

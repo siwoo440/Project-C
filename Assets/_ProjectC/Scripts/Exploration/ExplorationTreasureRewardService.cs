@@ -26,6 +26,22 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         return TryGrantRewardInternal(runtimeId, true, out message, out pendingOffer); // 공용 카드 선택을 포함한 보상 처리
     } // 선택 가능한 보물 보상 종료
 
+    internal static int GrantLockedDrawerBonus(string runtimeId) // 완료를 확정한 실제 보물방의 별도 골드 판정
+    { // 서랍 열쇠의 독립 보상 처리 시작
+        var key = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.LockedDrawerTreasureBonus); // 지금 회차에 보유한 잠긴 서랍 열쇠 조회
+        if (string.IsNullOrWhiteSpace(runtimeId) || key == null || key.EffectValue <= 0 || key.TriggerChancePercent <= 0) // 실제 방과 유효한 별도 골드 및 확률 확인
+        { // 추가 골드 후보 제외 시작
+            return 0; // 기본 보상 난수와 지급액 보존
+        } // 추가 골드 후보 제외 종료
+        var random = new System.Random(BuildStableHash(runtimeId + ":drawer-bonus")); // 방 식별자에서 기본 보물과 분리한 고정 난수
+        if (random.Next(100) >= key.TriggerChancePercent) // 기존 기본 골드 판정과 별도의 백분율 확인
+        { // 추가 서랍 보상 확률 실패 시작
+            return 0; // 완료 표시 외 추가 지급 없음
+        } // 추가 서랍 보상 확률 실패 종료
+        PlayerResourceManager.EnsureInstance().AddResources(key.EffectValue, 0, 0, 0); // 기존 회차 자원 경로로 저장 전에 추가 골드 지급
+        return key.EffectValue; // 기본 보물 결과에 이어 표시할 실제 추가 골드
+    } // 서랍 열쇠의 독립 보상 처리 종료
+
     private static bool TryGrantRewardInternal(string runtimeId, bool allowOwnerChoice, out string message, out ShopOfferData pendingOffer) // 보물 보상 공통 처리
     {
         pendingOffer = null; // 대기 중 카드 초기화

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: PianoWire
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_PIANO_WIRE
+  displayName: 피아노 줄
+  description: "아군이 적에게 다음 행동 1회 취소를 부여하거나 갱신하면 그 생존 적에게 일반 피해 4를 준다."
+  icon: {fileID: 21300000, guid: b254b9fa8a6f527ca4e3c280bbe43d93, type: 3}
+  rarity: 0
+  triggerType: 8
+  effectType: 163
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 4
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 23
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

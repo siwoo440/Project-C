@@ -27,6 +27,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
     private int nextPlayerTurnActionPointLoss; // 거인의 방패 사용으로 다음 아군 턴에 차감할 행동력
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
+    private bool openingTemporaryCardChecked; // 첫 아군 손패의 단추 생성 기회 처리 여부
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
     private int lastSpringRound; // 붉은 스프링의 마지막 할인 준비 라운드
@@ -721,7 +722,41 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 첫 손패 유지 준비 시작
             runtimeDeck.RetainRandomOpeningHandCard(); // 모든 시작 드로우를 마친 실제 손패 한 장 예약
         } // 첫 손패 유지 준비 종료
+        ApplyOpeningTemporaryThrust(); // 선제 유무와 관계없이 기존 첫 손패 드로우 뒤 임시 찌르기 한 장 확인
     } // 턴 손패 처리 종료
+    private void ApplyOpeningTemporaryThrust() // 귀족의 검은 단추가 생성하는 첫 생존 아군의 찌르기
+    { // 첫 손패 생성 유물 처리 시작
+        if (openingTemporaryCardChecked) // 같은 전투의 최초 손패 기회를 이미 처리했는지 확인
+        { // 반복 발동 차단 시작
+            return; // 중복 생성과 나중 턴으로 기회 이월 생략
+        } // 반복 발동 차단 종료
+        openingTemporaryCardChecked = true; // 손패 상태 알림이나 상한 실패 이전 한 번의 첫 손패 기회 기록
+        if (openingRelics.FindEffect(RelicEffectType.NobleButtonOpeningTemporaryCard) == null || runtimeDeck.HandCount >= runtimeDeck.MaxHandSize) // 실제 보유 단추와 기존 드로우 이후 남은 손패 확인
+        { // 생성할 수 없는 첫 손패 처리 시작
+            return; // 가득 찬 정상 손패의 기존 카드 보존
+        } // 생성할 수 없는 첫 손패 처리 종료
+        var catalog = UnityEngine.Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 실제 기본 찌르기의 공용 원본 식별자 카탈로그
+        if (catalog == null) // 실제 발급에 필요한 원본 목록 존재 확인
+        { // 카탈로그 누락 처리 시작
+            return; // 다른 효과나 다른 카드로 대체하지 않는 생성 중단
+        } // 카탈로그 누락 처리 종료
+        foreach (var card in catalog.Cards) // 실제 저장 식별자에 등록된 기존 카드 자료 순회
+        { // 카드 원본 일치 확인 시작
+            if (card == null || card.CardId != "CRD_SHEET_THRUST") // 원본의 표준 찌르기와 다른 카드 구분
+            { // 다른 원본 처리 시작
+                continue; // 다음 등록 원본 확인
+            } // 다른 원본 처리 종료
+            foreach (var ally in allyUnits) // 실제 아군의 기존 전투 배치 순서 확인
+            { // 첫 생존 아군 판정 시작
+                if (ally is { Team: BattleTeam.Ally, IsDead: false, CharacterSource: not null }) // 실제 카드 소유자가 가능한 정상 생존 아군 확인
+                { // 첫 생존 아군의 무료 카드 생성 시작
+                    runtimeDeck.TryAddOpeningTemporaryCard(card, ally); // 원래 손패 상한을 유지한 전투 한정 카드 생성
+                    return; // 다른 아군의 추가 사본 없이 첫 생성 정산
+                } // 첫 생존 아군의 무료 카드 생성 종료
+            } // 첫 생존 아군 판정 종료
+            return; // 정상 원본 확인 뒤 살아 있는 카드 주인이 없는 전투의 생성 생략
+        } // 카드 원본 일치 확인 종료
+    } // 첫 손패 생성 유물 처리 종료
     private void ApplyBaseDrawBlock(int basicDrawn) // 실제 기본 두 장 이상을 드로우한 턴의 방어도 지급
     { // 은빛 톱니 처리 시작
         var cog = basicDrawn >= 2 ? openingRelics?.FindEffect(RelicEffectType.BaseTurnDrawBlock) : null; // 예약과 초과를 제외한 기본 도착 두 장과 보유 유물 확인
@@ -942,6 +977,14 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void HandleUnitDefeated(BattleUnitRuntime source, BattleUnitRuntime target) // 아군이 적을 실제로 처치한 경우 확인
     { // 처치 드로우 예약 시작
         RecordPermanentAttackDefeat(target); // 턴별 카드 드로우와 별개로 실제 정예·보스 처치 보상 먼저 정산
+        if (!disposed && !IsBattleEnded && target is { Team: BattleTeam.Enemy, IsDead: true, DefeatedWhileBurning: true } && CurrentPhase is (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn)) // 두 실제 턴의 화상 중 적 전투불능만 검사
+        { // 화상 처치의 실제 회복 시작
+            int healing = openingRelics?.FindEffect(RelicEffectType.SilverSnufferBurnKillHealing)?.EffectValue ?? 0; // 망가진 은촛불집게의 원본 회복량 확인
+            if (healing > 0) // 실제 장착한 유물의 양수 회복 확인
+            { // 생존 아군 한 명 회복 시작
+                GetLowestHealthLivingAlly()?.RestoreHealth(healing); // 기존 현재 체력 및 명단 순서와 실제 회복 규칙으로 승리 전에 지급
+            } // 생존 아군 한 명 회복 종료
+        } // 화상 처치의 실제 회복 종료
         if (!IsPlayerTurn || HasPendingBossPhaseTransition || source?.Team != BattleTeam.Ally || target.Team != BattleTeam.Enemy || lastFlagDrawRound == CurrentRound) // 아군 턴의 유효 처치와 발동 제한 확인
         { // 발동 제외 시작
             return; // 적의 처치나 같은 턴의 재발동 제외
@@ -1306,6 +1349,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
+        runtimeDeck.ClearBattleRelicCards(); // 결과 이전에 전투 해제할 때도 덱의 모든 전투 한정 카드 회수
         foreach (BattleUnitRuntime ally in allyUnits) // 이번 탐사 전투의 아군 공격력 연결 확인
         { // 개별 탐사 전투 연결 해제 시작
             if (ally?.ExplorationAttackPowerBattle == this) // 현재 전투가 설정한 아군만 확인

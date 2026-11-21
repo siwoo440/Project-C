@@ -371,10 +371,15 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     { // 개별 피격 처리 시작
         recipient = attackTarget; // 빗나가거나 전환되지 않은 공격의 대상 기록
         int hitChance = BattleHitChance.GetPercent(Actor, attackTarget); // 실제 대상 회피를 포함한 명중률
-        if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), attackTarget)) // 실제 대상에 대한 명중 판정
-        { // 공격 빗나감 처리 시작
-            return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
-        } // 공격 빗나감 처리 종료
+        if (hitChance < 100) // 확정 명중이 아닌 원래 무작위 공격 확인
+        { // 실제 대상에 대한 명중 판정 시작
+            int roll = rollPercent(); // 빗나감과 회피 판단에서 공유하는 원래 한 번의 난수
+            if (!BattleHitChance.Hits(Actor, roll, attackTarget)) // 기존 회피와 적 명중 약화가 반영된 실제 빗나감 확인
+            { // 실제 공격 빗나감 시작
+                ApplyDanceShoeEvade(attackTarget, attackDamage, roll); // 적 자체 실패와 아군의 실제 회피 구분
+                return BattleEnemyActionResult.Missed(DamageType); // 명중 피해와 후속 상태가 없는 기존 결과 반환
+            } // 실제 공격 빗나감 종료
+        } // 실제 대상에 대한 명중 판정 종료
 
         consumeBodyGuard?.Invoke(); // 대신 받기로 실제로 명중한 경우 보호 한 번 소모
         BattleUnitRuntime finalTarget = attackTarget; // 수호 전환이 없을 때의 실제 피격 대상
@@ -405,6 +410,20 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         } // 응징 방벽 반격 종료
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     } // 개별 피격 처리 종료
+
+    private void ApplyDanceShoeEvade(BattleUnitRuntime target, int attackDamage, int roll) // 회피로만 피한 양수 적 공격의 후속 보상
+    { // 무도화의 실제 회피 원인 확인 시작
+        if (attackDamage <= 0 || Actor.Team != BattleTeam.Enemy || target.Team != BattleTeam.Ally || target.IsDead || // 적과 생존 아군 사이의 실제 피해 공격 확인
+            !BattleHitChance.Hits(Actor, roll) || target.GetStatusEffect(BattleStatusEffectType.DanceShoeDamageUp) is { IsExpired: false }) // 적 자체 명중 실패와 이미 예약된 한 번의 강화 제외
+        { // 보상 없는 빗나감 제외 시작
+            return; // 기존 적 명중 약화 또는 아직 남은 강화 보존
+        } // 보상 없는 빗나감 제외 종료
+        var shoe = BattleSupplyRelics.Find(RelicEffectType.DanceShoeEvasionDamage); // 생존 아군이 실제로 보유한 부서진 무도화의 원본
+        if (shoe?.EffectValue > 0) // 양수의 원본 무도화 보상 확인
+        { // 다음 한 번의 실제 공격 피해 예약 시작
+            target.ApplyStatusEffect(BattleStatusEffectType.DanceShoeDamageUp, shoe.EffectValue, shoe.StatusDuration, 1); // 회피한 아군만 별개 공격 강화 한 번 보유
+        } // 다음 한 번의 실제 공격 피해 예약 종료
+    } // 무도화의 실제 회피 원인 확인 종료
 
     private int GetHostileStatusChance(BattleUnitRuntime target, int originalChance) // 적이 아군에게 걸려는 실명만 저항으로 변경
     { // 적 상태 확률 보정 시작

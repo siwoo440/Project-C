@@ -20,7 +20,10 @@ public static class BattleHitChance // 공격 명중 여부 계산
         int evasionLoss = target?.GetStatusEffect(BattleStatusEffectType.EvasionDown)?.EffectiveValue ?? 0; // 대상 회피 감소 값 조회
         evasion = Math.Max(0, evasion - evasionLoss); // 회피 감소를 실명 보정과 분리해 영점까지 적용
         int disorientation = Math.Min(100, attacker.GetStatusEffect(BattleStatusEffectType.Disorientation)?.EffectiveValue ?? 0); // 실명과 별개인 방랑자 명중 감소
-        return Math.Max(0, 100 - penalty - evasion - disorientation); // 모든 원인의 퍼센트포인트를 합산한 명중률
+        int poisonPenalty = attacker.Team == BattleTeam.Enemy && attacker.GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false } // 실제 적 공격자의 현재 활성 중독 확인
+            ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.WineStainPoisonAccuracyLoss)?.EffectValue ?? 0, 0, 100) // 실제 보유한 포도주 얼룩의 고정 퍼센트포인트 조회
+            : 0; // 중독 없는 적과 아군의 기존 명중 보정 유지
+        return Math.Max(0, 100 - penalty - evasion - disorientation - poisonPenalty); // 기존 회피와 실명 및 중독을 합한 실제 공격 명중률
     } // 명중률 조회 종료
     public static bool Hits(BattleUnitRuntime attacker, int roll, BattleUnitRuntime target = null) // 공격자와 대상의 지정 난수 판정
     { // 명중 계산 시작

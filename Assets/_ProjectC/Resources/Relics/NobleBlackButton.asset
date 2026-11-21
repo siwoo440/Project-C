@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: NobleBlackButton
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_NOBLE_BLACK_BUTTON
+  displayName: 귀족의 검은 단추
+  description: "전투의 첫 실제 아군 손패에 첫 생존 아군의 행동력 0 임시 찌르기 카드 한 장을 생성한다."
+  icon: {fileID: 21300000, guid: 550a465012bb5e29877b8fe1d22dd9d9, type: 3}
+  rarity: 0
+  triggerType: 32
+  effectType: 166
+  targetType: 1
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

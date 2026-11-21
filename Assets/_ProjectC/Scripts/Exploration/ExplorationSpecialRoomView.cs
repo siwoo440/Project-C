@@ -176,7 +176,19 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     private void CompleteTreasure(string message) // 보물 사용 완료와 저장 처리
     { // 보물 사용 완료 시작
         ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
-        sessionManager.MarkEventResolved(runtimeId); // 보물 방 사용 완료 저장
+        if (!sessionManager.MarkEventResolved(runtimeId)) // 실제 보물 획득 뒤 해당 방을 처음 완료했는지 확인
+        { // 재진입이나 지연된 선택의 중복 정산 차단 시작
+            return; // 같은 실제 방의 추가 보상과 저장 반복 방지
+        } // 재진입이나 지연된 선택의 중복 정산 차단 종료
+        if (roomType == ExplorationRoomType.Treasure && mapRuntime?.CurrentMap != null && // 실제 현재 절차 탐사 맵의 보물방 표시 확인
+            mapRuntime.CurrentMap.TryGetCell(coordinate, out var cell) && cell.RoomType == ExplorationRoomType.Treasure) // 생성된 방의 좌표와 실제 콘텐츠 역할 확인
+        { // 생성 보물방의 추가 보상 처리 시작
+            int extraGold = ExplorationTreasureRewardService.GrantLockedDrawerBonus(runtimeId); // 기본 획득과 다른 한 번의 방별 추가 골드 판정
+            if (extraGold > 0) // 실제 골드 지급에 성공했는지 확인
+            { // 기본 보상 문구에 추가 결과 연결 시작
+                message += $" · 잠긴 서랍 열쇠 Gold +{extraGold}"; // 같은 보물 결과에 추가 골드 표시
+            } // 기본 보상 문구에 추가 결과 연결 종료
+        } // 생성 보물방의 추가 보상 처리 종료
         if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 보물 결과 자동 저장 확인
         { // 보물 저장 실패 처리 시작
             Debug.LogWarning("[ExplorationAutoSave] 보물 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
