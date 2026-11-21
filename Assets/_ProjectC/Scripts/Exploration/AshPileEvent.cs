@@ -124,7 +124,7 @@ public static class AshPileEvent // 윈터폴 잿더미 조사 이벤트
                 summary += found ? $" · 유물 [{candidate.DisplayName}] 획득" : " · 발견한 유물 없음"; // 실제 지급 여부 표시
             } // 확률 보상 처리 종료
             story = GetStory(choice, found); // 실제 결과와 일치하는 원문 선택
-            session.MarkEventResolved(runtimeId); // 비용과 보상 확정 후 방 사용 기록
+            session.MarkEventResolved(runtimeId, choice == Cover || found); // 정상 덮기와 조사 당첨 여부에 맞춰 이번 사건 수치 기록
             if (choice == BareHands && allies.IsActivePartyWiped()) // 마지막 생존자의 맨손 조사 사망 여부 확인
             { // 전멸 정산 시작
                 session.CompleteExplorationFailure("잿더미를 뒤지던 마지막 생존자가 쓰러졌습니다."); // 기존 쇠약·회복 및 탐사 실패 처리

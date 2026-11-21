@@ -68,7 +68,7 @@ public static class BurntScarecrowEvent // 윈터폴 타버린 허수아비
             { // 지나침 처리 시작
                 summary = "변화 없음"; // 비용과 보상 없는 결과 표시
             } // 지나침 처리 종료
-            session.MarkEventResolved(runtimeId); // 카드와 비용 확정 후 방문 완료 기록
+            session.MarkEventResolved(runtimeId, true); // 카드와 비용 및 정상 해결의 구역 수치 기록
             if (choice == Burn && party.IsActivePartyWiped()) // 소각으로 마지막 생존자 사망 확인
             { // 전멸 정산 시작
                 session.CompleteExplorationFailure("타버린 허수아비를 불태운 마지막 생존자가 쓰러졌습니다."); // 탐사 실패와 거점 복귀 정산

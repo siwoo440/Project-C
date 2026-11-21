@@ -404,10 +404,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         BattleType battleType =
             ExplorationDifficultyCalculator.GetCurrentBattleType(); // 현재 조우 등급 조회
 
-        return ExplorationDifficultyCalculator.ScaleAttack(
-            baseAmount,
-            battleFloor,
-            battleType); // 기본·패턴 공격 모두 층·등급 배율 적용
+        int zoneLevel = ExplorationDifficultyCalculator.GetCurrentBattleZoneLevel(); // 현재 탐사 전투의 저장된 출정 단계
+        return ExplorationDifficultyCalculator.ScaleAttack(baseAmount, battleFloor, battleType, zoneLevel); // 기본 및 패턴 공격의 실제 수치와 예고에 동일 지역 배율
     }
 
     private bool IsActionConfigurationValid() // 행동 설정 유효성 확인

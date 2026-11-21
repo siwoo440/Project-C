@@ -345,9 +345,9 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             ResolveChoice(
                 currentRuntimeEventId,
                 choiceIndex,
-                choiceData); // 선택 결과 계산
+                choiceData, out bool successful); // 실제 선택 결과와 성공 여부 계산
 
-        sessionManager.MarkEventResolved(currentRuntimeEventId); // 현재 이벤트 처리 완료 기록
+        sessionManager.MarkEventResolved(currentRuntimeEventId, successful); // 실제 성공 또는 실패의 구역 진행과 방 완료 기록
         if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 이벤트 결과 자동 저장 확인
         { // 이벤트 저장 실패 처리 시작
             Debug.LogWarning("[ExplorationAutoSave] 이벤트 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
@@ -544,8 +544,9 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     private string ResolveChoice(
         string runtimeEventId,
         int choiceIndex,
-        ExplorationEventChoiceData choiceData) // 선택지 결과 계산
-    {
+        ExplorationEventChoiceData choiceData, out bool successful) // 선택지 결과와 실제 성공 여부 계산
+    { // 실제 선택지의 결과 계산 시작
+        successful = choiceData != null; // 확률 없는 정상 선택의 완료 상태와 비어 있는 자료 구분
         if (choiceData == null)
         {
             return "아무 일도 일어나지 않았습니다."; // 잘못된 선택지 기본 문구 반환
@@ -572,16 +573,15 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         int roll =
             random.Next(0, 100); // 0~99 범위 판정 값 생성
 
-        bool isSuccess =
-            roll < choiceData.SuccessChancePercent; // 성공 여부 판정
+        successful = roll < choiceData.SuccessChancePercent; // 같은 실제 확률 결과를 수치와 선택 문구에 함께 반영
 
         string resultText =
-            isSuccess
+            successful // 같은 판정의 사건 결과 문구 조회
                 ? choiceData.SuccessText
                 : choiceData.FailureText; // 결과 문구 선택
 
         ExplorationEventResourceChange resultChange =
-            isSuccess
+            successful // 같은 판정의 실제 적용 자원과 효과 조회
                 ? choiceData.SuccessChange
                 : choiceData.FailureChange; // 결과 변화량 선택
 

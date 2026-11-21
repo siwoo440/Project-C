@@ -97,8 +97,22 @@ public sealed class ExplorationRunLoopDebugView : MonoBehaviour // 45일차 탐�
         string detailText = session.IsExplorationSuccess ? $"완료 층 {session.CompletedFloor}F · 클리어 조우 {session.CompletedEncounterCount}개\n호감도 +{session.LastExplorationSuccessAffinity}" : session.LastExplorationFailureReason + "\n사망한 캐릭터는 거점에서 회복합니다."; // 성공 정산과 실패 회복 안내 결정
         TMP_Text detail = PreparationUi.CreateText("Detail", overlay, detailText, 27f); // 결과 상세 안내 생성
         PreparationUi.Place(detail.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(850f, 120f)); // 상세 안내 위치 설정
-        PreparationUi.CreateButton("ReturnButton", overlay, "거점으로 복귀", new Vector2(0.5f, 0.5f), new Vector2(0f, -120f), new Vector2(360f, 100f), ReturnToLobby); // 성공과 실패 공통 복귀 버튼 생성
+        bool canReport = session.IsExplorationSuccess && session.CurrentZone == ExpeditionZoneId.RuinedCitadel && ExpeditionZoneProgress.CanReportMainStory; // 실제 성채 공략 후의 미보고 원정 기록
+        float returnOffset = canReport ? 195f : 0f; // 보고 버튼이 있을 때 두 버튼의 좌우 정렬
+        PreparationUi.CreateButton("ReturnButton", overlay, "거점으로 복귀", new Vector2(0.5f, 0.5f), new Vector2(returnOffset, -120f), new Vector2(360f, 100f), ReturnToLobby); // 성공과 실패 공통 복귀 버튼
+        if (canReport) // 메인 스토리의 선택 가능한 실제 결과 확인
+        { // 성채 원정 보고 선택 추가 시작
+            PreparationUi.CreateButton("ReportButton", overlay, "원정 기록 보고", new Vector2(0.5f, 0.5f), new Vector2(-195f, -120f), new Vector2(360f, 100f), ReportAndReturn); // 별개 스토리 보고와 거점 복귀 버튼
+        } // 성채 원정 보고 선택 추가 종료
     } // 탐사 결과 화면 확인 종료
+
+    private void ReportAndReturn() // 실제 성채 공략 뒤 별도 원정 기록 보고
+    { // 명시적인 보고 처리 시작
+        if (!sceneLoadRequested && ExpeditionZoneProgress.RecordMainStoryCompletion()) // 아직 처리하지 않은 실제 원정 기록 확인
+        { // 보고 상태를 거점 저장에 반영 시작
+            ReturnToLobby(); // 기존 종료 정산과 함께 실제 기록을 거점에 보관
+        } // 보고 상태를 거점 저장에 반영 종료
+    } // 명시적인 보고 처리 종료
 
     private void ReturnToLobby() // 탐사 결과 유지 후 거점 이동
     { // 거점 복귀 시작

@@ -53,6 +53,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private EncounterData optionalBossEncounter; // 선택 방 한 곳에만 연결된 보스 원본
     public ExplorationMapData CurrentMap { get; private set; } // 현재 생성된 논리 맵
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
+    internal ExpeditionZoneId CurrentZone => sessionManager?.CurrentZone ?? ExpeditionZoneId.WinterfallAshPlains; // 저장 또는 신규 출정에서 실제 탐사 지역 확인
     public int CurrentEncounterCount => encounterTypes.Count; // 현재 층 조우 개수 조회
     public bool RestoredFromSession { get; private set; } // 저장된 층 상태 복원 여부
     public int CurrentFloorTileCount => tilemapView != null ? tilemapView.FloorTileCount : 0; // 현재 Floor 타일 개수
@@ -153,12 +154,13 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                 seed,
                 CurrentFloor); // 지정 Seed와 현재 층 규칙으로 동일 논리 맵 생성
 
+        ApplyRegionalGate(); // 지역 출정의 실제 필수 보스 예약에 맞춘 마지막 방 역할
         ApplyOptionalBossRoom(restoredFromSession); // 첫 층 생성의 추첨 또는 저장된 선택 방 적용
 
         RestoredFromSession =
             restoredFromSession; // 현재 생성이 복원인지 기록
 
-        tilemapView.Build(CurrentMap); // 논리 맵을 실제 방·통로 Tilemap으로 변환
+        tilemapView.Build(CurrentMap, CurrentZone); // 저장 또는 신규 맵의 현재 지역 원화를 실제 방과 통로에 배치
         GenerateHazards(); // 동일 Seed 기반 퇴색 위험 방 지정과 표시
         RefreshStairs(); // Tilemap 기준 계단 위치 복원 또는 생성
         GenerateEncounters(); // 동일 Seed 기반 조우 배치 복원 또는 생성
@@ -181,9 +183,20 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             $"Stairs {CurrentMap.StairsCoordinate}"); // Tilemap 생성·복원 결과 로그
     }
 
+    private void ApplyRegionalGate() // 다른 지역의 마지막 방에 실제 예약 보스 또는 정예 관문 지정
+    { // 현재 지역의 원래 윈터폴 규칙 또는 독립 관문 확인 시작
+        if (CurrentZone == ExpeditionZoneId.WinterfallAshPlains || !CurrentMap.TryGetCell(CurrentMap.StairsCoordinate, out var gate)) // 윈터폴의 기존 5층과 10층 및 계단 방 확인
+        { // 기존 지도 또는 계단 없음 처리 시작
+            return; // 실제 기존 논리 배치 유지
+        } // 기존 지도 또는 계단 없음 처리 종료
+        bool bossAtGate = ExplorationFloorRules.IsFinalBossFloor(CurrentFloor) && sessionManager.IsZoneBossReservedForRun && // 출정 시 보관한 실제 보스 예약과 마지막 층 확인
+            ExpeditionZoneEncounters.GetMandatoryBoss(CurrentZone, sessionManager.EncounterPoolVersion) != null; // 현재 지역의 필수 보스 실물 확인
+        gate.SetRoomType(bossAtGate ? ExplorationRoomType.Boss : ExplorationRoomType.Elite); // 실제 겨냥한 기존 통행 관문 역할 사용
+    } // 현재 지역의 원래 윈터폴 규칙 또는 독립 관문 확인 종료
+
     private void ApplyOptionalBossRoom(bool restoredFromSession) // 현재 지도에 저장된 선택 보스 한 곳 연결
     { // 선택 보스 방 반영 시작
-        optionalBossEncounter = OptionalBossPlacement.LoadEncounter(); // 기존 관문에 섞이지 않는 전용 보스 로드
+        optionalBossEncounter = CurrentZone == ExpeditionZoneId.WinterfallAshPlains ? OptionalBossPlacement.LoadEncounter() : null; // 원본 재의 파수꾼은 실제 윈터폴 선택 방에만 적용
         if (!restoredFromSession) // 현재 층을 처음 생성하는지 확인
         { // 유물 보유 여부와 독립 추첨 시작
             var inventory = optionalBossEncounter == null ? null : RelicRunManager.Instance?.Inventory; // 유효한 보스 원본이 있는 경우의 보유 유물 조회
@@ -433,8 +446,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             return;
         }
 
-        EncounterData[] loadedData =
-            Resources.LoadAll<EncounterData>("Encounters"); // 전체 조우 데이터 로드
+        List<EncounterData> loadedData = ExpeditionZoneEncounters.LoadRandom(CurrentZone, sessionManager.EncounterPoolVersion); // 저장한 지역의 실제 일반 후보 및 기존 윈터폴 호환 자료
 
         List<EncounterData> validData =
             new List<EncounterData>(); // 전체 유효 조우 목록
@@ -478,7 +490,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         if (validData.Count == 0)
         {
             Debug.LogWarning(
-                "[Exploration][Day43] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
+                $"[Exploration] {CurrentZone} 지역에 유효한 조우 후보가 없어 절차 조우를 생성하지 않았습니다."); // 현재 지역의 조우 자료 오류 시 안내
 
             return;
         }
@@ -557,7 +569,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
 
         IReadOnlyList<ExplorationEventData> loadedEvents =
-            ExplorationEventCatalog.LoadEvents(sessionManager.EventPoolVersion); // 저장 당시 층의 이벤트 목록 조회
+            ExplorationEventCatalog.LoadZoneEvents(CurrentZone, sessionManager.EventPoolVersion); // 저장 당시 지역에 실제 존재하는 사건 후보 조회
 
         if (loadedEvents == null ||
             loadedEvents.Count == 0)

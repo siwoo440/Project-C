@@ -60,15 +60,14 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
     private TilemapCollider2D wallTilemapCollider; // Wall 타일 충돌 생성기
     private CompositeCollider2D wallCompositeCollider; // Wall 충돌 합성기
     private ExplorationDungeonTiles dungeonTiles; // 바닥과 벽 및 장식용 타일 풀
+    private ExpeditionZoneId? renderedZone; // 이 타일 풀을 만들었던 실제 출정 지역
 
     public int FloorTileCount => floorCells.Count; // 현재 Floor 타일 개수
     public int WallTileCount => wallCells.Count; // 현재 Wall 타일 개수
 
-    public void Build(
-        ExplorationMapData mapData) // 논리 맵을 실제 충돌 Tilemap으로 변환
-    {
+    public void Build(ExplorationMapData mapData, ExpeditionZoneId? zone = null) // 실제 충돌과 선택한 지역 원화를 가진 타일맵 생성
+    { // 지정 맵과 지역 타일 재구성 시작
         EnsureTilemapHierarchy(); // Grid와 Tilemap 계층 준비
-        dungeonTiles ??= new ExplorationDungeonTiles(); // 재생성에도 같은 타일 자산 공유
 
         floorTilemap.ClearAllTiles(); // 이전 Floor 제거
         wallTilemap.ClearAllTiles(); // 이전 Wall 제거
@@ -87,6 +86,12 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
             return;
         }
 
+        if (dungeonTiles == null || renderedZone != zone) // 지금 표시해야 하는 지역의 바닥과 벽 변경 확인
+        { // 이전 지역의 임시 타일과 실제 지역 원화 교체 시작
+            dungeonTiles?.Release(); // 빈 레이어에서 이전 지역의 생성 자료만 정리
+            dungeonTiles = new ExplorationDungeonTiles(zone); // 현재 저장 지역 키에 맞는 렌더링 자료
+            renderedZone = zone; // 같은 지역과 다른 시드에서도 타일 세트 재사용
+        } // 이전 지역의 임시 타일과 실제 지역 원화 교체 종료
         foreach (ExplorationMapCell cell in mapData.Cells)
         {
             FillRoom(

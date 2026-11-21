@@ -51,6 +51,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
         resolving = true; // 지급 중 추가 선택 차단
         try // 행동 정산 보장
         { // 행동 결과 처리 시작
+            bool successful = choice != RunBlind; // 들판의 정상 횡단과 실명 악화 결과의 구분
             if (choice == BreakGlass) // 행동자 소유 카드 지급 확인
             { // 유리 깨기 시작
                 if (!allies.IsLivingPartyMember(actor) || !allies.TryGetSavedAllyState(actor, out int health, out _, out _) || !WinterfallRiskCardReward.TryGrant(runtimeId, actor, out CardData reward)) // 생존 행동자 검증과 카드 지급
@@ -60,6 +61,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
                 } // 카드 미지급 처리 종료
                 allies.ApplyEventChange(actor, BreakGlassHealthDamage, 0); // 유리 파편의 보정된 체력 피해 적용
                 allies.TryGetSavedAllyState(actor, out int afterHealth, out _, out _); // 실제 유리 피해 뒤 남은 체력 조회
+                successful = reward.CardId != WinterfallRiskCardReward.CurseCardId; // 실제 희귀 카드 당첨과 저주 실패 결과 구분
                 summary = $"{actor.DisplayName} 체력 {health} → {afterHealth} · [{reward.DisplayName}] 획득"; // 실제 남은 체력과 획득 카드 표시
             } // 유리 깨기 종료
             else // 다음 전투 효과 선택
@@ -68,7 +70,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
                 session.PendingGlassFieldEffects |= careful ? GlassFieldEffect.Evasion : GlassFieldEffect.Blind; // 같은 효과 중복 없이 두 선택 보관
                 summary = careful ? "다음 전투 아군 전체 회피 +10%p · 2턴" : "다음 전투 아군 전체 실명 · 명중률 −15%p · 1턴"; // 다음 전투의 대상과 기간 안내
             } // 효과 보관 종료
-            session.MarkEventResolved(runtimeId); // 같은 방의 재선택 차단
+            session.MarkEventResolved(runtimeId, successful); // 실제 들판 선택 결과의 구역 수치와 방 완료를 기록
             if (choice == BreakGlass && allies.IsActivePartyWiped()) // 마지막 생존자 사망 확인
             { // 전멸 처리 시작
                 session.CompleteExplorationFailure("유리화된 들판에서 마지막 생존자가 쓰러졌습니다."); // 기존 탐사 실패와 자원 정산

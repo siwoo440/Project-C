@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_ScorchedRavine_Boss
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_ScorchedRavine_BOSS
+  displayName: "\ub300\uc9c0\uc758 \ud654\ud575"
+  description: "\ub179\uc740 \ub300\uc9c0\uc758 \uc555\ub825\uc744 \ubaa8\uc544 \uad11\uc5ed \uc5f4\ud48d\uc744 \uc77c\uc73c\ud0a8\ub2e4."
+  portrait: {fileID: 21300000, guid: e55d59dc62425d7591a3ac718b521c84, type: 3}
+  isUndead: 0
+  isMechanical: 0
+  maxHealth: 104
+  physicalDefense: 8
+  magicalResistance: 12
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 10
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 3
+  minimumActionSpeed: 7
+  maximumActionSpeed: 12
+  actionPatterns:
+  - displayName: "\ud654\ud575 \ubd84\ucd9c"
+    actionType: 1
+    attackPower: 10
+    damageType: 2
+    statusEffectType: 14
+    statusEffectValue: 3
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 80
+    mentalChangeOnHit: 0
+    targetRule: 3
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\ub9e5\ub3d9 \ud30c\uc5f4"
+    actionType: 1
+    attackPower: 19
+    damageType: 1
+    statusEffectType: 0
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 0
+    mentalChangeOnHit: -2
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\ub728\uac70\uc6b4 \uc1c4\uc11d"
+    actionType: 1
+    attackPower: 15
+    damageType: 1
+    statusEffectType: 14
+    statusEffectValue: 3
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 70
+    mentalChangeOnHit: 0
+    targetRule: 1
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  secondPhasePatternStartIndex: 0

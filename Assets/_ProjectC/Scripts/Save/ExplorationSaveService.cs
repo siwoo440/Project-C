@@ -10,6 +10,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
     internal sealed class RunSnapshot // 탐사 회차 저장 정보
     { // 탐사 저장 정보 시작
         public int version; // 탐사 저장 형식 버전
+        public int zoneVersion; // 없는 이전 저장에서는 영인 출발 구역 형식
+        public int zone; // 저장 시점에 진행 중인 구역 번호
+        public int zoneLevel; // 저장 시점에 고정된 출전 난이도
+        public bool zoneBossReserved; // 출전 시점에 확정한 관문 보스 예약
         public int encounterPoolVersion; // 탐사 중 고정된 조우 목록 버전
         public int eventPoolVersion; // 현재 층 이벤트 목록 버전과 이전 저장의 기본값 영
         public int floor; // 현재 탐사 층
@@ -193,6 +197,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             RunSnapshot snapshot = new RunSnapshot // 동일 시점 탐사 상태 생성
             { // 탐사 저장 정보 설정 시작
                 version = 1, // 저장 형식 버전 설정
+                zoneVersion = 1, // 현재 구역 선택 필드의 옵션 형식 기록
+                zone = (int)session.CurrentZone, // 진행 중인 실제 탐사 구역 저장
+                zoneLevel = session.CurrentZoneLevel, // 현재 탐사의 실제 출전 레벨 저장
+                zoneBossReserved = session.IsZoneBossReservedForRun, // 출전 때 고정한 관문 보스 예약 저장
                 encounterPoolVersion = session.EncounterPoolVersion, // 현재 탐사의 고정 조우 목록 버전 저장
                 floor = session.CurrentFloor, // 현재 탐사 층 설정
                 seed = session.CurrentFloorSeed, // 현재 층 시드 설정
@@ -371,6 +379,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 필수 정보 오류 시작
             return false; // 복원 불가 반환
         } // 필수 정보 오류 종료
+        if (!ExpeditionZoneProgress.IsValidRunSelection(snapshot.zoneVersion, snapshot.zone, snapshot.zoneLevel, snapshot.zoneBossReserved)) // 이전 또는 현재 출발 구역의 옵션 저장 유효성 확인
+        { // 미지원 출전 정보의 복원 제외 시작
+            return false; // 다른 기록이나 이전 정상본이 없는 잘못된 출발 방지
+        } // 미지원 출전 정보의 복원 제외 종료
         if (snapshot.encounterPoolVersion < 0 || snapshot.encounterPoolVersion > ExplorationSessionManager.LatestEncounterPoolVersion) // 지원 조우 목록 버전 확인
         { // 미지원 목록 버전 처리 시작
             return false; // 알 수 없는 조우 구성의 복원 차단
@@ -387,7 +399,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 잘못된 이벤트 버전 처리 시작
             return false; // 복원할 수 없는 이벤트 구성 차단
         } // 잘못된 이벤트 버전 처리 종료
-        if (snapshot.compass != null && !snapshot.compass.IsValid(snapshot.floor, snapshot.eventPoolVersion)) // 발견 정보와 저장된 층 목록 확인
+        var savedZone = snapshot.zoneVersion == 0 ? ExpeditionZoneId.WinterfallAshPlains : (ExpeditionZoneId)snapshot.zone; // 이전 저장 또는 현재 유효 구역의 사건 목록 선택
+        if (snapshot.compass != null && !snapshot.compass.IsValid(snapshot.floor, snapshot.eventPoolVersion, savedZone)) // 발견 정보와 저장된 지역 사건 목록 확인
         { // 나침반 상태 오류 시작
             return false; // 출처 없는 발견 사건의 복원 방지
         } // 나침반 상태 오류 종료

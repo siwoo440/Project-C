@@ -21,6 +21,7 @@ public static class LobbySaveService // 거점 상태 저장 서비스
         public CharacterState[] characters; // 저장 캐릭터 목록
         public int presetVersion; // 편성 저장 형식 버전
         public PartyPresetSnapshot presets; // 저장된 네 개의 편성 정보
+        public ExpeditionZoneProgressSnapshot expeditionZones; // 이전 슬롯에는 없는 구역별 독립 진행 기록
     } // 저장 정보 종료
     [Serializable] // 설비 직렬화 지정
     private sealed class FacilityState // 설비 저장 정보
@@ -95,7 +96,8 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             facilities = facilityStates.ToArray(), // 설비 상태 설정
             characters = characterStates.ToArray(), // 캐릭터 상태 설정
             presetVersion = 1, // 편성 저장 형식 버전 설정
-            presets = PartyPresetStore.Capture() // 현재 네 개의 편성 상태 설정
+            presets = PartyPresetStore.Capture(), // 현재 네 개의 편성 상태 설정
+            expeditionZones = ExpeditionZoneProgress.Capture() // 현재 저장 슬롯의 구역 진척과 출발 선택
         }; // 거점 저장 정보 설정 종료
         if (!IsValid(data, roster)) // 저장 상태의 유효성 확인
         { // 잘못된 상태 처리 시작
@@ -177,6 +179,7 @@ public static class LobbySaveService // 거점 상태 저장 서비스
                     recovery.RestoreRecoveryState(character, state.recovery); // 남은 회복 횟수 복원
                 } // 회복 복원 종료
             } // 캐릭터 복원 종료
+            ExpeditionZoneProgress.Restore(data.expeditionZones); // 기존 저장에는 기본 윈터폴 진행 또는 검증한 구역 기록 복원
             PartyPresetStore.Restore(data.presetVersion == 0 ? null : data.presets, roster); // 이전 형식 또는 검증된 편성 복원
             return true; // 복원 성공 반환
         } // 복원 처리 종료
@@ -192,6 +195,10 @@ public static class LobbySaveService // 거점 상태 저장 서비스
         { // 필수 정보 오류 시작
             return false; // 유효하지 않은 저장 반환
         } // 필수 정보 오류 종료
+        if (!ExpeditionZoneProgress.IsValidSnapshot(data.expeditionZones)) // 옵션 구역 상태의 기존 또는 현재 기록 검증
+        { // 잘못된 구역 상태 처리 시작
+            return false; // 기존 슬롯 상태를 덮지 않는 유효성 실패
+        } // 잘못된 구역 상태 처리 종료
         bool legacyPresets = data.presetVersion == 0 && (data.presets == null || data.presets.entries == null); // 편성 정보가 없는 이전 저장 확인
         bool currentPresets = data.presetVersion == 1 && data.presets != null && data.presets.entries != null && PartyPresetStore.IsValid(data.presets, roster); // 현재 형식 편성 정보 검증
         if (!legacyPresets && !currentPresets) // 이전 또는 현재 형식 편성 유효성 확인

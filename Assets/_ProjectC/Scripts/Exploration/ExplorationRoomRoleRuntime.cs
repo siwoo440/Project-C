@@ -10,6 +10,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
     private ExplorationMapRuntime mapRuntime; // 기존 탐사 맵 런타임
     private int appliedSeed = int.MinValue; // 마지막 역할 적용 Seed
     private int appliedFloor = int.MinValue; // 마지막 역할 적용 층
+    private ExpeditionZoneId? appliedZone; // 같은 시드와 층이라도 다른 출정의 지역 구분
 
     public void Initialize(ExplorationMapRuntime runtime) // 기존 탐사 맵 런타임 연결
     {
@@ -36,7 +37,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
             return; // 기본 방 배치 유지
         } // 방문 대상 없는 경우 종료
         ApplyIfNeeded(); // 물리 접촉이 앞선 프레임의 원래 방 역할 배치 보장
-        if (session.Compass.Visit(mapRuntime.CurrentFloor, mapRuntime.CurrentMap.Seed, cell, session.EventPoolVersion, RelicRunManager.Instance?.Inventory)) // 첫 일반 방의 보유 여부와 확률 판정
+        if (session.Compass.Visit(mapRuntime.CurrentFloor, mapRuntime.CurrentMap.Seed, cell, session.EventPoolVersion, RelicRunManager.Instance?.Inventory, session.CurrentZone)) // 첫 일반 방의 보유 여부와 확률 판정
         { // 첫 방문 결과 반영 시작
             RestoreCompassEvent(session); // 성공한 방의 전투를 실제 사건으로 교체
             if (!ExplorationAutoSave.SaveCurrentExploration()) // 첫 방문 결과 자동 저장 확인
@@ -53,7 +54,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         { // 복원 대상 없는 경우 시작
             return; // 원래 배치 유지
         } // 복원 대상 없는 경우 종료
-        foreach (ExplorationEventData data in ExplorationEventCatalog.LoadEvents(session.EventPoolVersion)) // 저장된 버전의 사건 후보 순회
+        foreach (ExplorationEventData data in ExplorationEventCatalog.LoadZoneEvents(session.CurrentZone, session.EventPoolVersion)) // 저장된 버전의 사건 후보 순회
         { // 저장 원본 확인 시작
             if (data != null && data.EventId == compass.EventId) // 최초 추첨과 같은 사건 확인
             { // 발견 방 복원 시작
@@ -84,7 +85,9 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         int currentSeed = mapRuntime.CurrentMap.Seed; // 현재 층 Seed 조회
         int currentFloor = mapRuntime.CurrentFloor; // 현재 탐사 층 조회
 
-        if (appliedSeed == currentSeed && appliedFloor == currentFloor) // 동일 층 적용 완료 여부 확인
+        var session = ExplorationSessionManager.EnsureInstance(); // 현재 실제 출정과 지역 콘텐츠 버전
+        var zone = mapRuntime.CurrentZone; // 맵에 그린 실제 저장 지역
+        if (appliedSeed == currentSeed && appliedFloor == currentFloor && appliedZone == zone) // 같은 지역과 같은 층 및 시드의 역할 적용 여부
         {
             return; // 중복 역할 적용 방지
         }
@@ -93,11 +96,11 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         mapRuntime.ClearEncounterObjects(); // 기존 절차 조우 전체 정리
         mapRuntime.ClearEventObjects(); // 기존 절차 이벤트 전체 정리
 
-        List<EncounterData> allEncounters = LoadValidEncounters(); // 전체 유효 조우 데이터 로드
+        List<EncounterData> allEncounters = ExpeditionZoneEncounters.LoadRandom(zone, session.EncounterPoolVersion); // 현재 지역의 일반·정예 및 기존 조우 후보
         List<EncounterData> normalEncounters = FilterEncounters(allEncounters, BattleType.Normal); // 일반 조우 분리
         List<EncounterData> eliteEncounters = FilterEncounters(allEncounters, BattleType.Elite); // 엘리트 조우 분리
         List<EncounterData> bossEncounters = FilterEncounters(allEncounters, BattleType.Boss); // 보스 조우 분리
-        List<ExplorationEventData> events = LoadValidEvents(); // 전체 유효 이벤트 로드
+        List<ExplorationEventData> events = LoadValidEvents(zone, session.EventPoolVersion); // 저장 당시 현재 지역의 유효 사건 후보
         System.Random random = new System.Random(currentSeed ^ ContentSeedSalt ^ (currentFloor * 733)); // 층별 콘텐츠 난수 준비
 
         int normalCount = 0; // 일반 방 생성 수
@@ -124,12 +127,22 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
                     break;
 
                 case ExplorationRoomType.Elite:
-                    CreateEncounterForRoom(cell, BattleType.Elite, eliteEncounters, allEncounters, random); // 엘리트 전투 생성
+                    EncounterData finalElite = cell.Coordinate == mapRuntime.CurrentMap.StairsCoordinate && ExplorationFloorRules.IsFinalBossFloor(currentFloor) // 현재 지역에서만 사용할 최종 계단 관문 확인
+                        ? ExpeditionZoneEncounters.GetRegionalEliteGate(zone, session.EncounterPoolVersion) : null; // 미예약 최종 출정 정산을 알리는 독립 조우
+                    CreateEncounterForRoom(cell, BattleType.Elite, eliteEncounters, allEncounters, random, finalElite); // 일반 정예 또는 실제 마지막 계단 전투 배치
                     eliteCount += 1; // 엘리트 방 수 증가
                     break;
 
                 case ExplorationRoomType.Event:
-                    CreateEventForRoom(cell, events, random, ref sawWellEye); // 첫 재폭풍의 우물 봉인 적용 후 탐사 이벤트 생성
+                    if (events.Count > 0 || zone == ExpeditionZoneId.WinterfallAshPlains) // 실제 지역에 유효한 사건 원본 존재 확인
+                    { // 현재 지역의 사건 또는 기존 윈터폴 사건 연결 시작
+                        CreateEventForRoom(cell, events, random, ref sawWellEye); // 원본 사건 및 윈터폴의 첫 재폭풍 우물 봉인 유지
+                    } // 현재 지역의 사건 또는 기존 윈터폴 사건 연결 종료
+                    else // 해당 지역에서 아직 작성되지 않은 사건 대조
+                    { // 일반 지역 전투 대체 시작
+                        cell.SetRoomType(ExplorationRoomType.Normal); // 없는 사건을 표시하지 않는 실제 일반 방 역할
+                        CreateEncounterForRoom(cell, BattleType.Normal, normalEncounters, allEncounters, random); // 같은 지역의 유효한 일반 조우만 선택
+                    } // 일반 지역 전투 대체 종료
                     eventCount += 1; // 이벤트 방 수 증가
                     break;
 
@@ -156,7 +169,8 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
                     } // 선택 조우 배치 종료
                     else // 기존 필수 관문 보스 배치 경로
                     { // 보스 관문 조우 배치 시작
-                        CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random); // 기존 보스 관문 원본 선택
+                        EncounterData regionalBoss = zone == ExpeditionZoneId.WinterfallAshPlains ? null : ExpeditionZoneEncounters.GetMandatoryBoss(zone, session.EncounterPoolVersion); // 기존 윈터폴 추첨 또는 예약한 새 지역 보스
+                        CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random, regionalBoss); // 같은 지역의 실제 필수 관문 조우
                     } // 보스 관문 조우 배치 종료
                     bossCount += 1; // 보스 방 수 증가
                     break;
@@ -166,6 +180,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         RestoreCompassEvent(ExplorationSessionManager.EnsureInstance()); // 원래 방의 추첨 순서를 유지한 뒤 발견 사건 복원
         appliedSeed = currentSeed; // 현재 층 Seed 적용 완료 기록
         appliedFloor = currentFloor; // 현재 층 번호 적용 완료 기록
+        appliedZone = zone; // 현재 출정 지역 적용 완료 기록
 
         Debug.Log(
             $"[Exploration][Day57] 방 역할 통합 완료 - Floor {currentFloor} / " +
@@ -273,27 +288,6 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         specialRoomObjects.Add(roomObject); // 현재 층 특수 방 표시 등록
     }
 
-    private static List<EncounterData> LoadValidEncounters() // 유효 조우 데이터 로드
-    {
-        EncounterData[] loadedData = Resources.LoadAll<EncounterData>("Encounters"); // 전체 조우 리소스 로드
-        List<EncounterData> result = new List<EncounterData>(); // 유효 조우 목록 생성
-        int poolVersion = ExplorationSessionManager.EnsureInstance().EncounterPoolVersion; // 현재 탐사에 고정된 조우 목록 버전 조회
-
-        foreach (EncounterData data in loadedData) // 전체 조우 데이터 순회
-        {
-            if (data != null && data.IsValidData() && data.IsAvailableForPoolVersion(poolVersion)) // 유효성과 저장 조우 버전 확인
-            {
-                result.Add(data); // 유효 조우 목록 등록
-            }
-        }
-
-        result.Sort(
-            (left, right) =>
-                string.CompareOrdinal(left.EncounterId, right.EncounterId)); // Seed 재현용 ID 정렬
-
-        return result; // 유효 조우 목록 반환
-    }
-
     private static List<EncounterData> FilterEncounters(
         List<EncounterData> source,
         BattleType battleType) // 전투 등급별 조우 데이터 분리
@@ -311,9 +305,9 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         return result; // 등급별 조우 목록 반환
     }
 
-    private static List<ExplorationEventData> LoadValidEvents() // 유효 이벤트 데이터 로드
+    private static List<ExplorationEventData> LoadValidEvents(ExpeditionZoneId zone, int poolVersion) // 현재 지역에서 사용할 유효 사건 원본
     {
-        IReadOnlyList<ExplorationEventData> loadedData = ExplorationEventCatalog.LoadEvents(ExplorationSessionManager.EnsureInstance().EventPoolVersion); // 현재 층의 고정 이벤트 조회
+        IReadOnlyList<ExplorationEventData> loadedData = ExplorationEventCatalog.LoadZoneEvents(zone, poolVersion); // 현재 지역과 저장 버전의 고정 사건 조회
         List<ExplorationEventData> result = new List<ExplorationEventData>(); // 유효 이벤트 목록 생성
 
         if (loadedData == null) // 이벤트 카탈로그 존재 확인

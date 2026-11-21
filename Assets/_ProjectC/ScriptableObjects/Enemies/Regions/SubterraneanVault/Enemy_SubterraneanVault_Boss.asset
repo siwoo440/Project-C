@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_SubterraneanVault_Boss
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_SubterraneanVault_BOSS
+  displayName: "\ud504\ub85c\ud1a0\ud0c0\uc785 \uc624\uba54\uac00"
+  description: "\uc0dd\uccb4 \ubcd1\uae30\uc640 \uc2e4\ud5d8 \uc804\ub958\ub97c \ud568\uaed8 \uc0ac\uc6a9\ud558\ub294 \uc6d0\ud615 \ubcd1\uae30\ub2e4."
+  portrait: {fileID: 21300000, guid: 900e54e2c2da5a36bc78af92994946f2, type: 3}
+  isUndead: 0
+  isMechanical: 1
+  maxHealth: 108
+  physicalDefense: 10
+  magicalResistance: 12
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 11
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 3
+  minimumActionSpeed: 7
+  maximumActionSpeed: 12
+  actionPatterns:
+  - displayName: "\uc2e4\ud5d8\uccb4 \ub3d9\uae30\ud654"
+    actionType: 1
+    attackPower: 11
+    damageType: 2
+    statusEffectType: 9
+    statusEffectValue: 5
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 70
+    mentalChangeOnHit: -2
+    targetRule: 3
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\uc720\uccb4 \uc8fc\uc785"
+    actionType: 1
+    attackPower: 15
+    damageType: 1
+    statusEffectType: 1
+    statusEffectValue: 3
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 80
+    mentalChangeOnHit: 0
+    targetRule: 1
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  - displayName: "\uc624\uba54\uac00 \ubc29\uc804"
+    actionType: 1
+    attackPower: 18
+    damageType: 2
+    statusEffectType: 74
+    statusEffectValue: 3
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 80
+    mentalChangeOnHit: 0
+    targetRule: 2
+    minimumActionSpeed: 7
+    maximumActionSpeed: 12
+  secondPhasePatternStartIndex: 0

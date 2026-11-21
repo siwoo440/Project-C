@@ -42,6 +42,7 @@ public static class AshWandererCryEvent // 윈터폴 잿빛 방랑자의 울음 
         resolving = true; // 중복 클릭 차단
         try // 입력 잠금 복구 보장
         { // 선택 결과 처리 시작
+            bool successful = true; // 확률 기도를 제외한 정상 선택의 기존 완료
             if (choice == CoverEars) // 대상 없는 이동 선택 확인
             { // 귀 막기 시작
                 session.WandererCry.CoverEars(); // 다음 전투 전원 명중률 감소 예약
@@ -63,6 +64,7 @@ public static class AshWandererCryEvent // 윈터폴 잿빛 방랑자의 울음 
                 else // 짧은 기도 선택
                 { // 기도 처리 시작
                     bool found = WandererCryRunState.Roll(room, "prayer") < 30; // 같은 방의 회복 아이템 삼십 퍼센트 판정
+                    successful = found; // 회복 물품의 실제 당첨 여부와 같은 사건 분기
                     string reward = "회복 아이템 없음"; // 미당첨 시 실제 결과
                     if (found) // 회복 아이템 당첨 확인
                     { // 회복 보상 처리 시작
@@ -79,7 +81,7 @@ public static class AshWandererCryEvent // 윈터폴 잿빛 방랑자의 울음 
                     summary = $"{actor.DisplayName} 정신력 {mental} → {Mathf.Min(BattleMentalRuntime.MaximumMental, mental + 2)} · {reward}"; // 실제 정신력과 당첨 결과 안내
                 } // 기도 처리 종료
             } // 정신력 변화 종료
-            session.MarkEventResolved(room); // 같은 방 재지급 차단
+            session.MarkEventResolved(room, successful); // 같은 방의 실제 기도 결과와 일반 선택 수치 기록
             return true; // 선택 결과 확정
         } // 선택 결과 처리 종료
         finally // 선택 입력 복구

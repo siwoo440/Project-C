@@ -17,26 +17,54 @@ internal sealed class ExplorationDungeonTiles // 탐사 바닥·벽·장식의 �
     private readonly Tile[] wallVariants; // 새 석재 벽면 네 가지
     private readonly Tile[] wallEdges; // 직선·모서리 조합의 벽면 턱
     private readonly Tile[] details; // 벽등과 격자 및 바닥 잔해
+    private readonly uint floorBaseWeight; // 원래 바닥 자료가 차지하는 고정 비중
+    private readonly uint wallBaseWeight; // 원래 벽 자료가 차지하는 고정 비중
 
-    internal ExplorationDungeonTiles() // 탐사 화면 단위의 타일 풀 생성
+    internal ExplorationDungeonTiles(ExpeditionZoneId? zone = null) // 원래 기본 자료 또는 선택한 실제 출정 지역의 타일 풀
     { // 타일 자료 준비 시작
+        const string sharedPath = "Exploration"; // 기존 기본 바닥과 벽의 리소스 폴더
+        string regionPath = zone.HasValue ? sharedPath + "/Regions/" + ExpeditionZones.Get(zone.Value).VisualKey : null; // 현재 출정의 실제 원화 키
         Sprite fallback = CreateSprite(Texture2D.whiteTexture, new Rect(0f, 0f, 1f, 1f), "DungeonTileFallback"); // 이미지 누락 시의 한 칸 대체 스프라이트
-        baseFloor = LoadBase("DungeonFloor", new Color(0.12f, 0.20f, 0.28f, 1f), fallback, Tile.ColliderType.None); // 바닥 원화와 이동 가능 속성
-        baseWall = LoadBase("DungeonWall", new Color(0.05f, 0.07f, 0.10f, 1f), fallback, Tile.ColliderType.Grid); // 벽 원화와 격자 전체 충돌
-        floorVariants = LoadAtlas("DungeonFloorVariants", 4, Tile.ColliderType.None); // 바닥 석판의 공용 원화
-        wallVariants = LoadAtlas("DungeonWallVariants", 4, Tile.ColliderType.Grid); // 같은 충돌을 쓰는 벽면 원화
-        wallEdges = LoadAtlas("DungeonWallEdges", 47, Tile.ColliderType.None); // 열린 방향별 벽과 바닥 사이의 턱
-        details = LoadAtlas("DungeonDetails", 6, Tile.ColliderType.None); // 이동을 막지 않는 환경 장식
+        var regionalFloor = LoadAtlas(regionPath, "FloorVariants", 4, Tile.ColliderType.None, Color.white, 4); // 지역별 실제 바닥 무늬 네 가지
+        var regionalWall = LoadAtlas(regionPath, "WallVariants", 4, Tile.ColliderType.Grid, Color.white, 4); // 전체 격자 충돌을 유지한 지역 벽 네 가지
+        bool usesRegionalFloor = regionalFloor.Length > 0; // 저장 지역에 유효한 바닥 제작 이미지 존재 여부
+        bool usesRegionalWall = regionalWall.Length > 0; // 저장 지역에 유효한 벽 제작 이미지 존재 여부
+        floorBaseWeight = usesRegionalFloor ? 0u : 40u; // 지역 재질은 네 변형을 균등하게 선택
+        wallBaseWeight = usesRegionalWall ? 0u : 35u; // 기존 벽이 있는 기본 지도만 기존 비중 적용
+        baseFloor = usesRegionalFloor ? regionalFloor[0] : LoadBase("DungeonFloor", new Color(0.12f, 0.20f, 0.28f, 1f), fallback, Tile.ColliderType.None); // 사용할 바닥 기준의 완전한 한 칸
+        baseWall = usesRegionalWall ? regionalWall[0] : LoadBase("DungeonWall", new Color(0.05f, 0.07f, 0.10f, 1f), fallback, Tile.ColliderType.Grid); // 사용할 벽 기준의 격자 전체 충돌
+        floorVariants = usesRegionalFloor ? regionalFloor : LoadAtlas(sharedPath, "DungeonFloorVariants", 4, Tile.ColliderType.None, Color.white); // 실제 지역 또는 공용 바닥 변형
+        wallVariants = usesRegionalWall ? regionalWall : LoadAtlas(sharedPath, "DungeonWallVariants", 4, Tile.ColliderType.Grid, Color.white); // 실제 지역 또는 공용 벽 변형
+        var regionalEdges = LoadAtlas(regionPath, "WallEdges", 47, Tile.ColliderType.None, Color.white); // 선택 지역에 제작한 동일 벽 연결 규칙
+        var regionalDetails = LoadAtlas(regionPath, "Details", 6, Tile.ColliderType.None, Color.white, 3); // 선택 지역의 벽 장식과 통행 장식
+        Color sharedTint = usesRegionalFloor || usesRegionalWall ? GetConnectedTileTint(zone) : Color.white; // 지역 원화에 맞는 공용 경계와 장식 색조
+        wallEdges = regionalEdges.Length > 0 ? regionalEdges : LoadAtlas(sharedPath, "DungeonWallEdges", 47, Tile.ColliderType.None, sharedTint); // 실제 도안이나 공용 47가지의 이음 유지
+        details = regionalDetails.Length > 0 ? regionalDetails : LoadAtlas(sharedPath, "DungeonDetails", 6, Tile.ColliderType.None, sharedTint); // 물리 충돌과 분리한 벽과 바닥 장식
     } // 타일 자료 준비 종료
+
+    private static Color GetConnectedTileTint(ExpeditionZoneId? zone) // 공유되는 벽 연결 도안을 지역 재질에 맞추는 색
+    { // 지역별 연결 돌 색상 선택 시작
+        return zone switch // 현재 지역의 바닥·벽과 어울리는 색조 조회
+        { // 값별 연결 도안 색 시작
+            ExpeditionZoneId.FracturedEarth => new Color32(220, 196, 166, 255), // 갈라진 돌과 흙의 따뜻한 회색
+            ExpeditionZoneId.CorrodedIndustrialDistrict => new Color32(179, 207, 178, 255), // 산화 금속과 이끼의 옅은 녹색
+            ExpeditionZoneId.FadedDunes => new Color32(246, 216, 162, 255), // 따뜻한 사구와 모래돌 경계
+            ExpeditionZoneId.ScorchedRavine => new Color32(243, 150, 113, 255), // 열기로 붉은 현무암 경계
+            ExpeditionZoneId.SubterraneanVault => new Color32(160, 214, 221, 255), // 지하 금고의 찬 빛 철제 경계
+            ExpeditionZoneId.RuinedCitadel => new Color32(197, 187, 221, 255), // 망령 성채의 보랏빛 돌 경계
+            ExpeditionZoneId.TheVoid => new Color32(165, 152, 227, 255), // 공백 영역의 짙은 자주색 경계
+            _ => Color.white // 윈터폴 기본 도안의 원래 색
+        }; // 값별 연결 도안 색 종료
+    } // 지역별 연결 돌 색상 선택 종료
 
     internal Tile GetFloor(int seed, Vector3Int cell) // 현재 층과 좌표에 맞춘 바닥 무늬
     { // 바닥 원화 선택 시작
-        return PickMaterial(baseFloor, floorVariants, HashCell(seed, cell, FloorSalt), 40); // 기본 바닥 마흔 퍼센트와 변형 무늬 선택
+        return PickMaterial(baseFloor, floorVariants, HashCell(seed, cell, FloorSalt), floorBaseWeight); // 기본 바닥 마흔 퍼센트와 변형 무늬 선택
     } // 바닥 원화 선택 종료
 
     internal Tile GetWall(int seed, Vector3Int cell) // 현재 층과 좌표에 맞춘 벽 무늬
     { // 벽 원화 선택 시작
-        return PickMaterial(baseWall, wallVariants, HashCell(seed, cell, WallSalt), 35); // 기본 벽과 여러 석재 벽면 선택
+        return PickMaterial(baseWall, wallVariants, HashCell(seed, cell, WallSalt), wallBaseWeight); // 기본 벽과 여러 석재 벽면 선택
     } // 벽 원화 선택 종료
 
     internal Tile GetWallEdge(int mask) // 바닥과 맞닿은 방향의 돌 테두리
@@ -134,30 +162,52 @@ internal sealed class ExplorationDungeonTiles // 탐사 바닥·벽·장식의 �
         return CreateTile(sprite, Color.white, collision); // 원래 색상과 충돌 형태 유지
     } // 기본 타일 준비 종료
 
-    private Tile[] LoadAtlas(string name, int count, Tile.ColliderType collision) // 분할된 Unity 원화를 원래 순서로 타일에 연결
+    private Tile[] LoadAtlas(string folder, string name, int count, Tile.ColliderType collision, Color tint, int columns = 0) // 분할 원화나 원본 텍스처를 고정 타일 순서로 읽기
     { // 독립 원화 재질 조회 시작
-        Sprite[] sprites = Resources.LoadAll<Sprite>("Exploration/" + name); // Tile Palette에도 넣을 수 있는 원화 조각 조회
-        if (sprites.Length != count) // 누락이나 중복으로 나뉜 원화 개수 확인
-        { // 유효한 제작 이미지 없음 처리 시작
-            return System.Array.Empty<Tile>(); // 기존 바닥과 벽으로 자연스럽게 대체
-        } // 유효한 제작 이미지 없음 처리 종료
+        if (folder == null) // 기존 타일 화면에서 지역 자료 사용 여부 확인
+        { // 선택 지역 미지정 처리 시작
+            return System.Array.Empty<Tile>(); // 원래 공용 자료를 사용하는 상태
+        } // 선택 지역 미지정 처리 종료
+        string path = folder + "/" + name; // 현재 타일 원화의 Unity 리소스 경로
+        Sprite[] sprites = Resources.LoadAll<Sprite>(path); // 편집기에서 준비한 개별 원화 조각 우선 조회
+        if (sprites.Length != count) // 분할 스프라이트가 준비되지 않은 실제 원본 확인
+        { // 단일 원본의 규칙 격자 대체 시작
+            return SliceAtlas(path, name, count, columns, collision, tint); // 유효한 셀 규격 원본만 정사각형 런타임 분할
+        } // 단일 원본의 규칙 격자 대체 종료
         Sprite[] ordered = new Sprite[count]; // 불러온 순서와 무관한 고정 원화 배열
         string prefix = name + "_"; // 편집기에서 확인 가능한 원화 종류 이름
         foreach (Sprite sprite in sprites) // 자산에서 직접 분할된 원화 순회
         { // 이름의 고정 번호 확인 시작
             if (!sprite.name.StartsWith(prefix, System.StringComparison.Ordinal) || !int.TryParse(sprite.name.Substring(prefix.Length), out int index) || index < 0 || index >= count || ordered[index] != null) // 모양과 변형 순서의 훼손 방지
             { // 잘못된 원화 배열 처리 시작
-                return System.Array.Empty<Tile>(); // 고정 번호가 맞지 않으면 기존 재질 사용
+                return SliceAtlas(path, name, count, columns, collision, tint); // 정확한 셀 규격으로 다시 확인한 뒤 공용 자료로 대체
             } // 잘못된 원화 배열 처리 종료
             ordered[index] = sprite; // 불러온 순서와 무관한 고정 위치로 정렬
         } // 이름의 고정 번호 확인 종료
         Tile[] tiles = new Tile[count]; // 맵에서 여러 셀이 재사용할 타일 배열
         for (int index = 0; index < count; index++) // 고정 위치에 따라 각각 타일 객체 준비
         { // 개별 스프라이트 생성 시작
-            tiles[index] = CreateTile(ordered[index], Color.white, collision); // 동일한 재질 색과 충돌 규칙의 타일 등록
+            tiles[index] = CreateTile(ordered[index], tint, collision); // 동일한 재질 색과 충돌 규칙의 타일 등록
         } // 개별 스프라이트 생성 종료
         return tiles; // 공유할 해당 재질의 전체 타일 반환
     } // 독립 원화 재질 조회 종료
+
+    private Tile[] SliceAtlas(string path, string name, int count, int columns, Tile.ColliderType collision, Color tint) // 실제 지역 원본의 행과 열을 고정 타일로 변환
+    { // 정사각형 타일 규격 검사 시작
+        Texture2D source = columns > 0 ? Resources.Load<Texture2D>(path) : null; // 분할 규격이 명시된 실제 지역 원본만 조회
+        if (source == null || source.width % columns != 0 || source.height != source.width / columns * (count / columns)) // 여백 없는 정확한 행 수와 정방형 셀 확인
+        { // 원본 누락 또는 비정방형 처리 시작
+            return System.Array.Empty<Tile>(); // 다른 재질까지 바꾸지 않는 독립 대체
+        } // 원본 누락 또는 비정방형 처리 종료
+        int size = source.width / columns; // 실제 원화 한 칸의 너비와 높이
+        var tiles = new Tile[count]; // 인덱스와 좌표가 고정된 런타임 이미지
+        for (int index = 0; index < count; index++) // 위쪽 행 먼저, 같은 행은 왼쪽부터 순회
+        { // 실제 타일 하나의 스프라이트와 충돌 생성 시작
+            var rect = new Rect(index % columns * size, source.height - (index / columns + 1) * size, size, size); // 참조 원화의 왼쪽 위를 기준으로 한 셀
+            tiles[index] = CreateTile(CreateSprite(source, rect, name + "_" + index), tint, collision); // 고정 순서와 원래 충돌이 있는 타일
+        } // 실제 타일 하나의 스프라이트와 충돌 생성 종료
+        return tiles; // 사용할 지역의 실제 원화 타일 집합
+    } // 정사각형 타일 규격 검사 종료
 
     private Sprite CreateSprite(Texture2D texture, Rect rect, string name) // 1 격자에 정확히 맞는 런타임 원화 배치
     { // 스프라이트 준비 시작
@@ -184,7 +234,14 @@ internal sealed class ExplorationDungeonTiles // 탐사 바닥·벽·장식의 �
     { // 생성한 자료 정리 시작
         foreach (Object asset in ownedAssets) // 원본 텍스처를 제외한 실제 생성 객체 순회
         { // 임시 자료 제거 시작
-            Object.Destroy(asset); // 런타임 스프라이트와 타일만 제거
+            if (Application.isPlaying) // 현재 게임의 프레임 끝 일반 제거 여부
+            { // 게임 씬의 예약 제거 시작
+                Object.Destroy(asset); // 런타임 스프라이트와 타일의 프레임 끝 정리
+            } // 게임 씬의 예약 제거 종료
+            else // 편집기에서 실행하지 않는 지도를 닫을 때의 제거 방식
+            { // 편집 중 즉시 임시 객체 제거 시작
+                Object.DestroyImmediate(asset); // 프로젝트로부터 불러온 텍스처를 제외한 생성 객체만 제거
+            } // 편집 중 즉시 임시 객체 제거 종료
         } // 임시 자료 제거 종료
         ownedAssets.Clear(); // 파괴한 객체 목록 참조 해제
     } // 생성한 자료 정리 종료

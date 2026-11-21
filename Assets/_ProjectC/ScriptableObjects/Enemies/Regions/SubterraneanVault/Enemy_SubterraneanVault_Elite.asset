@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_SubterraneanVault_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_SubterraneanVault_ELITE
+  displayName: "\uc0dd\uccb4 \uc735\ud569 \uae30\uacc4"
+  description: "\uc804\uae30\uac00 \ud750\ub974\ub294 \uae08\uc18d \ud314\uacfc \uc870\uc9c1\uc73c\ub85c \uad00\ud1b5 \uacf5\uaca9\uc744 \ud55c\ub2e4."
+  portrait: {fileID: 21300000, guid: f75efcd1bcfc50ab81f7ee1fd6fc5555, type: 3}
+  isUndead: 0
+  isMechanical: 1
+  maxHealth: 73
+  physicalDefense: 8
+  magicalResistance: 7
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 13
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 2
+  minimumActionSpeed: 6
+  maximumActionSpeed: 10
+  actionPatterns:
+  - displayName: "\uc735\ud569 \ubc29\uc804"
+    actionType: 1
+    attackPower: 13
+    damageType: 2
+    statusEffectType: 74
+    statusEffectValue: 3
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 70
+    mentalChangeOnHit: 0
+    targetRule: 2
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  - displayName: "\uae30\uad00 \uc555\ucc29"
+    actionType: 1
+    attackPower: 14
+    damageType: 1
+    statusEffectType: 32
+    statusEffectValue: 30
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 60
+    mentalChangeOnHit: 0
+    targetRule: 1
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  secondPhasePatternStartIndex: 0
