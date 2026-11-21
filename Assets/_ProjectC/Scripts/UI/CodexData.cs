@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.WandEcho) // 지팡이 반향의 고정 복제 비율 확인
+                    { // 마법 상태 도감 표시 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 50); // 전투와 같은 복제 피해율 표시
+                    } // 마법 상태 도감 표시 종료
                     else if (effect == BattleStatusEffectType.ConfessionDamageMark) // 고해실 유물의 실제 표식 효과 확인
                     { // 표식 도감 표시 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 3); // 전투와 같은 실제 유물 가산량 표기

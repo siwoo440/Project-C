@@ -434,6 +434,11 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 체력 비용 부족 처리 시작
             return false; // 체력 비용 카드 사용 차단
         } // 체력 비용 부족 처리 종료
+        var requiredState = BattleCardActionController.RequiredWandEnemyStatus(cardInstance.SourceData.WandRule); // 현재 지팡이의 필수 원소 상태 조회
+        if (requiredState != BattleStatusEffectType.None && !turnRuntime.HasSelectableEnemyWithStatus(requiredState)) // 생존 적에게 실제 화상이나 감전이 있는지 확인
+        { // 유효 상태 대상이 없는 손패 카드 처리 시작
+            return false; // 원소 상태 대상이 없을 때 클릭과 드래그 비활성화
+        } // 유효 상태 대상이 없는 손패 카드 처리 종료
         if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && !BattleCardActionController.HasManaRetrievalCandidate(cardInstance, runtimeDeck)) // 원본을 제외한 다른 지팡이가 없는 실제 손패 확인
         { // 마력 회수 손패 선택 제외 시작
             return false; // 후보 없이 선택 화면을 열 수 없는 카드 비활성화

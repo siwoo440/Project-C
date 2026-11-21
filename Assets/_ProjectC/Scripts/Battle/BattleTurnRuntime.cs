@@ -58,6 +58,21 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool CanEscape => !disposed && (BattleType == BattleType.Normal || BattleType == BattleType.Elite) && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 일반과 정예 전투의 도주 가능 여부
     private bool CanSelectDuringPlayerTurn => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 현재 아군 턴의 카드 대상 선택 가능 여부
     internal bool HasSelectableEnemy => CanSelectDuringPlayerTurn && HasLivingUnit(enemyUnits); // 현재 적 대상으로 고를 생존 참가자 확인
+    internal bool HasSelectableEnemyWithStatus(BattleStatusEffectType status) // 지정 상태가 남은 생존 적의 선택 가능 여부
+    { // 지정 활성 상태의 적 후보 확인 시작
+        if (!CanSelectDuringPlayerTurn) // 현재 적을 지정할 수 있는 아군 차례인지 확인
+        { // 전투 선택 불가 처리 시작
+            return false; // 종료나 페이즈 전환에는 후보 없음
+        } // 전투 선택 불가 처리 종료
+        foreach (var enemy in enemyUnits) // 실제 전투의 현재 적 명단 순회
+        { // 생존 적의 활성 상태 확인 시작
+            if (enemy?.Team == BattleTeam.Enemy && !enemy.IsDead && enemy.GetStatusEffect(status) is { IsExpired: false }) // 살아 있고 만료되지 않은 지정 상태 확인
+            { // 유효 후보 존재 시작
+                return true; // 원래 상태 조건의 카드 선택 허용
+            } // 유효 후보 존재 종료
+        } // 생존 적의 활성 상태 확인 종료
+        return false; // 사용할 수 있는 활성 상태 대상 없음
+    } // 지정 활성 상태의 적 후보 확인 종료
     internal IReadOnlyList<BattleUnitRuntime> BlessingAllies => allyUnits; // 축복 이전이 확인하는 실제 전투 아군 명단
     internal int CountSelectableEnemyPair() // 실제 적 고르기의 최대 두 생존 대상 수
     { // 선택 가능한 적 수 확인 시작

@@ -315,6 +315,12 @@ public sealed class BattleCardDragHandler :
         { // 전투불능 대상 차단 시작
             return false; // 일반 카드 드롭 거절
         } // 전투불능 대상 차단 종료
+        var requiredState = BattleCardActionController.RequiredWandEnemyStatus(card.SourceData.WandRule); // 클릭과 같은 활성 원소 상태 조건 확인
+        if (requiredState != BattleStatusEffectType.None) // 화상 연장 또는 감전 전이의 실제 적 드롭 확인
+        { // 원소 상태 적 드롭 검증 시작
+            var turns = cardView.GetComponentInParent<BattleHandView>()?.TurnRuntime; // 이 손패가 속한 실제 전투 조회
+            return turns?.CanSelectLivingUnit(targetUnit, BattleTeam.Enemy) == true && targetUnit.GetStatusEffect(requiredState) is { IsExpired: false }; // 오래된 원소 상태가 아닌 살아 있는 현재 적만 선택
+        } // 원소 상태 적 드롭 검증 종료
         if (card.TargetType == CardTargetType.SelectedTwoEnemies) // 서리 파편에서 이미 고른 적과 실제 생존 대상 확인
         { // 순차 적 드롭 유효성 검사 시작
             var hand = cardView.GetComponentInParent<BattleHandView>(); // 현재 전투의 선택 단계와 참가 명단 조회
