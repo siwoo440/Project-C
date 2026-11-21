@@ -2387,6 +2387,54 @@
       "name": "마력 해방",
       "description": "현재 행동력을 모두 지불하고 지정 적에게 지불한 행동력마다 마법 피해 7을 준다.",
       "artworkKey": "4ed4434c958c5825ad1d2e8515e53b24"
+    },
+    {
+      "category": 7,
+      "name": "냉기 손길",
+      "description": "지정 적에게 마법 피해 5를 준다. 명중하면 다음 두 적 턴 동안 행동 속도를 1 낮춘다.",
+      "artworkKey": "6cdf92c8fcdc5433b688b28c959cb751"
+    },
+    {
+      "category": 7,
+      "name": "작은 불꽃",
+      "description": "지정 적에게 마법 피해 6을 준다. 명중한 생존 적에게 25% 확률로 2턴 동안 화상 2를 부여한다.",
+      "artworkKey": "1285fca9b18651889a8a21978bafcac3"
+    },
+    {
+      "category": 7,
+      "name": "정전기",
+      "description": "지정 적에게 마법 피해 5를 준다. 명중한 생존 적에게 25% 확률로 두 적 턴 동안 감전 1을 부여한다.",
+      "artworkKey": "432ba05beb9e589b9e454b23e5cfbac6"
+    },
+    {
+      "category": 7,
+      "name": "마력 집중",
+      "description": "다음으로 사용하는 지팡이 피해 카드가 명중할 때마다 피해가 4 증가한다.",
+      "artworkKey": "177ecb55a02858319d23e4459c312cdf"
+    },
+    {
+      "category": 7,
+      "name": "마법 장벽",
+      "description": "지정 아군의 마법 피해 저항을 두 적 턴 동안 10% 높인다.",
+      "artworkKey": "ea12640ec18f58f29398dce1b1fdcd48"
+    },
+    {
+      "category": 7,
+      "name": "서리 파편",
+      "description": "서로 다른 생존 적 둘을 골라 각 대상에게 마법 피해 4를 준다. 적이 하나면 그 적을 선택해 한 번 공격한다.",
+      "artworkKey": "32423a04ca625a639bc3c6f25e478ac1"
+    },
+    {
+      "category": 7,
+      "name": "불씨 확산",
+      "description": "화상 상태인 생존 적을 선택해 마법 피해 8을 준다.",
+      "artworkKey": "796d2e89ce2858c9820c51ce1946d262"
+    },
+    {
+      "category": 7,
+      "name": "마력 흡수",
+      "description": "지정 적에게 마법 피해 4를 주고 생존 적에게 명중하면 30% 확률로 현재 행동력을 1 회복한다.",
+      "artworkKey": "65c50561f28e536e91cd0da8fb33563a"
     }
   ]
 }

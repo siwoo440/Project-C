@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetManaSiphon
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_MANA_SIPHON
+  displayName: "마력 흡수"
+  description: "지정 적에게 마법 피해 4를 주고 생존 적에게 명중하면 30% 확률로 현재 행동력을 1 회복한다."
+  artwork: {fileID: 21300000, guid: 65c50561f28e536e91cd0da8fb33563a, type: 3}
+  cardType: 1
+  targetType: 3
+  apCost: 1
+  effectType: 0
+  damageType: 2
+  effectValue: 4
+  mentalChangeValue: 0
+  wandRule: 3
+  secondaryEffectValue: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

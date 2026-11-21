@@ -1755,7 +1755,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 5 피해, 속도 -1 (2턴)",
+      "description": "지정 적에게 마법 피해 5를 준다. 명중하면 다음 두 적 턴 동안 행동 속도를 1 낮춘다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "냉기 손길.png"
@@ -1766,7 +1766,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 6 피해, 화상(2턴) 25%",
+      "description": "지정 적에게 마법 피해 6을 준다. 명중한 생존 적에게 25% 확률로 2턴 동안 화상 2를 부여한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "작은 불꽃.png"
@@ -1777,7 +1777,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 5 피해, 감전(2턴) 25%",
+      "description": "지정 적에게 마법 피해 5를 준다. 명중한 생존 적에게 25% 확률로 두 적 턴 동안 감전 1을 부여한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "정전기.png"
@@ -1788,7 +1788,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "0",
-      "description": "다음 지팡이 카드 피해 +4",
+      "description": "다음으로 사용하는 지팡이 피해 카드가 명중할 때마다 피해가 4 증가한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "마력 집중.png"
@@ -1799,7 +1799,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 저항력 +10% (2턴)",
+      "description": "지정 아군의 마법 피해 저항을 두 적 턴 동안 10% 높인다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "마법 장벽.png"
@@ -1810,7 +1810,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "적 2명에게 4 피해",
+      "description": "서로 다른 생존 적 둘을 골라 각 대상에게 마법 피해 4를 준다. 적이 하나면 그 적을 선택해 한 번 공격한다.",
       "area": "2",
       "targets": "적",
       "imageFileName": "서리 파편.png"
@@ -1821,7 +1821,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "화상 상태 적에게 8 피해",
+      "description": "화상 상태인 생존 적을 선택해 마법 피해 8을 준다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "불씨 확산.png"
@@ -1832,7 +1832,7 @@
       "attribute": "지팡이",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 4 피해, 코스트 +1 30%",
+      "description": "지정 적에게 마법 피해 4를 주고 생존 적에게 명중하면 30% 확률로 현재 행동력을 1 회복한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "마력 흡수.png"

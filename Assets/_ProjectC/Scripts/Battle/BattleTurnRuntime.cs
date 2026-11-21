@@ -49,6 +49,27 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool CanSelectDuringPlayerTurn => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 현재 아군 턴의 카드 대상 선택 가능 여부
     internal bool HasSelectableEnemy => CanSelectDuringPlayerTurn && HasLivingUnit(enemyUnits); // 현재 적 대상으로 고를 생존 참가자 확인
     internal IReadOnlyList<BattleUnitRuntime> BlessingAllies => allyUnits; // 축복 이전이 확인하는 실제 전투 아군 명단
+    internal int CountSelectableEnemyPair() // 실제 적 고르기의 최대 두 생존 대상 수
+    { // 선택 가능한 적 수 확인 시작
+        if (!CanSelectDuringPlayerTurn) // 전투 진행 및 현재 아군의 대상 선택 가능 상태 확인
+        { // 현재 선택 불가 시작
+            return 0; // 선택 가능한 적 없음 반환
+        } // 현재 선택 불가 종료
+        BattleUnitRuntime first = null; // 서로 다른 두 개체를 비교할 첫 생존 적
+        foreach (var enemy in enemyUnits) // 현재 전투의 실제 적 명단 순회
+        { // 개별 적 대상 확인 시작
+            if (enemy?.Team != BattleTeam.Enemy || enemy.IsDead || enemy == first) // 적 진영과 생존 상태 및 중복 참가자 확인
+            { // 선택 불가 적 제외 시작
+                continue; // 다른 적 후보 확인
+            } // 선택 불가 적 제외 종료
+            if (first != null) // 서로 다른 두 번째 생존 적 발견 확인
+            { // 최대 선택 수 도달 시작
+                return 2; // 서로 다른 생존 적 둘 표시
+            } // 최대 선택 수 도달 종료
+            first = enemy; // 첫 번째 실제 생존 적 기록
+        } // 개별 적 대상 확인 종료
+        return first == null ? 0 : 1; // 적 없음과 단일 적을 구분한 선택 수 반환
+    } // 선택 가능한 적 수 확인 종료
     internal bool CanSelectLivingUnit(BattleUnitRuntime unit, BattleTeam team) // 현재 전투의 진영별 생존 대상 선택 확인
     { // 생존 참가자 검사 시작
         return CanSelectDuringPlayerTurn && unit?.Team == team && !unit.IsDead && // 카드 대상 선택이 가능한 진행 상태와 진영 확인
