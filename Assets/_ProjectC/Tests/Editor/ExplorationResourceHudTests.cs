@@ -65,7 +65,7 @@ public sealed class ExplorationResourceHudTests // 탐사 재화 표시와 상�
         ExplorationSpecialRoomView room = roomObject.GetComponent<ExplorationSpecialRoomView>(); // 실제 상점 방 화면 조회
         room.Initialize(map, Vector2Int.zero, ExplorationRoomType.Shop, "resource_hud_test_shop"); // 실제 상점 방 역할과 고유 식별자 설정
         ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
-        room.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 실제 플레이어의 상점 방 진입 처리
+        room.Interact(player); // F 키 경로가 호출하는 실제 상점 방 진입 처리
         Assert.IsTrue(shop.transform.Find("ShopOverlay").gameObject.activeSelf); // 상점 방을 통한 실제 상점 열기 확인
         Assert.IsFalse(shop.TryOpenFromRoom("different_room")); // 열린 상점의 중복 방문 거절 확인
         Assert.AreEqual("resource_hud_test_shop", ShopRunManager.Instance.ActiveRoomRuntimeId); // 원래 상점 재고 유지 확인

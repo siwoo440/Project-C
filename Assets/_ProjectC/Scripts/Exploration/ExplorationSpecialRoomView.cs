@@ -1,6 +1,6 @@
 using UnityEngine; // Trigger와 런타임 표시 기능 사용
 
-public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보물·휴식·상점 방 상호작용
+public sealed class ExplorationSpecialRoomView : MonoBehaviour, IExplorationInteractable // 탐사 보물·휴식·상점 방 F 키 상호작용
 {
     private static Sprite runtimeMarkerSprite; // 특수 방 공용 임시 스프라이트
 
@@ -10,6 +10,17 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     private string runtimeId; // 현재 특수 방 런타임 ID
     private bool waitingForRestUse; // 휴식 UI 사용 완료 감시 여부
     private bool waitingForMarkedPurchase; // 미사용 표식 상점 재방문 표시
+
+    public bool CanInteract // 현재 방이 F 키로 열릴 수 있는 상태
+    { // 특수 방 가능 상태 조회 시작
+        get // 사용한 보물과 미결제 표식 상점의 구분
+        { // 원래 탐사 방 상태 확인 시작
+            var session = ExplorationSessionManager.Instance; // 현재 탐사의 완료 및 할인 표식 기록
+            bool usable = roomType is ExplorationRoomType.Treasure or ExplorationRoomType.Rest or ExplorationRoomType.Shop; // 실제 상호작용이 있는 특수 방 역할 확인
+            return isActiveAndEnabled && usable && !string.IsNullOrWhiteSpace(runtimeId) && session != null && // 연결된 현재 특수 방의 기본 조건
+                (!session.IsEventResolved(runtimeId) || roomType == ExplorationRoomType.Shop && session.Cart.IsMarkedShop(runtimeId)); // 첫 사용 또는 미결제 할인 상점 재입장
+        } // 원래 탐사 방 상태 확인 종료
+    } // 특수 방 가능 상태 조회 종료
 
     public void Initialize(
         ExplorationMapRuntime runtime,
@@ -103,21 +114,12 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other) // 플레이어 특수 방 접촉 처리
-    {
-        ExplorationPlayerController player =
-            other.GetComponent<ExplorationPlayerController>(); // 플레이어 접촉 확인
-
-        if (player == null) // 플레이어 여부 확인
-        {
-            return; // 다른 오브젝트 접촉 무시
-        }
-
-        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
-        if (sessionManager.IsEventResolved(runtimeId)) // 이미 사용한 방 확인
-        {
-            return; // 재사용 차단
-        }
+    public void Interact(ExplorationPlayerController player) // F 키로 현재 특수 방 동작 실행
+    { // 특수 방 선택 처리 시작
+        if (player == null || !CanInteract) // 실제 플레이어와 추가로 진행할 수 있는 방 확인
+        { // 열 수 없는 방의 상호작용 차단 시작
+            return; // 사용 완료와 중복 실행 차단
+        } // 열 수 없는 방의 상호작용 차단 종료
 
         switch (roomType) // 방 역할별 상호작용 분기
         {
