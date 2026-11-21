@@ -10,6 +10,7 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
     private BattleUnitRuntime runtimeUnit; // 연결된 런타임 유닛
     private bool tooltipVisible; // 상세 툴팁 표시 여부
     public bool IsTooltipVisible => tooltipVisible; // 현재 상세 툴팁 표시 상태 조회
+    internal RectTransform TooltipRect => tooltipView?.PanelRect; // 원래 화면과 포인터를 공유하는 실제 상세 패널
     public void Bind(BattleUnitRuntime unit) // 런타임 유닛 연결
     { // 연결 시작
         Unbind(); // 기존 연결 해제
