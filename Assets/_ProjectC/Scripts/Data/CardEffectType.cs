@@ -20,5 +20,6 @@ public enum CardEffectType // 카드 효과 종류
     RemoveOneDebuff, // 먼저 적용된 디버프 하나 해제
     Unplayable, // 손패에서 사용할 수 없는 카드
     ReviveAlly, // 현재 전투에서 쓰러진 아군의 체력 회복과 생존 상태 복구
-    CopyAllyBlessing // 지정 아군 사이에 활성 강화 하나 복사
+    CopyAllyBlessing, // 지정 아군 사이에 활성 강화 하나 복사
+    DiscardWandForActionPoint // 손패의 다른 지팡이 카드를 버린 뒤 행동력 회복
 } // 열거형 종료

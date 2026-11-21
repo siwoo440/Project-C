@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.IncomingMagicDamageUp || effect == BattleStatusEffectType.EvasionDown) // 지팡이의 마법 취약과 회피 감소 설명 처리
+                    { // 원본 카드 대표 수치 확인 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 15); // 전투 툴팁과 같은 시트 수치 사용
+                    } // 상태 도감 설명 처리 종료
                     else if (effect == BattleStatusEffectType.ManaConcentration) // 화면에 새로 표시되는 마력 집중의 상세 설명
                     { // 다음 지팡이 피해 카드의 원본 수치 조회
                         description = BattleStatusEffectInstance.GetDescription(effect, 4); // 카드와 도감의 추가 피해가 일치하는지 확인

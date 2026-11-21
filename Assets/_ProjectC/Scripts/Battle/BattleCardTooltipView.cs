@@ -26,6 +26,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             SwordCardRule.TwinBladeFlurry => "타격마다 무작위 생존 적 하나", // 전체 적에서 하나씩 고르는 연타 범위
             _ => GetTargetLabel(cardInstance) // 일반 카드와 두 아군 선택의 대상 문구
         }; // 카드 대상 표시 완료
+        if (cardInstance.SourceData.WandRule == WandCardRule.ChainLightning) // 자체 시전 입력 뒤 실제 공격할 적 대상의 안내
+        { // 연쇄 번개 대상 문구 시작
+            targetLabel = "타격마다 무작위 생존 적 1명"; // 연속 타격의 실제 재선택 대상 문구
+        } // 연쇄 번개 대상 문구 종료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaRelease && availableActionPoints.HasValue) // 현재 행동력 미리보기를 쓰는 실제 마력 해방 확인
         { // 현재 기본 피해 미리보기 시작
@@ -117,6 +121,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 강화 복사 이름 시작
             return "강화 복사"; // 독립 지원 효과 문구 반환
         } // 강화 복사 이름 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 별도 지팡이 버림을 요구하는 마력 회수 확인
+        { // 마력 회수 상세 시작
+            return "행동력 회복"; // 실제 회복 효과 분류 이름
+        } // 마력 회수 상세 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
         { // 손패 정리 이름 시작
             return "드로우 후 손패 정리"; // 달 카드 효과 이름 반환
@@ -238,6 +246,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 세계 연계 상세 시작
             return $"방어도 {cardInstance.EffectValue} · 다른 동료 둘의 전용 카드 사용 시 체력 비율이 가장 낮은 다른 아군에게 {cardInstance.SourceData.SecondaryEffectValue} 추가"; // 기본 방어와 연계 조건 상세 반환
         } // 세계 연계 상세 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 자유롭게 선택할 다른 손패 지팡이 확인
+        { // 마력 회수 동작 상세 시작
+            return $"다른 지팡이 카드 1장 선택해 버리기 · 행동력 +{cardInstance.EffectValue}"; // 소비할 카드와 현재 회복량 표시
+        } // 마력 회수 동작 상세 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
         { // 손패 정리 상세 시작
             return $"최대 {cardInstance.EffectValue}장 드로우 후 손패 하나 선택해 버리기"; // 달 카드의 드로우와 선택 상세 반환

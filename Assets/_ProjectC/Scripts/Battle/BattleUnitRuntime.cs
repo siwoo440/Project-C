@@ -712,8 +712,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
         int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
-        int vulnerability = GetStatusEffectValue(BattleStatusEffectType.Vulnerable); // 대상에게 적용된 받는 피해 증가율
-        int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 정수 범위 안에서 원본 피해 증가율 적용과 내림
+        long vulnerability = GetStatusEffectValue(BattleStatusEffectType.Vulnerable); // 대상에게 적용된 받는 피해 증가율
+        vulnerability += damageType == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.IncomingMagicDamageUp)) : 0; // 마법 피해에만 별도 취약을 합산
+        int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 두 상태 합산 뒤 정수 범위의 실제 피해 내림
         int corrosion = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.CorrosionResistanceDown) is { IsExpired: false } corrosionStatus ? corrosionStatus.EffectiveValue : 0; // 실제 활성 실금석 약화의 경감 퍼센트포인트 조회
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, corrosion); // 예상과 실제 피해의 공통 마법 저항 감소 반영
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격

@@ -138,7 +138,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return (int)Math.Min(int.MaxValue, amount); // 정수 범위의 원본 카드 피해 반환
     } // 공격 자세 계산 종료
 
-    internal static BattleUnitRuntime PickDanceTarget(IReadOnlyList<BattleUnitRuntime> area) // 매 타격 직전 생존 대상 추첨
+    internal static BattleUnitRuntime PickRandomLivingTarget(IReadOnlyList<BattleUnitRuntime> area) // 무작위 카드 연타의 실제 생존 후보 추첨
     { // 실제 타격 대상 결정 시작
         var living = new List<BattleUnitRuntime>(area.Count); // 이번 타격에서 선택할 수 있는 생존 적
         foreach (var enemy in area) // 카드에서 지정한 전체 대상 범위 확인

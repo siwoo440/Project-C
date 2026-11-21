@@ -50,6 +50,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
+    private CardInstance manaRetrievalSource; // 시전 전에 별도 지팡이 선택을 기다리는 회수 카드
+    private CardInstance manaRetrievalDiscard; // 실제 충돌에서 다시 확인하고 버릴 별도 손패 지팡이
     private BattleRemainingCardChoiceView remainingChoiceView; // 남은 카드 처리 선택 화면
     private BattleDebuffChoiceView debuffChoiceView; // 디버프 이전 선택 화면
     private IReadOnlyList<BattleStatusEffectInstance> pendingDebuffChoices; // 이전할 디버프 선택 후보
@@ -125,6 +127,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 취소
             return; // 카드 클릭 처리 종료
         } // 재선택 처리 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 마력 회수의 확정 전 손패 선택 효과 확인
+        { // 무료 카드의 버림 선택 시작
+            ShowManaRetrievalChoices(cardInstance); // 비용과 사용 신호보다 먼저 별도 지팡이 선택 열기
+            return; // 즉시 자신에게 사용하는 일반 카드 흐름 생략
+        } // 무료 카드의 버림 선택 종료
         firstSequentialTarget = null; // 새 카드 선택 전 첫 유닛 초기화
         selectedCard = cardInstance; // 새 선택 카드 저장
         handView.SetSelectedCard(selectedCard); // 손패 선택 표시 적용
@@ -136,7 +143,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 적 대상 단계 표시 종료
         if (selectedCard.TargetType == CardTargetType.Self) // 자신 대상 카드 확인
         { // 자신 대상 처리 시작
-            if (IsValidTarget(selectedCard, selectedCard.OwnerUnit)) // 자신 대상 유효성 확인
+            if (IsValidTarget(selectedCard, selectedCard.OwnerUnit) && (selectedCard.SourceData.WandRule != WandCardRule.ChainLightning || turnRuntime.HasSelectableEnemy)) // 자기 시전과 연쇄 번개의 유효한 생존 적 여부 확인
             { // 자신 대상 실행 시작
                 ExecuteCard(selectedCard, CreateSingleTargetList(selectedCard.OwnerUnit)); // 소유자에게 카드 사용
             } // 자신 대상 실행 종료
@@ -226,6 +233,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유닛 클릭 처리 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
+        if (manaRetrievalSource != null && !ContainsHandCard(manaRetrievalSource)) // 원래 회수 카드가 실제 손패에 아직 있는지 확인
+        { // 선택 중인 원본 카드의 물리 이탈 시작
+            CloseCardChoice(); // 비용과 효과 없이 대기 중 지팡이 선택 창 닫기
+        } // 선택 중인 원본 카드의 물리 이탈 종료
         if (selectedCard != null && !ContainsHandCard(selectedCard)) // 선택 카드의 손패 이탈 확인
         { // 손패 이탈 처리 시작
             CancelSelection(); // 카드 선택 상태 초기화
@@ -252,6 +263,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 파트너 표시 갱신 종료
     private void HandleUnitDied(BattleUnitRuntime runtimeUnit) // 유닛 사망 처리
     { // 유닛 사망 처리 시작
+        if (manaRetrievalSource?.OwnerUnit == runtimeUnit) // 아직 확정하지 않은 회수 카드 시전자의 실제 사망 확인
+        { // 회수 선택을 계속할 수 없는 상황 시작
+            CloseCardChoice(); // 행동력과 별도 지팡이 이동 없이 선택 닫기
+        } // 회수 선택을 계속할 수 없는 상황 종료
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
         if (selectedCard == null) // 현재 대상 입력을 기다리는 카드 확인
         { // 미선택 처리 시작
@@ -360,6 +375,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 비용 차감 전 카드와 대상 선택 취소
             return; // 분할 방벽 효과 실행 중단
         } // 두 대상 미확정 처리 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && (!IsDistinctManaRetrievalWand(cardInstance, manaRetrievalDiscard) || !ContainsHandCard(manaRetrievalDiscard))) // 사용 확정 전에 지팡이 후보가 여전히 물리 손패에 있는지 확인
+        { // 원래 회수 선택 무효화 처리 시작
+            CancelSelection(); // 카드 이동과 결제 전 선택 정리
+            return; // 유효한 별도 지팡이가 없는 회수 사용 거절
+        } // 원래 회수 선택 무효화 처리 종료
         if (!IsSupportedEffect(cardInstance.EffectType)) // 지원 효과 확인
         { // 미지원 효과 처리 시작
             Debug.LogError($"[BattleCardActionController] 지원하지 않는 카드 효과입니다: {cardInstance.EffectType}"); // 미지원 효과 출력
@@ -446,7 +466,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 실제 카드 정산과 사용한 방어 할인 전달
     { // 카드 정산 범위 시작
         bool resolveHealingBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies; // 피해와 회복을 함께 처리하는 카드 확인
-        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory); // 두 효과가 정산된 뒤 전투 승리 확정
+        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory || cardInstance.SourceData.WandRule == WandCardRule.ChainLightning); // 복합 효과와 연쇄 번개의 카드 이동까지 기다린 뒤 승리 확정
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount); // 실제 전투 효과와 사용 카드 이동 및 방어 할인 처리
@@ -459,6 +479,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
 
     private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 카드 충돌 시 효과와 첫 방어 사용 판정
     { // 카드 충돌 처리 시작
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && !TryDiscardForManaRetrieval(cardInstance)) // 실제로 별도 지팡이를 버린 경우에만 마력 회수 사용
+        { // 사용 전에 버림 실패 처리 시작
+            return; // 행동력 회복과 카드 사용 이벤트 및 원본 소모 없음
+        } // 사용 전에 버림 실패 처리 종료
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
         cupHealingBonusForCurrentCard = 0; // 현재 성배 카드와 이전 사용의 가산량 분리
         bool damagesAndHeals = cardInstance.TargetType == CardTargetType.EnemyAndAlly; // 직접 피해와 지정 회복을 함께 처리하는 카드 확인
@@ -511,6 +535,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
             appliedDefense = totalAppliedAmount > 0; // 실제 공용 방어도 분배 성공 확인
         } // 효과 적용 종료
+        else if (cardInstance.SourceData.WandRule == WandCardRule.ChainLightning) // 전체 적 중 매 타격 대상을 다시 고르는 지팡이 확인
+        { // 연쇄 번개 피해 처리 시작
+            totalAppliedAmount = ApplyWandChainLightning(cardInstance); // 현재 살아 있는 적의 독립 명중과 피해 합계
+        } // 연쇄 번개 피해 처리 종료
         else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance || cardInstance.SourceData.SwordRule == SwordCardRule.TwinBladeFlurry) // 지정된 적 범위에서 매 타격 재추첨
         { // 무작위 연속 공격 시작
             totalAppliedAmount = ApplyDanceHits(cardInstance, targetUnits); // 선택된 범위에서 타격 직전마다 생존 적 재추첨
@@ -688,6 +716,76 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         ApplyPostSelectionRelicDraws(); // 상태 이전 선택까지 마친 카드의 추가 드로우 처리
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 디버프 처리 종료
+    internal static bool HasManaRetrievalCandidate(CardInstance source, BattleDeckRuntime deck) // 현재 물리 손패에 선택할 다른 지팡이 존재 여부
+    { // 손패 카드의 현재 회수 가능 검사 시작
+        if (deck == null || source?.CardType != CardType.Wand) // 실제 전투 덱과 올바른 지팡이 회수 카드 확인
+        { // 유효 원본이 없는 경우 시작
+            return false; // 별도 지팡이를 선택할 수 없음 반환
+        } // 유효 원본이 없는 경우 종료
+        foreach (var card in deck.Hand) // 현재 물리 손패의 실제 인스턴스 조회
+        { // 카드의 회수 비용 자격 검사 시작
+            if (IsDistinctManaRetrievalWand(source, card)) // 회수 원본과 다른 지팡이 카드 확인
+            { // 유효 버림 후보 발견 시작
+                return true; // 손패 선택을 개시할 수 있음 반환
+            } // 유효 버림 후보 발견 종료
+        } // 카드의 회수 비용 자격 검사 종료
+        return false; // 다른 지팡이 없는 회수 사용 불가
+    } // 손패 카드의 현재 회수 가능 검사 종료
+    private static bool IsDistinctManaRetrievalWand(CardInstance source, CardInstance candidate) // 마력 회수에 가능한 별도 지팡이 카드 확인
+    { // 후보 자격 판단 시작
+        return candidate != source && candidate?.CardType == CardType.Wand; // 원본 카드와 같거나 다른 속성인 후보 제외
+    } // 후보 자격 판단 종료
+    private void ShowManaRetrievalChoices(CardInstance card) // 원래 카드 사용 전에 실제 버릴 지팡이 선택 열기
+    { // 마력 회수 후보 표시 시작
+        var canvas = handView.GetComponentInParent<Canvas>(); // 대상 카드 선택을 놓을 원래 전투 화면 조회
+        if (canvas == null || drawChoiceView != null || !HasManaRetrievalCandidate(card, runtimeDeck)) // 선택 화면과 실제 물리 손패 후보 검증
+        { // 선택을 개시할 수 없는 경우 시작
+            return; // 비용과 카드 상태 그대로 유지
+        } // 선택을 개시할 수 없는 경우 종료
+        var candidates = new List<CardInstance>(); // 현재 선택에 올릴 실제 별도 지팡이 후보 목록
+        foreach (var candidate in runtimeDeck.Hand) // 현재 손패의 각 카드 확인
+        { // 별도 지팡이 후보 수집 시작
+            if (IsDistinctManaRetrievalWand(card, candidate)) // 원본과 다른 지팡이 선별
+            { // 실제 팝업 후보 추가 시작
+                candidates.Add(candidate); // 현재 물리 인스턴스 그대로 등록
+            } // 실제 팝업 후보 추가 종료
+        } // 별도 지팡이 후보 수집 종료
+        CancelSelection(); // 새 선택 창 전 다른 카드의 미확정 대상 강조 정리
+        manaRetrievalSource = card; // 선택이 끝날 때까지 유지할 사용 전 원본 저장
+        handView.SetInteractionLocked(true); // 카드와 턴 종료 입력을 선택 동안 잠금
+        BattleDrawChoiceView opened = null; // 이전에 닫은 화면의 늦은 콜백을 구분할 창 참조
+        opened = BattleDrawChoiceView.Show(canvas.transform, candidates, candidate => FinishManaRetrievalChoice(opened, card, candidate), // 원래 카드 선택 화면의 단일 후보 확인 연결
+            "버릴 지팡이 카드 한 장 선택", () => FinishManaRetrievalChoice(opened, card, null)); // 지금 버리지 않고 닫는 취소 입력 제공
+        drawChoiceView = opened; // 현재 회수 선택의 살아 있는 창 저장
+    } // 마력 회수 후보 표시 종료
+    private void FinishManaRetrievalChoice(BattleDrawChoiceView opened, CardInstance source, CardInstance candidate) // 실제 회수 선택의 확인 또는 취소 정산
+    { // 선택 결과 검증 시작
+        if (!ReferenceEquals(opened, drawChoiceView) || manaRetrievalSource != source) // 지금 연 회수 창과 현재 원본이 정확히 같은지 확인
+        { // 이미 닫힌 창 입력 처리 시작
+            return; // 이전이나 중복 클릭으로 원래 상태 변경 방지
+        } // 이미 닫힌 창 입력 처리 종료
+        manaRetrievalSource = null; // 닫힌 선택의 원본 참조 해제
+        drawChoiceView = null; // 닫힌 선택 창 참조 해제
+        handView.SetInteractionLocked(false); // 취소나 카드 연출에 앞선 일반 입력 복구
+        if (disposed || !turnRuntime.IsPlayerTurn || turnRuntime.HasPendingBossPhaseTransition || source.OwnerUnit.IsDead || !ContainsHandCard(source) || // 씬 종료와 발동 불가 상태 및 원본 카드의 실제 소유 확인
+            !IsDistinctManaRetrievalWand(source, candidate) || !ContainsHandCard(candidate)) // 취소나 더 이상 손패에 없는 실제 후보 제외
+        { // 유효하지 않은 확인 정리 시작
+            return; // 행동력 및 원본 카드와 후보의 추가 이동 없음
+        } // 유효하지 않은 확인 정리 종료
+        manaRetrievalDiscard = candidate; // 카드 충돌 시점의 물리 손패 검사에 넘길 후보
+        ExecuteCard(source, CreateSingleTargetList(source.OwnerUnit)); // 정상 카드 결제와 사용 연출 흐름 시작
+        if (!actionPending) // 정산을 이미 끝냈거나 연출을 시작하지 못한 경우 확인
+        { // 실행되지 않을 후보 정리 시작
+            manaRetrievalDiscard = null; // 후속 카드 입력에 사용되지 않을 회수 후보 제거
+        } // 실행되지 않을 후보 정리 종료
+    } // 선택 결과 검증 종료
+    private bool TryDiscardForManaRetrieval(CardInstance source) // 마력 회수의 실제 손패 버림 성립 확인
+    { // 별도 지팡이의 확정 버림 검사 시작
+        var candidate = manaRetrievalDiscard; // 선택 중 확인한 실제 비용 카드 조회
+        manaRetrievalDiscard = null; // 실제 덱 이벤트가 다시 호출해도 같은 선택을 두 번 쓰지 않는 초기화
+        return turnRuntime.IsPlayerTurn && !turnRuntime.HasPendingBossPhaseTransition && !source.OwnerUnit.IsDead && ContainsHandCard(source) && // 실제 충돌까지 정상 아군 턴과 사용 원본 유지 확인
+            IsDistinctManaRetrievalWand(source, candidate) && runtimeDeck.DiscardCard(candidate) && !ContainsHandCard(candidate); // 원래 버림 허용과 손패에 남는 보호 여부까지 확인
+    } // 별도 지팡이의 확정 버림 검사 종료
     private void ShowPendingCardChoices() // 대기 중인 선택 드로우 표시
     { // 선택 화면 표시 시작
         if (pendingCardChoices == null || pendingCardChoices.Count == 0 || !turnRuntime.IsPlayerTurn) // 선택 후보와 플레이어 턴 확인
@@ -788,6 +886,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
+        manaRetrievalSource = null; // 전투 종료나 강제 정리에 회수 선택 원본 제거
+        manaRetrievalDiscard = null; // 전투 종료나 강제 정리에 회수 버림 후보 제거
         pendingEventRelicDraw = 0; // 전투 종료나 선택 강제 해제 뒤 공용 신호 드로우 예약 해제
         pendingInspectionDraw = 0; // 전투 종료나 선택 강제 해제 뒤 남은 드로우 예약 정리
         pendingPentacleDraw = 0; // 전투 종료나 선택 강제 해제 뒤 펜타클 예약 정리
@@ -1040,6 +1140,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 확인 한도 계산 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
+        if (effectType == CardEffectType.DiscardWandForActionPoint) // 확정한 다른 지팡이의 손패 버림을 쓰는 회수 카드 확인
+        { // 신규 카드 효과 지원 시작
+            return true; // 정상 사용과 이동 흐름 실행 허용
+        } // 신규 카드 효과 지원 종료
         return effectType == CardEffectType.CopyAllyBlessing || // 두 아군 사이의 독립 강화 복사 지원
             effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ReviveAlly || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 기존 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
@@ -1074,6 +1178,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 실제 별도 지팡이 버림을 먼저 완료한 회수 효과 확인
+        { // 원래 공용 행동력의 현재 상한 회복 시작
+            return sharedActionPoints.Gain(cardInstance.EffectValue); // 최대치 안에서 회복한 실제 행동력 반환
+        } // 원래 공용 행동력의 현재 상한 회복 종료
         switch (cardInstance.SourceData.ShieldRule) // 아군에게 복합 효과를 주는 방패 카드의 대상별 분기
         { // 복합 방패 효과 시작
             case ShieldCardRule.Fortify: // 물리 방어력과 별도의 마법 피해 경감
@@ -1369,6 +1477,21 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         return applied; // 타격별 체력 피해 합계 반환
     } // 단일 효과 적용 종료
 
+    private long ApplyWandChainLightning(CardInstance card) // 계속 바뀌는 생존 적에게 독립적인 연쇄 타격 적용
+    { // 연쇄 번개 타격 정산 시작
+        long damage = 0; // 독립 타격이 실제로 잃게 한 체력 합계
+        for (int hit = 0; hit < 3 && !card.OwnerUnit.IsDead && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition; hit++) // 최대 세 타격과 기존 전투 종료 조건 확인
+        { // 현재 생존 대상의 독립 추첨 시작
+            var target = SwordCardCombat.PickRandomLivingTarget(enemyActions.EnemyUnits); // 이전 선택을 보존하지 않는 현재 생존 적의 무작위 추첨
+            if (target == null) // 각 타격 전 실제로 남은 적 확인
+            { // 생존 대상 소진 시작
+                break; // 마지막 처치 이후 대상 추첨과 피해 중단
+            } // 생존 대상 소진 종료
+            damage += ApplyIsolatedDamageHit(card, target); // 현재 대상의 개별 명중과 마법 방어 및 마력 집중 반영
+        } // 현재 생존 대상의 독립 추첨 종료
+        return damage; // 실제 타격들의 오버플로 없는 체력 피해 합계
+    } // 연쇄 번개 타격 정산 종료
+
     private int ApplyDanceHits(CardInstance card, IReadOnlyList<BattleUnitRuntime> area) // 선택 범위 안에서 독립 타격 처리
     { // 무작위 연타 시작
         int damage = 0; // 이번 카드가 입힌 체력 피해 합계
@@ -1377,7 +1500,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 각 타격 처리 시작
             for (int index = 0; index < card.SourceData.DamageHitCount && !card.OwnerUnit.IsDead && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition; index++) // 남은 타격과 전투 상태 검사
             { // 생존 대상 추첨 시작
-                hit[0] = SwordCardCombat.PickDanceTarget(area); // 같은 두 칸 안에서 생존자 재선택
+                hit[0] = SwordCardCombat.PickRandomLivingTarget(area); // 검 카드가 정한 범위 안에서 생존자 재선택
                 if (hit[0] == null) // 범위 안의 적 전멸 확인
                 { // 범위 소진 처리 시작
                     break; // 다른 칸으로 넘어가는 공격 방지
@@ -1895,6 +2018,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 부활 문구 처리 시작
             return "부활"; // 실제 효과 로그 이름 반환
         } // 부활 문구 처리 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 전투 로그의 지팡이 버림 행동력 효과 확인
+        { // 마력 회수 문구 시작
+            return "행동력 회복"; // 실제 회복한 공용 행동력의 로그 이름
+        } // 마력 회수 문구 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 드로우 후 손패 정리 효과 확인
         { // 달 카드 효과 문구 시작
             return "드로우와 손패 선택 버리기"; // 달 전용 효과 이름 반환
