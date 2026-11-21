@@ -19,7 +19,17 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         TutorialPanelLayout layout = new TutorialPanelLayout(); // 새 공통 안내 배치 생성
         RectTransform panel = PreparationUi.CreatePanel("Panel", guide, new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.84f)); // 화면 중앙의 넓은 안내 영역 생성
         Image panelImage = panel.GetComponent<Image>(); // 공통 안내 영역 배경 조회
-        panelImage.color = new Color(0.24f, 0.24f, 0.24f, modal ? 1f : 0.78f); // 전투 안내의 불투명 회색과 탐사 안내의 기존 배경 구분
+        Sprite background = Resources.Load<Sprite>("UI/Tutorial/TutorialPanel"); // 세 튜토리얼에서 공유하는 제작 배경
+        if (background != null) // 가져온 게임 UI 스프라이트 확인
+        { // 제작 배경 적용 시작
+            panelImage.sprite = background; // 청록색 표면과 금속 테두리 원화 사용
+            panelImage.type = Image.Type.Sliced; // 패널 크기가 달라도 금속 모서리 형태 보존
+            panelImage.color = Color.white; // 배경 원본의 색상과 투명도 유지
+        } // 제작 배경 적용 종료
+        else // 배경 에셋을 가져오지 못한 경우
+        { // 안내 읽기 보조 배경 적용 시작
+            panelImage.color = new Color(0.04f, 0.14f, 0.16f, modal ? 1f : 0.94f); // 글자를 읽을 수 있는 어두운 기본색
+        } // 보조 배경 적용 종료
         panelImage.raycastTarget = modal; // 전투 안내에서 뒤쪽 버튼 입력 차단
         layout.pageLabel = PreparationUi.CreateText("PageLabel", panel, string.Empty, 25f); // 현재 페이지 번호 생성
         PreparationUi.Place(layout.pageLabel.rectTransform, new Vector2(0.5f, 0.95f), Vector2.zero, new Vector2(180f, 48f)); // 안내 상단 중앙 페이지 표시
@@ -47,7 +57,7 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         layout.Description.textWrappingMode = TextWrappingModes.Normal; // 긴 설명 줄바꿈 설정
         layout.previousPage = PreparationUi.CreateButton("PreviousPage", panel, "이전", new Vector2(0.79f, 0.12f), Vector2.zero, new Vector2(150f, 55f), previous); // 하단 왼쪽 이전 버튼
         layout.NextButton = PreparationUi.CreateButton("NextButton", panel, "다음", new Vector2(0.91f, 0.12f), Vector2.zero, new Vector2(150f, 55f), next); // 하단 오른쪽 다음 또는 완료 버튼
-        layout.CloseButton = PreparationUi.CreateButton("SkipButton", panel, "X", Vector2.one, new Vector2(-34f, -31f), new Vector2(48f, 42f), close); // 우측 상단 즉시 닫기 버튼
+        layout.CloseButton = PreparationUi.CreateButton("SkipButton", panel, "X", Vector2.one, new Vector2(-55f, -46f), new Vector2(48f, 42f), close); // 우측 상단 금속 장식 안쪽의 즉시 닫기 버튼
         layout.nextLabel = layout.NextButton.GetComponentInChildren<TMP_Text>(); // 현재 장에 맞춰 표시할 문구
         ApplyPageButtonArt(layout.previousPage); // 제작한 이전 버튼 이미지 적용
         ApplyPageButtonArt(layout.NextButton); // 제작한 다음과 완료 버튼 이미지 적용
@@ -93,7 +103,7 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
             button.image.type = Image.Type.Simple; // 버튼 이미지 전체 표시
             button.image.color = Color.white; // 제작 이미지 원본 색상 유지
         } // 페이지 버튼 이미지 연결 종료
-        button.GetComponentInChildren<TMP_Text>().richText = false; // 화살표 문자의 태그 해석 방지
+        button.GetComponentInChildren<TMP_Text>().richText = false; // 이전과 다음 및 완료 문구를 일반 글자로 표시
     } // 페이지 버튼 이미지 적용 종료
     public void SetExample(string name) // 단계에 맞는 실제 게임 화면 예시 설정
     { // 예시 이미지 설정 시작

@@ -18,9 +18,9 @@ public sealed class BattleTutorialViewTests // 전투 안내 화면 검사
         Assert.IsTrue(overlay.gameObject.activeSelf); // 안내 화면 표시 확인
         Assert.IsTrue(overlay.GetComponent<Image>().raycastTarget); // 설명 중 실제 전투 레이캐스트 차단 확인
         Image panelBackground = overlay.Find("Panel").GetComponent<Image>(); // 공통 안내 배경 조회
-        Assert.AreEqual(1f, panelBackground.color.a); // 완전히 불투명한 예시 패널 확인
-        Assert.AreEqual(panelBackground.color.r, panelBackground.color.g); // 회색 배경의 빨강과 초록 값 확인
-        Assert.AreEqual(panelBackground.color.g, panelBackground.color.b); // 회색 배경의 초록과 파랑 값 확인
+        Assert.IsNotNull(panelBackground.sprite); // 제작한 전투 안내 배경 원본 확인
+        Assert.AreEqual("TutorialPanel", panelBackground.sprite.name); // 공통 실제 배경의 이름 확인
+        Assert.AreEqual(Image.Type.Sliced, panelBackground.type); // 화면 크기에 맞춰 금속 모서리 보존 확인
         Assert.IsTrue(panelBackground.raycastTarget); // 예시 영역에서 뒤 전투 입력 차단 확인
         RectTransform nextRect = overlay.Find("Panel/NextButton").GetComponent<RectTransform>(); // 확인 버튼 위치 조회
         RectTransform previousRect = overlay.Find("Panel/PreviousPage").GetComponent<RectTransform>(); // 이전 버튼 위치 조회

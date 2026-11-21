@@ -15,6 +15,10 @@ public sealed class WorldTutorialViewTests // 거점과 탐사 안내 화면 검
         progress.StartIfNeeded(true, position); // 탐사 안내 시작
         Transform guide = view.transform.Find("Guide"); // 안내 화면 조회
         Assert.IsFalse(guide.GetComponent<Image>().raycastTarget); // 탐사 안내 배경의 이동 입력 차단 해제 확인
+        var background = guide.Find("Panel").GetComponent<Image>(); // 탐사 창의 공통 배경 조회
+        Assert.IsNotNull(background.sprite); // 탐사에 적용한 제작 배경 확인
+        Assert.AreEqual("TutorialPanel", background.sprite.name); // 전투와 같은 제작 원본 확인
+        Assert.AreEqual(Image.Type.Sliced, background.type); // 실제 탐사 창의 금속 모서리 유지 확인
         TMP_Text page = guide.Find("Panel/PageLabel").GetComponent<TMP_Text>(); // 안내 페이지 표시 조회
         Button previous = guide.Find("Panel/PreviousPage").GetComponent<Button>(); // 이전 페이지 버튼 조회
         Button forward = guide.Find("Panel/NextButton").GetComponent<Button>(); // 유일한 다음 페이지 버튼 조회
