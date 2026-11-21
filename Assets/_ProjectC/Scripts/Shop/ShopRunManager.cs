@@ -10,6 +10,8 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         public string roomId; // 상점 방 식별자
         public string offerId; // 분리해 둔 유물 상품 식별자
         public bool revealed; // 열쇠로 추가 진열한 여부
+        public string specialCardOfferId; // 잿빛 도장으로 그 방에서 추가한 카드 상품
+        public bool specialCardSold; // 해당 방에서 특수 카드의 실제 판매 완료 여부
     } // 진열 기록 종료
 
     private readonly Dictionary<string, RelicReserve> relicReserves = new Dictionary<string, RelicReserve>(StringComparer.Ordinal); // 재방문과 복원에 쓰는 방별 진열 기록
@@ -19,6 +21,9 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     private RunDeckManager runDeckManager; // 탐사 회차 덱 관리자
     private ShopTransactionService transactionService; // 상점 거래 서비스
     private bool purchasing; // 지갑과 보관함 알림 중 상품 재구매 방지
+    private bool drawerDiscountUsed; // 금속 손잡이 할인을 사용한 탐사 회차 상태
+    internal bool DrawerDiscountUsed => drawerDiscountUsed; // 탐사 저장용 첫 구매 할인 상태
+    private const int SpecialStockPrice = 100; // 기존 100골드 상점 카드 가격을 따르는 특수 카드 가격
     private string activeRoomRuntimeId; // 57일차 현재 상점 방 런타임 ID
     private RelicSheetCatalog relicSheetCatalog; // 시트 유물 가격 목록
 
@@ -65,6 +70,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     public void ResetSession() // 이전 상점 회차 초기화
     { // 상점 회차 초기화 시작
         relicReserves.Clear(); // 이전 탐사의 유물 진열 결과 제거
+        drawerDiscountUsed = false; // 새 탐사의 금속 손잡이 할인 사용 여부 초기화
         catalog = null; // 이전 상품 목록 해제
         runDeckManager = null; // 이전 회차 덱 연결 해제
         transactionService = null; // 이전 판매 상태 제거
@@ -78,8 +84,14 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     } // 이전 형식 복원 종료
 
     internal void RestoreSessionWithRelicReserves(ShopCatalogData catalogData, DeckData deckData, string roomId, IReadOnlyList<string> purchased, IReadOnlyList<RelicReserve> reserves) // 저장 상점 상태와 방별 진열 복원
+    { // 기존 상점 저장 호환 시작
+        RestoreSessionWithShopStock(catalogData, deckData, roomId, purchased, reserves, false); // 할인 정보가 없던 기존 복원 호출 지원
+    } // 기존 상점 저장 호환 종료
+
+    internal void RestoreSessionWithShopStock(ShopCatalogData catalogData, DeckData deckData, string roomId, IReadOnlyList<string> purchased, IReadOnlyList<RelicReserve> reserves, bool usedDrawerDiscount) // 상점 진열과 첫 구매 혜택 저장 복원
     { // 상점 상태 복원 시작
         ResetSession(); // 이전 상점 상태 제거
+        drawerDiscountUsed = usedDrawerDiscount; // 남은 첫 상품 구매 혜택의 저장값 복원
         if (reserves != null) // 새 형식의 방별 기록 존재 확인
         { // 진열 기록 복원 시작
             foreach (var reserve in reserves) // 저장된 방문 방 순회
@@ -90,11 +102,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
                 } // 방별 결과 등록 종료
             } // 기록 적용 종료
         } // 진열 기록 복원 종료
-        if (string.IsNullOrEmpty(roomId)) // 저장 상점 방 존재 확인
+        if (!Prepare(catalogData, deckData) || string.IsNullOrEmpty(roomId)) // 방문 전 저장도 다음 방문에 쓸 카탈로그 준비
         { // 상점 방 없음 처리 시작
             return; // 상점 상태 복원 종료
         } // 상점 방 없음 처리 종료
-        Prepare(catalogData, deckData); // 저장 상점 카탈로그 연결
         if (!relicReserves.ContainsKey(roomId)) // 이전 저장의 상점 진열 확인
         { // 이전 저장 호환 시작
             relicReserves.Add(roomId, new RelicReserve { roomId = roomId }); // 기존 상점의 모든 상품 유지
@@ -146,6 +157,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         } // 상점 유물 진열 확정 종료
         activeRoomRuntimeId = roomRuntimeId; // 현재 상점 방 ID 저장
         transactionService = new ShopTransactionService(new PlayerResourceShopWallet()); // 새 상점 전용 판매 상태 생성
+        if (relicReserves.TryGetValue(roomRuntimeId, out var stock) && stock.specialCardSold && !string.IsNullOrEmpty(stock.specialCardOfferId)) // 방별 특수 카드 판매 저장 상태 확인
+        { // 방별 특수 상품 품절 복원 시작
+            transactionService.RestorePurchase(stock.specialCardOfferId); // 실제로 판매한 특수 카드 품절 유지
+        } // 방별 특수 상품 품절 복원 종료
         Changed?.Invoke(); // 상점 상품 표시 갱신 알림
 
         Debug.Log(
@@ -163,7 +178,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
                 candidates.Add(offer); // 판매할 수 있는 실제 상품 등록
             } // 진열 후보 추가 종료
         } // 후보 확인 종료
-        var reserve = new RelicReserve { roomId = roomId }; // 방문한 방의 기본 진열 상태
+        var reserve = new RelicReserve { roomId = roomId, specialCardOfferId = SelectSpecialCardOffer(roomId, inventory) }; // 첫 방문 즉시 일반 유물과 특수 카드 진열 확정
         if (candidates.Count == 0) // 추가 진열 후보 존재 확인
         { // 후보 없음 처리 시작
             return reserve; // 평소 재고 유지
@@ -174,6 +189,41 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         reserve.revealed = key != null && RelicShopPricing.CalculateRange(0, 99, roomId, "EXTRA_RELIC_CHANCE") < key.TriggerChancePercent; // 방마다 한 번만 열쇠 확률 판정
         return reserve; // 저장 가능한 진열 결과 반환
     } // 첫 진열 계산 종료
+
+    private string SelectSpecialCardOffer(string roomId, RelicInventoryRuntime inventory) // 잿빛 도장으로 첫 상점 진열 특수 카드 선택
+    { // 신규 카드 보상 진열 계산 시작
+        RelicData seal = inventory?.FindEffect(RelicEffectType.ExtraShopSpecialCard); // 최초 방문 당시 잿빛 도장 확인
+        if (seal == null || RelicShopPricing.CalculateRange(0, 99, roomId, "EXTRA_SPECIAL_CARD_CHANCE") >= seal.TriggerChancePercent) // 동일 방의 고정 추가 진열 확률 비교
+        { // 추가 카드가 없는 판정 시작
+            return null; // 기존 상점 상품만 판매
+        } // 추가 카드가 없는 판정 종료
+        var sheet = CardSheetCatalog.Load(); // 원본 카드 종류와 희귀도 색인 조회
+        var candidates = new List<ShopOfferData>(); // 실제 구현되고 소유자를 정하는 특수 카드 후보
+        var seen = new HashSet<string>(StringComparer.Ordinal); // 중복된 카드 판매 후보 제외
+        foreach (ShopOfferData offer in catalog.Offers) // 지금 구현된 보상 원본 확인
+        { // 특수 카드 후보 확인 시작
+            if (IsSpecialCandidate(offer, sheet) && seen.Add(offer.Card.CardId)) // 원본 희귀도가 특수인 실제 구현 카드 확인
+            { // 출시된 특수 카드 추가 시작
+                candidates.Add(offer); // 소유자를 고를 수 있는 특수 카드 후보 보관
+            } // 출시된 특수 카드 추가 종료
+        } // 특수 카드 후보 확인 종료
+        return candidates.Count == 0 ? null : candidates[RelicShopPricing.CalculateRange(0, candidates.Count - 1, roomId, "EXTRA_SPECIAL_CARD_OFFER")].OfferId; // 같은 방을 다시 열어도 하나의 동일 원본 선택
+    } // 신규 카드 보상 진열 계산 종료
+
+    internal static bool IsSpecialCandidate(ShopOfferData offer, CardSheetCatalog sheet) // 구매 또는 저장 복원이 가능한 특수 카드 원본 확인
+    { // 특수 카드 원본 조건 확인 시작
+        return offer?.RewardOnly == true && offer.RequiresOwnerChoice && offer.Card != null && sheet?.FindByName(offer.Card.DisplayName)?.Rarity == "특수"; // 출시된 특수 보상과 직접 소유자 선택 확인
+    } // 특수 카드 원본 조건 확인 종료
+
+    private bool IsSpecialStock(ShopOfferData offer) // 현재 방에서만 판매하는 추가 특수 원본 확인
+    { // 특수 재고 조회 시작
+        return offer?.RewardOnly == true && activeRoomRuntimeId != null && relicReserves.TryGetValue(activeRoomRuntimeId, out var stock) && string.Equals(stock.specialCardOfferId, offer.OfferId, StringComparison.Ordinal); // 실제 상점 첫 방문에서 확정된 판매 식별자 일치 확인
+    } // 특수 재고 조회 종료
+
+    private bool CanSellOffer(ShopOfferData offer) // 일반 상품과 선택된 한 특수 카드만 판매 확인
+    { // 판매 가능한 원본 확인 시작
+        return offer != null && (!offer.RewardOnly || IsSpecialStock(offer)); // 일반 재고 또는 잿빛 도장 특수 재고 확인
+    } // 판매 가능한 원본 확인 종료
 
     private bool IsHiddenReserve(ShopOfferData offer) // 첫 진열에서 보류된 유물 확인
     { // 추가 진열 여부 확인 시작
@@ -187,7 +237,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public ShopPurchaseResult TryPurchase(ShopOfferData offer, CharacterData chosenOwner) // 소유자를 지정한 상품 구매 시도
     { // 지정 상품 구매 시작
-        if (!IsReady || offer == null || offer.RewardOnly || !offer.IsValidData() || !catalog.ContainsOffer(offer.OfferId)) // 상점 판매와 상품 유효성 확인
+        if (!IsReady || !CanSellOffer(offer) || !offer.IsValidData() || !catalog.ContainsOffer(offer.OfferId)) // 상점 판매와 상품 유효성 확인
         { // 잘못된 상품 처리 시작
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상품 정보가 올바르지 않습니다."); // 잘못된 상품 완료 반환
         } // 잘못된 상품 처리 종료
@@ -212,10 +262,18 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         purchasing = true; // 상품 지급과 할인 소모까지 거래 잠금
         try // 외부 보관함 알림에도 거래 잠금 정리
         { // 원자 구매 시작
-            result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 현재 표시 가격으로 거래 실행
+            int markedPrice = GetOfferPriceBeforeDrawer(offer); // 기존 영구 할인과 상점 표식을 적용한 금액
+            int drawerPercent = GetDrawerDiscountPercent(markedPrice); // 상품을 받기 직전 손잡이 보유와 회차 할인 여부 보관
+            int charged = ApplyDrawerDiscount(markedPrice, drawerPercent); // 실제 골드 결제 금액 확정
+            result = transactionService.TryPurchase(offer.OfferId, charged, () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 현재 표시 가격으로 거래 실행
             if (result == ShopPurchaseResult.Success) // 실제 첫 상품 구매 성공 확인
             { // 할인 소모 시작
-                ExplorationSessionManager.Instance?.Cart.FinishPurchase(activeRoomRuntimeId); // 자동 저장과 표시 갱신 전에 할인 소모
+                drawerDiscountUsed |= drawerPercent > 0 && charged > 0; // 손잡이를 적용하고 지불한 첫 상품에서 회차 혜택 소모
+                if (IsSpecialStock(offer)) // 잿빛 도장이 진열한 특수 카드 실제 결제 확인
+                { // 방별 특수 상품 구매 완료 기록 시작
+                    relicReserves[activeRoomRuntimeId].specialCardSold = true; // 방과 저장에서 품절 상태 유지
+                } // 방별 특수 상품 구매 완료 기록 종료
+                ExplorationSessionManager.Instance?.Cart.FinishPurchase(activeRoomRuntimeId); // 자동 저장과 표시 갱신 전에 표식 할인 소모
             } // 할인 소모 종료
         } // 원자 구매 종료
         finally // 구매 잠금 해제
@@ -233,7 +291,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         var listedRelics = new HashSet<string>(StringComparer.Ordinal); // 품절 또는 진열된 유물 식별자
         foreach (ShopOfferData offer in catalog.Offers) // 기존 저장의 실제 판매 번호 우선 확인
         { // 판매 기록 확인 시작
-            if (IsPurchased(offer) && !offer.RewardOnly && offer.CanOfferToDeck(runDeckManager) && (offer.OfferType != ShopOfferType.Relic || listedRelics.Add(offer.Relic.RelicId))) // 실제 판매한 원본에서 유물당 한 칸 선택
+            if (IsPurchased(offer) && CanSellOffer(offer) && offer.CanOfferToDeck(runDeckManager) && (offer.OfferType != ShopOfferType.Relic || listedRelics.Add(offer.Relic.RelicId))) // 실제 판매한 원본에서 유물당 한 칸 선택
             { // 품절 상품 보관 시작
                 sold.Add(offer); // 카탈로그 순서대로 판매 완료 목록에 추가
             } // 품절 상품 보관 종료
@@ -241,7 +299,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         var inventory = RelicRunManager.Instance?.Inventory; // 현재 보유 유물 조회
         foreach (ShopOfferData offer in catalog.Offers) // 원래 순서대로 구매 가능 상품 확인
         { // 구매 목록 확인 시작
-            if (offer.RewardOnly || !offer.CanOfferToDeck(runDeckManager) || IsPurchased(offer) || IsHiddenReserve(offer)) // 보상 전용과 미출전 및 미공개 또는 품절 상품 제외
+            if (!CanSellOffer(offer) || !offer.CanOfferToDeck(runDeckManager) || IsPurchased(offer) || IsHiddenReserve(offer)) // 보상 전용과 미출전 및 미공개 또는 품절 상품 제외
             { // 구매 목록 제외 시작
                 continue; // 다음 원본 확인
             } // 구매 목록 제외 종료
@@ -272,7 +330,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     internal ShopPurchaseResult PreviewPurchase(ShopOfferData offer) // 결제 전 표시할 현재 상품 상태 확인
     { // 구매 상태 조회 시작
-        if (!IsReady || offer == null || offer.RewardOnly || !offer.CanOfferToDeck(runDeckManager)) // 준비 중인 상점과 지급 가능한 상품 확인
+        if (!IsReady || !CanSellOffer(offer) || !offer.CanOfferToDeck(runDeckManager)) // 준비 중인 상점과 지급 가능한 상품 확인
         { // 상품 오류 처리 시작
             return ShopPurchaseResult.InvalidOffer; // 거래 대상 없음
         } // 상품 오류 처리 종료
@@ -297,6 +355,27 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public int GetOfferPrice(ShopOfferData offer) // 현재 상점의 상품 가격 조회
     { // 표식 포함 가격 조회 시작
+        int price = GetOfferPriceBeforeDrawer(offer); // 영구 유물과 표식 할인 가격 조회
+        return ApplyDrawerDiscount(price, GetDrawerDiscountPercent(price)); // 실제 결제와 같은 첫 상품 할인 적용
+    } // 상품 가격 조회 종료
+
+    private static int ApplyDrawerDiscount(int price, int percent) // 첫 상품 구매 화면과 실제 결제의 공통 할인 계산
+    { // 첫 상품 구매 금액 계산 시작
+        return price - (int)((long)price * percent / 100L); // 기존 표식과 같은 할인액 내림 규칙
+    } // 첫 상품 구매 금액 계산 종료
+
+    private int GetDrawerDiscountPercent(int price) // 사용하지 않은 회차 한 번의 손잡이 할인 조회
+    { // 보유 중인 손잡이 할인 계산 시작
+        if (drawerDiscountUsed || string.IsNullOrEmpty(activeRoomRuntimeId) || price <= 0) // 이미 사용했거나 정상 방 상품 가격이 아닌 경우 확인
+        { // 추가 할인가 없는 경우 처리 시작
+            return 0; // 기존 가격 보존
+        } // 추가 할인가 없는 경우 처리 종료
+        int percent = RelicRunManager.Instance?.Inventory.FindEffect(RelicEffectType.FirstShopPurchaseDiscount)?.EffectValue ?? 0; // 회차에 보유한 금속 손잡이의 할인율
+        return Mathf.Clamp(percent, 0, 100); // 보유 유물의 안전한 골드 할인율 반환
+    } // 보유 중인 손잡이 할인 계산 종료
+
+    private int GetOfferPriceBeforeDrawer(ShopOfferData offer) // 기존 시트 가격과 영구 그리고 상점 표식 할인 반영
+    { // 첫 결제 할인 전 상품 가격 조회 시작
         int price = GetPriceBeforeMark(offer); // 시트 가격과 영구 유물 할인 적용
         return ExplorationSessionManager.Instance?.Cart.OfferPrice(activeRoomRuntimeId, price) ?? price; // 다음 상점의 첫 상품만 추가 할인
     } // 표식 포함 가격 조회 종료
@@ -307,6 +386,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         { // 빈 상품 처리 시작
             return 0; // 가격 없음 반환
         } // 빈 상품 처리 종료
+        if (IsSpecialStock(offer)) // 무료 보물로도 쓰이는 특수 카드의 실제 상점 가격 확인
+        { // 추가 카드 상점 금액 처리 시작
+            return ApplyShopDiscount(SpecialStockPrice); // 소유자 선택을 포함한 특수 상품의 실제 골드 판매 가격
+        } // 추가 카드 상점 금액 처리 종료
         if (offer.OfferType != ShopOfferType.Relic || offer.Relic == null || string.IsNullOrWhiteSpace(activeRoomRuntimeId)) // 시트 유물 가격 적용 조건 확인
         { // 기존 가격 처리 시작
             return ApplyShopDiscount(offer.Price); // 기존 상품의 할인 적용 가격 반환

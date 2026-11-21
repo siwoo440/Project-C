@@ -276,7 +276,8 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
             } // 추가 상태 안내 종료
             if (currentAction.AdditionalMentalChange != 0) // 적중 시 정신력 변화 확인
             { // 정신력 변화 안내 시작
-                builder.AppendLine($"적중 시 정신력 : {currentAction.AdditionalMentalChange:+#;-#;0}"); // 정신력 압박 예고 표시
+                int mentalChange = currentAction.Target?.PreviewMentalChange(currentAction.AdditionalMentalChange) ?? 0; // 실제 피격 대상의 정신력 감소 완화와 현재 범위
+                builder.AppendLine($"적중 시 정신력 : {mentalChange:+#;-#;0}"); // 유물과 정신력 범위가 반영된 변화 예고 표시
             } // 정신력 변화 안내 종료
             if (currentAction.SharedDamageRecipient != null && !currentAction.SharedDamageRecipient.IsDead) // 생존한 피해 분담자 확인
             { // 분담 피해 안내 시작

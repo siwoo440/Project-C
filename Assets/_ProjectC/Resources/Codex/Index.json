@@ -703,6 +703,54 @@
       "artworkKey": "dd0ee13a23c85ca3bd31fa053a0c63b6"
     },
     {
+      "category": 3,
+      "name": "회색 로프",
+      "description": "재가 된 수레의 강제 전투 확률을 40%에서 30%로 줄인다. 함정을 피한 결과에서는 물자를 얻지 않는다.",
+      "artworkKey": "3ceb2c83df5c5409b1524a19d0934733"
+    },
+    {
+      "category": 3,
+      "name": "금속 서랍손잡이",
+      "description": "보유한 상태에서 탐사 중 처음 성공한 상점의 유료 상품 구매에 5%를 추가 할인한다.",
+      "artworkKey": "9b02ff6f7e3258bb98110c29f728a9f4"
+    },
+    {
+      "category": 3,
+      "name": "파손된 방패문양",
+      "description": "아군이 원래 방어력을 2 낮추는 기간제 약화를 받으면 그 지속 시간이 1턴 줄어든다. 최소 1턴이다.",
+      "artworkKey": "3be6f4b0a0d9564c8b599db4c0d6189d"
+    },
+    {
+      "category": 3,
+      "name": "투박한 표식핀",
+      "description": "표식이 있는 적에게 직접 마법 카드가 명중할 때마다 피해가 1 증가한다.",
+      "artworkKey": "d0314b78ba1050809f94f8207444e131"
+    },
+    {
+      "category": 3,
+      "name": "금속 핸드벨",
+      "description": "첫 아군 턴의 시작 손패에서 일반 카드 한 장을 무작위로 고른다. 선택한 카드를 손에 둔 채로 턴을 끝내면 첫 자동 버림에서 한 번 유지한다.",
+      "artworkKey": "7196c14dbe8a575dacc7e1442b0a3375"
+    },
+    {
+      "category": 3,
+      "name": "여행자의 부적",
+      "description": "탐사를 성공적으로 마치면 그 회차에서 번 뒤 남은 골드에 5%를 추가로 얻는다.",
+      "artworkKey": "d42fb0b15a225af5a6e250daabf14807"
+    },
+    {
+      "category": 3,
+      "name": "침식 방울귀걸이",
+      "description": "침식지대의 퇴색 위험과 그곳에서 시작한 전투에서 아군이 잃는 정신력이 1 감소한다.",
+      "artworkKey": "9d9eee40491c5035a1e73c2850399776"
+    },
+    {
+      "category": 3,
+      "name": "잿빛 도장",
+      "description": "상점 첫 방문 시 25% 확률로 특수 카드 한 장을 추가 진열한다. 구매할 때 카드 소유자를 고른다.",
+      "artworkKey": "43d0630f58ec592897682d71bdc83fe9"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

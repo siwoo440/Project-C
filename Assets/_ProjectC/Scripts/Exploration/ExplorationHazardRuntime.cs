@@ -119,9 +119,7 @@ public sealed class ExplorationHazardRuntime : MonoBehaviour // 탐사 퇴색 �
             GetHealthDamage(
                 hazardLevel); // 위험도별 체력 피해 계산
 
-        int mentalDamage =
-            GetMentalDamage(
-                hazardLevel); // 위험도별 정신력 피해 계산
+        int mentalDamage = -ExplorationRelicEffects.AdjustFadeMentalChange(-GetMentalDamage(hazardLevel)); // 퇴색지대 유물을 반영한 적용량과 HUD 표시량 계산
 
         BattleResultManager resultManager =
             BattleResultManager.EnsureInstance(); // 탐사 파티 영구 상태 관리자 준비

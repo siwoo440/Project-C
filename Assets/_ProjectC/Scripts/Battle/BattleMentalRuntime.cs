@@ -23,18 +23,26 @@ public sealed class BattleMentalRuntime // 개별 유닛 정신력 상태
     } // 생성자 종료
     public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
     { // 변경 가능 확인 시작
-        return delta != 0 && ClampMental((long)CurrentMental + delta) != CurrentMental; // 특수 상태를 포함한 실제 변경 가능 여부 반환
+        return PreviewDelta(delta) != 0; // 특수 상태를 포함한 실제 변경 가능 여부 반환
     } // 변경 가능 확인 종료
+    internal int PreviewDelta(int delta) // 턴 제한 없는 정신력 변화의 실제 적용 범위 조회
+    { // 정신력 변화 범위 시작
+        return ClampMental((long)CurrentMental + delta) - CurrentMental; // 실제 정신력 범위로 잘린 변화량 반환
+    } // 정신력 변화 범위 종료
     public BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason) // 정신력 증감 적용
+    { // 직접 정신력 변화 요청 시작
+        return ChangeMental(delta, reason, delta); // 별도 보정이 없는 기존 요청 연결
+    } // 직접 정신력 변화 요청 종료
+    internal BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason, int requestedDelta) // 보정 후 적용량과 원래 정신력 요청 기록
     { // 정신력 변경 시작
         if (!CanChangeMental(delta)) // 실제 수치 변화 가능 여부 확인
         { // 변화 없음 처리 시작
-            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, delta, reason); // 턴 제한을 소비하지 않고 반환
+            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 원래 요청을 보존하고 턴 제한을 소비하지 않음
         } // 변화 없음 처리 종료
         int adjustedDelta = ApplyTurnLimit(delta, reason); // 원인별 턴 제한 적용
         if (!CanChangeMental(adjustedDelta)) // 변경 가능 여부 확인
         { // 변경 불가 처리 시작
-            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, delta, reason); // 변화 없음 반환
+            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 턴 제한에서 차단된 원래 요청 반환
         } // 변경 불가 처리 종료
         int previousMental = CurrentMental; // 변경 전 정신력 저장
         BattleMentalState previousState = CurrentState; // 변경 전 상태 저장
@@ -44,7 +52,7 @@ public sealed class BattleMentalRuntime // 개별 유닛 정신력 상태
         { // 일반 상태 임계 판정 시작
             EvaluateThreshold(); // 일반 상태에서만 새 특수 상태 판정
         } // 일반 상태 임계 판정 종료
-        BattleMentalChangeResult result = new BattleMentalChangeResult(previousMental, CurrentMental, delta, CurrentMental - previousMental, previousState, CurrentState, previousRemainingTurns, RemainingTurns, reason); // 정신력 변화 결과 생성
+        BattleMentalChangeResult result = new BattleMentalChangeResult(previousMental, CurrentMental, requestedDelta, CurrentMental - previousMental, previousState, CurrentState, previousRemainingTurns, RemainingTurns, reason); // 원래 요청과 실제 보정 변화량을 함께 기록
         Changed?.Invoke(result); // 정신력 변화 알림
         return result; // 정신력 변화 결과 반환
     } // 정신력 변경 종료

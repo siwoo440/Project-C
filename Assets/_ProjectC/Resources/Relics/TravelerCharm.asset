@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: TravelerCharm
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_TRAVELER_CHARM
+  displayName: 여행자의 부적
+  description: "탐사를 성공적으로 마치면 그 회차에서 번 뒤 남은 골드에 5%를 추가로 얻는다."
+  icon: {fileID: 21300000, guid: d42fb0b15a225af5a6e250daabf14807, type: 3}
+  rarity: 0
+  triggerType: 48
+  effectType: 89
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 5
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
