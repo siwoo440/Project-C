@@ -475,7 +475,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 개별 적 약화 적용 종료
         foreach (var ally in allyUnits) // 현재 전투의 시작 아군 순회
         { // 등잔의 개막 정신력 비용 시작
-            ally?.SpendRelicMentalCost(5); // 사망을 제외하며 방어로 막을 수 없는 정신력 비용 다섯 점
+            ally?.SpendBattleMentalCost(5); // 사망을 제외하며 방어로 막을 수 없는 정신력 비용 다섯 점
         } // 등잔의 개막 정신력 비용 종료
     } // 등잔의 전투 개막 처리 종료
     private void ApplyNamelessOathOpening() // 무명자의 검은 서약의 전투 전용 공격력 부여
@@ -1197,7 +1197,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         fallen.Revive(healthPercent); // 실제 부활의 체력 올림과 전투 재참여 사용
         foreach (var ally in allyUnits) // 부활한 참가자를 포함한 현재 아군 목록 순회
         { // 개별 아군의 정신력 대가 처리 시작
-            ally?.SpendRelicMentalCost(10); // 생존 아군에게 직접 정신 피해 보호와 별개인 고정 대가 적용
+            ally?.SpendBattleMentalCost(10); // 생존 아군에게 직접 정신 피해 보호와 별개인 고정 대가 적용
         } // 개별 아군의 정신력 대가 처리 종료
     } // 어비스 성배 조각의 부활 확인 종료
     private void RegisterUnitEvents(IReadOnlyList<BattleUnitRuntime> units) // 유닛 사망 이벤트 등록

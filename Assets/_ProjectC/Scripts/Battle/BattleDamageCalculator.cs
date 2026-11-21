@@ -7,11 +7,13 @@ public static class BattleDamageCalculator // 공통 피해 계산기
         BattleDamageType damageType,
         int physicalDefense,
         int magicalResistance, // 일반 마법 저항 수치 전달
-        int magicalResistanceLossPoints = 0) // 일반 저항과 독립인 마법 피해 경감 퍼센트포인트 감소
+        int magicalResistanceLossPoints = 0, // 일반 저항과 독립인 마법 피해 경감 퍼센트포인트 감소
+        int magicalResistancePenetrationPercent = 0) // 이번 마법 타격에서 무시하는 현재 마법 저항 비율
     {
         int safeRawDamage = Math.Max(0, rawDamage); // 원본 피해 음수 방지
         int safePhysicalDefense = Math.Max(0, physicalDefense); // 물리 방어력 음수 방지
-        int safeMagicalResistance = Math.Max(0, magicalResistance); // 마법 저항력 음수 방지
+        int penetration = Math.Clamp(magicalResistancePenetrationPercent, 0, 100); // 현재 마법 저항에 적용할 안전한 백분율 범위
+        int safeMagicalResistance = (int)((long)Math.Max(0, magicalResistance) * (100 - penetration) / 100); // 원래 대상의 현재 마법 저항에만 곱해 내림한 실제 저항
         int defenseValue =
             SelectDefense(
                 damageType,

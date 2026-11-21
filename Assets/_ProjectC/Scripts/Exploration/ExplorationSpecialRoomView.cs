@@ -284,7 +284,7 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
     {
         GameObject labelObject = new GameObject("RoomTypeLabel", typeof(TextMesh)); // 방 역할 문자 오브젝트 생성
         labelObject.transform.SetParent(transform, false); // 특수 방 표시 하위 배치
-        Sprite roomSprite = GetComponent<SpriteRenderer>()?.sprite; // 특수 방에 표시 중인 실제 원화
+        Sprite roomSprite = TryGetComponent(out SpriteRenderer roomRenderer) ? roomRenderer.sprite : null; // 그림 없이 생성된 방에서도 안전한 원화 조회
         float labelHeight = roomSprite != null && roomSprite != runtimeMarkerSprite ? 1.18f : 0f; // 확대 이미지 위쪽의 방 종류 표식
         labelObject.transform.localPosition = new Vector3(0f, labelHeight, -0.1f); // 실제 방 중앙과 원화 위쪽을 고려한 글자 위치
 

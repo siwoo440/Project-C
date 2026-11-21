@@ -81,5 +81,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     EvasionDown = 78, // 적의 현재 회피율 감소
     ConfessionDamageMark = 79, // 실제 적 정신력 피해 이후 다음 명중의 표식
     WandEcho = 80, // 이번 아군 턴 사용자의 다음 마법 공격 복제
-    DanceShoeDamageUp = 81 // 실제 회피 뒤 다음 직접 공격의 피해 증가
+    DanceShoeDamageUp = 81, // 실제 회피 뒤 다음 직접 공격의 피해 증가
+    WandOverload = 82, // 이번 턴 시전자의 실제 지팡이 마법 공격 피해 증가
+    IllusionHitReduction = 83 // 다음 유효 적 직접 공격의 한 번 피해 감소
 } // 열거형 종료
