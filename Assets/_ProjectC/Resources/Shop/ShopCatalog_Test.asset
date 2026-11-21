@@ -932,6 +932,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RESURRECTION_SEED
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ae7d2e4e37d954ffb4cd18d2b7e2e122, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CONSECRATED_BULWARK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c4afc12b54c95c6ebb1cb94fbb6e9e33, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DOWNPOUR_OF_LIGHT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: b09eab847abb5e928123ef26503d7feb, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_WHITE_VOW
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ff4b19d437b1556991b09da450bbb943, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PAIN_DISTRIBUTION
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 30891e9f182e5b5288c083bcc8fad673, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_MIRACLE_ECHO
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5181d7e0df31587e83964f4d31500339, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_JUDGMENT_WATER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: cdcaea9f7f2b5feeb71311a59e9eb446, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SALVATION_CIRCLE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: dd1c08b073915bfca2df6b8a3f95280d, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetWhiteVow
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_WHITE_VOW
+  displayName: "순백의 맹세"
+  description: "지정 아군이 받을 다음 피해를 한 번 무효로 하고 정신력을 8 회복시킨다."
+  artwork: {fileID: 21300000, guid: baf2edb8c4bc5994bb4fd366b5037279, type: 3}
+  cardType: 2
+  targetType: 1
+  apCost: 3
+  effectType: 2
+  damageType: 0
+  effectValue: 1
+  cupRule: 10
+  mentalChangeValue: 8
+  statusEffectType: 50
+  statusDuration: 1
+  statusMaximumStacks: 1

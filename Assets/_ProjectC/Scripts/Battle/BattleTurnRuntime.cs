@@ -671,7 +671,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         resolvingCard = false; // 독립 처치에 즉시 드로우 허용
         bool finishVictory = deferVictoryUntilCardResolved && !IsBattleEnded && !HasPendingBossPhaseTransition && !HasLivingUnit(enemyUnits); // 복합 효과를 적용한 뒤 실제 적 전멸 확인
         deferVictoryUntilCardResolved = false; // 전투 종료 알림 전에 예약 해제
-        if (finishVictory) // 이 카드에서 미룬 승리 확인
+        if (finishVictory && !HasPendingSeedRevival()) // 복합 카드 정산과 예약 부활이 모두 끝났는지 확인
         { // 두 효과 이후 승리 정산 시작
             SetBattleResult(HasLivingUnit(allyUnits) ? BattleResult.Victory : BattleResult.Defeat); // 두 효과 뒤 생존 명단을 포함한 결과 저장
         } // 두 효과 이후 승리 정산 종료
@@ -734,6 +734,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 전투 지속 처리 시작
             return; // 종료 판정 중단
         } // 전투 지속 처리 종료
+        if (HasPendingSeedRevival()) // 실제로 쓰러져 부활 정산을 기다리는 아군 확인
+        { // 승패 판정 보류 시작
+            return; // 부활 이후 실제 생존자 상태로 승패 재판정
+        } // 승패 판정 보류 종료
         if (alliesDefeated) // 아군 전멸 우선 확인
         { // 패배 처리 시작
             SetBattleResult(BattleResult.Defeat); // 패배 결과 확정
@@ -744,6 +748,17 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             SetBattleResult(BattleResult.Victory); // 승리 결과 확정
         } // 승리 처리 종료
     } // 유닛 사망 처리 종료
+    private bool HasPendingSeedRevival() // 아직 실제 사망과 부활을 정산 중인 아군 검사
+    { // 부활 대기 상태 검사 시작
+        foreach (var ally in allyUnits) // 현재 전투의 전체 아군 명단 확인
+        { // 개별 부활 여부 확인 시작
+            if (ally?.HasPendingSeedRevival == true) // 먼저 받은 씨앗의 사망 정산 확인
+            { // 실제 부활을 기다리는 경우 시작
+                return true; // 전멸이나 보상 확정 대기 반환
+            } // 실제 부활을 기다리는 경우 종료
+        } // 개별 부활 여부 확인 종료
+        return false; // 모든 실제 사망의 씨앗 정산 종료 반환
+    } // 부활 대기 상태 검사 종료
     private void SetBattleResult(BattleResult battleResult) // 전투 결과 확정
     { // 결과 확정 시작
         Result = battleResult; // 최종 전투 결과 저장
@@ -751,6 +766,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ClearOpeningAllySpeed(); // 첫 적 턴을 마치지 않은 전투의 배지 상태 회수
         ClearFirstPlayerTurnEnemyStatuses(); // 전투 종료 시의 첫 아군 턴 전용 약화 회수
         ClearReflectionCitadel(); // 승리와 패배 및 도주 이후의 반사 상태 초기화
+        foreach (var ally in allyUnits) // 전투가 종료된 뒤 남은 씨앗 정리 대상 확인
+        { // 미사용 씨앗 제거 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.ResurrectionSeed); // 결과 확정 이후 부활을 예약하지 않는 전투 상태 정리
+        } // 미사용 씨앗 제거 종료
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
@@ -783,6 +802,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 이벤트 등록 실패 반환
         } // 중복 등록 처리 종료
         runtimeUnit.Died += HandleUnitDied; // 사망 이벤트 등록
+        runtimeUnit.SeedRevivalSettled += HandleUnitDied; // 씨앗 부활 뒤 남은 생존 명단으로 승패 재판정 등록
         runtimeUnit.Defeated += HandleUnitDefeated; // 발생자와 대상을 포함한 처치 등록
         registeredUnits.Add(runtimeUnit); // 등록 유닛 목록 추가
         return true; // 이벤트 등록 성공 반환
@@ -794,6 +814,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 이벤트 해제 실패 반환
         } // 미등록 처리 종료
         runtimeUnit.Died -= HandleUnitDied; // 사망 이벤트 해제
+        runtimeUnit.SeedRevivalSettled -= HandleUnitDied; // 전투 밖으로 나간 유닛의 부활 판정 해제
         runtimeUnit.Defeated -= HandleUnitDefeated; // 회전 깃발의 처치 구독 해제
         return true; // 이벤트 해제 성공 반환
     } // 개별 사망 이벤트 해제 종료

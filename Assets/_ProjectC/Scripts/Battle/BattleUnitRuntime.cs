@@ -7,6 +7,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private readonly List<BattleStatusEffectInstance> statusEffects = new List<BattleStatusEffectInstance>(); // 현재 상태 이상 목록
     private BattleStatusEffectInstance currentTurnAttackPower; // 장기 강화와 구분할 아군 한 턴의 공격력 상태
     private bool preserveReportedStatusDuration; // 상태 알림의 원래 지속 시간 보존 여부
+    private int pendingSeedRevivalPercent; // 전투불능 신호가 끝난 뒤 소비할 실제 부활 체력 비율
     private readonly BattleMentalRuntime mentalRuntime; // 개별 정신력 런타임
     private readonly int awakeningDamagePercent; // 각성 피해 변화율
     private readonly int awakeningHealingPercent; // 각성 회복 변화율
@@ -44,6 +45,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     internal event Action<BattleUnitRuntime> Revived; // 전투불능 아군의 부활 알림
+    internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
+    internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
@@ -513,6 +516,27 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             StatusEffectsChanged?.Invoke(this); // 상태 이상 제거 알림
         } // 상태 제거 알림 종료
     } // 전체 상태 제거 종료
+    private void MarkDefeated() // 실제 체력 영의 전투불능과 씨앗 보존
+    { // 전투불능 상태 기록 시작
+        IsDead = true; // 피해 이벤트부터 쓰러진 아군 상태 확정
+        var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
+        pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
+    } // 전투불능 상태 기록 종료
+
+    private void SettleDefeat(BattleUnitRuntime sourceUnit) // 공통 전투불능과 예약 부활 정산
+    { // 전투불능 정산 시작
+        ClearStatusEffects(); // 사망 시 일반 상태와 한 번 사용할 씨앗 제거
+        Defeated?.Invoke(sourceUnit, this); // 발생자와 대상을 포함한 실제 처치 한 번 알림
+        Died?.Invoke(this); // 기존 사망 수신자에게 체력 영과 전투불능 상태 전달
+        int percent = pendingSeedRevivalPercent; // 사망 당시 예약한 한 번의 부활 비율 확보
+        if (percent > 0) // 사망 당시에 활성 씨앗이 있었는지 확인
+        { // 부활 씨앗의 실제 복귀 시작
+            pendingSeedRevivalPercent = 0; // 부활과 화면 콜백 전 사용한 씨앗 소모
+            Revive(percent); // 기존 정신력과 체력 올림을 사용하는 동일 유닛 복귀
+            SeedRevivalSettled?.Invoke(this); // 부활 뒤 실제 생존 명단의 승패 판정 요청
+        } // 부활 씨앗의 실제 복귀 종료
+    } // 전투불능 정산 종료
+
     public int GainBlock(int amount) // 방어도 획득
     { // 방어도 획득 시작
         if (IsDead || amount <= 0) // 획득 불가 조건 확인
@@ -594,7 +618,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true); // 현재 위험 차단을 포함한 피해 예고
     } // 기본 피해 예고 종료
     internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, bool enemyAreaAttack = false, bool applyDamageNullification = true) // 공격 의도와 순서의 보호를 반영한 피해 예고
-    { // 예상 피해 계산 시작
+    { // 기존 피해 예고 시작
+        return PreviewDamageWithParty(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception, null, out _, enemyAreaAttack, applyDamageNullification); // 기존 호출 경로의 파티 분배 없는 예상 결과
+    } // 기존 피해 예고 종료
+
+    internal BattleDamageResult PreviewDamageWithParty(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, IReadOnlyList<BattleUnitRuntime> party, out PainDistributionPlan distribution, bool enemyAreaAttack = false, bool applyDamageNullification = true) // 파티 분산과 원래 대상의 실제 방어도를 함께 계산
+    { // 피해와 파티 분산 예상 계산 시작
+        distribution = null; // 무효 피해 및 단독 피격의 기본 분배 없음
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
@@ -615,7 +645,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 피해 무효 예고 시작
             return damageResult.WithoutDamage(); // 방어도와 체력을 모두 보존하는 결과 반환
         } // 피해 무효 예고 종료
-        return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 실제 준비 방어도와 체력 포함 결과 반환
+        if (enemyDirectAttack && party != null) // 현재 적의 직접 타격에 파티 분산을 사용할 수 있는지 확인
+        { // 방어도 이전 피해 분배 시작
+            distribution = PainDistributionPlan.Create(this, party, Math.Max(0, damageResult.FinalDamage - reduction)); // 경감 뒤 원래 방어도 적용 전의 파티 전체 몫
+            reduction += distribution?.Total ?? 0; // 원래 대상의 몫에서 실제 분담 총량만 빼기
+        } // 방어도 이전 피해 분배 종료
+        return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 분산 뒤 원래 대상의 준비 방어도와 체력 계산
     } // 예상 피해 계산 종료
     internal int GetLowHealthDamageReduction() // 일반·분담 피해가 공통으로 쓰는 저체력 감소량
     { // 빛 없는 목걸이 조건 확인 시작
@@ -658,11 +693,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 공통 피해 진입 시작
         return TakeDamageCore(damageAmount, damageType, sourceUnit, sharingAlly, preventHealthDamage, bypassBlockPercent, reduceHealthDamage, enemyDirectAttack, enemyAreaAttack, null, false); // 기존 호출의 공유 피해와 방어 및 보호 처리
     } // 공통 피해 진입 종료
-    internal BattleDamageResult TakeEnemyHit(int damageAmount, BattleDamageType damageType, BattleUnitRuntime source, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, bool isAreaAttack, Action<BattleUnitRuntime> onRedirect) // 적 행동의 실피격 대상과 피해 처리
+    internal BattleDamageResult TakeEnemyHit(int damageAmount, BattleDamageType damageType, BattleUnitRuntime source, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, bool isAreaAttack, Action<BattleUnitRuntime> onRedirect, IReadOnlyList<BattleUnitRuntime> party = null) // 적 타격과 파티 분담에 실제로 연결된 피격 대상
     { // 실제 적 타격 처리 시작
-        return TakeDamageCore(damageAmount, damageType, source, sharingAlly, preventHealthDamage, 0, reduceHealthDamage, true, isAreaAttack, onRedirect, false); // 타격 명중 뒤 가능한 보호 전환을 포함한 실제 피해
+        return TakeDamageCore(damageAmount, damageType, source, sharingAlly, preventHealthDamage, 0, reduceHealthDamage, true, isAreaAttack, onRedirect, false, party); // 실제 명중과 대상의 피해 분배 및 기존 보호 전환
     } // 실제 적 타격 처리 종료
-    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival) // 일반 피격과 대신 받는 한 타격의 실제 피해 흐름
+    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null) // 직접 피해와 대신 받기 및 실제 파티 분산의 정산
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -670,7 +705,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 무효 처리 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
-        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack, applyDangerInterception: true, enemyAreaAttack: enemyAreaAttack); // 방어도 관통과 실제 광역 의도 반영
+        bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
+        var distributionParty = !linked && !guardianSurvival && sourceUnit?.Team == BattleTeam.Enemy ? party : null; // 단일 연결과 기존 수호자 전환에서 파티 분산 제외
+        BattleDamageResult damageResult = PreviewDamageWithParty(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack, true, distributionParty, out var distribution, enemyAreaAttack); // 다중 분배와 기존 원래 대상 방어도 계산
         bool consumeInterception = enemyDirectAttack && Team == BattleTeam.Ally; // 실제 피격자만 소모할 위험 차단 확인
         if (damageResult.WasDamageNullified) // 기존 경감 뒤 한 번 무효화된 실제 피해 확인
         { // 실제 피해 무효 시작
@@ -682,7 +719,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return damageResult; // 방어도 흡수와 분담을 생략한 무효 결과 반환
         } // 실제 피해 무효 종료
         int sharedDamage = 0; // 동료에게 분담할 피해 초기화
-        if (sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead) // 생존한 다른 아군 분담자 확인
+        if (linked) // 생존한 기존 단일 피해 분담 링크 확인
         { // 피해 분담 계산 시작
             int remainingDamage = Math.Max(0, damageResult.FinalDamage - damageResult.AbsorbedDamage); // 방어와 방어도 적용 후 피해 계산
             sharedDamage = remainingDamage / 2; // 내림한 절반을 분담자에게 배정
@@ -731,7 +768,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
         { // 사망 처리 시작
-            IsDead = true; // 사망 상태 저장
+            MarkDefeated(); // 실제 전투불능과 씨앗 사용 가능 여부 저장
+            damageResult = damageResult.WithDefeatedTarget(); // 이후 부활과 독립된 이 타격의 전투불능 기록
         } // 사망 처리 종료
         if (enemyDirectAttack && sourceUnit?.Team == BattleTeam.Enemy) // 실제 적이 직접 명중한 피해 결과 확인
         { // 직접 피해 출처 지정 시작
@@ -747,17 +785,22 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
         if (diedNow) // 신규 사망 확인
         { // 사망 알림 시작
-            ClearStatusEffects(); // 사망 유닛 상태 이상 제거
-            Defeated?.Invoke(sourceUnit, this); // 발생자 포함 처치 완료 알림
-            Died?.Invoke(this); // 사망 이벤트 알림
+            SettleDefeat(sourceUnit); // 사망 신호와 가능한 씨앗 부활을 순서대로 정산
         } // 사망 알림 종료
+        if (distribution != null) // 전환되지 않고 제대로 맞은 직접 타격의 파티 몫 확인
+        { // 실제 고통 분산의 개별 조각 적용 시작
+            for (int index = 0; index < distribution.Recipients.Count; index++) // 고정 출전 명단의 분담 순서 순회
+            { // 분담받는 아군의 개별 무방어 피해 처리 시작
+                distribution.Recipients[index].TakeUnblockedDamage(distribution.GetPortion(index), damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack); // 원래 타격과 연결하되 새 공격과 보호·분담을 발생시키지 않는 피해
+            } // 분담받는 아군의 개별 무방어 피해 처리 종료
+        } // 실제 고통 분산의 개별 조각 적용 종료
         if (sharedDamage > 0 && sharingAlly != null && !sharingAlly.IsDead) // 실제 분담 피해와 생존 상태 확인
         { // 분담 피해 적용 시작
             sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack); // 동일 직접 공격과 연결된 실제 분담 피해 적용
         } // 분담 피해 적용 종료
         if (!IsDead && damageResult.AppliedDamage > 0 && damageType == BattleDamageType.Physical && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 직접 물리 공격의 실제 생존 피해 확인
         { // 검격 반사 시작
-            var riposte = GetStatusEffect(BattleStatusEffectType.PhysicalRiposte); // 피해를 직접 받은 아군의 반사 상태 조회
+            var riposte = diedNow ? null : GetStatusEffect(BattleStatusEffectType.PhysicalRiposte); // 부활 전에 실제로 버틴 대상만 검격 반사 확인
             if (riposte != null) // 첫 유효 피해를 기다리는 상태 확인
             { // 반사 확정 시작
                 int reflected = (int)((long)damageResult.AppliedDamage * riposte.EffectiveValue / 100); // 직접 잃은 체력 비율 내림
@@ -765,12 +808,22 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
                 sourceUnit.TakeUnblockedDamage(reflected, BattleDamageType.None, this); // 공격자 방어와 방어도를 건너뛴 고정 피해
             } // 반사 확정 종료
         } // 검격 반사 종료
-        if (!IsDead && enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy && damageResult.AbsorbedDamage > 0) // 생존한 아군 방어도의 실제 흡수 확인
+        if (!diedNow && !IsDead && enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy && damageResult.AbsorbedDamage > 0) // 부활에 의존하지 않은 생존과 실제 방어도 흡수 확인
         { // 방패 반격 시작
             sourceUnit.TakeUnblockedDamage(GetStatusEffectValue(BattleStatusEffectType.ShieldCounter), BattleDamageType.None, this); // 공격자 방어와 방어도를 무시한 고정 반격
         } // 방패 반격 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
+    internal int PreviewUnblockedHealthDamage(int amount) // 분담 예고에서 같은 방어도 없는 보호와 체력 경감 사용
+    { // 분담받는 실제 체력 피해 예고 시작
+        int reduced = GetUnblockedDamageAfterReduction(amount); // 기존 성역과 저체력 경감의 실제 무방어 값
+        if (IsDead || reduced == 0 || GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 죽은 분담자와 피해 없는 보호 조건 확인
+        { // 이번 분담에서 실제 손실 없음 시작
+            return 0; // 일회 보호를 소비하지 않는 체력 피해 없음 예고
+        } // 이번 분담에서 실제 손실 없음 종료
+        return ApplySurvivalProtection(Math.Min(CurrentHealth, reduced), consume: false); // 실제 불굴과 성배의 생존 경계를 상태 소모 없이 반영
+    } // 분담받는 실제 체력 피해 예고 종료
+
     internal int TakeUnblockedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, bool fromEnemyDirectAttack = false) // 분담과 출혈 및 반사의 방어도 없는 실제 체력 피해
     { // 분담 피해 처리 시작
         if (amount <= 0 || IsDead) // 실제 피해와 생존 상태 확인
@@ -792,7 +845,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool diedNow = CurrentHealth == 0; // 분담자의 사망 여부 확인
         if (diedNow) // 새 사망 여부 확인
         { // 사망 상태 기록 시작
-            IsDead = true; // 사망 상태 저장
+            MarkDefeated(); // 방어도 없는 피해의 실제 전투불능 상태 저장
+            result = result.WithDefeatedTarget(); // 실제 전투불능을 피해 이벤트에 기록
         } // 사망 상태 기록 종료
         DamageTaken?.Invoke(this, result); // 분담 피해 화면 알림
         HealthChanged?.Invoke(this); // 분담자 체력 갱신 알림
@@ -800,25 +854,28 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         ApplyDamageMental(applied, diedNow, sourceUnit); // 분담 피해의 정신력 변화 적용
         if (diedNow) // 신규 사망 확인
         { // 분담자 사망 처리 시작
-            ClearStatusEffects(); // 사망한 분담자의 상태 이상 제거
-            Defeated?.Invoke(sourceUnit, this); // 분담자 처치 알림
-            Died?.Invoke(this); // 분담자 사망 알림
+            SettleDefeat(sourceUnit); // 동일한 처치와 씨앗 부활 처리
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
-    private int ApplySurvivalProtection(int incoming, bool allowDefeatWard = true) // 기존 불굴과 치명 피해 성배의 적용 순서
+    private int ApplySurvivalProtection(int incoming, bool allowDefeatWard = true, bool consume = true) // 실제 피해와 순수 예고의 불굴 및 치명 피해 성배의 적용 순서
     { // 실제 생존 보호 확인 시작
         int survivableDamage = Math.Max(0, CurrentHealth - 1); // 체력 한 점을 남기는 최대 손실량
-        if (incoming > 0 && incoming >= survivableDamage && RemoveStatusEffect(BattleStatusEffectType.UndyingGuard)) // 실제 피해와 체력 임계 및 불굴 소모 성공 확인
+        if (incoming > 0 && incoming >= survivableDamage && MatchesSurvivalProtection(BattleStatusEffectType.UndyingGuard, consume)) // 실제 피해와 체력 임계 및 불굴 소모 성공 확인
         { // 불굴 생존 처리 시작
             return survivableDamage; // 생존에 필요한 체력 손실 상한 반환
         } // 불굴 생존 처리 종료
-        if (allowDefeatWard && incoming > survivableDamage && RemoveStatusEffect(BattleStatusEffectType.DefeatWard)) // 처리 뒤 체력 영이 되는 피해와 성배 한 번 확인
+        if (allowDefeatWard && incoming > survivableDamage && MatchesSurvivalProtection(BattleStatusEffectType.DefeatWard, consume)) // 처리 뒤 체력 영이 되는 피해와 성배 한 번 확인
         { // 성배 보호 발동 시작
             return survivableDamage; // 정확히 체력 한 점을 남기는 실제 피해량
         } // 성배 보호 발동 종료
         return incoming; // 보호 조건을 충족하지 않은 피해량 보존
     } // 실제 생존 보호 확인 종료
+
+    private bool MatchesSurvivalProtection(BattleStatusEffectType type, bool consume) // 실제 소모 또는 순수 예고에서의 생존 상태 확인
+    { // 개별 생존 상태 확인 시작
+        return consume ? RemoveStatusEffect(type) : GetStatusEffect(type) != null; // 실피격에서만 일회 상태 제거
+    } // 개별 생존 상태 확인 종료
     private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
     { // 준비 적용 확인 시작
         if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy) // 유효한 적의 피해 확인

@@ -64,5 +64,8 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     SanctuaryWard = 61, // 적 턴을 기준으로 받는 피해 비율 경감
     FearResistance = 62, // 적 턴을 기준으로 아군의 공포 확률 저항
     DelayedHealing = 63, // 다음 아군 턴 시작 한 번의 별도 체력 회복
-    Stealth = 64 // 실제 전투에서 은신 중인 상태
+    Stealth = 64, // 실제 전투에서 은신 중인 상태
+    ResurrectionSeed = 65, // 실제 전투불능에서 아군을 한 번 되살리는 상태
+    PainDistribution = 66, // 적 직접 피해를 생존 아군과 나누는 상태
+    MiracleEcho = 67 // 현재 아군 턴의 직접 카드 회복 증가
 } // 열거형 종료

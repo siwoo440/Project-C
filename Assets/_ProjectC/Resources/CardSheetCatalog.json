@@ -1469,7 +1469,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 1명에게 전투불능 시 체력 20% 부활 효과(2턴)",
+      "description": "선택한 생존 아군이 다음 적 턴 두 번이 끝나기 전에 쓰러지면 최대 체력의 20%로 한 번 부활한다. 소수점은 올린다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "부활의 씨앗.png"
@@ -1480,7 +1480,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 방어도 +12, 저항력 +10% (2턴)",
+      "description": "생존 아군 각자에게 방어도 12를 주고 다음 적 턴 두 번 동안 마법 피해 저항을 10% 높인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "축성 방벽.png"
@@ -1491,7 +1491,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 체력 12 회복, 적 전체 8 피해",
+      "description": "모든 생존 적에게 마법 피해 8을 주고 모든 생존 아군을 각각 체력 12만큼 회복한다.",
       "area": "전체",
       "targets": "아군/적",
       "imageFileName": "빛의 폭우.png"
@@ -1502,7 +1502,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 1명 피해 1회 무효, 정신력 8 회복",
+      "description": "지정 아군이 받을 다음 피해를 한 번 무효로 하고 정신력을 8 회복시킨다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "순백의 맹세.png"
@@ -1513,7 +1513,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 피해를 25% 나누어 받음 (2턴)",
+      "description": "두 적 턴 동안 보호가 걸린 아군이 적의 직접 공격을 받으면 피해의 25%를 이 효과가 있는 다른 생존 아군과 나눈다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "고통 분산.png"
@@ -1524,7 +1524,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "이번 턴 회복 카드 사용 시 추가 회복 +6",
+      "description": "이번 아군 턴 동안 생존 아군이 사용하는 카드의 직접 체력 회복량을 6 높인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "기적의 잔향.png"
@@ -1535,7 +1535,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "적에게 18 피해, 버프 1개 제거",
+      "description": "적 하나에게 마법 피해 18을 준다. 공격이 명중하고 적이 생존하면 해제 가능한 강화 하나를 제거한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "심판의 성수.png"
@@ -1546,7 +1546,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 체력 8 회복, 공포 제거",
+      "description": "생존 아군 전체의 공포를 해제하고 각각 체력 8을 회복한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "구원의 원.png"

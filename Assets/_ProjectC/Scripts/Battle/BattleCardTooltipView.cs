@@ -165,6 +165,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.StatusEffectType == BattleStatusEffectType.ResurrectionSeed) // 부활의 씨앗의 체력 비율과 기간 확인
+        { // 부활 씨앗 상세 표시 시작
+            return $"적 턴 {cardInstance.StatusDuration}회 동안 · 전투불능 시 체력 {cardInstance.EffectValue}%로 한 번 부활"; // 실제 부활 비율과 사용 한계 안내
+        } // 부활 씨앗 상세 표시 종료
+        if (cardInstance.SourceData.CupRule == CupCardRule.WhiteVow) // 순백의 맹세의 두 가지 아군 지원 확인
+        { // 순백의 맹세 상세 표시 시작
+            return $"다음 피해 1회 무효 · 정신력 +{cardInstance.MentalChangeValue}"; // 피해 무효 횟수와 즉시 회복하는 정신력 안내
+        } // 순백의 맹세 상세 표시 종료
         if (cardInstance.SourceData.CupRule == CupCardRule.BlessingTransfer) // 축복 이전의 두 아군 효과 확인
         { // 축복 이전 상세 시작
             return "먼저 받은 복사 가능한 강화 1개를 다른 아군에게 복사 · 남은 턴과 중첩 유지"; // 원본의 복사 순서와 지속 및 중첩 정책 표시

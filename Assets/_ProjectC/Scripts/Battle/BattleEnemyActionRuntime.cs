@@ -82,6 +82,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 { // 광역 대상 연결 시작
                     action.SetAreaTargets(allyUnits); // 실제 아군 전체를 향한 광역 공격 설정
                 } // 광역 대상 연결 종료
+                action.SetPainDistributionParty(allyUnits); // 일반과 광역 피해에 실제 출전 명단을 고정 연결
                 action.SetDefensePreviewRule(GetDefenseBeforeAttack); // 방어도와 일회성 보호의 예고 순서 연결
                 action.SetBootPreviewRule(GetBootPreviewReduction); // 광역 순서를 포함한 남은 장화 횟수 반영
                 action.SetBodyGuardPreviewRule(GetBodyGuardPreviewTarget); // 대신 받을 대상 예고 연결

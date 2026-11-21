@@ -256,6 +256,7 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
                         int damage = currentAction.PreviewDamage(target).AppliedDamage; // 개별 방어를 반영한 체력 피해 예고
                         int chance = BattleHitChance.GetPercent(currentAction.Actor, target); // 각 생존 아군의 명중률 대조
                         builder.AppendLine($"{target.DisplayName} · 피해 {damage} · 명중률 {chance}%"); // 대상별 피해와 명중률 표시
+                        AppendPainDistribution(builder, target); // 같은 광역 타격의 개별 파티 분담 예고 표시
                     } // 생존 대상 표시 종료
                 } // 대상별 예상 피해 계산 종료
             } // 광역 예상 피해 표시 종료
@@ -263,6 +264,7 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
             { // 단일 예상 피해 표시 시작
                 int damage = currentAction.PreviewDamage().AppliedDamage; // 단일 대상의 예상 체력 피해 합계
                 builder.AppendLine($"예상 피해 : {modifiedDamage} → {damage}"); // 기존 단일 공격 예고 표시
+                AppendPainDistribution(builder, currentAction.Target); // 원래 대상 피해와 파티 분담을 같은 예고에서 확인
                 int hitChance = BattleHitChance.GetPercent(currentAction.Actor, currentAction.Target); // 실제 피격 대상과 실명을 반영한 명중률
                 if (hitChance < 100) // 빗나갈 수 있는 공격 확인
                 { // 명중률 안내 시작
@@ -309,6 +311,14 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
 
         return builder.ToString(); // 완성 행동 설명 반환
     }
+
+    private void AppendPainDistribution(System.Text.StringBuilder builder, BattleUnitRuntime primary) // 각 분담자의 무방어 실제 체력 피해 안내
+    { // 한 타격의 분담 예고 표시 시작
+        foreach (var entry in currentAction.PreviewPainDistribution(primary)) // 실제 분배 계산의 고정 명단 순서 확인
+        { // 실제 파티 분담자별 예고 표시 시작
+            builder.AppendLine($"고통 분산 : {entry.Target.DisplayName} {entry.Damage}"); // 같은 타격의 분담자와 실제 예상 피해 표시
+        } // 실제 파티 분담자별 예고 표시 종료
+    } // 한 타격의 분담 예고 표시 종료
 
     private static string GetDamageTypeText(
         BattleDamageType damageType) // 피해 유형 표시 이름 조회

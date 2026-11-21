@@ -38,10 +38,12 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             int previousValue = statusEffect.EffectiveValue; // 처리 전 상태 전체 수치 저장
             int appliedAmount = 0; // 실제 적용 수치 초기화
             bool wasTriggered = false; // 발동 여부 초기화
+            bool wasDefeated = false; // 같은 시점의 부활과 구분할 실제 전투불능 초기값
             if (statusEffect.EffectType == BattleStatusEffectType.Poison) // 중독 상태 확인
             { // 중독 처리 시작
                 BattleDamageResult damageResult = runtimeUnit.TakeDamage(statusEffect.EffectiveValue, BattleDamageType.None); // 방어 무시 피해 적용
                 appliedAmount = damageResult.AppliedDamage; // 실제 중독 피해 저장
+                wasDefeated = damageResult.WasTargetDefeated; // 실제 중독 타격으로 쓰러진 결과 저장
                 wasTriggered = true; // 중독 발동 저장
                 statusEffect.DecayPoison(); // 전체 중독 수치 한 점 감소
                 statusStateChanged = true; // 중독 수치 변경 알림 예약
@@ -60,7 +62,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 턴 종료 지속 상태 처리 시작
                 continue; // 일반 상태의 지속 턴은 턴 종료에 처리
             } // 턴 종료 지속 상태 처리 종료
-            if (runtimeUnit.IsDead) // 상태 피해 사망 확인
+            if (runtimeUnit.IsDead || wasDefeated) // 부활과 별개인 이번 지속 피해의 실제 전투불능 확인
             { // 사망 결과 처리 시작
                 processResults.Add(new BattleStatusEffectProcessResult(statusEffect.EffectType, round, previousValue, appliedAmount, previousRemainingTurns, previousRemainingTurns, statusEffect.StackCount, wasTriggered, BattleStatusEffectRemovalReason.UnitDied)); // 피해 이전 수치의 사망 결과 기록
                 break; // 사망 이후 상태 처리 중단
@@ -107,7 +109,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
             if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance || // 적 턴 종료에만 차감하는 기존 영원의 방패
-                effect.EffectType == BattleStatusEffectType.SanctuaryWard || effect.EffectType == BattleStatusEffectType.FearResistance) // 성역과 찬가도 실제 적 턴 종료에서만 차감
+                effect.EffectType == BattleStatusEffectType.SanctuaryWard || effect.EffectType == BattleStatusEffectType.FearResistance || // 성역과 찬가의 실제 적 턴 종료 차감
+                effect.EffectType == BattleStatusEffectType.PainDistribution) // 고통 분산의 두 실제 적 턴 종료만 계산
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료
@@ -119,9 +122,14 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 반사의 성채 일반 지속 처리 제외 시작
                 continue; // 다음 아군 턴 전에 반사 지급과 함께 제거
             } // 반사의 성채 일반 지속 처리 제외 종료
+            if (effect.EffectType == BattleStatusEffectType.ResurrectionSeed) // 적 턴 종료에서만 차감하는 씨앗 상태 확인
+            { // 일반 부활 씨앗 기간 처리 제외 시작
+                continue; // 아군 턴 정리에서는 씨앗 기간 유지
+            } // 일반 부활 씨앗 기간 처리 제외 종료
             int previousTurns = effect.RemainingTurns; // 처리 전 지속 횟수 저장
             int previousValue = effect.EffectiveValue; // 처리 전 효과 수치 저장
             int applied = 0; // 실제 피해 초기화
+            int healthBefore = runtimeUnit.CurrentHealth; // 같은 처리 시점에 체력 영이 되었는지 확인할 시작 체력
             bool renew = effect.EffectType == BattleStatusEffectType.Renewal && runtimeUnit.Team == BattleTeam.Ally; // 실제 아군 종료에 회복하는 별도 재생 상태 확인
             bool triggered = renew || effect.EffectType == BattleStatusEffectType.Burn || effect.EffectType == BattleStatusEffectType.Bleed; // 재생과 지속 피해의 턴 종료 발동 확인
             if (effect.EffectType == BattleStatusEffectType.Bleed) // 방어도를 우회하는 고정 체력 손실 확인
@@ -137,7 +145,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 재생 지속 회복 시작
                 applied = runtimeUnit.RestoreHealth(previousValue); // 받는 회복 보정과 체력 상한이 적용된 실제 재생
             } // 재생 지속 회복 종료
-            if (runtimeUnit.IsDead) // 턴 종료 상태 처리 중 사망 확인
+            if (runtimeUnit.IsDead || !renew && applied >= healthBefore) // 부활 이전 지속 피해의 실제 체력 영 확인
             { // 사망 결과 처리 시작
                 results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, previousTurns, effect.StackCount, triggered, BattleStatusEffectRemovalReason.UnitDied)); // 사망 처리 결과 기록
                 break; // 나머지 상태 처리 중단
