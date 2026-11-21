@@ -4,7 +4,8 @@ public sealed class FirstSuitHitRelics // 한 전투의 계열별 첫 피해 카
 { // 첫 적중 보너스 시작
     private int lastSwordRound; // 첫 검 피해 카드를 사용한 턴
     private int lastWandRound; // 첫 지팡이 마법 피해 카드를 사용한 턴
-    private int remainingBonus; // 현재 카드의 다음 직접 적중에 더할 피해
+    private bool usedFirstBattleSword; // 전투 첫 검 피해 카드 사용 여부
+    private long remainingBonus; // 현재 카드의 다음 직접 적중에 합산할 피해
 
     public void BeginCard(CardInstance card, int round, RelicInventoryRuntime inventory) // 실제 카드 사용 시 이번 턴의 대상 카드 결정
     { // 카드 사용 검사 시작
@@ -13,11 +14,19 @@ public sealed class FirstSuitHitRelics // 한 전투의 계열별 첫 피해 카
         { // 비공격 사용 처리 시작
             return; // 계열별 첫 피해 기회 보존
         } // 비공격 사용 처리 종료
-        if (card.CardType == CardType.Sword && lastSwordRound != round) // 이번 턴의 첫 검 피해 카드 확인
-        { // 검집 처리 시작
-            lastSwordRound = round; // 같은 턴의 다른 검 카드 제외
-            remainingBonus = inventory.FindEffect(RelicEffectType.FirstSwordDamage)?.EffectValue ?? 0; // 보유 검집의 가산량
-        } // 검집 처리 종료
+        if (card.CardType == CardType.Sword) // 실제로 사용한 검 피해 카드 확인
+        { // 검 명중 보너스 준비 시작
+            if (!usedFirstBattleSword) // 전투 중 첫 검 피해 카드 확인
+            { // 무딘 칼 장식 처리 시작
+                usedFirstBattleSword = true; // 이 카드가 모두 빗나가도 전투 최초 사용 소모
+                remainingBonus += inventory.FindEffect(RelicEffectType.FirstBattleSwordDamage)?.EffectValue ?? 0; // 현재 카드의 첫 명중에 칼 장식 가산 예약
+            } // 무딘 칼 장식 처리 종료
+            if (lastSwordRound != round) // 이번 턴의 첫 검 피해 카드 확인
+            { // 검집 처리 시작
+                lastSwordRound = round; // 같은 턴의 다른 검 카드 제외
+                remainingBonus += inventory.FindEffect(RelicEffectType.FirstSwordDamage)?.EffectValue ?? 0; // 기존 검집을 칼 장식과 독립적으로 합산
+            } // 검집 처리 종료
+        } // 검 명중 보너스 준비 종료
         else if (card.CardType == CardType.Wand && card.DamageType == BattleDamageType.Magical && lastWandRound != round) // 이번 턴의 첫 지팡이 마법 피해 카드 확인
         { // 지팡이 심 처리 시작
             lastWandRound = round; // 같은 턴의 다른 지팡이 마법 제외

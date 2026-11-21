@@ -847,6 +847,54 @@
       "artworkKey": "33caa81b7fd5529da905428d3bc77f1f"
     },
     {
+      "category": 3,
+      "name": "조용한 종끈",
+      "description": "아군이 유효한 공포를 받을 때 30% 확률로 적용을 막는다.",
+      "artworkKey": "5b5024f666055f42bc12a96131964af4"
+    },
+    {
+      "category": 3,
+      "name": "반쯤 탄 부적",
+      "description": "아군이 턴 종료에 받는 화상 피해가 1 줄어든다.",
+      "artworkKey": "cd35ff3419ef50298ae7157e2cf00e82"
+    },
+    {
+      "category": 3,
+      "name": "균열 가루병",
+      "description": "아군이 자신의 턴에 적을 처치할 때 20% 확률로 현재 행동력을 1 회복한다.",
+      "artworkKey": "ceb42495ddd25328b555d5e98ab1acdc"
+    },
+    {
+      "category": 3,
+      "name": "빛 잃은 목걸이",
+      "description": "피해를 받기 전 체력이 최대 체력의 30% 이하인 아군은 받는 피해가 2 줄어든다.",
+      "artworkKey": "4e650e26a05056e5a7264c97620823f6"
+    },
+    {
+      "category": 3,
+      "name": "작은 고해패",
+      "description": "시전 아군의 정신력이 50 이하일 때 해당 카드의 직접 체력 회복량이 2 증가한다.",
+      "artworkKey": "c39e6781e8fd56a3a29dbaa62d3a670e"
+    },
+    {
+      "category": 3,
+      "name": "검은 먼지병",
+      "description": "전투에서 약화 상태인 적에게 카드가 처음 직접 명중하면 피해가 3 증가한다.",
+      "artworkKey": "484bdad8018059d187a42a52fa57f324"
+    },
+    {
+      "category": 3,
+      "name": "헐거운 탄띠",
+      "description": "첫 아군 턴 동안 최대 행동력과 현재 행동력이 각각 1 증가한다.",
+      "artworkKey": "549bb6d5decf5f63bbe3629b0330b142"
+    },
+    {
+      "category": 3,
+      "name": "무딘 칼 장식",
+      "description": "전투에서 처음 사용하는 검 피해 카드의 첫 명중 피해가 3 증가한다.",
+      "artworkKey": "0975cf7cce24550aa347bcd14d9b442a"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

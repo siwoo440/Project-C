@@ -1331,7 +1331,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 직접 회복 보정 시작
         int modified = card.OwnerUnit.ModifyOutgoingHealing(healing); // 기존 정신 상태의 비율 보정
         int bonus = healing > 0 && card.OwnerUnit.CurrentMental >= 50 ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.HighMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이상인 회복자의 흰 장미 가산량
-        return (int)Math.Min(int.MaxValue, (long)modified + bonus + (healing > 0 ? bandageBonus : 0)); // 최대 체력을 적용하기 전 직접 회복 수치
+        int confession = healing > 0 && card.OwnerUnit.CurrentMental <= 50 ? BattleSupplyRelics.Find(RelicEffectType.LowMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이하인 시전자의 작은 고백패 가산량
+        return (int)Math.Min(int.MaxValue, (long)modified + bonus + confession + (healing > 0 ? bandageBonus : 0)); // 수신 보정과 최대 체력을 적용하기 전 직접 회복 수치
     } // 직접 회복 보정 종료
     private int RestoreDirectCardHealth(CardInstance card, BattleUnitRuntime target, int healing) // 직접 카드 회복과 아군 턴의 첫 유지 회복 처리
     { // 실제 카드 회복 시작

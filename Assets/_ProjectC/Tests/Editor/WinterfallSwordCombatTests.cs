@@ -43,7 +43,10 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         internal Fight(CardData[] cards) : this(CreateView, CreateView, cards) // 기존 카드에 없는 무작위 규칙의 원본으로 전투 구성
         { // 독립 원본 전투 시작
         } // 독립 원본 전투 종료
-        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards) // 양쪽 전투 화면과 원본 배열을 받는 공통 실제 전투
+        internal Fight(bool enemyFirst, params string[] ids) : this(CreateView, CreateView, LoadCards(ids), enemyFirst) // 실제 적 선제와 원본 카드 입력을 검증하는 전투 구성
+        { // 선제 검사 환경 시작
+        } // 선제 검사 환경 종료
+        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards, bool enemyFirst = false) // 화면과 원본 카드 및 적 선제를 받는 공통 실제 전투
         { // 전투 구성 시작
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회
             Allies = roster.Characters.Take(3).Select(BattleUnitRuntime.CreateAlly).ToArray(); // 생존자와 전투불능 검사 아군 생성
@@ -63,7 +66,7 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
             Turns = new BattleTurnRuntime(Deck, Points, Allies, Enemies, cards.Length, BattleType.Normal); // 사용한 카드까지 매 턴 다시 뽑는 검사 덱 구성
             actions = new BattleEnemyActionRuntime(Enemies, Allies); // 실제 적 명단 연결
             statuses = new BattleStatusEffectController(Turns, Allies, Enemies, processor); // 지속 피해와 지속 시간 연결
-            Assert.IsTrue(Turns.StartBattle(cards.Length)); // 손패를 채우고 첫 턴 시작
+            Assert.IsTrue(Turns.StartBattle(cards.Length, enemyFirst)); // 지정한 선제에 맞춰 실제 전투 시작
             Assert.IsTrue(Hand.Bind(Deck, Points, Turns)); // 턴 상태와 손패 입력 연결
             Controller = new BattleCardActionController(Deck, Points, Turns, Hand, Runner, processor, allies, EnemyViews, actions); // 실제 카드 선택과 충돌 처리 연결
         } // 전투 구성 종료
