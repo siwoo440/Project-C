@@ -42,7 +42,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         } // 추가 공격 빗나감 처리 종료
         int baseDamage = (int)Math.Min(int.MaxValue, (long)card.SourceData.SecondaryEffectValue + card.OwnerUnit.AttackPowerBonus + preparedSwordDamage); // 두 번째 기본 피해와 공격력 증가 계산
         baseDamage = SwordCardCombat.ApplyAttackStances(card, target, baseDamage); // 독립적인 둘째 대상의 체력과 검 강화 적용
-        int damage = card.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 공격자의 현재 정신 상태 피해 보정
+        int damage = card.OwnerUnit.ModifyCardOutgoingDamage(baseDamage, card.DamageType); // 실제 연쇄 카드의 마법 표기와 일반 정신 상태 피해 보정
         damage = applyTargetBonus?.Invoke(target, damage) ?? applyHitBonus?.Invoke(damage) ?? damage; // 첫 타격 빗나감 뒤 연속 공격 첫 적중 보너스 적용
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정
         try // 피해 판정 문맥 정리 보장

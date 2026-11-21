@@ -156,17 +156,19 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return living[selected]; // 이번 타격을 받을 생존 적 반환
     } // 실제 타격 대상 결정 종료
 
-    internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 각 검 공격의 방어 전 피해 계산
+    internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 카드 공격의 방어 전 기본 피해 계산
     { // 원본 피해 계산 시작
-        switch (card.SourceData.SwordRule) // 카드의 가변 수치 조건 확인
+        if (card.SourceData.SpendsAllActionPoints && card.EffectType == CardEffectType.Damage) // 실제 지불량에 연동하는 피해 카드 확인
+        { // 가변 피해 배수 계산 시작
+            return (int)Math.Clamp((long)paid * card.EffectValue, 0L, int.MaxValue); // 비용과 원본 배수의 곱을 실제 피해 상한에 맞춤
+        } // 가변 피해 배수 계산 종료
+        switch (card.SourceData.SwordRule) // 카드별 일반 공격의 조건부 수치 확인
         { // 피해 종류 선택 시작
             case SwordCardRule.BloodEdge: // 출혈 중인 적의 추가 피해
                 int bonus = target?.GetStatusEffect(BattleStatusEffectType.Bleed) != null ? card.SourceData.SecondaryEffectValue : 0; // 타격 직전 출혈 유무 확인
                 return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + bonus); // 기본 공격과 출혈 추가 수치 합산
             case SwordCardRule.Counterattack: // 직전 적 턴 이후 체력 손실 반격
                 return card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue); // 실제 잃은 체력의 절반 내림
-            case SwordCardRule.Finisher: // 실제 지불한 행동력에 연동한 피해
-                return (int)Math.Min(int.MaxValue, (long)paid * card.EffectValue); // 지불한 X와 표시 배수 곱셈
             default: // 표기 피해의 일반 공격
                 return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus); // 기존 카드 공격력 보정 적용
         } // 피해 종류 선택 종료

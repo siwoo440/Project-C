@@ -11,7 +11,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         EnsureVisualStructure(); // 툴팁 내부 UI 자동 생성
         Hide(); // 시작 툴팁 숨김
     } // 화면 준비 종료
-    public void Show(CardInstance cardInstance) // 카드 상세 정보 표시
+    public void Show(CardInstance cardInstance, int? availableActionPoints = null) // 현재 전투의 행동력과 카드 상세 정보 표시
     { // 툴팁 표시 시작
         if (cardInstance == null) // 카드 연결 여부 확인
         { // 카드 누락 처리 시작
@@ -27,6 +27,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             _ => GetTargetLabel(cardInstance) // 일반 카드와 두 아군 선택의 대상 문구
         }; // 카드 대상 표시 완료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
+        if (cardInstance.SourceData.WandRule == WandCardRule.ManaRelease && availableActionPoints.HasValue) // 현재 행동력 미리보기를 쓰는 실제 마력 해방 확인
+        { // 현재 기본 피해 미리보기 시작
+            effectDetail += $" · 현재 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, availableActionPoints.Value)}"; // 타격과 같은 계산식의 다음 행동 기본 수치 표시
+        } // 현재 기본 피해 미리보기 종료
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
@@ -97,6 +101,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return "모든 아군"; // 전체 아군 문구 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상
                 return "적 1명"; // 단일 적 문구 반환
+            case CardTargetType.RandomTwoEnemies: // 서로 다른 무작위 생존 적 대상
+                return "무작위 적 최대 2명"; // 생존 적이 적으면 선택 범위 축소 안내
             case CardTargetType.AllEnemies: // 전체 적 대상
                 return "모든 적"; // 전체 적 문구 반환
             default: // 알 수 없는 대상
@@ -206,10 +212,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 위험 차단 상세 표시 시작
             return $"다음 직접 공격 피해 −{cardInstance.EffectValue}% · 1회"; // 턴이 아닌 공격 횟수 안내
         } // 위험 차단 상세 표시 종료
-        if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher) // 남은 행동력 공격 확인
-        { // 처형 피해 표시 시작
-            return $"물리 피해 X × {cardInstance.EffectValue}"; // 남은 행동력과 실제 배수 표시
-        } // 처형 피해 표시 종료
+        if (cardInstance.SourceData.SpendsAllActionPoints && cardInstance.EffectType == CardEffectType.Damage) // 남은 행동력에 따라 실제 피해가 달라지는 카드 확인
+        { // 가변 피해 표시 시작
+            return $"{GetEffectLabel(cardInstance)} X × {cardInstance.EffectValue}"; // 피해 종류와 실제 비용 배수 공식 표시
+        } // 가변 피해 표시 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.Counterattack) // 실제 체력 손실 반격 확인
         { // 역공 피해 표시 시작
             return $"현재 반격 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, 0)}"; // 현재 누적 손실로 계산한 피해 표시

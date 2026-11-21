@@ -71,5 +71,8 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     CorrosionResistanceDown = 68, // 실금석의 마법 피해 저항률 감소 상태
     PulseCordAttackPowerUp = 69, // 맥박줄이 지정한 아군의 별도 공격력 증가
     CrystalMarkDefenseDown = 70, // 결정눈이 부여하는 별도 표식 방어 약화
-    StethoscopeMark = 71 // 청진기가 고른 적의 독립 전투 시작 표식
+    StethoscopeMark = 71, // 청진기가 고른 적의 독립 전투 시작 표식
+    ArcaneWard = 72, // 다음 적 턴까지 고정 마법 저항력 상승
+    MagicAttackPowerUp = 73, // 실제 아군 마법 카드의 독립 공격력 증가
+    Shock = 74 // 대상의 다음 실제 적 턴 시작에 정산하는 감전
 } // 열거형 종료
