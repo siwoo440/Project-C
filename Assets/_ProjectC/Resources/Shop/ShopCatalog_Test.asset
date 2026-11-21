@@ -1490,6 +1490,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GOLDEN_COIN
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a1a5307d0418588aafbfa19d73960060, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FOCUS
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c1e328bae45155bf9ea662be123ed6d8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_TACTICAL_EXCHANGE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: deae74aecc73536c9e312ad22070f79b, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ENCHANT_CARD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 376095ef7f3856e5a0440df5abff3c4c, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_EFFICIENT_USE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: bc51e656f2b0573d8dc77d63b17ae167, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ANCIENT_RUNE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 9a498944b1eb5b0fb70e9ae0d6dbc119, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_WHEEL_OF_FATE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 21c0203012af5182a1cbf94fdd2d320e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CONTRACT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 9b7eff87b0605f0c8ba8e54cf62f0ade, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

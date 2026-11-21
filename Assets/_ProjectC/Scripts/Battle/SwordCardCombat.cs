@@ -49,7 +49,9 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
     { // 사용 가능 검사 시작
         if (card.SourceData.SpendsAllActionPoints) // 남은 행동력 전체를 쓰는 카드 확인
         { // 가변 행동력 조건 검사 시작
-            return points.CurrentActionPoints > 0 && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()); // 행동력 양수와 처형의 전용 저체력 조건 확인
+            int available = points.CurrentActionPoints; // 현재 실제 가용 행동력 조회
+            return available > 0 && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()) && // 양수 행동력과 기존 처형 카드 대상 조건 유지
+                (card.SourceData.PentacleRule != PentacleCardRule.WheelOfFate || turn.HasHandPaymentOptions(available)); // 수레바퀴에서 필요한 수량의 별도 실제 손패 카드 확인
         } // 가변 행동력 조건 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 체력 절반 이하 적에게만 사용하는 검 확인
         { // 처형 베기 사용 검사 시작
@@ -75,7 +77,8 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
     } // 사용 가능 검사 종료
     internal static bool HasUpfrontHealthCost(CardInstance card) // 효과 적용 전에 소유자 체력을 지불하는 카드 확인
     { // 체력 대가 카드 확인 시작
-        return card.SourceData.SwordRule is SwordCardRule.DoomBlade or SwordCardRule.BloodOath || card.SourceData.CupRule == CupCardRule.SacrificialHealing; // 기존 검과 희생 치유의 공통 체력 지불 경로
+        return card.SourceData.SwordRule is SwordCardRule.DoomBlade or SwordCardRule.BloodOath || card.SourceData.CupRule == CupCardRule.SacrificialHealing || // 이전 검과 희생 치유의 공통 실체력 지불
+            card.SourceData.PentacleRule == PentacleCardRule.Contract; // 실제로 생존하는 계약 소유자의 고정 체력 비용
     } // 체력 대가 카드 확인 종료
 
     internal static List<BattleUnitRuntime> GetDanceArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 바로 옆 한 칸의 고정 범위

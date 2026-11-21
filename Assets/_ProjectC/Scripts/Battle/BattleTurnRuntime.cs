@@ -62,7 +62,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public BattleType BattleType { get; } // 현재 전투 유형 조회
     public BattleResult Result { get; private set; } = BattleResult.None; // 현재 전투 결과 조회
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
-    public bool CanAcceptPlayerInput => !disposed && IsPlayerTurn && !IsBattleEnded && OpeningBookmarkChoices == null; // 실제 개막 선택을 마친 아군 일반 입력 가능 여부
+    private bool playerCardDecisionPending; // 실제 손패 선택의 중복 사용 잠금
+    public bool CanAcceptPlayerInput => !disposed && IsPlayerTurn && !IsBattleEnded && OpeningBookmarkChoices == null && !playerCardDecisionPending; // 개막 선택과 카드 결정을 모두 마친 일반 턴 입력
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     private bool IsActiveExplorationBattle => !disposed && !IsBattleEnded && CurrentRound > 0 && explorationRun != null && activeRunEncounter != null && ReferenceEquals(activeRunEncounter, explorationRun.ActiveEncounterIdentity); // 종료 전 실제 탐사 조우와 전투의 유효한 연결
     internal int PermanentAttackPower => IsActiveExplorationBattle ? explorationRun.PermanentAttackPower : 0; // 실제 탐사 전투에 출전한 아군의 영구 공격력
@@ -261,6 +262,28 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         StateChanged?.Invoke(); // 턴 상태 변경 알림
         return true; // 전투 시작 성공 반환
     } // 전투 시작 처리 종료
+    internal bool HasHandPaymentOptions(int count) // 사용할 원본 한 장 이외에 현재 비용만큼 실물 카드 보유 여부
+    { // 손패 수량 검사 시작
+        return count > 0 && runtimeDeck.HandCount > count; // 양수 실제 비용에 더해 사용할 원본까지 있는지 확인
+    } // 손패 수량 검사 종료
+    internal bool TryBeginPlayerCardDecision() // 아군의 카드 선택 중 다른 일반 입력을 잠그는 요청
+    { // 카드 입력 잠금 시작
+        if (!CanAcceptPlayerInput || HasPendingBossPhaseTransition) // 실제 아군 턴과 현재 다른 선택 및 전환 확인
+        { // 잠글 수 없는 카드 입력 처리 시작
+            return false; // 이미 시작된 다른 입력 상태 유지
+        } // 잠글 수 없는 카드 입력 처리 종료
+        playerCardDecisionPending = true; // 실제 비용 후보가 대기하는 일반 입력 잠금 기록
+        StateChanged?.Invoke(); // 현재 턴의 사용할 수 있는 카드와 버튼 상태 알림
+        return true; // 요청한 카드 선택의 잠금 성공
+    } // 카드 입력 잠금 종료
+    internal void EndPlayerCardDecision() // 방금 끝난 카드 선택의 일반 입력 잠금 해제
+    { // 카드 선택 잠금 복구 시작
+        if (playerCardDecisionPending) // 이번 선택의 실제 잠금 여부 확인
+        { // 진행 중인 선택 복구 시작
+            playerCardDecisionPending = false; // 이벤트 전에 일반 전투 입력 복원
+            StateChanged?.Invoke(); // 손패와 턴 종료 버튼의 실제 상태 갱신
+        } // 진행 중인 선택 복구 종료
+    } // 카드 선택 잠금 복구 종료
     public bool EndPlayerTurn() // 플레이어 턴 종료
     { // 플레이어 턴 종료 처리 시작
         if (!CanAcceptPlayerInput) // 실제 개막 선택을 마친 플레이어 턴 확인
@@ -323,8 +346,28 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 다음 턴 준비 종료
         return true; // 강제 턴 전환 성공 반환
     } // 강제 턴 전환 종료
+    internal int SetEfficientUseDiscount(int amount) // 현재 전투 아군 전체의 독립 펜타클 턴 할인 변경
+    { // 현재 아군과 이후 생성 카드의 비용 갱신 시작
+        amount = Math.Max(0, amount); // 실제 기본 할인과 초기화에 허용할 값
+        bool changed = false; // 현재 비용 변경 및 손패 갱신 필요 여부
+        foreach (var ally in allyUnits) // 이 전투의 아군 소유자마다 같은 턴 할인 확인
+        { // 현재 소유자 갱신 시작
+            if (ally != null && ally.EfficientUseApDiscount != amount) // 같은 효율적 사용이 중첩 없이 유지되는 조건
+            { // 새 할인 적용 또는 초기화 시작
+                ally.EfficientUseApDiscount = amount; // 이 턴의 이전 및 새 카드에 공통인 기본 할인
+                changed = true; // 실제 값 차이가 있는지 기록
+            } // 새 할인 적용 또는 초기화 종료
+        } // 현재 소유자 갱신 종료
+        if (changed) // 실제 비용이 바뀐 때만 손패 표시 확인
+        { // 손패의 현재 비용 갱신 시작
+            runtimeDeck.NotifyCardCostsChanged(); // 새 손패 비용과 사용 조건을 기존 화면에 알림
+        } // 손패의 현재 비용 갱신 종료
+        return changed ? amount : 0; // 실제 변경된 현재 턴의 새 할인량
+    } // 현재 아군과 이후 생성 카드의 비용 갱신 종료
+
     private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
     { // 플레이어 턴 정리 시작
+        SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 펜타클 기본 할인 복원
         if (runtimeDeck.HandCount == 0 && lastEmptyHandDrawRound != CurrentRound) // 자동 버림 전 빈손과 중복 발동 확인
         { // 패치 노끈 발동 검사 시작
             var cord = openingRelics?.FindEffect(RelicEffectType.EmptyHandNextTurnDraw); // 보유한 낡은 패치 노끈 조회
@@ -1449,6 +1492,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 미사용 씨앗 제거 시작
             ally?.RemoveStatusEffect(BattleStatusEffectType.ResurrectionSeed); // 결과 확정 이후 부활을 예약하지 않는 전투 상태 정리
         } // 미사용 씨앗 제거 종료
+        SetEfficientUseDiscount(0); // 승리 및 패배와 도주 뒤 남은 턴 할인 제거
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
         OpeningBookmarkChoices = null; // 이미 끝난 전투에서는 대기 중인 개막 선택 제거
@@ -1702,6 +1746,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
+        SetEfficientUseDiscount(0); // 전투 관리자 해제 후 아군 소유자 할인 회수
         OpeningBookmarkChoices = null; // 해제 뒤 이전 전투의 개막 선택 후보 회수
         runtimeDeck.ClearBattleRelicCards(); // 결과 이전에 전투 해제할 때도 덱의 모든 전투 한정 카드 회수
         foreach (BattleUnitRuntime ally in allyUnits) // 이번 탐사 전투의 아군 공격력 연결 확인

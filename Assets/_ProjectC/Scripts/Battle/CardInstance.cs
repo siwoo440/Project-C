@@ -45,7 +45,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
                 return 0; // 다음 유료 카드 할인의 발동 조건에서도 이미 무료인 비용 반환
             } // 고정 무료 기본 비용 적용 종료
             int upgradedCost = CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 강화 단계 반영 기본 비용
-            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount; // 서로 독립인 지속 할인 합계
+            int efficientUse = SourceData.SpendsAllActionPoints ? 0 : OwnerUnit.EfficientUseApDiscount; // X 비용에는 적용하지 않는 이번 아군 턴의 별도 기본 할인
+            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse; // 고정 기본 비용에 함께 적용되는 각 독립 할인 합계
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료
@@ -68,7 +69,13 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
 
-    public int EffectValue =>
+    private int enchantmentPercent; // 이 실물 카드의 다음 사용에만 남는 강화 백분율
+    public int EnchantmentPercent => enchantmentPercent; // 현재 카드 상세 화면의 일회 강화 표시
+    public int EffectValue => EnchantmentPercent == 0 ? EffectValueBeforeEnchantment : ApplyEnchantment(EffectValueBeforeEnchantment, EnchantmentPercent); // 실제 다음 한 번의 기본 효과
+    internal static int ApplyEnchantment(int value, int percent) => (int)Math.Clamp((long)value + (long)value * percent / 100, int.MinValue, int.MaxValue); // 정수 내림과 상한을 지킨 숫자 효과 강화
+    internal void SetEffectEnchantment(int percent) => enchantmentPercent = Math.Max(enchantmentPercent, percent); // 여러 번 강화해도 가장 높은 단일 예약만 유지
+    internal void ConsumeEffectEnchantment() => enchantmentPercent = 0; // 실제 사용한 카드의 한 번 강화 제거
+    internal int EffectValueBeforeEnchantment => // 원래 인스턴스의 영구 강화와 고정 원문 수치
         StatusEffectType == BattleStatusEffectType.ResurrectionSeed || SourceData.CupRule == CupCardRule.WhiteVow || // 씨앗의 회복 체력 비율과 맹세의 무효 횟수 고정
         StatusEffectType == BattleStatusEffectType.SwordSaintStance || StatusEffectType == BattleStatusEffectType.DuelMark || StatusEffectType == BattleStatusEffectType.BladeFrenzy || StatusEffectType == BattleStatusEffectType.BloodOath || StatusEffectType == BattleStatusEffectType.FinishingStance || StatusEffectType == BattleStatusEffectType.BladeMaintenance || StatusEffectType == BattleStatusEffectType.PhysicalRiposte // 원문 고정 보너스와 효과 비율 확인
             ? SourceData.EffectValue // 고정된 준비 수치와 반격 비율 유지

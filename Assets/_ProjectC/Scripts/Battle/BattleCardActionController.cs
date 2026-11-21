@@ -50,10 +50,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
+    private BattleDrawChoiceView pentacleHandChoiceView; // 두 손패 효과만 사용하는 별도 모달
+    private CardInstance pentacleHandChoiceSource; // 실제 선택을 시작한 손패 원본
+    private CardInstance firstTacticalDiscard; // 전술 교환에서 아직 결제하지 않은 첫 선택
     private CardInstance manaRetrievalSource; // 시전 전에 별도 지팡이 선택을 기다리는 회수 카드
     private CardInstance manaRetrievalDiscard; // 실제 충돌에서 다시 확인하고 버릴 별도 손패 지팡이
     private BattleRemainingCardChoiceView remainingChoiceView; // 남은 카드 처리 선택 화면
     private BattleDrawChoiceView openingBookmarkView; // 서고 먼지갈피의 실제 선택 화면
+    private BattleDrawChoiceView wheelPaymentView; // 손패 비용을 순서대로 고르는 실제 선택 창
+    private CardInstance wheelPaymentSource; // 비용을 고르는 동안 유지할 수레바퀴 원본 카드
+    private readonly List<CardInstance> wheelPaymentCards = new List<CardInstance>(); // 아직 손패에 남아 있는 선택한 비용 카드
+    private int wheelPaymentAmount; // 첫 선택 순간의 실제 행동력과 최종 필요 카드 장수
     private BattleDebuffChoiceView debuffChoiceView; // 디버프 이전 선택 화면
     private IReadOnlyList<BattleStatusEffectInstance> pendingDebuffChoices; // 이전할 디버프 선택 후보
     private BattleUnitRuntime pendingDebuffSource; // 디버프를 넘길 동료
@@ -87,6 +94,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         RegisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 등록
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
         turnRuntime.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
+        sharedActionPoints.StateChanged += RecheckWheelPayment; // 후보 선택 중 실제 행동력이 바뀌면 이전 입력 해제
         handView.RefreshCardAvailability(); // 시작 카드 사용 가능 상태 갱신
     } // 생성자 종료
     internal static BattleStatusEffectType RequiredWandEnemyStatus(WandCardRule rule) // 지팡이의 지정 적에게 이미 필요한 상태 종류
@@ -137,11 +145,21 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
             return; // 카드 클릭 처리 중단
         } // 행동력 부족 처리 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate) // 다른 실제 손패 카드를 비용으로 쓰는 원본 확인
+        { // 전액 지불 전 수레바퀴의 카드 비용 선택 시작
+            BeginWheelPayment(cardInstance); // 카드와 행동력을 아직 이동하지 않는 실제 선택창 열기
+            return; // 아직 지불하지 않은 전체 아군 자동 사용 보류
+        } // 전액 지불 전 수레바퀴의 카드 비용 선택 종료
         if (selectedCard == cardInstance) // 동일 카드 재선택 확인
         { // 재선택 처리 시작
             CancelSelection(); // 카드 선택 취소
             return; // 카드 클릭 처리 종료
         } // 재선택 처리 종료
+        if (GetPentacleHandChoiceCount(cardInstance) > 0) // 손패 입력을 먼저 확정하는 두 펜타클 규칙 확인
+        { // 실제 손패 선택 창 열기 시작
+            ShowPentacleHandChoice(cardInstance); // 행동력과 원본 이동을 보류한 실제 후보 표시
+            return; // 일반 자기 대상 즉시 사용 보류
+        } // 실제 손패 선택 창 열기 종료
         if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 마력 회수의 확정 전 손패 선택 효과 확인
         { // 무료 카드의 버림 선택 시작
             ShowManaRetrievalChoices(cardInstance); // 비용과 사용 신호보다 먼저 별도 지팡이 선택 열기
@@ -248,6 +266,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유닛 클릭 처리 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
+        RecheckWheelPayment(); // 외부 카드 이동 뒤 대기 중인 실제 출처와 비용 후보 확인
+        if (pentacleHandChoiceSource != null && (!ContainsHandCard(pentacleHandChoiceSource) || firstTacticalDiscard != null && !ContainsHandCard(firstTacticalDiscard))) // 원본이나 먼저 고른 실물이 손패를 떠난 경우 확인
+        { // 만료된 손패 선택 정리 시작
+            ClosePentacleHandChoice(); // 행동력과 다른 카드 이동 없이 선택 종료
+        } // 만료된 손패 선택 정리 종료
         if (manaRetrievalSource != null && !ContainsHandCard(manaRetrievalSource)) // 원래 회수 카드가 실제 손패에 아직 있는지 확인
         { // 선택 중인 원본 카드의 물리 이탈 시작
             CloseCardChoice(); // 비용과 효과 없이 대기 중 지팡이 선택 창 닫기
@@ -260,6 +283,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private void HandleTurnStateChanged() // 턴 상태 변경 처리
     { // 턴 상태 처리 시작
         UpdateOpeningBookmarkView(); // 현재 개막 선택의 표시와 끝난 선택 화면 정리
+        RecheckWheelPayment(); // 실제 턴 변경 뒤 수레바퀴의 이전 선택을 유지할 수 있는지 확인
         if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 종료 확인
         { // 입력 잠금 처리 시작
             CancelSelection(); // 카드 선택 상태 초기화
@@ -302,6 +326,92 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         openingBookmarkView = null; // 자체 닫힌 선택 창을 상태 갱신 전에 참조 제거
         turnRuntime.ResolveOpeningBookmark(choice); // 실제 카드 이동과 일반 전투 입력 복구 요청
     } // 모달 선택 결과 전달 종료
+    private void BeginWheelPayment(CardInstance source) // 실제 가용 행동력 수만큼 다른 손패 선택 시작
+    { // 수레바퀴 선택 준비 시작
+        var canvas = handView.GetComponentInParent<Canvas>(); // 원래 카드 선택 모달이 연결될 실제 전투 화면
+        if (canvas == null || !turnRuntime.TryBeginPlayerCardDecision()) // 현재 실제 아군 입력 및 모달 환경 확인
+        { // 선택을 열 수 없는 경우 시작
+            return; // 비용 차감 없이 이전 상태 유지
+        } // 선택을 열 수 없는 경우 종료
+        CancelSelection(); // 다른 카드의 대상 선택을 지운 뒤 실제 카드 비용 입력
+        wheelPaymentSource = source; // 화면 후보와 실제 사용할 원본 연결
+        wheelPaymentAmount = sharedActionPoints.CurrentActionPoints; // 후보를 열 실제 행동력과 필요 장수 보관
+        if (!CanContinueWheelPayment()) // 입력 잠금 알림 뒤에도 같은 실제 비용과 후보가 유효한지 확인
+        { // 알림 도중 바뀐 개시 후보 정리 시작
+            CloseWheelPayment(); // 유효한 손패 대신 낡은 선택을 보여 주지 않는 취소
+            return; // 변경된 가변 비용에서 모달 생성 생략
+        } // 알림 도중 바뀐 개시 후보 정리 종료
+        handView.SetInteractionLocked(true); // 선택 중 일반 손패 및 턴과 도주 입력 화면 잠금
+        ShowWheelPaymentChoices(canvas); // 현재 실제 손패에 있는 별도 비용 카드 표시
+    } // 수레바퀴 선택 준비 종료
+    private void ShowWheelPaymentChoices(Canvas canvas) // 아직 고르지 않은 실물 카드만 선택 화면에 표시
+    { // 다음 실제 비용 선택 시작
+        var candidates = new List<CardInstance>(); // 현재 선택 가능한 실물 손패 카드 목록
+        foreach (var card in runtimeDeck.Hand) // 지원 카드의 실제 손패 순서로 비용 후보 순회
+        { // 별도의 실물 카드 확인 시작
+            if (card != wheelPaymentSource && !wheelPaymentCards.Contains(card)) // 사용할 원본과 앞서 고른 카드의 중복 방지
+            { // 실제 다른 카드 후보 추가 시작
+                candidates.Add(card); // 손패의 물리 카드 한 장 등록
+            } // 실제 다른 카드 후보 추가 종료
+        } // 별도의 실물 카드 확인 종료
+        int step = wheelPaymentCards.Count; // 현재 새 모달에 대응하는 실제 선택 단계 보관
+        string title = $"운명의 수레바퀴 · 제외할 카드 {step + 1}/{wheelPaymentAmount}"; // 필요 장수와 현재 선택을 보여 주는 안내
+        wheelPaymentView = BattleDrawChoiceView.Show(canvas.transform, candidates, choice => SelectWheelPaymentCard(canvas, choice, step), title, CloseWheelPayment); // 비용 선택과 취소를 기존 모달 입력에 연결
+    } // 다음 실제 비용 선택 종료
+    private void SelectWheelPaymentCard(Canvas canvas, CardInstance choice, int step) // 실제 단계의 손패 비용 카드 한 장 선택
+    { // 다음 물리 카드 선택 정산 시작
+        if (wheelPaymentSource == null || step != wheelPaymentCards.Count) // 이미 종료되거나 앞선 화면의 낡은 입력 확인
+        { // 이전 선택 이벤트 차단 시작
+            return; // 결제에 오래된 버튼 입력 사용 방지
+        } // 이전 선택 이벤트 차단 종료
+        wheelPaymentView = null; // 이미 자체 종료된 현재 화면 참조 초기화
+        if (!CanContinueWheelPayment() || choice == wheelPaymentSource || !ContainsHandCard(choice) || wheelPaymentCards.Contains(choice)) // 현재 비용과 실제 다른 손패 후보의 유효성 확인
+        { // 변경된 원본 또는 비용 입력 처리 시작
+            CloseWheelPayment(); // 어떤 비용도 쓰지 않은 원래 손패 상태로 복귀
+            return; // 전체 카드 비용 결제 방지
+        } // 변경된 원본 또는 비용 입력 처리 종료
+        wheelPaymentCards.Add(choice); // 실제로 움직이지 않은 후보를 선택 목록에만 추가
+        if (wheelPaymentCards.Count < wheelPaymentAmount) // 아직 더 골라야 할 실제 비용 장수 확인
+        { // 다음 카드 선택 시작
+            ShowWheelPaymentChoices(canvas); // 앞서 고른 실제 카드를 제외한 후보로 다음 모달 표시
+            return; // 전체 비용이 모이기 전 실제 결제 생략
+        } // 다음 카드 선택 종료
+        var source = wheelPaymentSource; // 입력 잠금을 해제한 뒤 사용할 실제 원본 보관
+        var payment = wheelPaymentCards.ToArray(); // 완료한 정확한 실물 카드 선택을 제어 흐름에 고정
+        CloseWheelPayment(); // 실제 카드 처리 전에 선택 상태와 모달 잠금 정리
+        ExecuteCard(source, CollectValidTargets(source, allyUnitViews), payment); // 현재 유효 아군과 모두 고른 비용으로 원래 카드 사용 확정
+    } // 다음 물리 카드 선택 정산 종료
+    private bool CanContinueWheelPayment() // 비용 선택 중 실제 턴 및 손패 상태 확인
+    { // 유효한 가변 비용 유지 확인 시작
+        return turnRuntime.IsPlayerTurn && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition && // 정상 사용이 가능한 전투 상태와 실제 아군 턴
+            wheelPaymentSource != null && !wheelPaymentSource.OwnerUnit.IsDead && ContainsHandCard(wheelPaymentSource) && // 선택이 끝날 때도 기존 원본과 소유자 유지
+            sharedActionPoints.CurrentActionPoints == wheelPaymentAmount && turnRuntime.HasHandPaymentOptions(wheelPaymentAmount) && // 여전히 같은 실제 행동력과 충분한 다른 손패
+            wheelPaymentCards.TrueForAll(ContainsHandCard); // 이미 고른 모든 물리 카드의 현재 손패 확인
+    } // 유효한 가변 비용 유지 확인 종료
+    private void RecheckWheelPayment() // 비용 후보가 대기하는 동안의 실제 자원과 턴 변경 확인
+    { // 중간 변경 확인 시작
+        if (wheelPaymentSource != null && !CanContinueWheelPayment()) // 실제 선택을 마치기 전 자원 또는 원본이 변경되었는지 확인
+        { // 더 이상 유효하지 않은 선택 정리 시작
+            CloseWheelPayment(); // 부분 선택이나 선택 조건 변경에는 어떠한 비용도 지불하지 않는 취소
+        } // 더 이상 유효하지 않은 선택 정리 종료
+    } // 중간 변경 확인 종료
+    private void CloseWheelPayment() // 실제 가변 비용 선택 또는 취소의 입력 잠금 정리
+    { // 원래 일반 턴 입력 복구 시작
+        if (wheelPaymentSource == null) // 이미 정리된 다른 카드 상태 확인
+        { // 다른 모달 잠금 유지 시작
+            return; // 수레바퀴 원본이 없으면 기존 다른 선택 상태 보존
+        } // 다른 모달 잠금 유지 종료
+        wheelPaymentSource = null; // 상태 이벤트의 재진입 전에 선택 원본 해제
+        wheelPaymentAmount = 0; // 이전 선택의 실제 비용 수치 초기화
+        wheelPaymentCards.Clear(); // 실제 비용 후보가 이미 넘어갔거나 취소된 뒤 선택 목록 제거
+        if (wheelPaymentView != null && wheelPaymentView.gameObject.activeSelf) // 기존 모달에서 아직 열린 실제 선택창 확인
+        { // 남은 모달 닫기 시작
+            wheelPaymentView.Close(); // 더 이상 유효하지 않은 선택창 즉시 숨기기
+        } // 남은 모달 닫기 종료
+        wheelPaymentView = null; // 종료한 선택 모달 참조 해제
+        turnRuntime.EndPlayerCardDecision(); // 다른 일반 전투 입력의 실제 잠금 해제
+        handView.SetInteractionLocked(false); // 원래 손패와 턴 종료 및 도주 버튼 상태 복구
+    } // 원래 일반 턴 입력 복구 종료
     private void RefreshPartnerMarkers() // 파트너 화면 표시 갱신
     { // 파트너 표시 갱신 시작
         foreach (BattleUnitView view in allyUnitViews) // 아군 화면 목록 순회
@@ -314,6 +424,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 파트너 표시 갱신 종료
     private void HandleUnitDied(BattleUnitRuntime runtimeUnit) // 유닛 사망 처리
     { // 유닛 사망 처리 시작
+        if (pentacleHandChoiceSource?.OwnerUnit == runtimeUnit) // 선택 중 실제 시전자의 전투불능 확인
+        { // 미지불 손패 선택 종료 시작
+            ClosePentacleHandChoice(); // 사망한 원본의 모달과 턴 입력 잠금 제거
+        } // 미지불 손패 선택 종료 완료
         if (manaRetrievalSource?.OwnerUnit == runtimeUnit) // 아직 확정하지 않은 회수 카드 시전자의 실제 사망 확인
         { // 회수 선택을 계속할 수 없는 상황 시작
             CloseCardChoice(); // 행동력과 별도 지팡이 이동 없이 선택 닫기
@@ -379,7 +493,91 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 미확정 축복 이전 취소 종료
         UpdateTargetHighlights(); // 남아 있는 실제 복사 후보만 강조
     } // 축복 이전 후보 갱신 종료
-    private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
+    internal static int GetPentacleHandChoiceCount(CardInstance card) // 두 실제 손패 선택 카드의 대상 수 확인
+    { // 실제 원본 효과와 고를 장수 구분 시작
+        return card?.EffectType == CardEffectType.PentacleUtility ? card.SourceData.PentacleRule switch // 원본의 명시된 펜타클 지원 효과 확인
+        { // 손패 선택 규칙 구분 시작
+            PentacleCardRule.TacticalExchange => 2, // 다른 실물 두 장을 고르는 전술 교환
+            PentacleCardRule.EnchantCard => 1, // 다른 실물 한 장을 고르는 카드 강화
+            _ => 0 // 즉시 사용하거나 각자 별도 입력을 하는 다른 카드
+        } : 0; // 다른 종류 카드의 기존 사용 경로
+    } // 실제 원본 효과와 고를 장수 구분 종료
+
+    private void ShowPentacleHandChoice(CardInstance source) // 확정 전 다른 실제 손패 후보 선택 창
+    { // 손패 선택의 모달 시작 전 조건 검사
+        var canvas = handView.GetComponentInParent<Canvas>(); // 기존 선택 화면을 연결할 전투 캔버스
+        if (canvas == null || runtimeDeck.HandCount <= GetPentacleHandChoiceCount(source) || !turnRuntime.TryBeginPlayerCardDecision()) // 실제 후보 수와 중첩 없는 공용 입력 잠금 확인
+        { // 무효 손패 선택 시작 생략
+            return; // 행동력과 원래 카드 목록 보존
+        } // 무효 손패 선택 시작 생략 종료
+        CancelSelection(); // 남아 있는 다른 카드의 대상 강조 초기화
+        pentacleHandChoiceSource = source; // 잠금을 연 실제 원본을 현재 선택에 기록
+        handView.SetInteractionLocked(true); // 다른 손패와 턴 종료 조작을 선택하는 동안 차단
+        OpenPentacleHandChoice(canvas, source); // 첫 선택 또는 사전에 정해진 단일 선택 표시
+    } // 손패 선택의 모달 시작 전 조건 검사 종료
+
+    private void OpenPentacleHandChoice(Canvas canvas, CardInstance source) // 다른 인스턴스만 보여 주는 각 선택 단계
+    { // 실제 현재 손패 후보 준비 시작
+        var candidates = new List<CardInstance>(); // 현재 선택 창의 실물 손패 후보
+        foreach (var candidate in runtimeDeck.Hand) // 현재 손패의 원래 카드 순서 확인
+        { // 개별 후보 승인 검사 시작
+            if (candidate != source && candidate != firstTacticalDiscard) // 원본과 첫 선택의 중복 제외
+            { // 선택 가능한 실제 후보 추가 시작
+                candidates.Add(candidate); // 새 카드 복제 없이 실물 카드 노출
+            } // 선택 가능한 실제 후보 추가 종료
+        } // 개별 후보 승인 검사 종료
+        int stillNeeded = GetPentacleHandChoiceCount(source) - (firstTacticalDiscard == null ? 0 : 1); // 현재 단계에서 필요한 서로 다른 실물 수
+        if (candidates.Count < stillNeeded) // 항상 시작할 때 정한 필요 장수를 채울 수 있는지 확인
+        { // 현재 손패 후보 부족 처리 시작
+            ClosePentacleHandChoice(); // 비용과 효과 없이 전체 선택 취소
+            return; // 부족한 후보로 선택을 이어 가지 않음
+        } // 현재 손패 후보 부족 처리 종료
+        string title = source.SourceData.PentacleRule == PentacleCardRule.EnchantCard ? "강화할 다른 카드 선택" : firstTacticalDiscard == null ? "버릴 첫 번째 카드 선택" : "버릴 두 번째 카드 선택"; // 현재 모달의 필요한 실제 선택 안내
+        BattleDrawChoiceView opened = null; // 뒤늦은 이전 선택 신호를 거를 현재 모달 참조
+        opened = BattleDrawChoiceView.Show(canvas.transform, candidates, candidate => FinishPentacleHandChoice(opened, canvas, source, candidate), title, // 실제 선택한 손패의 현재 시점 확인과 단계 안내
+            () => FinishPentacleHandChoice(opened, canvas, source, null)); // 선택 단계 양쪽의 무지불 취소 연결
+        pentacleHandChoiceView = opened; // 실제 선택 창을 현재 전투에 연결
+    } // 실제 현재 손패 후보 준비 종료
+
+    private void FinishPentacleHandChoice(BattleDrawChoiceView opened, Canvas canvas, CardInstance source, CardInstance candidate) // 실제 모달 확인과 취소 및 다음 단계
+    { // 닫힌 이전 모달의 이벤트를 제외하는 현재 단계 처리 시작
+        if (opened != pentacleHandChoiceView || source != pentacleHandChoiceSource) // 현재 실제 모달과 원본 카드 일치 확인
+        { // 오래된 모달 이벤트 생략 시작
+            return; // 지금의 손패나 선택 상태 유지
+        } // 오래된 모달 이벤트 생략 종료
+        pentacleHandChoiceView = null; // 선택한 이전 창을 다시 닫지 않도록 참조 정리
+        if (candidate == null || candidate == source || candidate == firstTacticalDiscard || !ContainsHandCard(candidate) || !ContainsHandCard(source) || source.OwnerUnit.IsDead) // 원본과 선택 실물 및 생존 시전자의 최신 상태 확인
+        { // 취소 또는 무효 선택 처리 시작
+            ClosePentacleHandChoice(); // 지불이나 버림 없이 입력 잠금 복구
+            return; // 정상 카드 실행을 시작하지 않는 전체 취소
+        } // 취소 또는 무효 선택 처리 종료
+        if (GetPentacleHandChoiceCount(source) == 2 && firstTacticalDiscard == null) // 전술 교환 첫 장의 미지급 선택 확인
+        { // 같은 화면 규칙으로 다른 두 번째 카드 선택 시작
+            firstTacticalDiscard = candidate; // 원본 손패의 동일 실물과 다른 후보만 남기기
+            OpenPentacleHandChoice(canvas, source); // 비용을 내지 않은 상태로 두 번째 후보 표시
+            return; // 최종 확인 이후에만 실제 카드 사용
+        } // 같은 화면 규칙으로 다른 두 번째 카드 선택 종료
+        var choices = firstTacticalDiscard == null ? new[] { candidate } : new[] { firstTacticalDiscard, candidate }; // 실제 사용할 때 재검사할 고유 실물 선택 확보
+        ClosePentacleHandChoice(); // 실제 공용 턴 입력 복구 후 일반 카드 사용 진입
+        ExecuteCard(source, CreateSingleTargetList(source.OwnerUnit), pentacleHandCards: choices); // 모든 실제 후보를 확인한 정상 자기 대상 사용
+    } // 닫힌 이전 모달의 이벤트를 제외하는 현재 단계 처리 종료
+
+    private void ClosePentacleHandChoice() // 미지불 펜타클 손패 모달과 실제 입력 상태 해제
+    { // 현재 모달을 소유한 경우만 잠금 해제 시작
+        if (pentacleHandChoiceSource == null) // 다른 모달에는 손대지 않을 실제 소유 확인
+        { // 우리 선택이 없을 때 처리 시작
+            return; // 기존 카드 사용과 입력 상태 유지
+        } // 우리 선택이 없을 때 처리 종료
+        var opened = pentacleHandChoiceView; // 정상 닫을 화면 참조 확보
+        pentacleHandChoiceView = null; // 잠금 변경 이벤트 전에 선택 화면 참조 제거
+        pentacleHandChoiceSource = null; // 다시 호출돼도 현재 사용을 중복 종료하지 않는 원본 해제
+        firstTacticalDiscard = null; // 첫 선택만 된 카드의 미정 상태 해제
+        opened?.Close(); // 화면에서 이전 미지불 후보 숨기기
+        turnRuntime.EndPlayerCardDecision(); // 현재 턴의 공유 카드 선택 잠금 반환
+        handView.SetInteractionLocked(false); // 다른 손패와 정상 전투 입력 복구
+    } // 현재 모달을 소유한 경우만 잠금 해제 종료
+
+    private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, IReadOnlyList<CardInstance> wheelPayment = null, IReadOnlyList<CardInstance> pentacleHandCards = null) // 일반 사용과 확정한 두 종류 손패 선택 비용 전달
     { // 카드 실행 시작
         if (!turnRuntime.CanAcceptPlayerInput || actionPending || actionSequenceRunner.IsBusy) // 개막 선택 완료와 플레이어 턴과 연출 상태 확인
         { // 실행 불가 처리 시작
@@ -436,6 +634,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 이동과 결제 전 선택 정리
             return; // 유효한 별도 지팡이가 없는 회수 사용 거절
         } // 원래 회수 선택 무효화 처리 종료
+        int handChoices = GetPentacleHandChoiceCount(cardInstance); // 결제 전에 실제로 필요한 펜타클 선택 수
+        if (handChoices > 0 && (pentacleHandCards == null || pentacleHandCards.Count != handChoices || // 정상 모달을 통과한 정확한 수의 실제 입력 확인
+            pentacleHandCards[0] == cardInstance || !ContainsHandCard(pentacleHandCards[0]) || handChoices == 2 && // 원본을 제외한 실제 첫 카드 위치 검사
+            (pentacleHandCards[1] == cardInstance || pentacleHandCards[1] == pentacleHandCards[0] || !ContainsHandCard(pentacleHandCards[1])))) // 두 번째 카드의 물리 손패와 고유성 재검사
+        { // 유효한 원본 선택이 없는 지불 취소 시작
+            CancelSelection(); // 다른 손패와 행동력 상태를 건드리지 않고 정리
+            return; // 불완전한 선택의 카드 실행 생략
+        } // 유효한 원본 선택이 없는 지불 취소 종료
         if (!IsSupportedEffect(cardInstance.EffectType)) // 지원 효과 확인
         { // 미지원 효과 처리 시작
             Debug.LogError($"[BattleCardActionController] 지원하지 않는 카드 효과입니다: {cardInstance.EffectType}"); // 미지원 효과 출력
@@ -452,12 +658,27 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 연출 시작 불가 처리 종료
         int cost = cardInstance.SourceData.SpendsAllActionPoints ? sharedActionPoints.CurrentActionPoints : cardInstance.ApCost; // 실제 확정 순간의 일반 또는 가변 비용 결정
         bool usedFirstDefenseDiscount = cardInstance.EffectiveFirstDefenseDiscount > 0; // 다른 유물 비용이 바뀌기 전에 실제 적용한 방어 할인 기록
-        if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime) || !sharedActionPoints.Spend(cost)) // 현재 대상 및 비용 재확인 후 한 번 지불
+        bool wheel = cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate; // 실제 다른 손패와 공용 행동력의 동시 결제 여부
+        if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime)) // 현재 대상 및 원본 비용의 실제 결제 가능 여부 확인
+        { // 실제 결제 불가 시 선택 정리 시작
+            CancelSelection(); // 행동력과 카드 이동 없이 유효하지 않은 입력 정리
+            return; // 남은 실제 효과와 비용 처리 생략
+        } // 실제 결제 불가 시 선택 정리 종료
+        actionPending = wheel || handChoices > 0; // 실제 일괄 손패 비용과 행동력 알림 동안 다른 카드 재진입 차단
+        bool paid = wheel ? runtimeDeck.TrySpendAndExcludeHandPayment(cardInstance, wheelPayment, sharedActionPoints, cost) : // 수레바퀴의 고유 실제 제외 결제
+            handChoices == 2 ? runtimeDeck.TrySpendAndDiscardHandPair(cardInstance, pentacleHandCards[0], pentacleHandCards[1], sharedActionPoints, cost) : // 전술 교환의 두 실물 버림과 행동력 결제
+            sharedActionPoints.Spend(cost); // 카드 강화와 다른 기존 카드의 일반 행동력 지불
+        if (!paid) // 현재 실제 비용이 정상적으로 지불됐는지 확인
         { // 비용 차감 실패 처리 시작
+            actionPending = false; // 실패한 일괄 비용의 카드 실행 잠금 복구
             Debug.LogWarning($"[BattleCardActionController] 카드 비용 차감에 실패했습니다: {cardInstance.DisplayName}"); // 비용 차감 실패 출력
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        if (handChoices == 1) // 행동력을 지불한 실제 카드 강화의 단일 손패 확인
+        { // 확정한 다른 실물의 다음 효과 예약 시작
+            pentacleHandCards[0].SetEffectEnchantment(cardInstance.EffectValue); // 현재 전투의 다른 실물 카드에만 단일 강화 저장
+        } // 확정한 다른 실물의 다음 효과 예약 종료
         if (cardInstance.TargetType == CardTargetType.RandomTwoEnemies) // 사용을 확정한 카드의 명시적 무작위 적 대상 확인
         { // 실제 확정 대상 뽑기 시작
             targetUnits = PickDistinctRandomEnemies(targetUnits); // 현재 유효한 생존 후보만 최대 두 명 확정
@@ -518,7 +739,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 사용이 확정된 방패 할인 제거 시작
             cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.ShieldBalance); // 시전자의 예약 할인 한 번 소모
         } // 사용이 확정된 방패 할인 제거 종료
-        Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot, usedFirstDefenseDiscount, echoPlan); // 충돌에 실제 대상과 할인 및 사용한 반향 자료 전달
+        Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot, usedFirstDefenseDiscount, echoPlan, pentacleHandCards); // 충돌에 실제 대상과 할인 및 사용한 반향 자료 전달
         bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted, BattleMagicMissileEffect.Matches(cardInstance)); // 기존 카드 연출 중 실제 마력탄에만 전용 효과 연결
         if (started) // 연출 시작 결과 확인
         { // 연출 시작 성공 처리 시작
@@ -529,14 +750,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         impactAction.Invoke(); // 카드 효과 즉시 적용
         HandleActionSequenceCompleted(); // 즉시 적용 후 선택 화면과 상태 갱신
     } // 카드 실행 종료
-    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan) // 실제 카드 정산의 방어 할인과 확정 반향 자료 전달
+    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan, IReadOnlyList<CardInstance> pentacleHandCards) // 정상 충돌 대상과 방어 및 실제 손패 선택 전달
     { // 카드 정산 범위 시작
         bool resolveEffectsBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 피해와 회복을 함께 처리하는 카드 확인
             cardInstance.SourceData.WandRule == WandCardRule.TimeStop; // 시간 정지의 실제 상태 효과와 한 장 드로우까지 승리 보류
         turnRuntime.BeginCardResolution(resolveEffectsBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0 || cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm); // 복합 카드와 연속 타격의 실제 카드 이동 뒤 승리 정산
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
-            ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan); // 실제 전투 효과와 독립 타격 및 사용 카드 이동 처리
+            ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan, pentacleHandCards); // 실제 전투 효과와 독립 타격 및 사용 카드 이동 처리
         } // 카드 충돌 처리 종료
         finally // 충돌 처리 종료에 예약 드로우 정리 보장
         { // 카드 정산 범위 정리 시작
@@ -544,7 +765,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 정산 범위 정리 종료
     } // 카드 정산 범위 종료
 
-    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan) // 원래 충돌과 첫 방어 및 준비한 독립 피해 정산
+    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan, IReadOnlyList<CardInstance> pentacleHandCards) // 정상 충돌 대상과 방어 및 실제 손패 선택 전달
     { // 카드 충돌 처리 시작
         if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && !TryDiscardForManaRetrieval(cardInstance)) // 실제로 별도 지팡이를 버린 경우에만 마력 회수 사용
         { // 사용 전에 버림 실패 처리 시작
@@ -553,7 +774,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
         cupHealingBonusForCurrentCard = 0; // 현재 성배 카드와 이전 사용의 가산량 분리
         bool damagesAndHeals = cardInstance.TargetType == CardTargetType.EnemyAndAlly; // 직접 피해와 지정 회복을 함께 처리하는 카드 확인
-        if (!usedFirstHealingCard && (damagesAndHeals || cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 확인
+        if (!usedFirstHealingCard && (damagesAndHeals || cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 첫 직접 회복 또는 명시적 후속 회복 카드 확인
+            cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate)) // 전액 지불 내역이 확정된 수레바퀴에도 기본 첫 직접 회복 적용
         { // 첫 회복 카드 처리 시작
             usedFirstHealingCard = true; // 대상이 최대 체력이어도 첫 사용 기록
             bandageBonus = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FirstHealingCardBonus)?.EffectValue ?? 0; // 실제 보유한 붕대의 대상별 가산
@@ -636,7 +858,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             totalAppliedAmount += ApplyWandEcho(cardInstance, targetUnits, echoPlan); // 원래 카드 이동 및 후속 정산 이전에 피해 방식만 한 번 재생
         } // 원본 타격 뒤의 독립 반향 종료
         starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
-        bool discarded = ApplyFollowUpAndDiscard(cardInstance, targetUnits, out bool followUpDefense); // 후속 효과와 실제 방어 및 사용 카드 이동 확인
+        bool isPentacleDraw = cardInstance.SourceData.PentacleRule is PentacleCardRule.Focus or PentacleCardRule.AncientRune; // 공유 덱에 한 번 지급하는 두 원본 카드 확인
+        bool followUpDefense = false; // 드로우 카드에 별도 후속 방어가 없는 기본값
+        int drawn = 0; // 실제 손패로 이동한 이번 카드 효과 드로우 수
+        bool discarded = isPentacleDraw // 하나의 사용 이동으로 처리할 펜타클 드로우인지 확인
+            ? runtimeDeck.TryPlayAndDraw(cardInstance, GetCardEffectDrawCount(CardInstance.ApplyEnchantment(cardInstance.SourceData.EffectValue, cardInstance.EnchantmentPercent)), out drawn, limitToHandCapacity: true) // 사용 카드를 먼저 손패에서 제거하고 기존 상한 안에서 한 번 드로우
+            : ApplyFollowUpAndDiscard(cardInstance, targetUnits, out followUpDefense, pentacleHandCards); // 기존 카드의 후속 효과와 방어 및 이동 보존
+        totalAppliedAmount += drawn; // 대상 수와 무관한 실제 공유 손패 드로우 합산
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
@@ -665,6 +893,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 { // 실제 사용 카드가 비운 공용 손패 드로우 시작
                     runtimeDeck.DrawRelicCardsIntoHand(cardInstance.SourceData.SecondaryEffectValue); // 기존 상한을 지키며 공용 손패에 실제 한 장 지급
                 } // 실제 사용 카드가 비운 공용 손패 드로우 종료
+                totalAppliedAmount += ResolveFixedPentacleUtility(cardInstance); // 손패를 떠난 원본의 공용 행동력 및 턴 비용 지원 정산
                 pendingPentacleChanceDraw = cardInstance.CardType == CardType.Pentacle && BattleSupplyRelics.Find(RelicEffectType.PentacleResolvedChanceDraw) != null; // 손패를 실제로 떠난 펜타클의 독립 추가 드로우 예약
                 QueueSkillRelicDraw(cardInstance); // 기존 카드 이동을 마친 스킬의 잉크병 판정 예약
                 pendingCardSuitRelics = cardInstance; // 손패를 나간 카드의 속성 정산 예약
@@ -680,6 +909,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 cardInstance.OwnerUnit.GainBlock(block); // 여러 대상이어도 카드 소유자에게 한 번만 지급
             } // 방어 카드 장갑 처리 종료
         } // 사용 후 드로우 유물 처리 종료
+        if (discarded) // 해당 실물 원본의 정상 사용 완료 확인
+        { // 이번 카드의 한 번 강화 종료 시작
+            cardInstance.ConsumeEffectEnchantment(); // 물리 손패 버림이나 취소와 구분하는 사용 뒤 효과 초기화
+        } // 이번 카드의 한 번 강화 종료
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
@@ -690,6 +923,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             card.OwnerUnit.SpendBattleMentalCost(card.SourceData.SecondaryEffectValue, BattleMentalChangeReason.CardEffect); // 정신력 피해 보호를 소비하지 않는 실제 카드 비용과 하한
         } // 명시된 정신력 대가 결제 종료
     } // 실제 시전자의 한 번 정신력 비용 처리 종료
+
+    private int ResolveFixedPentacleUtility(CardInstance card) // 정상 이동한 펜타클의 고정 공용 자원 효과
+    { // 실제 원본 펜타클 지원 확인 시작
+        if (card.EffectType != CardEffectType.PentacleUtility || !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded) // 현재 실제 아군 턴에 완료한 지원 카드 확인
+        { // 끝난 전투와 관련 없는 카드 제외 시작
+            return 0; // 현재 턴을 벗어난 행동력과 할인 미적용
+        } // 끝난 전투와 관련 없는 카드 제외 종료
+        return card.SourceData.PentacleRule switch // 카드별 정식 보유 자원 정산
+        { // 펜타클 자원 효과 선택 시작
+            PentacleCardRule.GoldenCoin => sharedActionPoints.Gain(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 현재 공용 최대치 안에서 원본 행동력 한 점 회복
+            PentacleCardRule.EfficientUse => turnRuntime.SetEfficientUseDiscount(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 실제 현재 아군 턴의 기존 기본 비용 한 점 할인 갱신
+            _ => 0 // 드로우와 선택 및 다른 자원 처리 규칙의 후속 정산 없음
+        }; // 펜타클 자원 효과 선택 종료
+    } // 실제 원본 펜타클 지원 확인 종료
 
     private void ResolveWandArithmeticAfterUse(CardInstance card) // 사용을 정상 완료한 지팡이 카드의 시전자 후속 상태
     { // 지팡이 시전 결과 처리 시작
@@ -705,9 +952,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 실제 역류 후속 약화 처리 종료
     } // 지팡이 시전 결과 처리 종료
 
-    private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets, out bool appliedDefense) // 보조 방어 처리 결과를 포함한 카드 이동
+    private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets, out bool appliedDefense, IReadOnlyList<CardInstance> pentacleHandCards) // 보조 방어 처리 결과를 포함한 카드 이동
     { // 후속 효과 처리 시작
         appliedDefense = false; // 명시적 후속 방어도의 성공 여부 초기화
+        if (card.SourceData.PentacleRule == PentacleCardRule.TacticalExchange) // 이미 두 실물 손패를 버린 전술 교환 확인
+        { // 사용 원본을 뽑지 않는 보충 드로우 시작
+            return runtimeDeck.TryPlayAndDraw(card, card.EffectValue, out _, limitToHandCapacity: true, preferOtherThanFirst: pentacleHandCards[0], preferOtherThanSecond: pentacleHandCards[1]); // 두 원래 버림 카드보다 다른 실제 후보를 먼저 보충
+        } // 사용 원본을 뽑지 않는 보충 드로우 종료
         int value = card.SourceData.SecondaryEffectValue; // 원본의 후속 수치 조회
         if (card.SourceData.SwordRule == SwordCardRule.CheckSlash) // 적을 견제한 소유자의 회피 증가 확인
         { // 자기 회피 처리 시작
@@ -988,6 +1239,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
+        ClosePentacleHandChoice(); // 취소나 전투 종료에서 미지불 펜타클 손패 선택 잠금 정리
+        CloseWheelPayment(); // 강제 정리 중인 실제 수레바퀴 비용 선택과 입력 잠금 해제
         manaRetrievalSource = null; // 전투 종료나 강제 정리에 회수 선택 원본 제거
         manaRetrievalDiscard = null; // 전투 종료나 강제 정리에 회수 버림 후보 제거
         pendingEventRelicDraw = 0; // 전투 종료나 선택 강제 해제 뒤 공용 신호 드로우 예약 해제
@@ -1251,7 +1504,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 확인 한도 계산 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        if (effectType == CardEffectType.DiscardWandForActionPoint) // 확정한 다른 지팡이의 손패 버림을 쓰는 회수 카드 확인
+        if (effectType is CardEffectType.DiscardWandForActionPoint or CardEffectType.PentacleUtility) // 실제 별도의 확정된 비용 또는 보조 효과 카드를 일반 전투에서 지원
         { // 신규 카드 효과 지원 시작
             return true; // 정상 사용과 이동 흐름 실행 허용
         } // 신규 카드 효과 지원 종료
@@ -1289,10 +1542,23 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (GetPentacleHandChoiceCount(cardInstance) > 0) // 손패 선택을 마치고 카드 이동에서 반영할 두 지원 카드 확인
+        { // 일반 유닛 대상 효과 제외 시작
+            return 0; // 실제 드로우와 실물 카드 강화는 원래 손패 이동과 함께 정산
+        } // 일반 유닛 대상 효과 제외 종료
         if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint) // 실제 별도 지팡이 버림을 먼저 완료한 회수 효과 확인
         { // 원래 공용 행동력의 현재 상한 회복 시작
             return sharedActionPoints.Gain(cardInstance.EffectValue); // 최대치 안에서 회복한 실제 행동력 반환
         } // 원래 공용 행동력의 현재 상한 회복 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate) // 실제로 지불한 행동력만큼 전체 생존 회복의 개별 대상 확인
+        { // 수레바퀴의 실제 회복 시작
+            int baseHealing = (int)Math.Min(int.MaxValue, (long)cardInstance.EffectValue * paidActionPoints); // 받아들인 전액 비용마다 원본 회복량을 계산한 기본값
+            return RestoreDirectCardHealth(cardInstance, targetUnit, GetDirectCardHealing(cardInstance, baseHealing)); // 원래 직접 회복의 시전자 및 대상 보정과 최대 체력 제한 적용
+        } // 수레바퀴의 실제 회복 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.Contract) // 앞서 실제 체력 비용을 지불한 자기 대상 계약 확인
+        { // 계약의 실제 행동력 회복 시작
+            return sharedActionPoints.Gain(cardInstance.EffectValue); // 실제 턴 현재 상한까지 원본 세 점 회복
+        } // 계약의 실제 행동력 회복 종료
         switch (cardInstance.SourceData.ShieldRule) // 아군에게 복합 효과를 주는 방패 카드의 대상별 분기
         { // 복합 방패 효과 시작
             case ShieldCardRule.Fortify: // 물리 방어력과 별도의 마법 피해 경감
@@ -1786,7 +2052,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
 
     private static int ScaleWandEchoDamage(CardInstance card, int? rolled, int paid, int percent, int printedBonus = 0) // 별도 한 타격에서 복제할 실제 원본 피해 계산
     { // 실제 기본 피해 비율 계산 시작
-        long raw = rolled.HasValue ? rolled.Value : card.SourceData.SpendsAllActionPoints ? (long)paid * card.EffectValue : card.EffectValue; // 명시 무작위 피해와 처음 지불한 가변 피해 및 고정 시트 수치 구분
+        long raw = rolled.HasValue ? rolled.Value : card.SourceData.SpendsAllActionPoints ? (long)paid * card.EffectValueBeforeEnchantment : card.EffectValueBeforeEnchantment; // 복제 피해에서 일회 강화와 구분한 원래 고정 및 가변 수치
         long bounded = Math.Clamp(raw + printedBonus, 0L, int.MaxValue); // 시트에 명시한 조건부 원본 피해와 정상 정수 범위 반영
         return (int)(bounded * Math.Clamp(percent, 0, 100) / 100L); // 원본과 준비 수치의 곱을 정수 피해로 내림
     } // 실제 기본 피해 비율 계산 종료
@@ -1826,6 +2092,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             int echoedDamage = ScaleWandEchoDamage(cardInstance, baseOverride, echoPlan.Paid, echoPlan.Percent, printedBonus); // 실제 지불량과 확인한 원본 기본 피해의 비율 내림
             return targetUnit.TakeWandEchoDamage(echoedDamage, cardInstance.OwnerUnit).AppliedDamage; // 표준 저항과 방어도의 실제 체력 피해만 정산
         } // 원래 카드의 후속 효과를 거치지 않는 실제 반향 피해 종료
+        if (baseOverride.HasValue && cardInstance.SourceData.HasRandomDamage && cardInstance.EnchantmentPercent > 0) // 일반 원본의 무작위 기본 피해도 일회 강화 대상으로 확인
+        { // 이번 원래 피해 굴림의 일회 강화 시작
+            baseOverride = CardInstance.ApplyEnchantment(baseOverride.Value, cardInstance.EnchantmentPercent); // 난수 횟수와 별개로 선택된 원래 기본 수치만 변경
+        } // 이번 원래 피해 굴림의 일회 강화 종료
         long printedDamage = baseOverride.HasValue ? (long)baseOverride.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 가변 또는 고정 카드의 공격력 합산
         if (cardInstance.SourceData.CupRule == CupCardRule.HolyWater && targetUnit.EnemySource?.IsUndead == true) // 불사형 추가 피해 카드가 실제 명중한 대상 확인
         { // 언데드 대상 추가 피해 시작
@@ -2285,6 +2555,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.SourceData.PentacleRule is PentacleCardRule.WheelOfFate or PentacleCardRule.Contract) // 실제 지급된 회복과 행동력의 전투 로그 분류 확인
+        { // 펜타클 전투 로그의 효과명 설정 시작
+            return cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate ? "회복" : "행동력 회복"; // 물리 피해와 구분되는 실제 지원 효과명
+        } // 펜타클 전투 로그의 효과명 설정 종료
         if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 두 진영에 효과를 주는 복합 카드 확인
         { // 복합 효과 이름 시작
             return "피해 및 회복"; // 실제 피해와 회복의 합계 로그 문구 반환
@@ -2458,6 +2732,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 손패 이벤트 해제 종료
         runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+        sharedActionPoints.StateChanged -= RecheckWheelPayment; // 이전 전투의 실제 가변 지불 후보 관찰 종료
         if (openingBookmarkView != null) // 씬과 함께 사라질 실제 개막 선택 화면 확인
         { // 관리 중인 모달 제거 시작
             openingBookmarkView.Close(); // 전투를 떠날 때 개막 선택 화면 숨김

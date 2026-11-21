@@ -2184,7 +2184,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "0",
-      "description": "코스트 +1 생성",
+      "description": "현재 행동력을 1 회복한다. 최대 행동력을 넘지 않는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "황금 동전.png"
@@ -2195,7 +2195,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "1",
-      "description": "이번 턴 카드 드로우 +1",
+      "description": "이번 아군 턴의 공용 손패에 카드 한 장을 즉시 뽑는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "집중.png"
@@ -2206,7 +2206,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "1",
-      "description": "손패 2장 교체",
+      "description": "손패에서 다른 카드 두 장을 골라 버리고 보충 카드 두 장을 뽑는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "전술 교환.png"
@@ -2217,7 +2217,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "선택한 카드의 효과 +50%",
+      "description": "손패에서 다른 카드 한 장을 고른다. 그 카드의 다음 실제 사용에서 기본 효과 수치가 50% 증가한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "강화 주문.png"
@@ -2228,7 +2228,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 모든 카드 코스트 -1",
+      "description": "이번 아군 턴 동안 아군 카드의 기본 행동력 비용을 1 낮춘다. 현재 행동력을 모두 지불하는 X 비용과 별도 필수 비용은 그대로다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "효율적 사용.png"
@@ -2239,7 +2239,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 드로우 +2",
+      "description": "아군 공용 손패에 카드 두 장을 즉시 뽑는다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "고대의 룬.png"
@@ -2250,7 +2250,7 @@
       "attribute": "펜타클",
       "rarity": "전설",
       "cost": "X",
-      "description": "카드 X장 소멸, 아군 전체 회복 X×3",
+      "description": "현재 행동력 수만큼 손패의 다른 카드를 선택한다. 행동력을 모두 지불하고 고른 카드를 이번 전투에서 제외한 뒤, 생존 아군 전체의 체력을 지불한 행동력마다 3 회복한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "운명의 바퀴.png"
@@ -2261,7 +2261,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "체력 -10, 코스트 +3 획득",
+      "description": "시전자의 체력을 10 지불하고 현재 행동력을 3 회복한다. 체력은 최소 1 남아야 한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "계약.png"

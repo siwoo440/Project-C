@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetWheelOfFate
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_WHEEL_OF_FATE
+  displayName: "운명의 바퀴"
+  description: "현재 행동력 수만큼 손패의 다른 카드를 선택한다. 행동력을 모두 지불하고 고른 카드를 이번 전투에서 제외한 뒤, 생존 아군 전체의 체력을 지불한 행동력마다 3 회복한다."
+  artwork: {fileID: 21300000, guid: eb9f917ce51054f6a530befe37109135, type: 3}
+  cardType: 3
+  targetType: 2
+  apCost: 0
+  effectType: 22
+  damageType: 0
+  effectValue: 3
+  mentalChangeValue: 0
+  pentacleRule: 7
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
