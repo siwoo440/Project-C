@@ -19,5 +19,6 @@ public enum CardEffectType // 카드 효과 종류
     DrawThenDiscard, // 덱에서 뽑은 뒤 손패 하나를 선택해 버리는 효과
     RemoveOneDebuff, // 먼저 적용된 디버프 하나 해제
     Unplayable, // 손패에서 사용할 수 없는 카드
-    ReviveAlly // 현재 전투에서 쓰러진 아군의 체력 회복과 생존 상태 복구
+    ReviveAlly, // 현재 전투에서 쓰러진 아군의 체력 회복과 생존 상태 복구
+    CopyAllyBlessing // 지정 아군 사이에 활성 강화 하나 복사
 } // 열거형 종료

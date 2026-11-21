@@ -40,6 +40,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool CanEscape => !disposed && (BattleType == BattleType.Normal || BattleType == BattleType.Elite) && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 일반과 정예 전투의 도주 가능 여부
     private bool CanSelectDuringPlayerTurn => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 현재 아군 턴의 카드 대상 선택 가능 여부
     internal bool HasSelectableEnemy => CanSelectDuringPlayerTurn && HasLivingUnit(enemyUnits); // 현재 적 대상으로 고를 생존 참가자 확인
+    internal IReadOnlyList<BattleUnitRuntime> BlessingAllies => allyUnits; // 축복 이전이 확인하는 실제 전투 아군 명단
     internal bool CanSelectLivingUnit(BattleUnitRuntime unit, BattleTeam team) // 현재 전투의 진영별 생존 대상 선택 확인
     { // 생존 참가자 검사 시작
         return CanSelectDuringPlayerTurn && unit?.Team == team && !unit.IsDead && // 카드 대상 선택이 가능한 진행 상태와 진영 확인

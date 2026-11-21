@@ -214,7 +214,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         } // 분담 피해 없음 처리 종료
         BattleDamageResult preview = PreviewWithDefense(Target); // 분담 전 대상의 순서별 방어 적용 피해 계산
         int remaining = Math.Max(0, preview.FinalDamage - preview.AbsorbedDamage); // 방어 적용 후 남은 피해 계산
-        int reduced = Math.Max(0, remaining / 2 - SharedDamageRecipient.GetLowHealthDamageReduction()); // 같은 분담 계산 뒤 실제 저체력 분담자의 고정 감소
+        int reduced = SharedDamageRecipient.GetUnblockedDamageAfterReduction(remaining / 2); // 실제 분담과 같은 성역 및 저체력 경감 사용
         return Math.Min(SharedDamageRecipient.CurrentHealth, reduced); // 방어도 없는 분담 피해의 체력 상한 적용
     } // 분담 피해 예고 종료
     internal BattleDamageResult PreviewWithDefense(BattleUnitRuntime target) // 장화 이전의 대상별 예상 피해 계산

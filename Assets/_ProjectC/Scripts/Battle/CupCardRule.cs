@@ -6,5 +6,8 @@ public enum CupCardRule // 성배 카드의 개별 전투 규칙
     Warmth, // 아군 화상 해제와 방어도 지급
     Calming, // 선택한 아군의 공포 해제와 정신력 회복
     HolyWater, // 불사형 적을 실제 명중한 경우 추가 피해
-    PurifyingTouch // 하나의 약화 제거와 한 적 턴 마법 저항
+    PurifyingTouch, // 하나의 약화 제거와 한 적 턴 마법 저항
+    SacrificialHealing, // 시전자의 실제 체력 비용과 대상 회복
+    WaterOfLife, // 즉시 회복과 다음 아군 턴 체력 예약
+    BlessingTransfer // 지정한 생존 아군 둘 사이의 강화 복사
 } // 성배 기술 목록 종료

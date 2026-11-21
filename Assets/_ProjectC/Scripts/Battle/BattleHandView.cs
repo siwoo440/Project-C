@@ -33,6 +33,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private CardInstance selectedCard; // 현재 선택 카드
     internal BattleTeam? MixedTargetStage { get; private set; } // 피해 적과 회복 아군의 현재 대상 선택 단계
+    internal BattleUnitRuntime BlessingTransferSource { get; private set; } // 선택을 끝낸 첫 강화 보유 아군
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private BattleCardView draggedCardView; // 현재 꺼내는 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
@@ -143,6 +144,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         turnRuntime = null; // 전투 턴 관리자 참조 제거
         selectedCard = null; // 선택 카드 제거
         MixedTargetStage = null; // 이전 전투의 순차 대상 입력 안내 제거
+        BlessingTransferSource = null; // 이전 전투의 축복 보유자 선택 해제
         recoveredCards.Clear(); // 이전 덱 카드 회수 기록 정리
         HideTooltip(); // 카드 툴팁 숨김
         Refresh(); // 빈 손패 화면 표시
@@ -333,7 +335,9 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 카드 드래그 간격 설정 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
     { // 선택 카드 설정 시작
+        bool refreshBlessingPrompt = selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly || cardInstance?.TargetType == CardTargetType.BlessingSourceAndAlly; // 축복 이전 안내의 추가 또는 제거 확인
         selectedCard = cardInstance; // 선택 카드 저장
+        BlessingTransferSource = null; // 새 카드 선택에서 미확정 축복 보유자 제거
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
         { // 선택 표시 적용 시작
             bool selected = cardView != null && cardView.RuntimeCard == selectedCard; // 현재 카드 선택 여부 계산
@@ -343,7 +347,16 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             } // 선택 표시 적용 종료
         } // 선택 표시 적용 종료
         RefreshCardPreview(); // 선택 또는 선택 해제한 확대 카드 갱신
+        if (refreshBlessingPrompt) // 축복 안내 표시 유무가 달라지는 선택 확인
+        { // 축복 선택 표시 시작
+            RefreshTurnStatus(); // 강화 보유자를 고르거나 원래 턴 안내로 복귀
+        } // 축복 선택 표시 종료
     } // 선택 카드 설정 종료
+    internal void SetBlessingTransferSource(BattleUnitRuntime unit) // 먼저 고른 강화 보유자와 입력 단계 기록
+    { // 수령 단계 설정 시작
+        BlessingTransferSource = unit; // 드래그와 클릭이 공유하는 첫 아군 기록
+        RefreshTurnStatus(); // 두 번째 아군에게 강화 복사 안내 표시
+    } // 수령 단계 설정 종료
     internal void SetMixedTargetStage(BattleTeam? team) // 현재 적 또는 아군의 선택 단계 표시
     { // 선택 단계 표시 시작
         if (MixedTargetStage != team) // 이전 대상과의 변경 확인
@@ -399,6 +412,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 복합 대상 없음 처리 시작
             return false; // 대상 조합을 완성할 수 없는 카드 사용 차단
         } // 복합 대상 없음 처리 종료
+        if (cardInstance.TargetType == CardTargetType.BlessingSourceAndAlly && (!BattleBlessingTransfer.IsTransferCard(cardInstance) || !BattleBlessingTransfer.HasTargets(turnRuntime))) // 축복 이전에 필요한 실제 두 아군 조합 확인
+        { // 축복 대상 없음 처리 시작
+            return false; // 유효한 원본과 수령자가 없으면 카드 선택 차단
+        } // 축복 대상 없음 처리 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
         { // 체력 비용 부족 처리 시작
             return false; // 체력 비용 카드 사용 차단
@@ -650,7 +667,9 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         switch (turnRuntime.CurrentPhase) // 현재 턴 단계 분기
         { // 턴 단계 분기 시작
             case BattleTurnPhase.PlayerTurn: // 플레이어 턴 단계
-                turnStatusText.text = MixedTargetStage switch // 현재 카드의 대상 안내 또는 라운드 표시 선택
+                turnStatusText.text = selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly // 축복 이전의 두 아군 안내 확인
+                    ? (BlessingTransferSource == null ? "강화를 복사할 아군 선택" : "강화를 받을 아군 선택") // 강화 보유자와 수령자 선택 안내
+                    : MixedTargetStage switch // 나머지 카드의 대상 안내 또는 라운드 표시 선택
                 { // 선택 안내 문구 시작
                     BattleTeam.Enemy => "피해를 줄 적 선택", // 첫 피해 대상 입력 안내
                     BattleTeam.Ally => "회복할 아군 선택", // 두 번째 회복 대상 입력 안내

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetPunishmentOfLight
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_PUNISHMENT_OF_LIGHT
+  displayName: "빛의 징벌"
+  description: "생존 적 전체에게 마법 피해 8을 준다. 명중한 불사형 적에게 피해 4를 더한다."
+  artwork: {fileID: 21300000, guid: 50d87de45157524ba16473e3c18c4b06, type: 3}
+  cardType: 2
+  targetType: 4
+  apCost: 2
+  effectType: 0
+  damageType: 2
+  effectValue: 8
+  mentalChangeValue: 0
+  cupRule: 5
+  secondaryEffectValue: 4
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

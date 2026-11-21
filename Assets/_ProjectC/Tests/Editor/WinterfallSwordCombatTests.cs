@@ -15,7 +15,7 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
     internal sealed class Fight : IDisposable // 실제 전투를 독립 구성하는 검사 환경
     { // 전투 환경 시작
         internal readonly BattleUnitRuntime[] Allies; // 카드 소유자와 동료 목록
-        internal readonly BattleUnitRuntime[] Enemies; // 실제 위치를 유지한 적 네 명
+        internal readonly BattleUnitRuntime[] Enemies; // 실제 위치를 유지한 적 명단
         internal readonly BattleUnitView[] EnemyViews; // 위치별 적 클릭 화면
         internal readonly BattleDeckRuntime Deck; // 보물 원본으로 만든 전투 덱
         internal readonly BattleActionPointRuntime Points = new BattleActionPointRuntime(20); // 턴당 검사 행동력
@@ -46,13 +46,21 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         internal Fight(bool enemyFirst, params string[] ids) : this(CreateView, CreateView, LoadCards(ids), enemyFirst) // 실제 적 선제와 원본 카드 입력을 검증하는 전투 구성
         { // 선제 검사 환경 시작
         } // 선제 검사 환경 종료
-        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards, bool enemyFirst = false) // 화면과 원본 카드 및 적 선제를 받는 공통 실제 전투
+        internal static Fight WithEnemySources(IEnumerable<EnemyData> enemies, params string[] ids) // 서로 다른 적 원본과 실제 게임 카드를 쓰는 독립 전투 구성
+        { // 적 분류 검사 환경 생성 시작
+            return new Fight(CreateView, CreateView, LoadCards(ids), enemySources: enemies); // 실제 차례와 원본 정보를 유지한 전투 생성
+        } // 적 분류 검사 환경 생성 종료
+        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards, bool enemyFirst = false, IEnumerable<EnemyData> enemySources = null) // 임의의 적 원본을 지원하는 공통 전투 구성
         { // 전투 구성 시작
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회
             Allies = roster.Characters.Take(3).Select(BattleUnitRuntime.CreateAlly).ToArray(); // 생존자와 전투불능 검사 아군 생성
-            enemyData = ScriptableObject.CreateInstance<EnemyData>(); // 저항과 약점이 없는 검사 적 생성
-            JsonUtility.FromJsonOverwrite("{\"maxHealth\":200}", enemyData); // 반복 타격 측정용 체력 설정
-            Enemies = Enumerable.Range(0, 4).Select(index => BattleUnitRuntime.CreateEnemy(enemyData)).ToArray(); // 실제 순서의 네 칸 생성
+            if (enemySources == null) // 별개 적 원본을 넘기지 않은 기본 검사 확인
+            { // 기본 적 원본 설정 시작
+                enemyData = ScriptableObject.CreateInstance<EnemyData>(); // 저항과 약점이 없는 검사 적 생성
+                JsonUtility.FromJsonOverwrite("{\"maxHealth\":200}", enemyData); // 반복 타격 측정용 체력 설정
+                enemySources = Enumerable.Repeat(enemyData, 4); // 동일 기본 원본으로 적 네 칸 구성
+            } // 기본 적 원본 설정 종료
+            Enemies = enemySources.Select(BattleUnitRuntime.CreateEnemy).ToArray(); // 전달된 실제 순서 그대로 적 전투 유닛 생성
             source = DeckData.CreateRuntime(cards.Select(card => new DeckCardEntry(card, Allies[0].CharacterSource)).ToArray()); // 같은 소유자의 독립 비교 덱 생성
             Deck = BattleDeckRuntime.Create(source, Allies, cards.Length, 224); // 손패 순서 고정
             canvas = new GameObject("SwordCombat", typeof(RectTransform), typeof(Canvas)); // 전투 화면 생성

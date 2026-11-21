@@ -6,7 +6,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private BattleUnitRuntime guardianHeartProtector; // 이 아군의 치명 피해를 대신 받을 시전자
     private readonly List<BattleStatusEffectInstance> statusEffects = new List<BattleStatusEffectInstance>(); // 현재 상태 이상 목록
     private BattleStatusEffectInstance currentTurnAttackPower; // 장기 강화와 구분할 아군 한 턴의 공격력 상태
-    private bool reportingCurrentTurnAttackPower; // 한 턴 상태 적용 신호의 현재 범위
+    private bool preserveReportedStatusDuration; // 상태 알림의 원래 지속 시간 보존 여부
     private readonly BattleMentalRuntime mentalRuntime; // 개별 정신력 런타임
     private readonly int awakeningDamagePercent; // 각성 피해 변화율
     private readonly int awakeningHealingPercent; // 각성 회복 변화율
@@ -184,6 +184,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return ApplyPercentage(baseHealing, changePercent); // 보정 회복량 반환
     } // 회복량 계산 종료
     public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit = null) // 상태 이상 적용
+    { // 일반 상태 적용 시작
+        return ApplyStatusEffectCore(effectType, value, duration, maximumStacks, sourceUnit, null); // 기존 개별 상태 적용 규칙 사용
+    } // 일반 상태 적용 종료
+    internal bool IsTransientTurnBuff(BattleStatusEffectInstance status) // 일반 강화와 독립인 현재 턴 전용 상태 확인
+    { // 독립 강화 확인 시작
+        return status == currentTurnAttackPower; // 종료 예약이 분리된 은총 상태 확인
+    } // 독립 강화 확인 종료
+    internal bool CanReceiveBlessingCopy(BattleStatusEffectInstance blessing) // 활성 강화의 수령 가능 중첩 확인
+    { // 수령 중첩 확인 시작
+        var existing = FindStatusEffect(blessing.EffectType, includeCurrentTurnAttackPower: false); // 수령 아군의 같은 일반 강화 상태 확인
+        return existing == null || existing.IsExpired || (long)existing.StackCount + blessing.StackCount <= Math.Max(existing.MaximumStacks, blessing.MaximumStacks); // 만료 상태 교체와 손실 없는 중첩만 허용
+    } // 수령 중첩 확인 종료
+    internal BattleStatusEffectApplyResult ApplyBlessingCopy(BattleStatusEffectInstance blessing, BattleUnitRuntime caster) // 기존 상태 적용 경로로 독립 강화 복사
+    { // 복사한 강화 적용 시작
+        return ApplyStatusEffectCore(blessing.EffectType, blessing.Value, blessing.RemainingTurns, blessing.MaximumStacks, caster, blessing); // 원래 강화의 현재 시간과 수치 전달
+    } // 복사한 강화 적용 종료
+    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing) // 일반 상태와 복사한 강화의 공통 적용
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -194,13 +211,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return BattleStatusEffectApplyResult.BlockedByImmunity; // 면역 차단 결과 반환
         } // 면역 차단 처리 종료
         if (effectType == BattleStatusEffectType.Fear && Team == BattleTeam.Ally) // 정상 면역 이후 살아 있는 아군에게의 유효 공포 확인
-        { // 무음 방울끈의 실제 공포 취소 시작
+        { // 찬가와 유물의 공포 저항 시작
+            int resistance = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.FearResistance)); // 고요한 찬가의 유효 공포 저항률
             int chance = BattleSupplyRelics.Find(RelicEffectType.CancelIncomingFear)?.TriggerChancePercent ?? 0; // 실제 보유 유물의 공포 취소 확률
-            if (chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance)) // 부여가 유효한 공포에만 한 번의 난수 사용
+            if ((resistance > 0 && (resistance == 100 || UnityEngine.Random.Range(0, 100) < resistance)) || // 먼저 적용되는 찬가의 독립 저항
+                (chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance))) // 공포가 남은 경우의 독립 유물 저항
             { // 이번 공포의 확률 취소 시작
                 return BattleStatusEffectApplyResult.BlockedByImmunity; // 원래 상태 차단 피드백 경로 재사용
             } // 이번 공포의 확률 취소 종료
-        } // 무음 방울끈의 실제 공포 취소 종료
+        } // 찬가와 유물의 공포 저항 종료
         if (effectType == BattleStatusEffectType.Bleed && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 적이 아군에게 주는 유효 출혈 시도 확인
         { // 출혈 저항 판정 시작
             int resistance = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.BleedResistance)); // 출혈 저항의 유효 확률 조회
@@ -234,17 +253,29 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             } // 추가 화상 턴 적용 종료
         } // 젖은 성냥개비의 추가 지속 판정 종료
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType, includeCurrentTurnAttackPower: false); // 한 턴 은총을 제외한 기존 상태 조회
+        if (blessing != null && existingEffect?.IsExpired == true) // 아직 목록에 남아 있는 만료 효과 확인
+        { // 만료된 효과 교체 시작
+            statusEffects.Remove(existingEffect); // 만료 효과 중첩을 복사할 수치에서 제외
+            existingEffect = null; // 복사한 상태를 새 독립 강화로 적용
+        } // 만료된 효과 교체 종료
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
-            statusEffects.Add(new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 신규 상태 이상 추가
+            statusEffects.Add(blessing?.CopyBlessingState() ?? new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 복사한 독립 상태 또는 일반 신규 상태 추가
             StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
-            ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Applied); // 신규 일반 상태 적용 상세 알림
+            ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Applied, preserveDuration: blessing != null); // 신규 상태 적용과 기존 지속 시간 보존 알림
             ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
             return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
         } // 신규 상태 처리 종료
-        existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
+        if (blessing == null) // 일반 상태 갱신과 강화 복사 구분
+        { // 일반 상태 갱신 시작
+            existingEffect.Refresh(value, duration, maximumStacks); // 일반 중첩과 지속 시간 갱신
+        } // 일반 상태 갱신 종료
+        else // 이미 있는 강화에 실제 중첩 복사 확인
+        { // 복사 중첩 합산 시작
+            existingEffect.MergeBlessingCopy(blessing); // 원본을 지키면서 수령자 쪽 중첩과 기존 지속 병합
+        } // 복사 중첩 합산 종료
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
-        ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Stacked); // 중첩 일반 상태 적용 상세 알림
+        ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Stacked, preserveDuration: blessing != null); // 중첩 상태 적용과 기존 지속 시간 보존 알림
         ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
         return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
@@ -266,25 +297,25 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 한 턴 강화 생성 종료
         var result = refreshing ? BattleStatusEffectApplyResult.Stacked : BattleStatusEffectApplyResult.Applied; // 일반 상태 적용과 같은 결과 표기
         StatusEffectsChanged?.Invoke(this); // 실제 공격력 수치와 상태 화면의 변경 알림
-        ReportStatusEffectResolution(source, BattleStatusEffectType.AttackPowerUp, result, currentAllyTurnOnly: true); // 이번 턴 강화의 기존 상태 적용 이벤트 전달
+        ReportStatusEffectResolution(source, BattleStatusEffectType.AttackPowerUp, result, preserveDuration: true); // 이번 턴 강화의 기존 수명을 보존하는 상태 적용 이벤트
         return result; // 실제 한 턴 공격력 적용 결과 반환
     } // 현재 턴 공격력 처리 종료
-    private void ReportStatusEffectResolution(BattleUnitRuntime source, BattleStatusEffectType type, BattleStatusEffectApplyResult result, bool currentAllyTurnOnly = false) // 중첩 알림을 포함한 실제 상태 적용 신호 전달
+    private void ReportStatusEffectResolution(BattleUnitRuntime source, BattleStatusEffectType type, BattleStatusEffectApplyResult result, bool preserveDuration = false) // 중첩과 지속 시간을 포함한 실제 상태 적용 신호 전달
     { // 상태 알림 범위 지정 시작
-        bool previous = reportingCurrentTurnAttackPower; // 겹친 상태 적용 알림의 이전 범위 보관
-        reportingCurrentTurnAttackPower = currentAllyTurnOnly; // 이번 알림의 일반 또는 현재 턴 적용 구분
+        bool previous = preserveReportedStatusDuration; // 겹친 상태 적용 알림의 이전 지속 시간 구분 보관
+        preserveReportedStatusDuration = preserveDuration; // 이번 알림의 신규 지속 예약 여부 기록
         try // 상태 적용 알림 범위 복원 보장
         { // 한 턴 상태 알림 시작
             StatusEffectResolved?.Invoke(source, this, type, result); // 유닛과 공용 전투 상태 적용 신호 전달
         } // 한 턴 상태 알림 종료
         finally // 잠시 바꾼 상태 표시 복원
         { // 상태 알림 범위 복원 시작
-            reportingCurrentTurnAttackPower = previous; // 다른 상태 적용 알림과의 범위 겹침 방지
+            preserveReportedStatusDuration = previous; // 이전 상태 알림의 지속 구분 복원
         } // 상태 알림 범위 복원 종료
     } // 상태 알림 범위 지정 종료
     internal void DeferNewStatusDurationDecrease(BattleStatusEffectType type) // 적용된 일반 상태의 첫 지속 감소 생략
     { // 첫 지속 감소 확인 시작
-        if (type != BattleStatusEffectType.AttackPowerUp || !reportingCurrentTurnAttackPower) // 이번 아군 턴에 끝나는 은총 상태 제외
+        if (!preserveReportedStatusDuration) // 원래 수명을 가진 복사 강화와 은총을 제외한 새 상태 확인
         { // 일반 상태 지속 보호 시작
             FindStatusEffect(type, includeCurrentTurnAttackPower: false)?.SkipNextDurationDecrease(); // 같은 종류의 장기 강화만 첫 지속 감소 생략
         } // 일반 상태 지속 보호 종료
@@ -576,7 +607,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance); // 취약을 적용한 원본 피해에 방어력과 저항력 반영
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
-        int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack) : 0; // 의도와 일회성 보호를 포함한 적 피해 감소량
+        int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
+            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack) // 기존 방패 보호와 성역을 한 번에 적용
+            : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage); // 일반 및 지속 피해의 성역 경감량
         int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction()); // 기존 비율 경감 뒤 저체력 고정 감소와 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
         { // 피해 무효 예고 시작
@@ -593,6 +626,18 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return BattleSupplyRelics.Find(RelicEffectType.LowHealthDamageReduction)?.EffectValue ?? 0; // 실제 보유한 목걸이의 고정 감소량
     } // 빛 없는 목걸이 조건 확인 종료
 
+    private int SanctuaryReductionPercent => Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.SanctuaryWard)); // 모든 피해를 경감하는 성역의 유효 비율
+
+    private int ApplySanctuaryDamageReduction(int damage) // 다른 비율 경감이 없는 피해의 성역 적용
+    { // 성역 직접 비율 계산 시작
+        return (int)((long)damage * (100 - SanctuaryReductionPercent) / 100); // 정수 범위와 한 번의 내림을 적용한 남은 피해
+    } // 성역 직접 비율 계산 종료
+
+    internal int GetUnblockedDamageAfterReduction(int damage) // 실제 분담과 출혈 및 분담 예고의 공통 경감
+    { // 방어도 없는 피해 경감 시작
+        return Math.Max(0, ApplySanctuaryDamageReduction(damage) - GetLowHealthDamageReduction()); // 성역 비율 뒤 저체력 고정 감소와 영 하한 적용
+    } // 방어도 없는 피해 경감 종료
+
     private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack) // 방패 상태와 광역 의도의 직접 피해 경감 계산
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
@@ -603,7 +648,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int fortify = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.FortifyResistance)) : 0; // 요새화의 별도 마법 직접 피해 감소 비율
         int eternalShield = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.EternalShield)); // 영원의 방패 직접 피해 경감률
         int eternalResistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.EternalShieldResistance)) : 0; // 영원의 방패 별도 마법 직접 피해 저항률
-        int adjusted = (int)((decimal)damage * (100 - resistance) * (100 - protection) * (100 - interception) * (100 - focus) * (100 - spread) * (100 - fortify) * (100 - eternalShield) * (100 - eternalResistance) / 10_000_000_000_000_000m); // 모든 경감 비율의 정확한 곱과 마지막 한 번의 내림
+        int adjusted = (int)((decimal)damage * (100 - resistance) * (100 - protection) * (100 - interception) // 기존 마법 저항과 수호 및 위험 차단 비율
+            * (100 - focus) * (100 - spread) * (100 - fortify) * (100 - eternalShield) * (100 - eternalResistance) // 집중·분산과 요새화 및 영원의 방패 비율
+            * (100 - SanctuaryReductionPercent) / 1_000_000_000_000_000_000m); // 성역을 포함한 전체 비율 곱의 마지막 한 번 내림
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
@@ -730,7 +777,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 분담 피해 없음 처리 시작
             return 0; // 적용된 체력 피해 없음
         } // 분담 피해 없음 처리 종료
-        int reduced = Math.Max(0, amount - GetLowHealthDamageReduction()); // 방어도를 거치지 않는 피해에도 고정 감소 적용
+        int reduced = GetUnblockedDamageAfterReduction(amount); // 성역과 고정 감소가 반영된 실제 무방어 피해
         if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
         { // 무방어 피해 무효 시작
             return 0; // 체력 소모와 불굴 발동을 막은 피해 반환

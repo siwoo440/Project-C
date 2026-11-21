@@ -199,6 +199,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 22c6131f536d54d8bd27a8e3a2dfc587, type: 2}
   - {fileID: 11400000, guid: ff14378fa60c5efb970d3d1ef28e1f33, type: 2}
   - {fileID: 11400000, guid: 95bce8319946522884e122454f2229d9, type: 2}
+  - {fileID: 11400000, guid: 72ca716e58835d1888946981c809c91a, type: 2}
+  - {fileID: 11400000, guid: 2128b30826cf5ac98b43022d0a66b3cf, type: 2}
+  - {fileID: 11400000, guid: e944d5a87a915aa3b0b6b051ba34d8d6, type: 2}
+  - {fileID: 11400000, guid: 0dd9a71bc0fd55d2ad10fb70af34dd88, type: 2}
+  - {fileID: 11400000, guid: 3a2ba11ed68a5220adba08bd8395994f, type: 2}
+  - {fileID: 11400000, guid: 4c0969d101f7502f9bd8d8f79b3c4f6e, type: 2}
+  - {fileID: 11400000, guid: 8d68c131b5bf5078b0821d327886b16c, type: 2}
+  - {fileID: 11400000, guid: f56039445e9a5c2d9a0e97bb77a83376, type: 2}
   relics:
   - {fileID: 11400000, guid: cec1f3a823e63e8448c2f157b7c29f5f, type: 2}
   - {fileID: 11400000, guid: 79860748c75407742b43320a0dce0cee, type: 2}

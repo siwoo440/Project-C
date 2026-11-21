@@ -7,5 +7,6 @@ public enum CardTargetType
     AllEnemies, // 전체 적 대상
     FallenAlly, // 현재 전투에서 쓰러진 아군 한 명 대상
     LowestHealthAlly, // 현재 체력이 가장 낮은 생존 아군 자동 선택
-    EnemyAndAlly // 적과 아군을 차례로 하나씩 지정
+    EnemyAndAlly, // 적과 아군을 차례로 하나씩 지정
+    BlessingSourceAndAlly // 강화 제공자와 받을 다른 아군을 차례로 지정
 }

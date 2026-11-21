@@ -91,6 +91,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return "전투불능 아군 1명"; // 부활 대상 문구 반환
             case CardTargetType.EnemyAndAlly: // 적과 아군의 순차 지정
                 return "적 1명 → 아군 1명"; // 서로 다른 두 대상의 선택 순서 표시
+            case CardTargetType.BlessingSourceAndAlly: // 서로 다른 아군의 순차 지정
+                return "강화 보유 아군 → 다른 아군"; // 축복의 원본과 수령자 선택 순서 표시
             case CardTargetType.AllAllies: // 전체 아군 대상
                 return "모든 아군"; // 전체 아군 문구 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상
@@ -103,6 +105,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.CopyAllyBlessing) // 축복 이전 카드 확인
+        { // 강화 복사 이름 시작
+            return "강화 복사"; // 독립 지원 효과 문구 반환
+        } // 강화 복사 이름 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
         { // 손패 정리 이름 시작
             return "드로우 후 손패 정리"; // 달 카드 효과 이름 반환
@@ -159,6 +165,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.CupRule == CupCardRule.BlessingTransfer) // 축복 이전의 두 아군 효과 확인
+        { // 축복 이전 상세 시작
+            return "먼저 받은 복사 가능한 강화 1개를 다른 아군에게 복사 · 남은 턴과 중첩 유지"; // 원본의 복사 순서와 지속 및 중첩 정책 표시
+        } // 축복 이전 상세 종료
         if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 적 피해와 아군 회복을 나눈 복합 카드 확인
         { // 두 대상의 효과 표시 시작
             return $"적 {GetEffectLabel(cardInstance)} {cardInstance.EffectValue} · 아군 체력 {cardInstance.SourceData.SecondaryEffectValue} 회복"; // 카드별 현재 피해와 원본 회복량 안내
@@ -262,6 +272,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return $"공포 해제 · 정신력 +{cardInstance.MentalChangeValue}"; // 진정의 두 독립 효과 표시
             case CupCardRule.HolyWater: // 성수의 조건부 언데드 피해 안내
                 return $"마법 피해 {cardInstance.EffectValue} · 언데드에게 추가 +{cardInstance.SourceData.SecondaryEffectValue}"; // 일반과 언데드 대상의 피해 구분 표시
+            case CupCardRule.SacrificialHealing: // 소유자 체력 비용을 가진 희생 치유 안내
+                return $"자신 체력 {cardInstance.SourceData.SecondaryEffectValue} 소모 · 아군 체력 {cardInstance.EffectValue} 회복"; // 방어도와 별개인 생존 체력 비용과 대상 회복 표시
+            case CupCardRule.WaterOfLife: // 직접 회복과 예약 회복을 가진 생명수 안내
+                return $"체력 {cardInstance.EffectValue} 회복 · 다음 아군 턴 시작 체력 {cardInstance.SourceData.SecondaryEffectValue} 회복"; // 즉시와 다음 플레이어 턴의 서로 다른 회복량 표시
             case CupCardRule.PurifyingTouch: // 약화 제거와 마법 저항 안내
                 return $"디버프 1개 해제 · 직접 마법 피해 {cardInstance.SourceData.SecondaryEffectValue}% 감소 ({cardInstance.StatusDuration} 적 턴)"; // 정화의 손길의 의미와 실제 지속 시간 표시
         } // 성배 지원 설명 분기 종료
