@@ -7,6 +7,14 @@ public enum WorldTutorialKind // 거점과 탐사 안내 종류
 } // 안내 종류 종료
 public sealed class WorldTutorialProgress // 거점과 탐사 안내 진행 상태
 { // 안내 진행 상태 시작
+    private static readonly (string Title, string Text, string Example)[] LobbyPages = // 실제 거점 안내의 제목과 설명 및 예시
+    { // 거점 안내 목록 시작
+        ("거점과 캐릭터", "이곳에서 캐릭터 상태를 확인하고 다음 탐사를 준비합니다. 캐릭터 버튼에서 보유 캐릭터를 볼 수 있습니다.", "Lobby"), // 기존 거점 1번째 안내
+        ("탐사 파티 편성", "탐사를 누르고 구역을 선택한 뒤 파티를 편성합니다. 캐릭터를 빼도 보유 전용 카드와 강화는 사라지지 않습니다.", "Formation"), // 기존 거점 2번째 안내
+        ("치료와 부활 대기", "치료 대기는 인정된 탐사 1회, 부활 대기는 2회입니다. 전투 턴 수와는 다릅니다.", "Lobby"), // 기존 거점 3번째 안내
+        ("설비 강화", "탐사에서 얻은 자원으로 설비를 강화합니다. 설비별 현재 효과와 다음 효과, 필요 자원을 확인하세요.", "Facility"), // 기존 거점 4번째 안내
+        ("다음 탐사 준비", "캐릭터 상태와 설비를 확인한 뒤 탐사를 눌러 구역을 선택하세요.", "Lobby") // 기존 거점 5번째 안내
+    }; // 거점 안내 목록 종료
     private static readonly (string Title, string Text, string Example)[] ExplorationPages = // 탐사 순서별 제목과 안내 및 화면 이름
     { // 탐사 안내 목록 시작
         ("탐사 이동", "WASD 또는 방향키로 바닥을 따라 이동하세요. 한 걸음 움직이면 다음 안내가 열립니다.", "Exploration"), // 실제 이동과 지도 안내
@@ -15,14 +23,15 @@ public sealed class WorldTutorialProgress // 거점과 탐사 안내 진행 상�
         ("휴식", "휴식 방에서는 파티의 체력과 정신력을 회복하고 카드를 강화할 수 있습니다. 화면에 표시된 휴식 위험도를 확인하세요.", "Rest"), // 휴식과 강화 안내
         ("상점", "상점 방에서 상품과 가격을 확인하세요. 공용 카드를 살 때는 받을 파티원을 고릅니다. 유물 판매 목록에서는 보유 유물의 판매 가격을 볼 수 있습니다.", "Shop") // 상점 거래 안내
     }; // 탐사 안내 목록 종료
-    internal (string Title, string Text, string Example) ExplorationPage => ExplorationPages[StepIndex]; // 현재 탐사 안내 내용 조회
     private readonly ISettingsStore store; // 기기별 안내 완료 저장소
     private readonly string completionKey; // 안내별 완료 기록 이름
     private Vector2 startingPosition; // 탐사 안내 시작 위치
     private bool movementObserved; // 실제 이동 확인 여부
     public WorldTutorialKind Kind { get; } // 현재 안내 종류 조회
     public int StepIndex { get; private set; } // 현재 안내 단계 번호
-    public int StepCount => Kind == WorldTutorialKind.Lobby ? 5 : ExplorationPages.Length; // 안내 종류별 단계 수
+    private (string Title, string Text, string Example)[] Pages => Kind == WorldTutorialKind.Lobby ? LobbyPages : ExplorationPages; // 현재 안내에서 보여 줄 실제 목록
+    internal (string Title, string Text, string Example) CurrentPage => Pages[StepIndex]; // 표시할 실제 안내 한 장
+    public int StepCount => Pages.Length; // 실제 내용과 같은 안내 장수
     public bool IsActive { get; private set; } // 안내 표시 여부
     public bool CanAdvance => IsActive && (Kind != WorldTutorialKind.Exploration || StepIndex != 0 || movementObserved); // 실제 이동을 반영한 다음 단계 허용 여부
     public bool CanGoBack => IsActive && StepIndex > 0; // 이전 안내 페이지 이동 가능 여부

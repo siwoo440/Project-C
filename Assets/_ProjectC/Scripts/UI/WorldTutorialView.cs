@@ -1,5 +1,4 @@
 using System; // 화면 대상과 위치 조회 사용
-using TMPro; // 한글 안내 문구 사용
 using UnityEngine; // 안내 화면과 위치 사용
 using UnityEngine.UI; // 안내 버튼과 강조 영역 사용
 public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내 화면
@@ -10,9 +9,6 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
     private Func<Vector2> getPosition; // 현재 탐사 위치 조회
     private Func<int, RectTransform> findTarget; // 단계별 강조 화면 조회
     private RectTransform guide; // 안내 전체 화면 영역
-    private TMP_Text title; // 현재 안내 제목
-    private TMP_Text description; // 현재 안내 내용
-    private Button nextButton; // 다음 안내 버튼
     private Button replayButton; // 탐사 안내 다시 보기 버튼
     private TutorialPanelLayout panelLayout; // 예시 이미지와 설명 공통 배치
     private ExplorationPlayerController trackedPlayer; // 자동 위치 변경을 감시할 탐사 플레이어
@@ -74,9 +70,6 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
             image.raycastTarget = false; // 강조 테두리 입력 통과
         } // 테두리 생성 종료
         panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip(), () => progress.GoBack()); // 예시와 페이지 이동 안내 배치 생성
-        title = panelLayout.Title; // 오른쪽 안내 제목 연결
-        description = panelLayout.Description; // 오른쪽 안내 설명 연결
-        nextButton = panelLayout.NextButton; // 오른쪽 확인 버튼 연결
     } // 안내 구성 종료
     private void Refresh() // 현재 안내 내용과 버튼 갱신
     { // 안내 내용 갱신 시작
@@ -90,49 +83,13 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
         { // 안내 없음 처리 시작
             return; // 안내 문구 갱신 중단
         } // 안내 없음 처리 종료
-        if (progress.Kind == WorldTutorialKind.Lobby) // 거점 안내 종류 확인
-        { // 거점 안내 내용 설정 시작
-            SetLobbyText(progress.StepIndex); // 거점 단계별 문구 표시
-            panelLayout.SetExample(progress.StepIndex == 1 ? "Formation" : progress.StepIndex == 3 ? "Facility" : "Lobby"); // 단계에 맞는 실제 거점 화면 예시 표시
-        } // 거점 안내 내용 설정 종료
-        else // 탐사 안내 종류 확인
-        { // 탐사 안내 내용 설정 시작
-            var page = progress.ExplorationPage; // 현재 탐사 안내 한 장 조회
-            title.text = page.Title; // 방 종류와 이동 안내 제목 표시
-            description.text = page.Text; // 현재 화면에서 가능한 행동 안내
-            panelLayout.SetExample(page.Example); // 해당 방의 실제 화면 표시
-        } // 탐사 안내 내용 설정 종료
-        nextButton.interactable = progress.CanAdvance; // 실제 이동을 반영한 다음 버튼 설정
-        panelLayout.SetPage(progress.StepIndex + 1, progress.StepCount, progress.CanGoBack, progress.CanAdvance); // 현재 안내 페이지와 이동 버튼 갱신
-        nextButton.image.raycastTarget = progress.CanAdvance; // 이동 대기 중 비활성 확인 버튼의 화면 입력 통과
+        var page = progress.CurrentPage; // 전체 장수에 포함된 실제 안내 한 장
+        panelLayout.Title.text = page.Title; // 현재 장의 실제 제목
+        panelLayout.Description.text = page.Text; // 거점이나 탐사에서 사용할 안내 문구
+        panelLayout.SetExample(page.Example); // 현재 장에 연결된 기존 게임 화면
+        panelLayout.SetPage(progress.StepIndex + 1, progress.StepCount, progress.CanGoBack, progress.CanAdvance); // 실제 페이지 번호와 버튼 상태
         UpdateHighlight(); // 현재 화면 대상 강조 갱신
     } // 안내 내용 갱신 종료
-    private void SetLobbyText(int step) // 거점 단계별 안내 문구 설정
-    { // 거점 문구 설정 시작
-        switch (step) // 거점 안내 단계 분기
-        { // 거점 단계 분기 시작
-            case 0: // 캐릭터 관리 안내
-                title.text = "거점과 캐릭터"; // 첫 거점 안내 제목 설정
-                description.text = "이곳에서 캐릭터 상태를 확인하고 다음 탐사를 준비합니다. 캐릭터 버튼에서 보유 캐릭터를 볼 수 있습니다."; // 캐릭터 안내 설명 설정
-                break; // 캐릭터 안내 종료
-            case 1: // 파티 편성 안내
-                title.text = "탐사 파티 편성"; // 편성 안내 제목 설정
-                description.text = "탐사를 누르고 구역을 선택한 뒤 파티를 편성합니다. 캐릭터를 빼도 보유 전용 카드와 강화는 사라지지 않습니다."; // 실제 편성 경로 설명 설정
-                break; // 편성 안내 종료
-            case 2: // 회복 대기 안내
-                title.text = "치료와 부활 대기"; // 회복 안내 제목 설정
-                description.text = "치료 대기는 인정된 탐사 1회, 부활 대기는 2회입니다. 전투 턴 수와는 다릅니다."; // 실제 회복 기준 설명 설정
-                break; // 회복 안내 종료
-            case 3: // 설비 강화 안내
-                title.text = "설비 강화"; // 설비 안내 제목 설정
-                description.text = "탐사에서 얻은 자원으로 설비를 강화합니다. 설비별 현재 효과와 다음 효과, 필요 자원을 확인하세요."; // 설비 강화 설명 설정
-                break; // 설비 안내 종료
-            default: // 탐사 출발 안내
-                title.text = "다음 탐사 준비"; // 탐사 안내 제목 설정
-                description.text = "캐릭터 상태와 설비를 확인한 뒤 탐사를 눌러 구역을 선택하세요."; // 탐사 출발 설명 설정
-                break; // 탐사 출발 안내 종료
-        } // 거점 단계 분기 종료
-    } // 거점 문구 설정 종료
     private void LateUpdate() // 실제 탐사 이동과 화면 위치 감시
     { // 늦은 안내 갱신 시작
         if (progress != null && progress.IsActive) // 진행 중인 안내 확인

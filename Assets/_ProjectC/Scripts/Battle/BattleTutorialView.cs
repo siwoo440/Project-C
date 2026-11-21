@@ -1,5 +1,4 @@
 using System; // 안내 대상 조회 기능 사용
-using TMPro; // 한글 안내 문구 사용
 using UnityEngine; // 전투 안내 화면 구성 사용
 using UnityEngine.EventSystems; // 안내와 전투 간 입력 초점 전환
 using UnityEngine.UI; // 안내 버튼과 강조 이미지 사용
@@ -15,9 +14,6 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
     private bool folded; // 예시를 접고 실제 전투를 보는 상태
     private bool awaitingCardInput; // 카드 연출과 후속 선택 완료 대기
     private Button battleEndTurn; // 실제 전투 입력 복귀 확인용 버튼
-    private TMP_Text confirmLabel; // 단계별 확인 버튼 문구
-    private TMP_Text title; // 단계 제목 문구
-    private TMP_Text description; // 단계별 설명 문구
     private Button nextButton; // 다음 설명 버튼
     private Button replayButton; // 안내 다시 보기 버튼
     private TutorialPanelLayout panelLayout; // 예시 이미지와 설명 공통 배치
@@ -58,10 +54,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
         } // 주변 화면 구성 종료
         panelLayout = TutorialPanelLayout.Create(guide, ConfirmPage, () => progress.Skip(), () => progress.GoBack(), true); // 예시와 페이지 이동 안내 배치 생성
         panelLayout.SetExample("Battle"); // 실제 전투 화면 예시 표시
-        title = panelLayout.Title; // 오른쪽 안내 제목 연결
-        description = panelLayout.Description; // 오른쪽 안내 설명 연결
         nextButton = panelLayout.NextButton; // 오른쪽 확인 버튼 연결
-        confirmLabel = nextButton.GetComponentInChildren<TMP_Text>(); // 확인과 실습 전환 문구 연결
     } // 안내 화면 구성 종료
     private RectTransform CreateOverlayRect(string name, Color color) // 입력을 막지 않는 강조 화면 생성
     { // 강조 화면 생성 시작
@@ -94,7 +87,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
         { // 다음 안내 표시 시작
             progress.Advance(); // 기존 안내 순서로 진행
         } // 다음 안내 표시 종료
-        else // 실제 카드와 턴 또는 관찰 대기
+        else if (progress.Step != BattleTutorialStep.ObserveEnemy) // 다음 버튼으로 실제 카드 또는 턴 종료 실습 열기
         { // 예시 접기 시작
             folded = true; // 현재 단계는 유지하고 실제 전투 노출
             Refresh(); // 게임의 실제 화면과 입력 복구
@@ -116,65 +109,29 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
         bool open = active && !folded && !awaitingCardInput; // 현재 설명 화면 표시 여부
         guide.gameObject.SetActive(open); // 설명과 실습 화면 교대
         var events = EventSystem.current; // 현재 실제 전투 입력 시스템 조회
-        if (open && events != null && (events.currentSelectedGameObject == null || !events.currentSelectedGameObject.transform.IsChildOf(guide))) // 안내 밖에 남은 키보드 선택 확인
-        { // 안내 입력 복귀 시작
-            events.SetSelectedGameObject(nextButton.gameObject); // 가려진 전투 버튼의 확인 입력 차단
-        } // 안내 입력 복귀 종료
+        var selected = events?.currentSelectedGameObject; // 현재 키보드 또는 패드의 선택 항목
+        var selectedInGuide = selected != null && selected.transform.IsChildOf(guide); // 현재 선택이 안내 영역에 속하는지 확인
+        if (!open && selectedInGuide) // 안내를 닫았거나 접었을 때 남은 입력 확인
+        { // 닫힌 창의 선택 해제 시작
+            events.SetSelectedGameObject(null); // 숨은 안내 버튼의 확인 입력 제거
+        } // 닫힌 창의 선택 해제 종료
         replayButton.gameObject.SetActive(!active || folded && !awaitingCardInput); // 실습 중 현재 페이지 다시 보기 허용
         if (!active) // 표시할 안내 확인
         { // 안내 없음 처리 시작
             return; // 화면 내용 갱신 중단
         } // 안내 없음 처리 종료
-        switch (progress.Step) // 현재 안내 단계 분기
-        { // 단계별 문구 설정 시작
-            case BattleTutorialStep.Overview: // 전투 화면 안내
-                title.text = "전투 화면"; // 첫 안내 제목 설정
-                description.text = "카드를 사용해 적을 공격하거나 아군을 지원합니다. 전투는 아군과 적이 번갈아 진행합니다."; // 전투 기본 설명 설정
-                break; // 첫 안내 설정 종료
-            case BattleTutorialStep.PlayCard: // 실제 카드 사용 대기
-                title.text = "카드 사용"; // 카드 안내 제목 설정
-                description.text = "손패의 카드를 적이나 아군에게 끌어다 놓으세요. 전체 대상 카드는 같은 진영의 한 명에게 놓으면 모두에게 적용됩니다."; // 실제 카드 조작 설명 설정
-                break; // 카드 안내 설정 종료
-            case BattleTutorialStep.ActionPoints: // 행동력 안내
-                title.text = "행동력 AP"; // 행동력 안내 제목 설정
-                description.text = "카드를 사용할 때 AP가 소모됩니다. 남은 AP는 다음 턴으로 이월되지 않습니다."; // 행동력 설명 설정
-                break; // 행동력 안내 설정 종료
-            case BattleTutorialStep.Mental: // 정신력 안내
-                title.text = "정신력"; // 정신력 안내 제목 설정
-                description.text = "행동과 전투 상황에 따라 정신력이 변합니다. 100은 각성, 0은 붕괴에 영향을 줍니다."; // 정신력 설명 설정
-                break; // 정신력 안내 설정 종료
-            case BattleTutorialStep.EnemyIntent: // 적 행동 예고 안내
-                title.text = "적 행동 예고"; // 적 예고 안내 제목 설정
-                description.text = "적의 예고를 확인해 다음 행동에 대비하세요. 적을 가리키면 상세 내용을 볼 수 있습니다."; // 행동 예고 설명 설정
-                break; // 적 예고 안내 설정 종료
-            case BattleTutorialStep.EndTurn: // 턴 종료 대기
-                title.text = "턴 종료"; // 턴 종료 안내 제목 설정
-                description.text = "행동을 마쳤다면 턴 종료 버튼을 누르세요. 적이 차례대로 행동합니다."; // 턴 종료 설명 설정
-                break; // 턴 종료 안내 설정 종료
-            case BattleTutorialStep.ObserveEnemy: // 적 행동 관찰 안내
-                title.text = "적 행동 관찰"; // 적 행동 안내 제목 설정
-                description.text = progress.CanAdvance ? "적 행동이 끝났습니다. 다음을 눌러 안내를 마치세요." : "적의 공격과 상태 변화를 확인하세요. 아군 턴이 시작되면 안내를 마칠 수 있습니다."; // 적 행동 진행 상태별 설명 설정
-                break; // 적 행동 안내 설정 종료
-        } // 단계별 문구 설정 종료
-        bool practice = !progress.CanAdvance; // 실제 입력이나 적 행동 관찰을 기다리는 단계 확인
-        confirmLabel.text = practice ? PracticeLabel(progress.Step) : "확인"; // 실습 진입과 다음 설명의 버튼 문구 구분
-        nextButton.interactable = true; // 예시 확인 후 실제 입력으로 이동 허용
-        panelLayout.SetPage(progress.PageNumber, progress.PageCount, progress.CanGoBack, progress.CanAdvance); // 현재 안내 페이지와 이동 버튼 갱신
-        nextButton.image.raycastTarget = true; // 안내 확인 버튼이 뒤쪽 전투 입력보다 먼저 수신
+        var page = progress.CurrentPage; // 현재 번호가 가리키는 실제 전투 설명
+        panelLayout.Title.text = page.Title; // 실제 전투 페이지 제목 표시
+        bool final = progress.PageNumber == progress.PageCount; // 지금 표시할 안내 마지막 장 여부
+        panelLayout.Description.text = final && progress.CanAdvance ? "적 행동이 끝났습니다. 완료를 눌러 안내를 마치세요." : page.Description; // 실습 결과와 실제 완료 문구 연결
+        panelLayout.SetPage(progress.PageNumber, progress.PageCount, progress.CanGoBack, !final || progress.CanAdvance); // 실습을 여는 다음과 마지막 완료의 입력 가능 상태
+        if (open && events != null && !selectedInGuide) // 열린 안내 바깥에 남은 키보드 선택 확인
+        { // 안내 입력 선택 시작
+            var focus = nextButton.interactable ? nextButton : panelLayout.CloseButton; // 진행 가능 상태에 맞는 안내 내부 입력
+            events.SetSelectedGameObject(focus.gameObject); // 가려진 전투 버튼의 확인 입력 방지
+        } // 안내 입력 선택 종료
         UpdateHighlight(); // 현재 대상 화면 강조 갱신
     } // 안내 화면 갱신 종료
-    private static string PracticeLabel(BattleTutorialStep step) // 직접 조작해야 하는 단계의 버튼 문구
-    { // 실습 문구 선택 시작
-        switch (step) // 실제 행동 종류 구분
-        { // 단계 선택 시작
-            case BattleTutorialStep.PlayCard: // 카드 사용 대기
-                return "카드 실습"; // 실제 손패 열기 문구
-            case BattleTutorialStep.EndTurn: // 턴 종료 대기
-                return "전투 보기"; // 전투 화면의 턴 종료 버튼으로 이동
-            default: // 적 행동 관찰
-                return "전투 보기"; // 적 행동 관찰 문구
-        } // 단계 선택 종료
-    } // 실습 문구 선택 종료
     private void LateUpdate() // 화면 크기와 대상 위치 반영
     { // 늦은 화면 갱신 시작
         if (awaitingCardInput && (battleEndTurn == null || battleEndTurn.interactable)) // 실제 카드 연출과 추가 선택 완료 확인

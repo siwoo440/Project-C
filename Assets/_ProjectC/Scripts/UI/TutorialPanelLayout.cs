@@ -6,14 +6,15 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
 { // 공통 안내 배치 시작
     public TMP_Text Title { get; private set; } // 오른쪽 안내 제목 조회
     public TMP_Text Description { get; private set; } // 오른쪽 안내 설명 조회
-    public Button NextButton { get; private set; } // 오른쪽 확인 버튼 조회
+    public Button NextButton { get; private set; } // 다음 또는 완료 버튼 조회
+    public Button CloseButton { get; private set; } // 즉시 닫기 버튼 조회
     private static Sprite pageButtonSprite; // 재사용할 페이지 버튼 이미지
     private TMP_Text pageLabel; // 현재 페이지 안내 문구
-    private Button previousPage; // 이전 페이지 버튼
-    private Button nextPage; // 다음 페이지 버튼
+    private Button previousPage; // 하단 이전 버튼
+    private TMP_Text nextLabel; // 다음과 완료를 전환할 버튼 문구
     private RawImage exampleImage; // 왼쪽 실제 화면 예시 이미지
     private TMP_Text exampleCaption; // 예시 이미지 상태 문구
-    public static TutorialPanelLayout Create(RectTransform guide, Action next, Action skip, Action previous, bool modal = false) // 공통 안내 화면 생성
+    public static TutorialPanelLayout Create(RectTransform guide, Action next, Action close, Action previous, bool modal = false) // 공통 안내 화면 생성
     { // 공통 안내 화면 생성 시작
         TutorialPanelLayout layout = new TutorialPanelLayout(); // 새 공통 안내 배치 생성
         RectTransform panel = PreparationUi.CreatePanel("Panel", guide, new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.84f)); // 화면 중앙의 넓은 안내 영역 생성
@@ -22,10 +23,6 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         panelImage.raycastTarget = modal; // 전투 안내에서 뒤쪽 버튼 입력 차단
         layout.pageLabel = PreparationUi.CreateText("PageLabel", panel, string.Empty, 25f); // 현재 페이지 번호 생성
         PreparationUi.Place(layout.pageLabel.rectTransform, new Vector2(0.5f, 0.95f), Vector2.zero, new Vector2(180f, 48f)); // 안내 상단 중앙 페이지 표시
-        layout.previousPage = PreparationUi.CreateButton("PreviousPage", panel, "<", new Vector2(0.5f, 0.95f), new Vector2(-145f, 0f), new Vector2(84f, 46f), previous); // 페이지 왼쪽 이전 버튼 생성
-        layout.nextPage = PreparationUi.CreateButton("NextPage", panel, ">", new Vector2(0.5f, 0.95f), new Vector2(145f, 0f), new Vector2(84f, 46f), next); // 페이지 오른쪽 다음 버튼 생성
-        ApplyPageButtonArt(layout.previousPage); // 제작한 이전 버튼 이미지 적용
-        ApplyPageButtonArt(layout.nextPage); // 제작한 다음 버튼 이미지 적용
         RectTransform preview = PreparationUi.CreatePanel("Preview", panel, new Vector2(0.01f, 0.20f), new Vector2(0.48f, 0.83f)); // 왼쪽 예시 이미지 영역 생성
         Image previewImage = preview.GetComponent<Image>(); // 예시 영역 배경 조회
         previewImage.color = new Color(0.015f, 0.025f, 0.03f, 0.98f); // 어두운 예시 영역 배경 설정
@@ -48,15 +45,15 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         PreparationUi.Stretch(layout.Description.rectTransform, new Vector2(0.53f, 0.29f), new Vector2(0.98f, 0.72f)); // 오른쪽 설명 영역 설정
         layout.Description.alignment = TextAlignmentOptions.TopLeft; // 설명 왼쪽 위 정렬
         layout.Description.textWrappingMode = TextWrappingModes.Normal; // 긴 설명 줄바꿈 설정
-        layout.NextButton = PreparationUi.CreateButton("NextButton", panel, "확인", new Vector2(0.79f, 0.12f), Vector2.zero, new Vector2(150f, 55f), next); // 오른쪽 아래 확인 버튼 생성
-        var skipButton = PreparationUi.CreateButton("SkipButton", panel, "건너뛰기", new Vector2(0.91f, 0.12f), Vector2.zero, new Vector2(150f, 55f), skip); // 확인 오른쪽에 건너뛰기 버튼 생성
-        if (modal) // 읽는 동안 전투 버튼으로 키보드 선택이 빠지는 상황 차단
-        { // 안내 버튼 이동 경로 연결 시작
-            ConnectNavigation(layout.previousPage, null, layout.nextPage, null, layout.NextButton); // 이전 페이지에서 확인 또는 다음 페이지로 이동
-            ConnectNavigation(layout.nextPage, layout.previousPage, null, null, layout.NextButton); // 다음 페이지에서 확인 또는 이전 페이지로 이동
-            ConnectNavigation(layout.NextButton, layout.previousPage, skipButton, layout.nextPage, null); // 확인에서 페이지와 건너뛰기로 이동
-            ConnectNavigation(skipButton, layout.NextButton, null, layout.nextPage, null); // 건너뛰기에서 확인과 페이지로 이동
-        } // 안내 버튼 이동 경로 연결 종료
+        layout.previousPage = PreparationUi.CreateButton("PreviousPage", panel, "이전", new Vector2(0.79f, 0.12f), Vector2.zero, new Vector2(150f, 55f), previous); // 하단 왼쪽 이전 버튼
+        layout.NextButton = PreparationUi.CreateButton("NextButton", panel, "다음", new Vector2(0.91f, 0.12f), Vector2.zero, new Vector2(150f, 55f), next); // 하단 오른쪽 다음 또는 완료 버튼
+        layout.CloseButton = PreparationUi.CreateButton("SkipButton", panel, "X", Vector2.one, new Vector2(-34f, -31f), new Vector2(48f, 42f), close); // 우측 상단 즉시 닫기 버튼
+        layout.nextLabel = layout.NextButton.GetComponentInChildren<TMP_Text>(); // 현재 장에 맞춰 표시할 문구
+        ApplyPageButtonArt(layout.previousPage); // 제작한 이전 버튼 이미지 적용
+        ApplyPageButtonArt(layout.NextButton); // 제작한 다음과 완료 버튼 이미지 적용
+        ConnectNavigation(layout.previousPage, null, layout.NextButton, layout.CloseButton, null); // 이전 버튼에서 다음과 닫기로 이동
+        ConnectNavigation(layout.NextButton, layout.previousPage, null, layout.CloseButton, null); // 다음 버튼에서 이전과 닫기로 이동
+        ConnectNavigation(layout.CloseButton, null, null, null, layout.NextButton); // 닫기 버튼에서 하단 다음으로 이동
         return layout; // 완성한 안내 배치 반환
     } // 공통 안내 화면 생성 종료
     private static void ConnectNavigation(Button button, Button left, Button right, Button up, Button down) // 화면 안의 방향키 이동 대상 지정
@@ -69,13 +66,14 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         navigation.selectOnDown = down; // 아래쪽 안내 버튼 연결
         button.navigation = navigation; // 안내 내부 이동 경로 반영
     } // 키보드 이동 연결 종료
-    public void SetPage(int current, int total, bool canGoBack, bool canAdvance) // 현재 안내 페이지와 버튼 상태 표시
+    public void SetPage(int current, int total, bool canGoBack, bool canContinue) // 현재 안내 페이지와 버튼 상태 표시
     { // 페이지 표시 갱신 시작
         pageLabel.text = "페이지 " + current + " / " + total; // 현재 페이지와 전체 페이지 표시
         previousPage.interactable = canGoBack; // 이전 페이지 이동 가능 여부 설정
-        nextPage.interactable = canAdvance && current < total; // 마지막 페이지와 진행 조건 확인
+        nextLabel.text = current == total ? "완료" : "다음"; // 마지막 장의 완료 문구 선택
+        NextButton.interactable = canContinue; // 현재 안내의 다음 입력 허용 상태
         previousPage.image.raycastTarget = previousPage.interactable; // 비활성 이전 버튼의 게임 입력 통과
-        nextPage.image.raycastTarget = nextPage.interactable; // 비활성 다음 버튼의 게임 입력 통과
+        NextButton.image.raycastTarget = canContinue; // 비활성 다음 버튼의 게임 입력 통과
     } // 페이지 표시 갱신 종료
     private static void ApplyPageButtonArt(Button button) // 제작한 페이지 이동 버튼 이미지 적용
     { // 페이지 버튼 이미지 적용 시작

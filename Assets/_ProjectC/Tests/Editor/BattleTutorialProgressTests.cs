@@ -34,11 +34,17 @@ public sealed class BattleTutorialProgressTests // 전투 안내 진행 규칙 �
         tutorial.OnCardUsed(); // 첫 안내 중 실제 카드 사용 기록
         tutorial.OnPhaseStarted(BattleTurnPhase.EnemyTurn); // 첫 안내 중 적 턴 시작 기록
         tutorial.OnPhaseStarted(BattleTurnPhase.PlayerTurn); // 첫 안내 중 다음 아군 턴 기록
-        tutorial.Advance(); // 카드 사용 단계를 지나 행동력 안내 이동
+        tutorial.Advance(); // 이미 수행한 카드 사용 안내도 순서대로 표시
+        Assert.AreEqual(BattleTutorialStep.PlayCard, tutorial.Step); // 페이지 번호만 세고 설명을 건너뛰지 않는지 확인
+        Assert.IsTrue(tutorial.CanAdvance); // 다시 카드 실습을 요구하지 않는지 확인
+        tutorial.Advance(); // 내용 확인 후 행동력 안내 이동
         Assert.AreEqual(BattleTutorialStep.ActionPoints, tutorial.Step); // 미리 사용한 카드 반영 확인
         tutorial.Advance(); // 정신력 안내 이동
         tutorial.Advance(); // 적 예고 안내 이동
-        tutorial.Advance(); // 이미 지난 턴 종료 단계를 지나 관찰 안내 이동
+        tutorial.Advance(); // 이미 수행한 턴 종료 안내도 표시
+        Assert.AreEqual(BattleTutorialStep.EndTurn, tutorial.Step); // 턴 종료 안내가 목록의 실제 장으로 표시되는지 확인
+        Assert.IsTrue(tutorial.CanAdvance); // 이미 지난 적 턴을 다시 요구하지 않는지 확인
+        tutorial.Advance(); // 적 행동 관찰로 실제 이동
         Assert.AreEqual(BattleTutorialStep.ObserveEnemy, tutorial.Step); // 미리 관찰한 적 턴 반영 확인
         Assert.IsTrue(tutorial.Advance()); // 관찰 확인 후 완료 가능 확인
     } // 미리 수행한 행동 검사 종료
