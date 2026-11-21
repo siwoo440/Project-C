@@ -63,7 +63,8 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardTag CardTags => cardTags == CardTag.None ? InferDefaultTags() : cardTags; // 카드 태그 조회
     public CardTargetType TargetType => targetType; // 카드 대상 조회
     public int ApCost => apCost; // 카드 AP 비용 조회
-    public bool SpendsAllActionPoints => swordRule == SwordCardRule.Finisher || CupRule == CupCardRule.GrailMiracle || WandRule == WandCardRule.ManaRelease; // 실제 사용 순간의 남은 행동력을 모두 지불하는 카드 여부
+    public bool SpendsAllActionPoints => swordRule == SwordCardRule.Finisher || CupRule == CupCardRule.GrailMiracle || // 검 처형과 성배의 기존 전액 행동력 비용 확인
+        WandRule is WandCardRule.ManaRelease or WandCardRule.ArcaneLiberationRite; // 실제 사용 순간의 남은 행동력을 지불하는 지팡이 카드 확인
     public int AdditionalActionPointCost => Mathf.Max(0, additionalActionPointCost); // 카드 설명에서 지정한 별도 행동력 대가 조회
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회

@@ -525,8 +525,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan) // 실제 카드 정산의 방어 할인과 확정 반향 자료 전달
     { // 카드 정산 범위 시작
-        bool resolveHealingBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies; // 피해와 회복을 함께 처리하는 카드 확인
-        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0); // 임시 및 복합 카드와 무작위 연타의 실제 이동 뒤 승리 정산
+        bool resolveEffectsBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 피해와 회복을 함께 처리하는 카드 확인
+            cardInstance.SourceData.WandRule == WandCardRule.TimeStop; // 시간 정지의 실제 상태 효과와 한 장 드로우까지 승리 보류
+        turnRuntime.BeginCardResolution(resolveEffectsBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0 || cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm); // 복합 카드와 연속 타격의 실제 카드 이동 뒤 승리 정산
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan); // 실제 전투 효과와 독립 타격 및 사용 카드 이동 처리
@@ -599,6 +600,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 지팡이 무작위 연속 타격 시작
             totalAppliedAmount = ApplyRandomWandHits(cardInstance); // 현재 살아 있는 적의 독립 명중과 피해 합계
         } // 지팡이 무작위 연속 타격 종료
+        else if (cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm) // 생존 적 전체를 차례마다 타격하는 전설 지팡이 확인
+        { // 폭풍의 눈 광역 정산 시작
+            totalAppliedAmount = ApplyEyeOfStorm(cardInstance); // 현재 생존 명단의 두 차례 실제 피해 합계
+        } // 폭풍의 눈 광역 정산 종료
         else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance || cardInstance.SourceData.SwordRule == SwordCardRule.TwinBladeFlurry) // 지정된 적 범위에서 매 타격 재추첨
         { // 무작위 연속 공격 시작
             totalAppliedAmount = ApplyDanceHits(cardInstance, targetUnits); // 선택된 범위에서 타격 직전마다 생존 적 재추첨
@@ -650,6 +655,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             QueuePentacleUseDraw(cardInstance); // 카드 사용 위치 정산 뒤 펜타클 보너스 확인
             if (movedFromHand) // 독립 보너스 지급 전 확인한 실제 사용 정산
             { // 스킬 드로우 예약 시작
+                if (cardInstance.SourceData.WandRule == WandCardRule.TimeStop && turnRuntime.IsPlayerTurn && !turnRuntime.IsBattleEnded) // 실제 사용을 완료한 시간 정지의 공용 손패 지급 확인
+                { // 실제 사용 카드가 비운 공용 손패 드로우 시작
+                    runtimeDeck.DrawRelicCardsIntoHand(cardInstance.SourceData.SecondaryEffectValue); // 기존 상한을 지키며 공용 손패에 실제 한 장 지급
+                } // 실제 사용 카드가 비운 공용 손패 드로우 종료
                 pendingPentacleChanceDraw = cardInstance.CardType == CardType.Pentacle && BattleSupplyRelics.Find(RelicEffectType.PentacleResolvedChanceDraw) != null; // 손패를 실제로 떠난 펜타클의 독립 추가 드로우 예약
                 QueueSkillRelicDraw(cardInstance); // 기존 카드 이동을 마친 스킬의 잉크병 판정 예약
                 pendingCardSuitRelics = cardInstance; // 손패를 나간 카드의 속성 정산 예약
@@ -668,6 +677,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
+    private static void ApplyVoidCollapseFailureCost(CardInstance card, bool defeatedByHit) // 공허 붕괴의 원본 공격이 처치하지 못한 경우 확인
+    { // 실제 시전자의 한 번 정신력 비용 처리 시작
+        if (card.SourceData.WandRule == WandCardRule.VoidCollapse && !defeatedByHit) // 빗나감과 실제 생존 적 및 보스 전환을 실패로 확인
+        { // 명시된 정신력 대가 결제 시작
+            card.OwnerUnit.SpendBattleMentalCost(card.SourceData.SecondaryEffectValue, BattleMentalChangeReason.CardEffect); // 정신력 피해 보호를 소비하지 않는 실제 카드 비용과 하한
+        } // 명시된 정신력 대가 결제 종료
+    } // 실제 시전자의 한 번 정신력 비용 처리 종료
+
     private void ResolveWandArithmeticAfterUse(CardInstance card) // 사용을 정상 완료한 지팡이 카드의 시전자 후속 상태
     { // 지팡이 시전 결과 처리 시작
         var owner = card.OwnerUnit; // 실제 카드를 사용한 원래 시전자 조회
@@ -1601,6 +1618,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 원래 연속 타격 방식의 피해 복제 시작
             return ApplyRandomWandHits(card, echoPlan); // 원래 제한 횟수와 새 생존 후보의 피해만 재사용
         } // 원래 연속 타격 방식의 피해 복제 종료
+        if (card.SourceData.WandRule == WandCardRule.EyeOfStorm) // 두 차례 전역 공격의 전용 반향 확인
+        { // 원래 광역 차례의 반향 시작
+            return ApplyEyeOfStorm(card, echoPlan); // 현재 상태에 따른 절반 피해로 같은 광역 순서 재생
+        } // 원래 광역 차례의 반향 종료
         IReadOnlyList<BattleUnitRuntime> targets = confirmedTargets; // 지정한 적은 같은 확정 순서 사용
         if (card.TargetType is CardTargetType.AllEnemies or CardTargetType.RandomTwoEnemies) // 피해 시점에 전체 또는 임의 생존 적을 고르는 원본 확인
         { // 자동 타격 명단 준비 시작
@@ -1656,6 +1677,26 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 현재 생존 대상의 독립 추첨 종료
         return damage; // 실제 타격들의 오버플로 없는 체력 피해 합계
     } // 현재 생존 적의 타격 정산 종료
+
+    private long ApplyEyeOfStorm(CardInstance card, (int Percent, int Paid, int Round) echoPlan = default) // 살아 있는 적 전체를 차례마다 독립 타격
+    { // 폭풍의 눈 전체 타격 시작
+        long damage = 0; // 실제 체력 피해의 오버플로 없는 합계
+        for (int wave = 0; wave < card.SourceData.DamageHitCount; wave++) // 카드에 등록된 전체 공격 차례
+        { // 현재 차례 광역 타격 시작
+            foreach (var target in CollectValidTargets(card, enemyUnitViews)) // 새 차례 전 실제 생존 적 명단 재조회
+            { // 대상 한 명의 독립 타격 시작
+                if (card.OwnerUnit.IsDead || !turnRuntime.HasSelectableEnemy || (echoPlan.Percent > 0 && turnRuntime.CurrentRound != echoPlan.Round)) // 시전자와 전투 전환 및 현재 반향 차례 확인
+                { // 더 진행할 수 없는 광역 정산 시작
+                    return damage; // 보스 전환과 승리 또는 반향 종료 뒤 추가 타격 없음
+                } // 더 진행할 수 없는 광역 정산 종료
+                if (turnRuntime.CanSelectLivingUnit(target, BattleTeam.Enemy)) // 앞선 타격으로 이미 제거된 대상 제외
+                { // 살아 있는 현재 적의 타격 계산 시작
+                    damage += ApplyIsolatedDamageHit(card, target, echoPlan: echoPlan); // 대상별 실제 명중과 활성 감전의 현재 피해
+                } // 살아 있는 현재 적의 타격 계산 종료
+            } // 대상 한 명의 독립 타격 종료
+        } // 현재 차례 광역 타격 종료
+        return damage; // 원본 또는 반향의 전체 실제 체력 피해
+    } // 폭풍의 눈 전체 타격 종료
 
     private int ApplyDanceHits(CardInstance card, IReadOnlyList<BattleUnitRuntime> area) // 선택 범위 안에서 독립 타격 처리
     { // 무작위 연타 시작
@@ -1748,6 +1789,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 타격 판정 시작
         if (!BattleHitChance.Roll(cardInstance.OwnerUnit, targetUnit)) // 실명 상태의 공격 명중 확인
         { // 카드 공격 빗나감 처리 시작
+            if (echoPlan.Percent == 0) // 준비한 반향과 다른 원래 공격의 빗나감 확인
+            { // 공허 붕괴의 원본 실패 비용 시작
+                ApplyVoidCollapseFailureCost(cardInstance, defeatedByHit: false); // 정상 사용한 원본 빗나감의 실제 정신력 비용 처리
+            } // 공허 붕괴의 원본 실패 비용 종료
             BattleCardDamageContext.TryConsume(out _, out _); // 빗나간 대상의 카드 피해 문맥 소비
             FindUnitView(targetUnit)?.ShowStatusFeedback("빗나감", false); // 선택 대상의 빗나감 표시
             if (echoPlan.Percent == 0 && SunChainAttack.IsChainCard(cardInstance)) // 원본 태양 카드에만 별도 연속 공격 허용
@@ -1771,7 +1816,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 무작위 피해 굴림 종료
         if (echoPlan.Percent > 0) // 별도 명중에 성공한 순수 마법 반향 확인
         { // 원래 카드의 후속 효과를 거치지 않는 실제 반향 피해 시작
-            int printedBonus = baseOverride.HasValue ? 0 : SwordCardCombat.GetRuneBurstDamageBonus(cardInstance, targetUnit); // 표시된 조건부 원본과 독립으로 굴린 원본 수치의 구분
+            int printedBonus = baseOverride.HasValue ? 0 : SwordCardCombat.GetConditionalWandDamageBonus(cardInstance, targetUnit); // 표식과 감전의 조건부 원본 및 굴린 원본 피해의 구분
             int echoedDamage = ScaleWandEchoDamage(cardInstance, baseOverride, echoPlan.Paid, echoPlan.Percent, printedBonus); // 실제 지불량과 확인한 원본 기본 피해의 비율 내림
             return targetUnit.TakeWandEchoDamage(echoedDamage, cardInstance.OwnerUnit).AppliedDamage; // 표준 저항과 방어도의 실제 체력 피해만 정산
         } // 원래 카드의 후속 효과를 거치지 않는 실제 반향 피해 종료
@@ -1808,6 +1853,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중 대상의 생존 보호 제거 종료
         int penetration = cardInstance.SourceData.WandRule == WandCardRule.ArcaneSurge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 이번 비전 쇄도가 무시할 현재 마법 저항 비율
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true, magicalResistancePenetrationPercent: penetration); // 직접 타격의 표식과 실제 저항 관통 및 기존 방어도 계산
+        ApplyVoidCollapseFailureCost(cardInstance, damageResult.WasTargetDefeated && targetUnit.IsDead); // 이번 원래 타격에 실제로 쓰러진 적인지 판별한 실패 비용 처리
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
         { // 마력 흡수 회복 시작
             int regained = sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 기존 최대치 안에서 실제 현재 행동력 한 점 회복
@@ -1912,6 +1958,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 최초 감전과 다른 실제 생존 적 탐색 종료
     private bool TryRollWandHitStatus(CardInstance card, BattleUnitRuntime target) // 지팡이 명중 상태의 선택 확률과 면역 확인
     { // 지팡이 상태 판정 시작
+        if (card.SourceData.WandRule == WandCardRule.ArcaneLiberationRite && paidActionPoints < 4) // 마도 해방식이 실제로 지불한 행동력의 기절 임계 확인
+        { // 원본 기절 판정 자격 없음 시작
+            return false; // 면역과 확률 및 선택 상태 유물을 사용하기 전 기절 처리 생략
+        } // 원본 기절 판정 자격 없음 종료
         var status = card.StatusEffectType; // 원본에 설정된 적용 상태 종류
         int chance = card.SourceData.WandHitStatusChancePercent; // 유효 범위의 원본 명중 상태 확률
         if (chance <= 0 || status is (BattleStatusEffectType.None or BattleStatusEffectType.Awakening or BattleStatusEffectType.Collapse) || // 확률 없음과 일반 카드로 줄 수 없는 상태 확인

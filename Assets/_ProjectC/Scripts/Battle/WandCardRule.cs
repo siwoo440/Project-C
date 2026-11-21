@@ -15,5 +15,9 @@ public enum WandCardRule // 지팡이 카드의 별도 지불 및 피해 규칙
     VoidHand, // 유효 명중 뒤 오래된 적 강화 한 개 제거
     ManaBackflow, // 광역 마법 정산 뒤 시전자의 공격력 감소
     ArcaneSurge, // 고정 마법 피해의 적 저항력 일부 무시
-    IllusionSplit // 회피율 강화와 다음 직접 피해 한 번 감소
+    IllusionSplit, // 회피율 강화와 다음 직접 피해 한 번 감소
+    EyeOfStorm, // 두 번의 광역 공격과 감전 대상의 추가 마법 피해
+    ArcaneLiberationRite, // 실제로 지불한 행동력의 배수와 높은 비용의 기절 확률
+    TimeStop, // 생존 적의 다음 행동 취소와 공용 손패 카드 한 장
+    VoidCollapse // 선택 적 처치 실패 뒤 시전자 정신력 손실
 } // 지팡이 카드 규칙 종료
