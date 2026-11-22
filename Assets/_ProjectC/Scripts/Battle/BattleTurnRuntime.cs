@@ -283,6 +283,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 손패 수량 검사 시작
         return count > 0 && runtimeDeck.HandCount > count; // 양수 실제 비용에 더해 사용할 원본까지 있는지 확인
     } // 손패 수량 검사 종료
+    internal bool HasRecoverableBattleExclusion => runtimeDeck.HasRecoverableBattleExclusion; // 이번 전투 제외로부터 실제 회수할 카드 조건
     internal bool TryBeginPlayerCardDecision() // 아군의 카드 선택 중 다른 일반 입력을 잠그는 요청
     { // 카드 입력 잠금 시작
         if (!CanAcceptPlayerInput || HasPendingBossPhaseTransition) // 실제 아군 턴과 현재 다른 선택 및 전환 확인
@@ -382,6 +383,25 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         return changed ? amount : 0; // 실제 변경된 현재 턴의 새 할인량
     } // 현재 아군과 이후 생성 카드의 비용 갱신 종료
 
+    internal int SetMechanicalCalculationDiscount(int amount) // 현재 아군 턴의 펜타클 전용 일반 비용 변경
+    { // 지금 전투의 실제 카드 소유자들과 비용 갱신 시작
+        amount = Math.Max(0, amount); // 실제 고정 할인과 초기화만 허용하는 값
+        bool changed = false; // 같은 값 반복을 무시할 갱신 확인
+        foreach (var ally in allyUnits) // 현재 살아 있거나 되살아날 등록된 아군의 카드 소유자 순회
+        { // 소유자별 같은 할인 확인 시작
+            if (ally != null && ally.MechanicalCalculationApDiscount != amount) // 기존 할인과 다른 실제 값 확인
+            { // 해당 소유자의 현재 턴 할인 저장 시작
+                ally.MechanicalCalculationApDiscount = amount; // 현재 손패와 뒤에 생성한 고정 펜타클 공통 수치
+                changed = true; // 실제 카드 비용의 화면 갱신 필요
+            } // 해당 소유자의 현재 턴 할인 저장 종료
+        } // 소유자별 같은 할인 확인 종료
+        if (changed) // 같은 카드의 반복에 중첩과 중복 알림 없음
+        { // 실제 바뀐 것으로 기존 손패를 갱신
+            runtimeDeck.NotifyCardCostsChanged(); // 즉시 반영되는 비용 표시와 카드 활성화
+        } // 실제 바뀐 비용 표시 갱신 종료
+        return changed ? amount : 0; // 이 정산에서 새로 적용한 보정값
+    } // 지금 전투의 실제 카드 소유자들과 비용 갱신 종료
+
     internal int SetRuneRecordingDiscount(BattleUnitRuntime owner, int amount) // 이 소유자의 다음 유효 기본 비용에 한 번 적용하는 룬 기록
     { // 실제 카드 소유자의 할인 예약 갱신 시작
         amount = Math.Max(0, amount); // 새 원본 할인과 사용 완료 초기화에 맞는 정수 수치
@@ -406,6 +426,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void ClearEconomyReservations() // 전투가 끝난 경우의 소유자 룬 예약과 예비 자금 초기화
     { // 전투 한정 자원 정리 시작
         pendingEmergencyActionPoints = 0; // 사용하지 않고 전투가 끝난 다음 행동력 제거
+        SetMechanicalCalculationDiscount(0); // 실제 전투 종료 후 소유자에 남은 기계식 계산 해제
         foreach (var ally in allyUnits) // 같은 전투에 실제 참가한 모든 소유 아군 순회
         { // 아군별 전투 할인 정리 시작
             if (ally != null) // 이전 전투에 연결된 실제 참가자 확인
@@ -416,7 +437,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     } // 전투 한정 자원 정리 종료
     private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
     { // 플레이어 턴 정리 시작
-        SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 펜타클 기본 할인 복원
+        SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 기본 할인 복원
+        SetMechanicalCalculationDiscount(0); // 현재 아군 턴과 함께 종료되는 펜타클 전용 비용 할인 회수
         if (runtimeDeck.HandCount == 0 && lastEmptyHandDrawRound != CurrentRound) // 자동 버림 전 빈손과 중복 발동 확인
         { // 패치 노끈 발동 검사 시작
             var cord = openingRelics?.FindEffect(RelicEffectType.EmptyHandNextTurnDraw); // 보유한 낡은 패치 노끈 조회
@@ -426,7 +448,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
                 runtimeDeck.QueuePlayerTurnDraw(cord.EffectValue); // 다음 아군 턴의 추가 드로우 예약
             } // 다음 턴 드로우 예약 종료
         } // 패치 노끈 발동 검사 종료
-        runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
+        runtimeDeck.DiscardHand(CurrentRound); // 실제 아군 정리에서 전략 보관 한 번과 일반 손패 버림 처리
         runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
         runtimeDeck.ClearFirstDrawRelicDiscount(); // 종료된 턴의 첫 드로우 카드 비용 복원
         runtimeDeck.ClearOpeningRandomRelicDiscount(); // 첫 턴이 끝난 왕관 할인 복원
@@ -911,11 +933,25 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 실제 신규 공포 보관 종료
         } // 현재 적의 생존 상태 확인 종료
     } // 첫 아군 턴 전용 약화 종료
+    internal bool HasRuneAmplifiableAlly() // 지금 고를 수 있는 실제 기간제 강화 보유 아군 조회
+    { // 현재 전투의 아군 대상 가능 여부 확인 시작
+        foreach (BattleUnitRuntime ally in allyUnits) // 실제 현재 참가 아군 순회
+        { // 개별 기간제 강화 조회 시작
+            if (CanSelectLivingUnit(ally, BattleTeam.Ally) && ally.HasRuneAmplifiableBuff()) // 현재 선택 가능한 생존 아군에 적용할 정상 상태 확인
+            { // 강화 보유자 발견 시작
+                return true; // 실제 사용할 수 있는 대상 존재
+            } // 강화 보유자 발견 종료
+        } // 개별 기간제 강화 조회 종료
+        return false; // 실제 비용을 지불할 수 없는 빈 후보 결과
+    } // 현재 전투의 아군 대상 가능 여부 확인 종료
     private void ClearFirstPlayerTurnEnemyStatuses() // 첫 아군 턴 한정의 취약과 포스터 공포 회수
     { // 검은 왕관 해제 시작
         var affected = openingVulnerableEnemy; // 취약의 실제 적용 대상 보관
         openingVulnerableEnemy = null; // 상태 알림 전에 취약 대상 참조 해제
-        affected?.RemoveStatusEffect(BattleStatusEffectType.Vulnerable); // 첫 아군 턴이 끝난 대상의 취약 제거
+        if (affected?.GetStatusEffect(BattleStatusEffectType.Vulnerable) is { RemainingTurns: <= 1 }) // 첫 턴 유물의 짧은 취약만 회수하는 기존 경계
+        { // 첫 턴 한정 취약 제거 시작
+            affected.RemoveStatusEffect(BattleStatusEffectType.Vulnerable); // 긴 카드 취약을 보존한 원래 유물 취약 제거
+        } // 첫 턴 한정 취약 제거 종료
         foreach (var entry in openingFearedEnemies) // 포스터가 실제 신규 부여에 성공한 적 순회
         { // 포스터 공포 확인 시작
             var current = entry.Enemy.GetStatusEffect(BattleStatusEffectType.Fear); // 상태 해제와 독립 재부여를 반영한 공포 조회

@@ -26,7 +26,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardType CardType => SourceData.CardType; // 카드 종류 조회
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
-    public string CostLabel => SourceData.SpendsAllActionPoints ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
+    public string CostLabel => SourceData.PentacleRule == PentacleCardRule.CalculatedInvestment ? $"{SourceData.ApCost}+" : // 전액 투자 카드의 원래 AP2 하한 표시
+        SourceData.SpendsAllActionPoints ? "X" : ApCost.ToString(); // 다른 가변 카드와 일반 실제 행동력 비용 표시
     public int ApCost => IsBattleOnlySingleUse ? 0 : (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount - EffectiveRuneRecordingDiscount + SourceData.AdditionalActionPointCost); // 무료 전투 카드와 일반 비용 할인 및 별도 필수 비용의 실제 결제
     internal int EffectiveRuneRecordingDiscount => SourceData.SpendsAllActionPoints || IsBattleOnlySingleUse ? 0 : // 가변 비용과 전투 임시 무료 카드의 기록 할인 소모 제외
         (int)Math.Min(OwnerUnit.RuneRecordingApDiscount, RemainingFixedApCost - EffectiveFirstDefenseDiscount); // 다른 기본 할인을 거치고도 지불할 양수 일반 비용만 감소
@@ -47,9 +48,10 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             { // 고정 무료 기본 비용 적용 시작
                 return 0; // 다음 유료 카드 할인의 발동 조건에서도 이미 무료인 비용 반환
             } // 고정 무료 기본 비용 적용 종료
-            int upgradedCost = HasRunePower ? 0 : UnmodifiedFixedBaseCost; // 다음 실제 사용까지 유지하며 별도 행동력은 건드리지 않는 기본 비용 면제
+            int upgradedCost = HasRunePower ? 0 : (int)Math.Max(0L, (long)UnmodifiedFixedBaseCost - strategicStorageApDiscount); // 다음 실제 사용까지 유지하며 별도 행동력은 건드리지 않는 기본 비용 면제
             int efficientUse = SourceData.SpendsAllActionPoints ? 0 : OwnerUnit.EfficientUseApDiscount; // X 비용에는 적용하지 않는 이번 아군 턴의 별도 기본 할인
-            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse; // 고정 기본 비용에 함께 적용되는 각 독립 할인 합계
+            int calculation = CardType == CardType.Pentacle && !SourceData.SpendsAllActionPoints ? OwnerUnit.MechanicalCalculationApDiscount : 0; // 고정 펜타클의 일반 기본 비용에만 기계식 할인 포함
+            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse + calculation; // 공용 기본 비용과 별도 추가 대가의 기존 경계 유지
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료
@@ -72,6 +74,18 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
 
+    internal int StrategicStorageRound { get; private set; } // 어느 아군 턴에 한 번의 자동 보관을 받았는지 기록
+    private int strategicStorageApDiscount; // 이번 카드의 고정 기본 비용에만 남긴 독립 할인
+    internal void ApplyStrategicStorage(int round, int discount) // 지정 실물의 한 번 보관과 기본 비용 할인
+    { // 현재 아군 턴과 고정 할인 저장 시작
+        StrategicStorageRound = round; // 같은 실물의 이어지는 보관만 새로 갱신
+        strategicStorageApDiscount = SourceData.SpendsAllActionPoints ? 0 : Math.Max(0, discount); // 가변 행동력과 별도 대가를 변경하지 않는 고정 할인
+    } // 현재 아군 턴과 고정 할인 저장 종료
+    internal void ClearStrategicStorage() // 사용 및 이탈과 정리 때의 보관 할인 회수
+    { // 별도 사용 기한 회수 시작
+        StrategicStorageRound = 0; // 현재 실물의 남은 보관 차례 초기화
+        strategicStorageApDiscount = 0; // 다음 카드 사용에 할인 잔류 방지
+    } // 별도 사용 기한 회수 종료
     public bool HasRunePower { get; private set; } // 다음 실제 사용까지 실물 카드에 남는 기본 비용 면제
     private int UnmodifiedFixedBaseCost => CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 별도 대가와 다른 일시 할인 이전의 기본 행동력
     internal bool CanReceiveRunePower => !HasRunePower && !IsBattleOnlySingleUse && !SourceData.SpendsAllActionPoints && EffectType != CardEffectType.Unplayable && UnmodifiedFixedBaseCost > 0; // 실제 유료 고정 기본 비용 카드 여부

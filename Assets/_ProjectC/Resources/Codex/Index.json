@@ -3149,6 +3149,54 @@
       "name": "기회 포착",
       "description": "이 카드가 이번 아군 턴에 처음 실제로 사용한 카드라면 사용을 마친 후 행동력을 1 회복한다.",
       "artworkKey": "608ceef1c6215314bd8b114f752d93dc"
+    },
+    {
+      "category": 7,
+      "name": "자원 순환",
+      "description": "이번 전투에서 제외된 카드 중 무작위 한 장을 같은 소유자와 강화 상태로 손패에 되돌린다.",
+      "artworkKey": "a4f5ab0a02d25c08a07acf86180353ac"
+    },
+    {
+      "category": 7,
+      "name": "전략 보관",
+      "description": "다른 손패 카드 한 장을 골라 다음 아군 턴까지 보존한다. 그 카드의 기본 행동력 비용을 1 낮춘다.",
+      "artworkKey": "c1fa8a5c70c6525b9560242c9aff0837"
+    },
+    {
+      "category": 7,
+      "name": "약점 분석",
+      "description": "선택한 생존 적이 받는 피해를 두 적 턴 동안 20% 높인다.",
+      "artworkKey": "cac1e7de6beb5386b0f708dc1ae4e2f0"
+    },
+    {
+      "category": 7,
+      "name": "계산된 투자",
+      "description": "행동력이 2 이상일 때 현재 행동력을 모두 지불한다. 다음 아군 턴에 지불한 수만큼 최대 및 현재 행동력을 높인다.",
+      "artworkKey": "6ae7410adb54563881ce4e95a5a58beb"
+    },
+    {
+      "category": 7,
+      "name": "룬 증폭",
+      "description": "선택한 생존 아군의 턴 수가 정해진 활성 강화 지속 시간을 각각 1턴 늘린다.",
+      "artworkKey": "55365ec454b955f1acb22ce29947fc71"
+    },
+    {
+      "category": 7,
+      "name": "임시 계약서",
+      "description": "시전자의 체력을 6 지불해 공용 손패에 카드 두 장을 뽑는다. 시전자의 체력은 최소 1 남아야 한다.",
+      "artworkKey": "3a06ba2db1c6588383e2acd6a782fad1"
+    },
+    {
+      "category": 7,
+      "name": "도박수",
+      "description": "50% 확률로 행동력을 2 회복한다. 실패하면 시전자의 정신력이 5 감소한다.",
+      "artworkKey": "59ad96be1fc2524e948c0e551375c9f1"
+    },
+    {
+      "category": 7,
+      "name": "기계식 계산",
+      "description": "이번 아군 턴 동안 펜타클 카드의 일반 기본 행동력 비용을 1 낮춘다.",
+      "artworkKey": "1af8f5832b335c52be3c5aa9260d359a"
     }
   ]
 }

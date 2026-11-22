@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetMechanicalCalculation
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_MECHANICAL_CALCULATION
+  displayName: "기계식 계산"
+  description: "이번 아군 턴 동안 펜타클 카드의 일반 기본 행동력 비용을 1 낮춘다."
+  artwork: {fileID: 21300000, guid: 1af8f5832b335c52be3c5aa9260d359a, type: 3}
+  cardType: 3
+  targetType: 0
+  apCost: 2
+  effectType: 22
+  damageType: 0
+  effectValue: 1
+  mentalChangeValue: 0
+  pentacleRule: 32
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

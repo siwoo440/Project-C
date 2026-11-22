@@ -367,7 +367,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         foreach (var card in selectedCards) // 확인한 카드의 입력 순서에 따른 전체 영역 이동
         { // 전투 한정 제외 처리 시작
             hand.Remove(card); // 진짜 손패에서 이번 비용 카드 제거
-            ForgetOpeningRetention(card); // 손패를 떠난 카드의 기존 개막 유지 해제
+            ClearHandExitEffects(card); // 손패를 떠난 카드의 기존 개막 유지 해제
             excludedPile.Add(card); // 원본 저장 덱과 별개인 현재 전투의 실제 제외 더미에 이동
         } // 전투 한정 제외 처리 종료
         EnsureValidState(); // 어떤 이벤트도 보내기 전 실물 카드 영역의 일관성 확인
@@ -457,6 +457,47 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         return PlayAndAddTransientCard(played, CreateTransientCopy(template)); // 복제 원본의 소유자와 강화 단계가 같은 전투 카드 생성
     } // 현재 실물과 전투 덱 검증 종료
 
+    internal bool HasRecoverableBattleExclusion => excludedPile.Exists(IsDrawable); // 이번 전투의 제외에 남은 생존 소유자의 참조 확인
+
+    internal bool TryPlayAndRecoverExcluded(CardInstance played) // 사용한 자리를 비우고 이번 전투 제외 카드 한 장 회수
+    { // 유효한 원본 및 현재 전투 제외 영역 확인 시작
+        if (played == null || !hand.Contains(played)) // 먼저 실제 손패에 쓰는 정상 원본 확인
+        { // 무효 원본 선택의 영역 보존 시작
+            return false; // 손패와 제외 카드 목록 유지
+        } // 무효 원본 선택의 영역 보존 종료
+        var recoverable = excludedPile.FindAll(IsDrawable); // 실제 생존 사용자가 있는 현재 전투 제외 원소만 선택
+        if (recoverable.Count == 0) // 더 이상 되돌릴 실제 대상이 있는지 확인
+        { // 빈 제외에서의 무작위 소비 방지 시작
+            return false; // 이미 다른 위치로 이동한 카드 보존
+        } // 빈 제외에서의 무작위 소비 방지 종료
+        CardInstance recovered = recoverable[random.Next(recoverable.Count)]; // 기존 덱 난수로 선택한 원래 소유자와 단계의 같은 물리 카드
+        hand.Remove(played); // 가득 찬 손패에서도 실제 사용 원본을 먼저 제거
+        excludedPile.Remove(recovered); // 전투 제외의 단일 카드 위치 해제
+        hand.Add(recovered); // 드로우나 새 복제가 아닌 원래 실물의 정상 회수
+        PlacePlayedCard(played); // 자원 순환 원본의 기존 정상 사용 정산
+        EnsureValidState(); // 원래 모든 영역에서 실제 카드 수와 고유성 유지
+        StateChanged?.Invoke(); // 정산한 손패로 한 번의 표시 갱신
+        return true; // 같은 실물 카드 한 장 회수 완료
+    } // 유효한 원본 및 현재 전투 제외 영역 확인 종료
+
+    internal bool CanStoreHandCard(CardInstance card) // 자동 정리에서 살아남을 수 있는 실제 손패 후보
+    { // 배치와 카드 고유 휘발 여부 확인 시작
+        return IsDrawable(card) && !card.SourceData.VolatileInHand && hand.Contains(card); // 소유자가 살아 있고 정상 보관이 가능한 실제 실물
+    } // 배치와 카드 고유 휘발 여부 확인 종료
+
+    internal bool TryPlayAndStoreCard(CardInstance played, CardInstance stored, int round, int discount) // 원본 사용과 지정한 별도 실물의 전략 보관 정산
+    { // 현재 소유 카드와 목적 실물 확인 시작
+        if (round <= 0 || played == null || played == stored || !CanStoreHandCard(stored) || !hand.Remove(played)) // 같은 카드나 유효하지 않은 상태의 확인 방지
+        { // 잘못된 보관 시도의 전체 영역 보존 시작
+            return false; // 두 카드의 현재 위치와 비용 유지
+        } // 잘못된 보관 시도의 전체 영역 보존 종료
+        stored.ApplyStrategicStorage(round, discount); // 다른 실물의 실제 아군 턴과 고정 기본 비용 예약
+        PlacePlayedCard(played); // 시전 원본의 실제 정상 사용 위치 처리
+        EnsureValidState(); // 선택카드와 소비카드의 실제 영역 일관성 검사
+        StateChanged?.Invoke(); // 전략 카드의 새로운 기본 비용과 사용 손패 반영
+        return true; // 실제 사용과 보관의 함께 완료
+    } // 현재 소유 카드와 목적 실물 확인 종료
+
     internal bool TryPlayAndGenerateCard(CardInstance played, CardData template) // 실제 등록한 일반 원본의 전투 한정 카드 생성
     { // 생성의 원래 시전자와 현재 손패 승인 확인 시작
         if (template == null || played == null || !hand.Contains(played)) // 유효한 원본과 실제 사용하는 손패 카드 검사
@@ -514,6 +555,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
         ClearOpeningRandomRelicDiscount(); // 종료된 전투의 왕관 할인 복원
         SetFirstDefensiveRelicApDiscount(0); // 전투가 종료될 때 미사용 방어 할인 정리
+        foreach (var card in hand) // 전투가 끝나도 자료가 남는 기존 실물 카드 확인
+        { // 현재 손패의 미사용 보관 정리 시작
+            card.ClearStrategicStorage(); // 이번 전투 밖으로 현재 보관 예약과 비용을 전이하지 않음
+        } // 현재 손패의 미사용 보관 정리 종료
         openingRetainedCard = null; // 전투를 끝낸 미사용 시작 손패 유지 해제
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         bool removed = RemoveBattleOnlyCard(ref battleCopy); // 기존 유물의 전투 전용 복사본 정리
@@ -562,8 +607,9 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             openingRetainedCard = candidates[random.Next(candidates.Count)]; // 기존 덱 무작위로 같은 확률의 카드 한 장 저장
         } // 균등 유지 대상 선택 종료
     } // 핸드벨 카드 선택 종료
-    private void ForgetOpeningRetention(CardInstance card) // 실제로 손패를 떠난 카드의 유물 유지 해제
-    { // 시작 손패 유지 해제 확인 시작
+    private void ClearHandExitEffects(CardInstance card) // 실제로 손패를 떠난 카드의 유물 유지 해제
+    { // 손패를 떠난 실제 카드의 예약 확인 시작
+        card.ClearStrategicStorage(); // 효과 버림과 소멸 및 사용의 다른 차례로 보관 이전 차단
         if (card == openingRetainedCard) // 핸드벨이 선택했던 인스턴스인지 확인
         { // 유지 해제 시작
             openingRetainedCard = null; // 이후 다시 뽑거나 회수한 카드의 예약 복구 차단
@@ -629,7 +675,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private void MoveHandCardToDiscard(CardInstance card) // 일반 선택과 전술 교환의 실제 버림 이동
     { // 원본 사용과 다른 손패 버림 처리 시작
         hand.Remove(card); // 원래 물리 손패에서 제거
-        ForgetOpeningRetention(card); // 손패를 떠나는 원래 실물의 개막 유지 해제
+        ClearHandExitEffects(card); // 손패를 떠나는 원래 실물의 개막 유지 해제
         discardPile.Add(card); // 사용 제외를 피한 별도 효과 버림 더미 이동
     } // 원본 사용과 다른 손패 버림 처리 종료
 
@@ -664,7 +710,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 카드 버리기 종료
     private void PlacePlayedCard(CardInstance card) // 손패에서 빠진 사용 카드 정산
     { // 사용 위치 처리 시작
-        ForgetOpeningRetention(card); // 정상 사용 정산 후 같은 카드의 개시 유지 해제
+        ClearHandExitEffects(card); // 정상 사용 정산 후 같은 카드의 개시 유지 해제
         if (card.SourceData.ExcludeOnUse || card.IsBattleOnlySingleUse) // 원본 규칙 또는 별도 생성 카드의 실제 사용 후 제외 확인
         { // 전투 제외 시작
             excludedPile.Add(card); // 제외 더미에 사용 카드 보관
@@ -717,7 +763,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 카드별 유물 할인 갱신 종료
         StateChanged?.Invoke(); // 실제 손패의 행동력 배지와 사용 가능 여부 갱신
     } // 방어 할인 갱신 종료
-    public int DiscardHand() // 일반 손패 전체 버리기
+    public int DiscardHand(int currentRound = 0) // 실제 아군 턴 또는 일반 손패 전체 버리기
     { // 손패 정리 시작
         CardInstance retainedAtOpening = openingRetainedCard; // 첫 자동 버림에서만 확인할 유물 유지 대상
         openingRetainedCard = null; // 손패가 비어도 첫 버림 정리에서 예약 소모
@@ -733,15 +779,20 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             if (card.SourceData.VolatileInHand) // 손패에 남은 휘발 카드 확인
             { // 휘발 카드 소멸 시작
                 hand.Remove(card); // 손패에서 휘발 카드 제거
+                ClearHandExitEffects(card); // 실제로 제외되는 손패 카드의 독립 보관 예약 해제
                 excludedPile.Add(card); // 전투 동안 제외된 위치에 보관
                 volatileCards.Add(card); // 손패 정리 뒤 발동 예약
                 continue; // 일반 버림 검사 생략
             } // 휘발 카드 소멸 종료
             bool retainedByBell = card == retainedAtOpening && IsDrawable(card); // 여전히 손에 있는 생존 소유자의 개시 유지 카드 확인
-            if (!retainedByBell && !IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 유물 유지와 카드 고유 유지 및 이번 버림 취소 확인
+            bool retainedByStrategy = currentRound > 0 && card.StrategicStorageRound == currentRound && IsDrawable(card); // 이번 자동 정리에서만 보관을 쓰는 살아 있는 실물
+            if (!retainedByStrategy) // 두 번째 정리 또는 유효하지 않은 손패인지 확인
+            { // 현재 실물의 종료 비용 처리 시작
+                card.ClearStrategicStorage(); // 기본 유지나 원래 버림 보호가 있더라도 보관 할인 기한 종료
+            } // 현재 실물의 종료 비용 처리 종료
+            if (!retainedByBell && !retainedByStrategy && !IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 별도 보관과 다른 네이티브 유지 및 버림 취소 확인
             { // 실제 버림 시작
-                hand.Remove(card); // 원래 손패에서 제거
-                discardPile.Add(card); // 버린 더미 끝에 추가
+                MoveHandCardToDiscard(card); // 효과와 자동 정리의 원래 실물 버림 경로 공유
             } // 실제 버림 종료
         } // 카드별 정리 종료
         int moved = count - hand.Count; // 보너스 드로우 전 이동 수 보관

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetRuneAmplification
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_RUNE_AMPLIFICATION
+  displayName: "룬 증폭"
+  description: "선택한 생존 아군의 턴 수가 정해진 활성 강화 지속 시간을 각각 1턴 늘린다."
+  artwork: {fileID: 21300000, guid: 55365ec454b955f1acb22ce29947fc71, type: 3}
+  cardType: 3
+  targetType: 1
+  apCost: 2
+  effectType: 22
+  damageType: 0
+  effectValue: 1
+  mentalChangeValue: 0
+  pentacleRule: 29
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

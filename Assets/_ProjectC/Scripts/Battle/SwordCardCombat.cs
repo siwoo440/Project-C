@@ -50,7 +50,8 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         if (card.SourceData.SpendsAllActionPoints) // 남은 행동력 전체를 쓰는 카드 확인
         { // 가변 행동력 조건 검사 시작
             int available = points.CurrentActionPoints; // 현재 실제 가용 행동력 조회
-            return available > 0 && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()) && // 양수 행동력과 기존 처형 카드 대상 조건 유지
+            int minimum = card.SourceData.PentacleRule == PentacleCardRule.CalculatedInvestment ? Math.Max(1, card.SourceData.ApCost) : 1; // 투자에만 원본 AP2 하한과 다른 전액 비용의 양수 보존
+            return available >= minimum && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()) && // 실제 가용 행동력 하한과 기존 처형 대상 확인
                 (card.SourceData.PentacleRule != PentacleCardRule.WheelOfFate || turn.HasHandPaymentOptions(available)); // 수레바퀴에서 필요한 수량의 별도 실제 손패 카드 확인
         } // 가변 행동력 조건 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 체력 절반 이하 적에게만 사용하는 검 확인
@@ -61,6 +62,10 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 추적 대상 없음 시작
             return false; // 카드 사용과 행동력 지불 차단
         } // 추적 대상 없음 종료
+        if (card.SourceData.PentacleRule == PentacleCardRule.ResourceCycle && !turn.HasRecoverableBattleExclusion) // 실제 전투 제외에 회수할 대상이 있는지 확인
+        { // 되돌릴 물리 카드가 없는 비용 방지 시작
+            return false; // 원본 사용과 현재 행동력 지불 모두 제외
+        } // 되돌릴 물리 카드가 없는 비용 방지 종료
         if (card.SourceData.SwordRule == SwordCardRule.JudgmentSlash && !turn.HasBuffedTarget()) // 제거할 강화가 있는 생존 적 확인
         { // 단죄 대상 확인 시작
             return false; // 강화 없는 전투에서 카드 소비 차단
@@ -73,12 +78,16 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 최후 방벽 체력 조건 불충족 처리 시작
             return false; // 카드 사용과 행동력 지불 차단
         } // 최후 방벽 체력 조건 불충족 처리 종료
+        if (card.SourceData.PentacleRule == PentacleCardRule.RuneAmplification && !turn.HasRuneAmplifiableAlly()) // 실제 기간제 강화 대상이 있는 증폭만 허용
+        { // 증폭할 현재 아군 없음 시작
+            return false; // 유효한 강화가 없는 상태에서 입력 및 비용 차단
+        } // 증폭할 현재 아군 없음 종료
         return points.CanSpend(card.ApCost) && (!HasUpfrontHealthCost(card) || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 생존에 필요한 소유자 체력 비용 확인
     } // 사용 가능 검사 종료
     internal static bool HasUpfrontHealthCost(CardInstance card) // 효과 적용 전에 소유자 체력을 지불하는 카드 확인
     { // 체력 대가 카드 확인 시작
         return card.SourceData.SwordRule is SwordCardRule.DoomBlade or SwordCardRule.BloodOath || card.SourceData.CupRule == CupCardRule.SacrificialHealing || // 이전 검과 희생 치유의 공통 실체력 지불
-            card.SourceData.PentacleRule is PentacleCardRule.Contract or PentacleCardRule.Ritual; // 실제 살아남아야 하는 펜타클의 고정 생존 체력 비용
+            card.SourceData.PentacleRule is PentacleCardRule.Contract or PentacleCardRule.Ritual or PentacleCardRule.TemporaryContract; // 원래 계약과 의식 및 임시 계약의 선결제 생존 비용
     } // 체력 대가 카드 확인 종료
 
     internal static List<BattleUnitRuntime> GetDanceArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 바로 옆 한 칸의 고정 범위
