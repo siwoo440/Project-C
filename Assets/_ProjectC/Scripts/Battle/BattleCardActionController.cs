@@ -993,7 +993,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 메달 조각 방어 표시 종료
             if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GiantsShield) // 정산을 끝낸 거인의 방패 확인
             { // 다음 턴 행동력 감소 예약 시작
-                turnRuntime.QueueNextPlayerTurnActionPointLoss(cardInstance.SourceData.SecondaryEffectValue); // 다음 아군 턴 한 번의 공용 행동력 감소 예약
+                turnRuntime.QueueNextPlayerTurnActionPointLoss(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 실제로 공용 시간을 줄인 원래 시전자와 다음 아군 턴의 명시 감소 예약
             } // 다음 턴 행동력 감소 예약 종료
             bool movedFromHand = !ContainsHandCard(cardInstance); // 기존 보너스로 다시 뽑기 전 실제 손패 이탈 확인
             QueuePentacleUseDraw(cardInstance); // 카드 사용 위치 정산 뒤 펜타클 보너스 확인
@@ -2413,7 +2413,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.DefeatWard); // 일반 피해 무효와 별개인 전투불능 방지 제거
         } // 명중 대상의 생존 보호 제거 종료
         int penetration = cardInstance.SourceData.WandRule == WandCardRule.ArcaneSurge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 이번 비전 쇄도가 무시할 현재 마법 저항 비율
-        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true, magicalResistancePenetrationPercent: penetration); // 직접 타격의 표식과 실제 저항 관통 및 기존 방어도 계산
+        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true, magicalResistancePenetrationPercent: penetration, directCardType: cardInstance.CardType); // 원본 카드 계열과 저항 관통을 전달한 직접 타격
         ApplyVoidCollapseFailureCost(cardInstance, damageResult.WasTargetDefeated && targetUnit.IsDead); // 이번 원래 타격에 실제로 쓰러진 적인지 판별한 실패 비용 처리
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
         { // 마력 흡수 회복 시작

@@ -59,5 +59,6 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     ShopRelicPurchased, // 상점에서 유물 구매와 원본 지급이 완료된 시점
     BeforePoisonDamage, // 아군의 중독 지속 피해를 적용하기 직전
     BeforeAreaDamage, // 적의 광역 직접 공격이 명중한 아군에게 피해를 적용하기 직전
-    BeforePeriodicDamage // 실제 지속 피해를 정산하기 직전
+    BeforePeriodicDamage, // 실제 지속 피해를 정산하기 직전
+    ActionPointReductionApplied // 지정 대상에 실제 효과로 행동력 감소가 반영된 시점
 }
