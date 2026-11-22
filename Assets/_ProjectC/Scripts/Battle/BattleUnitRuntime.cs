@@ -64,6 +64,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal BattleTurnRuntime DamageRelicBattle { get; set; } // 예고와 실제 피해에 연결된 양 진영의 현재 전투 유물 관리자
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal int DefeatedBurnAmount { get; private set; } // 정리 전 실제 전투불능 적에게 남은 화상 실효량
+    internal bool DefeatedWhileShocked { get; private set; } // 상태 정리 직전에 쓰러진 적의 실제 활성 감전
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
@@ -378,6 +379,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             effectType is (BattleStatusEffectType.PhysicalDefenseDown or BattleStatusEffectType.ChargeDefenseDown or BattleStatusEffectType.CrystalMarkDefenseDown) ? PhysicalDefense : 0; // 기존 수치에서 실제로 내려갈 수 있는 물리 방어 비교값
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType, includeCurrentTurnAttackPower: false); // 한 턴 은총을 제외한 기존 상태 조회
         bool enteringStealth = effectType == BattleStatusEffectType.Stealth && (existingEffect == null || existingEffect.IsExpired); // 활성 은신의 갱신과 새 진입 구분
+        bool enteringBurn = effectType == BattleStatusEffectType.Burn && existingEffect is not { IsExpired: false }; // 중첩과 달리 기존에 활성 화상이 없던 실제 전환
         if (blessing != null && existingEffect?.IsExpired == true) // 아직 목록에 남아 있는 만료 효과 확인
         { // 만료된 효과 교체 시작
             statusEffects.Remove(existingEffect); // 만료 효과 중첩을 복사할 수치에서 제외
@@ -393,7 +395,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             status.HasAuthoredActionPointLoss = authoredActionPointLoss; // 일반 새 상태와 반사에 원래 서리 감옥 출처 복제 제외
             status.RecordPoisonApplication(sourceUnit, preserveExisting: false); // 반사와 신규 적용 모두 이번 실제 중독 적용자의 진영만 기록
             statusEffects.Add(status); // 실제 첫 약화 또는 강화 등록
-            return ResolveAppliedStatus(status, sourceUnit, BattleStatusEffectApplyResult.Applied, blessing != null, previousPhysicalDefense, enteringStealth); // 신규 등록 뒤 상태 정화 및 적용 결과 전달
+            return ResolveAppliedStatus(status, sourceUnit, BattleStatusEffectApplyResult.Applied, blessing != null, previousPhysicalDefense, enteringStealth, enteringBurn); // 실제 신규 화상과 기존 적용 결과까지 원래 정산 전달
         } // 신규 상태 처리 종료
         bool preserveActiveSource = !existingEffect.IsExpired; // 종료 상태의 이전 적용 출처 회수
         existingEffect.HasAuthoredActionPointLoss = authoredActionPointLoss || (preserveActiveSource && existingEffect.HasAuthoredActionPointLoss); // 실제 활성 상태에만 보존하고 오래된 경직의 출처 부활 차단
@@ -410,14 +412,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             existingEffect.SetPublicMarkTargetTurnLifetime(Team); // 최대 기간과 한 중첩 갱신 뒤 같은 현재 대상의 진영 기준 보관
         } // 새 전술 표식의 기존 단일 상태 수명 갱신 종료
         existingEffect.RecordPoisonApplication(sourceUnit, preserveActiveSource); // 기존 활성 중첩과 이번 중독 적용 출처를 같은 실제 상태에 연결
-        return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null, previousPhysicalDefense, enteringStealth); // 중첩 갱신 뒤 상태 정화 및 적용 결과 전달
+        return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null, previousPhysicalDefense, enteringStealth, enteringBurn); // 중첩과 만료 뒤 새 상태를 구분해 실제 갱신 정산
     } // 상태 이상 적용 종료
-    private BattleStatusEffectApplyResult ResolveAppliedStatus(BattleStatusEffectInstance status, BattleUnitRuntime source, BattleStatusEffectApplyResult result, bool preserveDuration, int previousPhysicalDefense, bool enteringStealth) // 상태 최종 정산과 실제 물리 방어 차이 확인
+    private BattleStatusEffectApplyResult ResolveAppliedStatus(BattleStatusEffectInstance status, BattleUnitRuntime source, BattleStatusEffectApplyResult result, bool preserveDuration, int previousPhysicalDefense, bool enteringStealth, bool enteringBurn) // 최종 상태의 원래 정산과 실제 화상 시작 확인
     { // 성공한 상태 정산 시작
-        if (TryCleanseReceivedDebuff(status)) // 실제 아군에게 새로 들어온 일반 약화의 즉시 정화 확인
-        { // 봉인핵의 기존 상태 전체 정화 시작
+        if (TryCleanseReceivedDebuff(status) || (enteringBurn && TryCoolantValveBurnCleanse(status))) // 기존 즉시 정화와 새로 활성화된 실제 화상의 밸브 판정
+        { // 실제 유물 정화의 최종 결과 처리 시작
             result = BattleStatusEffectApplyResult.CleansedByRelic; // 화면에서 정화와 원래 면역을 구분할 결과
-        } // 봉인핵의 기존 상태 전체 정화 종료
+        } // 실제 유물 정화의 최종 결과 처리 종료
         StatusEffectsChanged?.Invoke(this); // 정화 또는 활성 상태의 최종 목록 알림
         ReportStatusEffectResolution(source, status.EffectType, result, preserveDuration); // 최종 상태와 지속 처리 상태의 공유 알림
         ApplyDisruptMental(status.EffectType, source); // 정상 부여된 공포와 교란의 원래 즉시 정신 변화 보존
@@ -565,6 +567,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return false; // 원래 상태 유지와 실패 반환
         } // 이동 불가 처리 종료
         BattleStatusEffectInstance existing = recipient.FindStatusEffect(effect.EffectType); // 받는 쪽의 동일 상태 조회
+        bool enteringBurn = effect.EffectType == BattleStatusEffectType.Burn && existing is not { IsExpired: false }; // 일반 전술 이전에서 새로 화상에 들어가는 실제 대상 확인
         statusEffects.Remove(effect); // 원래 동료의 디버프 제거
         if (existing == null) // 받는 쪽의 기존 상태 존재 확인
         { // 신규 상태 이전 시작
@@ -579,7 +582,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             existing.MergeTransferredState(effect); // 이전된 수치 감소와 지속 생략 상태 병합
         } // 상태 중첩 병합 종료
         StatusEffectsChanged?.Invoke(this); // 원래 동료의 상태 화면 갱신
-        recipient.TryCleanseReceivedDebuff(existing ?? effect); // 정상 이전을 마친 동료의 받은 약화 정화
+        var received = existing ?? effect; // 병합 또는 원본 이전을 마친 실제 상태 인스턴스
+        if (!recipient.TryCleanseReceivedDebuff(received) && enteringBurn) // 기존 즉시 정화가 없고 새 화상으로 변한 수신 아군 확인
+        { // 실제 이전 화상의 별도 유물 정화 시작
+            recipient.TryCoolantValveBurnCleanse(received); // 원래 상태 제거를 재사용한 냉각수 밸브 한 번의 확률
+        } // 실제 이전 화상의 별도 유물 정화 종료
         recipient.StatusEffectsChanged?.Invoke(recipient); // 이전받은 동료의 상태 화면 갱신
         return true; // 디버프 이동 성공 반환
     } // 디버프 이동 종료
@@ -657,6 +664,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int chance = BattleSupplyRelics.Find(RelicEffectType.CleanseReceivedDebuff)?.TriggerChancePercent ?? 0; // 현재 보유한 봉인핵의 유효 확률
         return chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance) && RemoveStatusEffectInstance(status); // 실제로 성립한 약화의 전체 인스턴스 제거
     } // 봉인핵의 유효 확률 확인 종료
+    private bool TryCoolantValveBurnCleanse(BattleStatusEffectInstance burn) // 실제 신규 아군 화상의 즉시 냉각 확인
+    { // 화상의 유효한 상태와 전투 확인 시작
+        var battle = DamageRelicBattle; // 현재 아군을 감시하는 실제 전투
+        if (Team != BattleTeam.Ally || IsDead || burn is not { EffectType: BattleStatusEffectType.Burn, IsExpired: false } || // 생존 아군의 유효한 화상 상태 확인
+            battle is not { IsBattleEnded: false, CurrentRound: > 0 } || !ContainsStatusEffectInstance(burn)) // 같은 전투에 들어온 실제 남은 화상 확인
+        { // 정상 전투와 무관한 상태 제외 시작
+            return false; // 약화가 없는 경우와 원래 난수 유지
+        } // 정상 전투와 무관한 상태 제외 종료
+        int chance = battle.DamageRelicInventory?.FindEffect(RelicEffectType.CoolantValveInstantBurnCleanse)?.TriggerChancePercent ?? 0; // 실제 보유한 밸브 원본의 정화 확률
+        return chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance) && RemoveStatusEffectInstance(burn); // 성공한 실제 화상에서 전체 인스턴스 즉시 제거
+    } // 화상의 유효한 상태와 전투 확인 종료
     private int CalculateAttackPowerBonus() // 공격력 증가 합계 계산
     { // 공격력 증가 계산 시작
         long totalBonus = ExplorationAttackPowerBattle?.PermanentAttackPower ?? 0; // 탐사 중인 실제 아군의 기존 영구 공격력과 일반 강화 합산 준비
@@ -684,9 +702,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         var ward = increaseType == BattleStatusEffectType.MagicalResistanceUp ? FindStatusEffect(BattleStatusEffectType.ArcaneWard) : null; // 마법 저항 계산에서만 실제 마력 보호막 상태 확인
         int wardBonus = ward is { IsExpired: false } ? ward.EffectiveValue : 0; // 활성 중인 정수 저항 증가량
         int distributionLoss = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.DistributionPhysicalDefenseDown) : 0; // 분배의 별도 감소를 물리 방어에만 적용
-        int surveillance = increaseType == BattleStatusEffectType.MagicalResistanceUp && Team == BattleTeam.Ally && DamageRelicBattle is { IsBattleEnded: false } battle // 현재 같은 전투에 참가한 아군의 마법 저항 기준
-            ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.SurveillanceCoreFragmentResistanceTrade)?.EffectValue ?? 0 : 0; // 원래 전투의 보유 유물에서 별도 저항 보너스 합산
-        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus + surveillance - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 기존 강화와 약화를 모두 더한 실제 방어 또는 마법 저항 영 하한
+        var resistanceRelics = increaseType == BattleStatusEffectType.MagicalResistanceUp && Team == BattleTeam.Ally && DamageRelicBattle is { IsBattleEnded: false } battle // 같은 활성 교전의 아군 마법 저항만 보정
+            ? battle.DamageRelicInventory : null; // 기존 물리 방어와 적의 마법 저항에는 원본 수치 유지
+        int surveillance = resistanceRelics?.FindEffect(RelicEffectType.SurveillanceCoreFragmentResistanceTrade)?.EffectValue ?? 0; // 이전 감시 코어의 실제 마법 저항 보너스 유지
+        int deadlock = resistanceRelics?.FindEffect(RelicEffectType.DeadlockBackupChipOpeningMarksTrade)?.EffectValue ?? 0; // 백업칩이 활성인 현재 교전의 아군 마법 저항 거래
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus + surveillance - deadlock - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 일반 방어와 모든 별도 보정의 원래 영 하한과 정수 상한
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작
@@ -714,6 +734,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         DefeatedWhileBurning = burn is { IsExpired: false }; // 기존 실제 처치 시 화상 기록과 다른 유물 유지
         DefeatedBurnAmount = DefeatedWhileBurning ? Math.Max(1, burn.EffectiveValue) : 0; // 실제 사망 전에 남은 화상 수치를 별도로 기록
         DefeatedWhileAfraid = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 공포 저장
+        DefeatedWhileShocked = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false }; // 실제 처치에서 사라지기 전 활성 감전 여부 보관
         var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
         pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
     } // 전투불능 상태 기록 종료

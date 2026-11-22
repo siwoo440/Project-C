@@ -2764,7 +2764,7 @@
     {
       "sourceRow": 253,
       "name": "중앙 전력 퓨즈",
-      "description": "감전 상태 적 처치 시 코스트 +2",
+      "description": "아군이 감전이 활성인 적을 실제로 처치하면 공용 행동력을 2 얻는다.",
       "buyMin": 231,
       "buyMax": 274,
       "buyVariance": 43,
@@ -2775,7 +2775,7 @@
     {
       "sourceRow": 254,
       "name": "냉각수 밸브",
-      "description": "화상 상태가 되면 즉시 화상 제거 50%",
+      "description": "아군이 화상 상태가 처음 적용될 때 50% 확률로 그 화상을 즉시 해제한다. 같은 화상이 중첩되면 다시 판정하지 않는다.",
       "buyMin": 248,
       "buyMax": 284,
       "buyVariance": 36,
@@ -2786,7 +2786,7 @@
     {
       "sourceRow": 255,
       "name": "데드락 백업칩",
-      "description": "전투 시작 시 적 전체 표식(2턴), 아군 전체 저항력 -5%",
+      "description": "전투 시작에 생존 적 전체에 두 적 턴 동안 표식을 부여한다. 전투 중 모든 아군의 마법 저항력이 5 낮아진다.",
       "buyMin": 265,
       "buyMax": 308,
       "buyVariance": 43,
@@ -2797,7 +2797,7 @@
     {
       "sourceRow": 256,
       "name": "바실리스크 엔진 코어",
-      "description": "전투 시작 시 보호막 30, 속도 -1 (1턴)",
+      "description": "전투 시작에 첫 생존 아군이 방어도 30을 얻는다. 같은 아군의 첫 아군 턴 행동 속도는 1 감소한다.",
       "buyMin": 282,
       "buyMax": 318,
       "buyVariance": 36,
@@ -2808,7 +2808,7 @@
     {
       "sourceRow": 257,
       "name": "스크랩 마더의 재조립핵",
-      "description": "기계형 적 처치 시 전투 중 방어도 +5 누적",
+      "description": "아군이 기계형 적을 처치하면 그 아군의 전투 방어도 지급량에 5가 누적된다. 처치 시 즉시 방어도 5를 얻고 이후 아군 턴마다 누적 방어도를 다시 얻는다.",
       "buyMin": 299,
       "buyMax": 342,
       "buyVariance": 43,
@@ -2819,7 +2819,7 @@
     {
       "sourceRow": 258,
       "name": "중앙 봉쇄 프로토콜",
-      "description": "3턴마다 적 전체 행동력 -1 25%",
+      "description": "실제 아군 턴이 세 번 시작될 때마다 25% 확률로 생존 적 전체의 다음 예정 행동 하나를 취소한다.",
       "buyMin": 316,
       "buyMax": 352,
       "buyVariance": 36,
@@ -2830,7 +2830,7 @@
     {
       "sourceRow": 259,
       "name": "실험체 보존 캡슐",
-      "description": "전투 종료 시 아군 전체 체력 10 회복, 정신력 -3",
+      "description": "전투 종료 때 생존 아군 모두가 체력을 기본 10 회복하고 정신력이 3 감소한다.",
       "buyMin": 183,
       "buyMax": 226,
       "buyVariance": 43,
@@ -2841,7 +2841,7 @@
     {
       "sourceRow": 260,
       "name": "불량 AI의 판단식",
-      "description": "턴 시작 시 무작위 카드 1장 비용 -1 또는 +1",
+      "description": "매 아군 턴의 손패 지급을 마친 뒤 무작위 고정 비용 카드 한 장의 비용이 이번 턴에만 1 줄거나 1 늘어난다.",
       "buyMin": 200,
       "buyMax": 236,
       "buyVariance": 36,

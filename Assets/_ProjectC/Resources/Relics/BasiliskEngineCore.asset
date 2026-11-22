@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: BasiliskEngineCore
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_BASILISK_ENGINE_CORE
+  displayName: 바실리스크 엔진 코어
+  description: "전투 시작에 첫 생존 아군이 방어도 30을 얻는다. 같은 아군의 첫 아군 턴 행동 속도는 1 감소한다."
+  icon: {fileID: 21300000, guid: 94aeb3746a9d514ab898f0e342a2606f, type: 3}
+  rarity: 0
+  triggerType: 34
+  effectType: 244
+  targetType: 1
+  triggerChancePercent: 100
+  effectValue: 30
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 36
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

@@ -13,6 +13,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     internal bool IsBattleOnlySingleUse { get; private set; } // 원본 덱에 저장하지 않는 고정 비용 영의 전투 일회 카드
     internal bool HasBeenPlayed { get; set; } // 현재 전투에서 같은 실물 인스턴스가 실제 사용을 완료한 기록
     internal int AncientFormulaApSurcharge { get; set; } // 이번 아군 턴 실제 드로우한 물리 카드의 고대 계산식 기본 비용 증가
+    internal int FaultyAiApAdjustment { get; set; } // 이번 아군 턴에서 선택된 실물만 받는 부호 있는 고정 기본 비용 수정
 
     public string InstanceId { get; }
     public CardData SourceData { get; }
@@ -56,7 +57,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             int crown = !HasBeenPlayed && !SourceData.SpendsAllActionPoints ? OwnerUnit.WindWornCrownApDiscount : 0; // 실제 사막에서 아직 쓰지 않은 일반 고정 비용의 독립 첫 할인
             long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse + calculation + crown; // X 및 별도 추가 지불의 원래 경계 아래 기본 할인만 합산
             int formula = SourceData.SpendsAllActionPoints || HasRunePower ? 0 : AncientFormulaApSurcharge; // 전액 비용과 명시적인 기본 행동력 면제의 원래 계산 보존
-            return (int)Math.Clamp((long)upgradedCost + formula - discount, 0L, int.MaxValue); // 이번 턴의 일반 기본 비용 증가와 기존 할인 계산
+            int faultyAi = SourceData.SpendsAllActionPoints ? 0 : FaultyAiApAdjustment; // 기본 가격이 있는 실물의 독립 조정과 기존 X 비용 유지
+            return (int)Math.Clamp((long)upgradedCost + formula + faultyAi - discount, 0L, int.MaxValue); // 기존 개별 할인과 별도 대가를 유지하며 기본 비용의 영 하한 적용
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료
     internal int ShieldBalanceDiscount => CardType == CardType.Shield && ApCostBeforeNextCardDiscount > 0 ? OwnerUnit.GetStatusEffect(BattleStatusEffectType.ShieldBalance)?.EffectiveValue ?? 0 : 0; // 비용이 남는 방패 카드에 예약된 기본 할인
