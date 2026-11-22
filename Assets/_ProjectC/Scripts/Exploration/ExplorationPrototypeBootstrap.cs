@@ -146,15 +146,16 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             canvasObject.transform); // 탐사 성공 결과 HUD 생성
 
         ExplorationPlayerController tutorialPlayer = FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
-        RectTransform prompt = PreparationUi.CreatePanel("ExplorationInteractionPrompt", canvas.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)); // 화면 가운데 F 키 안내 바탕
-        PreparationUi.Place(prompt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(224f, 52f)); // 해상도에 맞는 화면 중앙의 짧은 안내
+        RectTransform prompt = PreparationUi.CreatePanel("ExplorationInteractionPrompt", canvas.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)); // 캐릭터 옆 F 키 안내 바탕
+        prompt.pivot = new Vector2(0f, 0.5f); // 캐릭터 오른쪽 원화와 맞출 안내 왼쪽 기준
+        PreparationUi.Place(prompt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(224f, 52f)); // 창 크기에 비례하는 짧은 안내 너비와 높이
         Image promptArt = prompt.GetComponent<Image>(); // 원래 탐사 UI와 어울리는 안내 바탕 조회
         LobbyUiArt.Apply(promptArt, "Button"); // 기존 금속 테두리와 청록 배경 적용
         promptArt.raycastTarget = false; // 탐사 HUD의 마우스 클릭을 가리지 않는 안내
         TMP_Text promptText = PreparationUi.CreateText("Prompt", prompt, "F : 상호작용", 26f); // 누를 키와 동작을 보여 주는 실제 표시
         promptText.fontStyle = FontStyles.Bold; // 배경과 구분하는 짧은 안내 글자 굵기
         PreparationUi.Stretch(promptText.rectTransform, new Vector2(0.09f, 0f), new Vector2(0.91f, 1f)); // 테두리 장식을 피하는 가운데 문구 영역
-        tutorialPlayer.BindInteractionPrompt(prompt.gameObject); // 실제 플레이어가 현재 접촉한 오브젝트와 안내 연결
+        tutorialPlayer.BindInteractionPrompt(prompt); // 캐릭터가 가까워질 때 오른쪽에 표시할 안내 연결
         WorldTutorialProgress tutorial = new WorldTutorialProgress(WorldTutorialKind.Exploration, new PlayerPrefsSettingsStore()); // 기기별 탐사 안내 진행 생성
         WorldTutorialView tutorialView = WorldTutorialView.Create(canvas, tutorial, () => tutorialPlayer != null ? (Vector2)tutorialPlayer.transform.position : Vector2.zero, step => null, true); // 실제 이동을 확인하는 탐사 안내 화면 생성
         tutorialView.BindPlayer(tutorialPlayer); // 맵 자동 배치와 직접 이동 구분 연결

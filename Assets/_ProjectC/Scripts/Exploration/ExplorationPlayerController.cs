@@ -11,9 +11,10 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
     private static bool inputBlocked; // 외부 UI 입력 차단 상태
 
     private Rigidbody2D body; // 플레이어 물리 몸체
+    private SpriteRenderer actorArt; // 표시된 플레이어 원화의 화면 위치 기준
     private Vector2 moveInput; // 현재 이동 입력
     private readonly List<Collider2D> nearbyInteractables = new List<Collider2D>(); // 플레이어 주변의 현재 상호작용 충돌체
-    private GameObject interactionPrompt; // 탐사 화면 중앙의 F 키 안내 오브젝트
+    private RectTransform interactionPrompt; // 캐릭터 오른쪽 F 키 안내 영역
 
     public static bool InputBlocked => inputBlocked; // 입력 차단 상태 조회
     public event Action<Vector2> Teleported; // 탐사 위치 자동 변경 알림
@@ -26,6 +27,7 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
     private void Awake() // 플레이어 초기화
     {
         body = GetComponent<Rigidbody2D>(); // Rigidbody2D 조회
+        actorArt = GetComponent<SpriteRenderer>(); // 플레이어의 현재 이동 원화 조회
         body.gravityScale = 0f; // 중력 제거
         body.freezeRotation = true; // 물리 회전 방지
     }
@@ -81,7 +83,7 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
                 vertical).normalized; // 대각선 속도 보정
     }
 
-    internal void BindInteractionPrompt(GameObject prompt) // 생성된 탐사 HUD의 중앙 안내 연결
+    internal void BindInteractionPrompt(RectTransform prompt) // 생성된 탐사 HUD의 안내 영역 연결
     { // 탐사 상호작용 안내 연결 시작
         interactionPrompt = prompt; // 현재 탐사 씬에서만 쓸 F 키 안내
         SetInteractionPrompt(false); // 오브젝트를 만나기 전 안내 숨김
@@ -114,16 +116,32 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
             target.Interact(this); // 선택된 오브젝트의 원래 동작 실행
             target = InteractionAvailable() ? FindNearbyInteractable() : null; // 실행으로 모달이 열리거나 대상이 사라진 뒤 상태 확인
         } // 현재 상호작용 실행 종료
-        SetInteractionPrompt(target != null); // 선택할 대상이 있는 동안만 화면 중앙에 표시
+        SetInteractionPrompt(target != null); // 선택할 대상이 있는 동안만 캐릭터 옆에 표시
     } // 이번 프레임의 상호작용 조회 종료
 
     private void SetInteractionPrompt(bool visible) // 현재 탐사 안내의 안전한 표시 갱신
     { // 안내 오브젝트 표시 변경 시작
-        if (interactionPrompt != null && interactionPrompt.activeSelf != visible) // 씬 종료 때의 제거 여부와 이전 표시 확인
+        if (interactionPrompt != null && interactionPrompt.gameObject.activeSelf != visible) // 씬 종료 때의 제거 여부와 이전 표시 확인
         { // 가까운 오브젝트에 따른 안내 갱신 시작
-            interactionPrompt.SetActive(visible); // 바뀐 프레임에만 F 키 안내 표시
+            interactionPrompt.gameObject.SetActive(visible); // 바뀐 프레임에만 F 키 안내 표시
         } // 가까운 오브젝트에 따른 안내 갱신 종료
     } // 안내 오브젝트 표시 변경 종료
+
+    internal void PlaceInteractionPrompt(Camera worldCamera) // 카메라 이동 뒤 캐릭터 오른쪽에 안내 배치
+    { // 현재 표시 중인 안내 위치 갱신 시작
+        if (interactionPrompt == null || !interactionPrompt.gameObject.activeSelf || worldCamera == null) // 보이지 않는 안내와 무효 카메라 확인
+        { // 안내 위치 처리 생략 시작
+            return; // 실제 표시 중인 안내만 월드 좌표 변환
+        } // 안내 위치 처리 생략 종료
+        Bounds actorBounds = actorArt != null ? actorArt.bounds : new Bounds(transform.position, Vector3.zero); // 현재 보여 주는 캐릭터 원화의 실제 크기
+        Vector3 rightEdge = new Vector3(actorBounds.max.x, actorBounds.center.y, actorBounds.center.z); // 캐릭터 오른쪽 면의 가운데 월드 위치
+        Vector2 screenPoint = worldCamera.WorldToScreenPoint(rightEdge); // 이동한 카메라로 계산한 현재 화면 픽셀
+        RectTransform hud = (RectTransform)interactionPrompt.parent; // 탐사 오버레이 캔버스의 기준 영역
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(hud, screenPoint, null, out Vector2 localPoint)) // 화면 픽셀을 캔버스 배율에 맞춰 변환
+        { // 오른쪽 안내 배치 시작
+            interactionPrompt.anchoredPosition = localPoint - hud.rect.center + new Vector2(12f, 0f); // 캐릭터 밖의 작은 간격과 수직 가운데 정렬
+        } // 오른쪽 안내 배치 종료
+    } // 현재 표시 중인 안내 위치 갱신 종료
 
     private static bool InteractionAvailable() // 탐사 상호작용을 받을 수 있는 화면 상태
     { // 일반 탐사 조작 상태 확인 시작
