@@ -454,6 +454,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 플레이어 턴 정리 시작
         SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 기본 할인 복원
         SetMechanicalCalculationDiscount(0); // 현재 아군 턴과 함께 종료되는 펜타클 전용 비용 할인 회수
+        runtimeDeck.EndAllyTurnDrawTracking(); // 원래 일반 종료와 보스 강제 턴 경계에서 드로우 기록 및 비용 증가 해제
         if (runtimeDeck.HandCount == 0 && lastEmptyHandDrawRound != CurrentRound) // 자동 버림 전 빈손과 중복 발동 확인
         { // 패치 노끈 발동 검사 시작
             var cord = openingRelics?.FindEffect(RelicEffectType.EmptyHandNextTurnDraw); // 보유한 낡은 패치 노끈 조회
@@ -1177,6 +1178,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
 
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
+        runtimeDeck.BeginAllyTurnDrawTracking(); // 단계 시작 알림보다 먼저 뽑는 실제 첫 시작 손패도 기록
         ApplyQueuedPlayerTurnActionPointLosses(); // 기본 회복에 이어 이전 명시 감소와 실제 시전 대상의 유물 피해
         if (IsBattleEnded) // 해당 턴 명시 피해로 실제 전투가 끝났는지 확인
         { // 전투 종료 뒤 카드와 행동력 추가 지급 중단 시작
@@ -1556,6 +1558,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 체력 집계 종료
         else if (CurrentPhase == BattleTurnPhase.PlayerTurn) // 다음 아군 턴 도착 확인
         { // 지연 방어 감소 적용 시작
+            runtimeDeck.BeginAllyTurnDrawTracking(); // 다음 실제 아군의 진영 시작 효과에 따른 독립 드로우도 기록
             ApplyDesertLastWaterDrop(); // 살아 있는 부상자가 처음 존재하는 실제 아군 턴 시작의 전체 회복
             if (disposed || IsBattleEnded) // 자체 회복 알림에서 실제 교전이 끝났는지 확인
             { // 종료한 교전의 남은 아군 시작 중단

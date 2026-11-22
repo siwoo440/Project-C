@@ -3341,6 +3341,54 @@
       "name": "운명 조작",
       "description": "뽑을 카드 더미에서 한 장을 골라 현재 소유자와 강화 상태 그대로 손패로 가져온다.",
       "artworkKey": "e00fa50da45f5d049cdeaf1db961a331"
+    },
+    {
+      "category": 7,
+      "name": "룬 장벽",
+      "description": "생존 아군마다 방어도를 10 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 증가한다.",
+      "artworkKey": "581b7c5d33e15dce8251b7ac5cc749b6"
+    },
+    {
+      "category": 7,
+      "name": "금빛 미끼",
+      "description": "생존 적 전체에 한 적 턴 동안 표식을 부여한다. 각 적의 직접 공격 피해를 두 적 턴 동안 10% 낮춘다.",
+      "artworkKey": "f5093f9fa69b5c6184213cf4390b0e3b"
+    },
+    {
+      "category": 7,
+      "name": "계약 파기",
+      "description": "기본 행동력 3과 추가 행동력 1을 지불한다. 각 생존 아군에게 먼저 적용된 해제 가능한 약화 하나를 제거한다.",
+      "artworkKey": "5191ce33c6ca524ba4b7f7acb37eb7a4"
+    },
+    {
+      "category": 7,
+      "name": "고대 계산식",
+      "description": "카드 3장을 뽑는다. 이번 아군 턴에 실제로 뽑은 카드의 고정 기본 행동력 비용이 1 증가한다.",
+      "artworkKey": "55a902d1451159d4b1464919983c051a"
+    },
+    {
+      "category": 7,
+      "name": "룬 폭주 장치",
+      "description": "비용 지불 직후 남은 행동력마다 생존 적 전원에게 기본 마법 피해 4를 준다.",
+      "artworkKey": "0435dba275b459159ee8df6ecc0b7615"
+    },
+    {
+      "category": 7,
+      "name": "황금률",
+      "description": "비용 지불 직후 남은 행동력마다 생존 아군 전원의 체력을 기본 5 회복한다.",
+      "artworkKey": "e22cf5073c895859ba4b604f6613c97d"
+    },
+    {
+      "category": 7,
+      "name": "운명의 재작성",
+      "description": "다른 손패를 모두 버리고 이번 전투에 사용할 서로 다른 전설 카드 2장을 생성한다. 생성 카드의 소유자는 시전자다.",
+      "artworkKey": "af9d5c9442235d4789db2a1c86ebba19"
+    },
+    {
+      "category": 7,
+      "name": "무한 계약",
+      "description": "현재 행동력 전부를 X로 지불하고 시전자의 체력을 X×4 지불한다. 이번 아군 턴의 상한을 확장해 행동력 X×2를 얻는다. 시전자는 체력이 1 이상 남아야 한다.",
+      "artworkKey": "838c80934cb85fddadec940c1475960c"
     }
   ]
 }

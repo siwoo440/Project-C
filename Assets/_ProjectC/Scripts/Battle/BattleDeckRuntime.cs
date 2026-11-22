@@ -19,6 +19,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
+    private const int RewriteFateCardCount = 2; // 원본이 이번 전투에 생성하는 서로 다른 전설 카드 수
+    private readonly HashSet<CardInstance> allyTurnDrawnCards = new HashSet<CardInstance>(); // 이번 차례 실제 드로우한 물리 카드 기록
+    private bool trackingAllyTurnDraws; // 현재 실제 아군 턴의 드로우 추적 상태
+    private int ancientFormulaSurcharge; // 이번 차례에 보관한 실제 기본 비용 증가량
     private readonly List<CardInstance> historicCopies = new List<CardInstance>(); // 실제 전투에서만 보관할 복제 주문의 실물 카드 목록
     private CardInstance battleCopy; // 전투 종료 시 모든 더미에서 지울 복사본
     private CardInstance openingTemporaryCard; // 첫 아군 손패에 한 번 들어오는 전투 한정 무료 찌르기
@@ -196,6 +200,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             return false; // 현재 드로우 횟수의 버림 요청
         } // 봉인테이프 발동 종료
         hand.Add(card); // 손패에 드로우 카드 추가
+        if (trackingAllyTurnDraws && allyTurnDrawnCards.Add(card)) // 이번 실제 아군 턴에서 새로 뽑은 물리 인스턴스 확인
+        { // 이전 효과를 정상 드로우한 새 카드에 즉시 표시 시작
+            card.AncientFormulaApSurcharge = ancientFormulaSurcharge; // 남은 턴 비용을 뽑은 실물에 직접 반영
+        } // 이전 효과를 정상 드로우한 새 카드에 즉시 표시 종료
         if (firstDrawCompleted) // 이번 전투 첫 손패 드로우 확인
         { // 최초 이후 드로우 처리 시작
             return true; // 이후 카드의 기존 비용 보존
@@ -209,6 +217,41 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 첫 카드 할인 종료
         return true; // 실제 손패 드로우 완료
     } // 실제 손패 드로우 처리 종료
+    internal void BeginAllyTurnDrawTracking() // 실제 아군 턴의 최초 및 이어지는 드로우 기록 시작
+    { // 실제 아군 시작 처리 시작
+        trackingAllyTurnDraws = true; // 시작 드로우와 같은 턴의 연속 드로우 기록 활성화
+    } // 실제 아군 시작 처리 종료
+
+    internal void ApplyAncientFormulaSurcharge(int amount) // 이번 아군 턴에 실제 뽑은 카드의 일반 기본 비용 적용
+    { // 이전 실제 드로우와 이후 새 실물의 비용 연결 시작
+        if (!trackingAllyTurnDraws || amount <= ancientFormulaSurcharge) // 실제 아군 턴 및 동일 계열 증가량 중복 확인
+        { // 다른 진영이나 이미 적용한 계산식 처리 시작
+            return; // 이번 턴의 실제 비용을 변경하지 않음
+        } // 다른 진영이나 이미 적용한 계산식 처리 종료
+        ancientFormulaSurcharge = amount; // 이후 같은 턴의 실제 드로우도 동일한 한 번 증가 사용
+        foreach (var card in allyTurnDrawnCards) // 해당 차례에 손패로 실제 뽑았던 기존 실물 전부 순회
+        { // 뽑은 물리 카드별 기존 위치의 기본 비용 적용 시작
+            card.AncientFormulaApSurcharge = amount; // 실제 이전 드로우의 추가 기본 행동력 표시와 견적 통일
+        } // 뽑은 물리 카드별 기존 위치의 기본 비용 적용 종료
+        StateChanged?.Invoke(); // 과거에 잡은 실제 카드의 새 비용을 현재 손패 UI에 반영
+    } // 이전 실제 드로우와 이후 새 실물의 비용 연결 종료
+
+    internal void EndAllyTurnDrawTracking() // 끝난 아군 턴의 드로우 정보와 일시 증가 모두 회수
+    { // 이전 턴의 실제 비용과 고유 실물 추적 정리 시작
+        trackingAllyTurnDraws = false; // 이어지는 적 턴은 드로우를 아군 비용 기록에 넣지 않음
+        bool refresh = ancientFormulaSurcharge > 0 && allyTurnDrawnCards.Count > 0; // 이번 턴에 실제 표시 변화가 있었는지 확인
+        ancientFormulaSurcharge = 0; // 다음 아군 차례의 초기 비용 증가량 복원
+        foreach (var card in allyTurnDrawnCards) // 이전에 뽑은 현재 손패와 버림 영역의 원래 실물 확인
+        { // 물리 카드 비용 복원 시작
+            card.AncientFormulaApSurcharge = 0; // 다음 실제 사용과 비용 표시를 원래 일반 가격으로 복원
+        } // 물리 카드 비용 복원 종료
+        allyTurnDrawnCards.Clear(); // 다음 턴의 고유 실물 기록 준비
+        if (refresh) // 실제 원래 비용으로 되돌릴 손패 표시 확인
+        { // 한 번의 실제 비용 갱신 시작
+            StateChanged?.Invoke(); // 다음 턴이나 재사용 시 기본 비용 변경 알림
+        } // 한 번의 실제 비용 갱신 종료
+    } // 이전 턴의 실제 비용과 고유 실물 추적 정리 종료
+
     internal void ClearFirstDrawRelicDiscount() // 종료된 턴의 첫 드로우 카드 할인 복원
     { // 첫 드로우 할인 정리 시작
         if (firstDrawDiscountCard == null) // 실제로 할인한 카드 확인
@@ -539,6 +582,33 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         return true; // 원래 사용과 다른 실물의 변환 완료
     } // 원래 두 실물과 등록 희귀 카드 검증 종료
 
+    internal bool CanRewriteFate(CardInstance played) // 실제 시전자가 확보할 두 장의 생성 자리 검사
+    { // 현재 물리 손패와 생성 제한 확인 시작
+        return played != null && hand.Contains(played) && MaxHandSize >= RewriteFateCardCount && // 유효 원본과 정상 손패의 최소 두 장 공간 조건
+            (MaxHandSize > RewriteFateCardCount || hand.TrueForAll(card => card == played || card.SourceData.VolatileInHand) || // 한 장의 버림 보호까지 감당할 수 있는지 확인
+                BattleSupplyRelics.Find(RelicEffectType.RetainDiscardedHandCard) == null); // 두 장 상한의 경우 별도 유물 버림 보호가 없는지 확인
+    } // 현재 물리 손패와 생성 제한 확인 종료
+
+    internal bool TryPlayAndRewriteFate(CardInstance played, IReadOnlyList<CardData> candidates) // 다른 손패를 처리하고 독립 전설 카드 두 장 생성
+    { // 실제 사용과 전설 후보 검사 시작
+        if (!CanRewriteFate(played) || played.OwnerUnit.IsDead || candidates.Count < RewriteFateCardCount) // 실제 사용할 손패와 생존 주인 및 두 독립 후보 확인
+        { // 사용할 수 없는 방 또는 후보의 중도 정산 차단 시작
+            return false; // 현재 손패와 효과 난수 유지
+        } // 사용할 수 없는 방 또는 후보의 중도 정산 차단 종료
+        int first = random.Next(candidates.Count); // 실제 검증과 성공 결제 이후 첫 전설 원본 추첨
+        int second = random.Next(candidates.Count - 1); // 같은 후보를 빼고 고른 두 번째 실제 전설 원본
+        if (second >= first) // 압축한 두 번째 범위의 실제 다른 원본 인덱스 확인
+        { // 첫 번째를 건너뛴 두 번째 실제 위치 보정 시작
+            second++; // 한 종류의 두 장을 생성하지 않는 독립 후보 인덱스
+        } // 첫 번째를 건너뛴 두 번째 실제 위치 보정 종료
+        var replacements = new[] { CardInstance.Create(candidates[first], played.OwnerUnit, cards.Count, 0), // 실제 시전자가 소유할 첫 전설 카드
+            CardInstance.Create(candidates[second], played.OwnerUnit, cards.Count + 1, 0) }; // 같은 시전자의 다른 전설 원본 및 전투 전용 실물
+        hand.Remove(played); // 다른 원본 손패와 별도로 사용 카드가 차지한 자리 비우기
+        PlacePlayedCard(played); // 실제 사용한 원본은 자체 정상 버림 또는 제외로 정산
+        DiscardHand(0, replacements); // 다른 손패의 기존 실제 버림 및 휘발 처리 뒤 두 전설 카드 배치
+        return true; // 원래 사용과 다른 손패의 교체 완료
+    } // 실제 사용과 전설 후보 검사 종료
+
     internal bool TryPlayAndGenerateCard(CardInstance played, CardData template) // 실제 등록한 일반 원본의 전투 한정 카드 생성
     { // 생성의 원래 시전자와 현재 손패 승인 확인 시작
         if (template == null || played == null || !hand.Contains(played)) // 유효한 원본과 실제 사용하는 손패 카드 검사
@@ -593,6 +663,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
 
     internal void ClearBattleRelicCards() // 전투가 끝난 뒤 임시 카드와 예약 정리
     { // 전투 카드 정리 시작
+        EndAllyTurnDrawTracking(); // 끝난 전투의 실제 손패 가격과 해당 차례 드로우 정보 정리
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
         ClearOpeningRandomRelicDiscount(); // 종료된 전투의 왕관 할인 복원
         SetFirstDefensiveRelicApDiscount(0); // 전투가 종료될 때 미사용 방어 할인 정리
@@ -806,18 +877,31 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 실제 손패의 행동력 배지와 사용 가능 여부 갱신
     } // 방어 할인 갱신 종료
     public int DiscardHand(int currentRound = 0) // 실제 아군 턴 또는 일반 손패 전체 버리기
+    { // 실제 손패의 턴 정리 시작
+        return DiscardHand(currentRound, null); // 원래 일반 정리에서만 턴에 의한 유지와 자동 집계 적용
+    } // 실제 손패의 턴 정리 종료
+
+    private int DiscardHand(int currentRound, IReadOnlyList<CardInstance> replacements) // 버림과 휘발 신호를 공유하는 자동 정리 또는 전설 카드 생성
     { // 손패 정리 시작
-        CardInstance retainedAtOpening = openingRetainedCard; // 첫 자동 버림에서만 확인할 유물 유지 대상
-        openingRetainedCard = null; // 손패가 비어도 첫 버림 정리에서 예약 소모
+        bool turnCleanup = replacements == null; // 전설 카드로 손패를 바꾸는 명시적 버림과 일반 턴 정리 별도 처리
+        CardInstance retainedAtOpening = turnCleanup ? openingRetainedCard : null; // 실제 자동 버림에서만 확인할 유물 유지 대상
         int count = hand.Count; // 정리할 손패 수 기록
-        HandCountBeforeCleanup = count; // 유지와 버리기 전 손패 상태 기록
-        if (count == 0) // 빈 손패 확인
+        if (turnCleanup) // 자동 정리를 정산할 실제 기존 호출 확인
+        { // 종료 집계와 턴의 시작 유지 소모 시작
+            openingRetainedCard = null; // 손패가 비어도 첫 자동 버림 정리에서 예약 소모
+            HandCountBeforeCleanup = count; // 유지와 버리기 전 실제 자동 손패 수 집계
+        } // 종료 집계와 턴의 시작 유지 소모 종료
+        if (turnCleanup && count == 0) // 자동 정리의 원래 빈 손패 처리 확인
         { // 정리 불필요 시작
             return 0; // 이동 카드 없음 반환
         } // 정리 불필요 종료
         List<CardInstance> volatileCards = new List<CardInstance>(); // 정리 뒤 효과를 처리할 휘발 카드 목록
         foreach (CardInstance card in hand.ToArray()) // 현재 손패 순서대로 실제 버림 판정
         { // 카드별 정리 시작
+            if (!hand.Contains(card)) // 실제 버림 신호 중 이미 다른 위치로 옮긴 물리 카드 확인
+            { // 위치 변경된 기존 카드의 중복 처리 방지 시작
+                continue; // 원래 한 번의 버림과 제외만 유지
+            } // 위치 변경된 기존 카드의 중복 처리 방지 종료
             if (card.SourceData.VolatileInHand) // 손패에 남은 휘발 카드 확인
             { // 휘발 카드 소멸 시작
                 hand.Remove(card); // 손패에서 휘발 카드 제거
@@ -832,12 +916,22 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             { // 현재 실물의 종료 비용 처리 시작
                 card.ClearStrategicStorage(); // 기본 유지나 원래 버림 보호가 있더라도 보관 할인 기한 종료
             } // 현재 실물의 종료 비용 처리 종료
-            if (!retainedByBell && !retainedByStrategy && !IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 별도 보관과 다른 네이티브 유지 및 버림 취소 확인
+            if (!retainedByBell && !retainedByStrategy && !(turnCleanup && IsRetainedHandCard(card)) && !IsHandDiscardPrevented(card) && hand.Contains(card)) // 명시적 효과 버림과 턴 유지의 원래 경계 및 네이티브 취소 확인
             { // 실제 버림 시작
                 MoveHandCardToDiscard(card); // 효과와 자동 정리의 원래 실물 버림 경로 공유
             } // 실제 버림 종료
         } // 카드별 정리 종료
         int moved = count - hand.Count; // 보너스 드로우 전 이동 수 보관
+        if (replacements != null) // 기존 버림과 휘발 처리를 마친 실제 전설 카드의 생성 확인
+        { // 새 전투 한정 카드 등록 시작
+            foreach (var card in replacements) // 시전자 소유의 서로 다른 실제 원본을 순서대로 추가
+            { // 현재 전투의 손패와 임시 추적 및 비용 적용 시작
+                ApplyCurrentRelicDiscounts(card); // 새 카드에도 실제 원래 공용 카드 비용 적용
+                historicCopies.Add(card); // 현재 전투를 끝내면 모든 더미에서 없앨 임시 카드 기록
+                cards.Add(card); // 이번 전투 전체의 실제 위치에만 새 카드 등록
+                hand.Add(card); // 실제 버림과 휘발로 확보한 손패에 생성 카드 추가
+            } // 현재 전투의 손패와 임시 추적 및 비용 적용 종료
+        } // 새 전투 한정 카드 등록 종료
         EnsureValidState(); // 카드 위치 유효성 확인
         foreach (CardInstance card in volatileCards) // 소멸한 카드만 알림
         { // 휘발 알림 시작

@@ -52,7 +52,8 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             int available = points.CurrentActionPoints; // 현재 실제 가용 행동력 조회
             int minimum = card.SourceData.PentacleRule == PentacleCardRule.CalculatedInvestment ? Math.Max(1, card.SourceData.ApCost) : 1; // 투자에만 원본 AP2 하한과 다른 전액 비용의 양수 보존
             return available >= minimum && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()) && // 실제 가용 행동력 하한과 기존 처형 대상 확인
-                (card.SourceData.PentacleRule != PentacleCardRule.WheelOfFate || turn.HasHandPaymentOptions(available)); // 수레바퀴에서 필요한 수량의 별도 실제 손패 카드 확인
+                (card.SourceData.PentacleRule != PentacleCardRule.WheelOfFate || turn.HasHandPaymentOptions(available)) && // 수레바퀴에서 필요한 수량의 별도 실제 손패 카드 확인
+                (card.SourceData.PentacleRule != PentacleCardRule.InfiniteContract || card.OwnerUnit.CanSpendHealth(ScaleByActionPoints(available, card.SourceData.SecondaryEffectValue))); // 무한 계약의 실제 X 비용과 동시 생존 체력 조건
         } // 가변 행동력 조건 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 체력 절반 이하 적에게만 사용하는 검 확인
         { // 처형 베기 사용 검사 시작
@@ -178,6 +179,11 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         }; // 대상 약화 조건 선택 종료
         return matches ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 조건별 음수 없는 피해 가산량 반환
     } // 표식 또는 감전 가산 확인 종료
+
+    internal static int ScaleByActionPoints(int balance, int multiplier) // 잔여 또는 실제 납부한 행동력 배수의 공용 계산
+    { // 공용 행동력 배수 계산 시작
+        return (int)Math.Clamp((long)Math.Max(0, balance) * Math.Max(0, multiplier), 0L, int.MaxValue); // 영 하한과 정수 상한에 맞춘 효과 또는 생존 비용
+    } // 공용 행동력 배수 계산 종료
 
     internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 카드 공격의 방어 전 기본 피해 계산
     { // 원본 피해 계산 시작

@@ -56,6 +56,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         { // 현재 적 공격력 계산 시작
             int damage = (int)Math.Max(0L, (long)Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty - FearAttackPenalty); // 기존 정신 상태와 매 타격 공격 약화 계산
             bool directEnemyAttack = damage > 0 && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack; // 현재 양수인 적의 직접 공격 여부
+            if (directEnemyAttack && Actor.GetStatusEffect(BattleStatusEffectType.GoldenLureAttackPercentDown) is { IsExpired: false } lure) // 물리 또는 마법 등 실제 적의 직접 공격과 활성 미끼 상태 확인
+            { // 기존 고정 약화 뒤의 원본 비율 계산 시작
+                damage = BattleUnitRuntime.ApplyPercentage(damage, -Math.Clamp(lure.EffectiveValue, 0, 100)); // 실제 공격과 예고에서 같은 기존 비율 및 반올림 적용
+            } // 기존 고정 약화 뒤의 원본 비율 계산 종료
             bool crownPenalty = directEnemyAttack && encounterType == BattleType.Normal && BattleSupplyRelics.Find(RelicEffectType.CrownNailBossDamage) != null; // 일반 조우에서만 보유 왕관못 확인
             damage = crownPenalty ? BattleUnitRuntime.ApplyPercentage(damage, 10) : damage; // 원래 조우 효과를 공통 방어 전 수치에 먼저 적용
             int blindReduction = directEnemyAttack && IntendedTarget?.Team == BattleTeam.Ally && Actor.GetStatusEffect(BattleStatusEffectType.Blind) is { IsExpired: false } // 자기 대상이나 단순 상태 행동을 제외한 실제 실명 적의 아군 직접 타격
