@@ -1,6 +1,41 @@
 {
   "entries": [
     {
+      "source": "휴식 방",
+      "english": "Rest Room",
+      "template": false
+    },
+    {
+      "source": "위험도",
+      "english": "Risk",
+      "template": false
+    },
+    {
+      "source": "HP 회복",
+      "english": "HP Recovery",
+      "template": false
+    },
+    {
+      "source": "정신력 회복",
+      "english": "Sanity Recovery",
+      "template": false
+    },
+    {
+      "source": "사망 {0}회",
+      "english": "{0} deaths",
+      "template": true
+    },
+    {
+      "source": "선택됨",
+      "english": "Selected",
+      "template": false
+    },
+    {
+      "source": "최대 강화",
+      "english": "Max Level",
+      "template": false
+    },
+    {
       "source": "(회복량 +{0}%)",
       "english": "(Healing +{0}%)",
       "template": true
