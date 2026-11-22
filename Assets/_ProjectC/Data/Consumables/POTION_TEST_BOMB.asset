@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PotionData
   itemId: POTION_TEST_BOMB
   displayName: "테스트 공격 포션"
-  description: 
+  description: "선택한 적 하나에게 물리 피해 20을 줍니다."
   icon: {fileID: 21300000, guid: fa804adaa7b34b4a80d10c1563e47cce, type: 3}
   category: 0
   effectType: 3

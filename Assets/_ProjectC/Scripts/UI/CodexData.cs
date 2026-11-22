@@ -6,28 +6,37 @@ public sealed class CodexEntry // 도감에 표시할 실제 항목
 { // 도감 항목 시작
     public readonly string Name; // 항목 이름
     public readonly string Description; // 항목 설명
+    public CardType? CardKind { get; } // 카드의 실제 종류
+    public string CostLabel { get; } // 카드의 원본 행동력 표기
+    internal long CostSortKey { get; } // 행동력 정렬에 사용할 고정·최소·전액 순서
     private readonly string artworkKey; // 독립 썸네일과 원화 참조의 리소스 키
     private readonly Func<Sprite> statusIcon; // 상태 분류의 늦은 아이콘 조회
     public bool HasArtwork => !string.IsNullOrEmpty(artworkKey) || statusIcon != null; // 항목에 등록된 이미지 여부
-    public Sprite Image => statusIcon != null ? statusIcon() : string.IsNullOrEmpty(artworkKey) ? null : Resources.Load<CodexArtworkResource>("Codex/Originals/" + artworkKey)?.Artwork; // 기존 호출자가 명시적으로 조회한 원본 이미지
-    internal CodexEntry(string name, string description, string artworkKey, Func<Sprite> statusIcon = null) // 이미지 없이 도감 문자와 키 보관
+    public Sprite Image => (string.IsNullOrEmpty(artworkKey) ? null : Resources.Load<CodexArtworkResource>("Codex/Originals/" + artworkKey)?.Artwork) ?? LoadStatusArtwork(); // 도감 원화 우선의 직접 이미지 조회
+    internal CodexEntry(string name, string description, string artworkKey, Func<Sprite> statusIcon = null, CardType? cardKind = null, string costLabel = null) // 도감 문자와 카드 정보 및 이미지 주소 보관
     { // 도감 항목 생성 시작
         Name = name; // 실제 이름 보관
         Description = description; // 실제 설명 보관
+        CardKind = cardKind; // 카드 종류 보관
+        CostLabel = costLabel ?? string.Empty; // 빈 값이 없는 비용 표기 보관
+        bool minimumCost = CostLabel.EndsWith("+", StringComparison.Ordinal); // 최소 비용을 뜻하는 더하기 기호 확인
+        string numericCost = minimumCost ? CostLabel.Substring(0, CostLabel.Length - 1) : CostLabel; // 비교에 사용할 숫자 부분
+        CostSortKey = int.TryParse(numericCost, out int actionPoints) ? actionPoints * 2L + (minimumCost ? 1 : 0) : long.MaxValue; // 같은 수치에서는 고정 비용 우선, 전액 비용은 마지막
         this.artworkKey = artworkKey; // 실제 이미지 조회에 사용할 키 보관
         this.statusIcon = statusIcon; // 상태 이미지 필요 시 사용할 조회 함수
     } // 도감 항목 생성 종료
     public CodexEntry WithName(string name) // 같은 이미지 계약으로 표시 이름만 바꾼 항목 생성
     { // 이름 복사 시작
-        return new CodexEntry(name, Description, artworkKey, statusIcon); // 도감 이미지 없이 새 이름 사용
+        return new CodexEntry(name, Description, artworkKey, statusIcon, CardKind, CostLabel); // 이미지와 카드 정보를 유지한 새 이름 사용
     } // 이름 복사 종료
     public Sprite LoadThumbnail() // 현재 표시되는 셀의 작은 이미지 조회
     { // 썸네일 조회 시작
-        return !string.IsNullOrEmpty(artworkKey) ? Resources.Load<Sprite>("Codex/Thumbnails/CodexThumb_" + artworkKey) : null; // 상세 원화와 분리된 작은 이미지 조회
+        Sprite thumbnail = string.IsNullOrEmpty(artworkKey) ? null : Resources.Load<Sprite>("Codex/Thumbnails/CodexThumb_" + artworkKey); // 상세 원화와 분리된 작은 이미지 조회
+        return thumbnail != null ? thumbnail : LoadStatusArtwork(); // 도감 썸네일이 비어 있을 때 상태 이미지 조회
     } // 썸네일 조회 종료
     internal ResourceRequest RequestFullArtwork() // 상세를 선택한 경우 원화 리소스 조회
     { // 원화 요청 시작
-        return statusIcon == null && !string.IsNullOrEmpty(artworkKey) ? Resources.LoadAsync<CodexArtworkResource>("Codex/Originals/" + artworkKey) : null; // 한 원화만 참조하는 작은 리소스 비동기 로드
+        return !string.IsNullOrEmpty(artworkKey) ? Resources.LoadAsync<CodexArtworkResource>("Codex/Originals/" + artworkKey) : null; // 도감 원화를 우선 확인하는 비동기 요청
     } // 원화 요청 종료
     internal Sprite LoadStatusArtwork() // 선택 상세에 작은 상태 원본 표시
     { // 상태 원화 조회 시작
@@ -43,6 +52,8 @@ public static class CodexData // 실제 게임 데이터 기반 도감
         public string name; // 실제 항목 이름
         public string description; // 실제 항목 설명
         public string artworkKey; // 원화와 썸네일의 조회 키
+        public int cardType; // 원본 카드의 종류 번호
+        public string costLabel; // 원본 카드의 행동력 표기
     } // 도감 행 종료
     [Serializable] // 도감 텍스트 목록 구조
     private sealed class Index // 도감 텍스트 전체 목록
@@ -59,7 +70,8 @@ public static class CodexData // 실제 게임 데이터 기반 도감
             { // 해당 목록의 항목 확인 시작
                 if (row.category == category) // 선택 분류에 포함된 실제 데이터 확인
                 { // 도감 항목 추가 시작
-                    entries.Add(new CodexEntry(row.name, row.description, row.artworkKey)); // 필요한 화면에서만 읽을 이미지 키 기록
+                    CardType? cardKind = category == 7 && !string.IsNullOrEmpty(row.costLabel) ? (CardType)row.cardType : (CardType?)null; // 비용 자료가 있는 카드의 실제 종류 복원
+                    entries.Add(new CodexEntry(row.name, row.description, row.artworkKey, cardKind: cardKind, costLabel: row.costLabel)); // 이미지 주소와 카드 정보가 있는 항목 구성
                 } // 도감 항목 추가 종료
             } // 해당 목록의 항목 확인 종료
         } // 문자열 목록 수집 종료
@@ -69,7 +81,7 @@ public static class CodexData // 실제 게임 데이터 기반 도감
             { // 상태 효과 확인 시작
                 if (effect != BattleStatusEffectType.None) // 빈 상태 제외
                 { // 상태 효과 추가 시작
-                    string description = string.Empty; // 수치가 정해진 상태만 표시할 설명
+                    string description; // 현재 상태의 도감 상세 설명
                     if (effect == BattleStatusEffectType.CriticalChanceUp) // 전의 고취 강화 확인
                     { // 치명 강화 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 5) + ". 2턴 지속. 다시 받으면 지속 시간 갱신."; // 기본 확률 증가와 중복 적용 규칙
@@ -294,14 +306,44 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시
                     } // 표식 설명 종료
-                    Func<Sprite> icon = description.Length > 0 ? () => BattleStatusIconArt.Get(effect) : null; // 표시 중인 상태에만 사용할 작은 아이콘 조회
-                    string key = icon != null ? "status_" + effect : null; // 상태별 독립 썸네일 키 설정
-                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, key, icon)); // 상태 이름과 설명 및 이미지 키 등록
+                    else // 고정 수치가 없거나 기본 효과를 설명하는 상태 확인
+                    { // 기본 상태 설명 준비 시작
+                        description = GetStandardStatusDescription(effect); // 전투 규칙의 발동 조건과 효과 조회
+                    } // 기본 상태 설명 준비 종료
+                    string key = "status_" + effect; // 실제 모든 상태의 독립 도감 이미지 키
+                    entries.Add(new CodexEntry(BattleStatusEffectInstance.GetDisplayName(effect), description, key, () => BattleStatusIconArt.Get(effect))); // 상태 정보와 전투 원본 조회 함수 등록
                 } // 상태 효과 추가 종료
             } // 상태 효과 확인 종료
         } // 상태 효과 수집 종료
         return entries; // 실제 원본 항목 반환
     } // 도감 항목 조회 종료
+    private static string GetStandardStatusDescription(BattleStatusEffectType effect) // 기본 상태의 실제 발동 조건과 효과 조회
+    { // 기본 상태 설명 조회 시작
+        return effect switch // 상태 종류별 도감 설명 선택
+        { // 기본 상태 설명 모음 시작
+            BattleStatusEffectType.Poison => "대상 진영의 턴 시작마다 중독 피해를 주고 중독 수치가 1 줄어듭니다.", // 중독 발동과 감소
+            BattleStatusEffectType.Regeneration => "대상 진영의 턴 시작마다 체력을 회복합니다.", // 재생 발동
+            BattleStatusEffectType.AttackPowerUp => "피해를 주는 카드의 기본 피해를 높입니다.", // 피해 카드 강화
+            BattleStatusEffectType.StatusImmunity => "새로 부여되는 일반 디버프를 막습니다. 정신력 붕괴는 발생할 수 있습니다.", // 일반 디버프 방지
+            BattleStatusEffectType.PhysicalDefenseUp => "물리 방어력이 올라 물리 피해를 줄입니다.", // 물리 방어 증가
+            BattleStatusEffectType.PhysicalDefenseDown => "물리 방어력이 내려 물리 피해를 더 받습니다.", // 물리 방어 감소
+            BattleStatusEffectType.MagicalResistanceUp => "마법 저항력이 올라 마법 피해를 줄입니다.", // 마법 저항 증가
+            BattleStatusEffectType.MagicalResistanceDown => "마법 저항력이 내려 마법 피해를 더 받습니다.", // 마법 저항 감소
+            BattleStatusEffectType.Disrupt => "부여되는 즉시 대상의 정신력이 4 감소합니다. 대상과 다른 생존 시전자는 정신력 2를 얻습니다.", // 대상과 시전자의 즉시 정신력 변화
+            BattleStatusEffectType.ChariotMark => "전차의 표식 카드가 명중하거나 전차가 같은 적에게 한 턴에 두 번째 공격을 명중시키면 돌파 표식이 쌓입니다. 전차가 다른 적을 맞히거나 아군 턴이 끝나면 표식이 사라집니다.", // 돌파 표식 발동과 해제 조건
+            BattleStatusEffectType.GuardPreparation => "다음 적 공격 직전에 방어도를 얻고 효과가 소모됩니다.", // 공격 직전 방어도
+            BattleStatusEffectType.StarReservedHealing => "다음 아군 턴 시작에 대상의 체력을 회복하고 효과가 소모됩니다.", // 다음 턴 예약 회복
+            BattleStatusEffectType.StarPassiveReservedHealing => "별의 패시브가 예약한 추가 회복을 다음 아군 턴 시작에 대상에게 적용합니다.", // 별의 패시브 회복
+            BattleStatusEffectType.Burn => "대상 진영의 턴 종료마다 화상 피해를 주고 화상 수치가 1 줄어듭니다.", // 화상 발동과 감소
+            BattleStatusEffectType.Blind => "효과가 유지되는 동안 대상의 공격 명중률이 낮아집니다.", // 공격 명중률 감소
+            BattleStatusEffectType.Awakening => "정신력이 최대에 도달하면 발동합니다. 캐릭터에 따라 피해와 회복에 영향을 주며 강제로 해제할 수 없습니다.", // 정신력 최대 효과
+            BattleStatusEffectType.Collapse => "정신력이 최저에 도달하면 발동합니다. 캐릭터에 따라 피해와 회복에 영향을 주며 강제로 해제할 수 없습니다.", // 정신력 최저 효과
+            BattleStatusEffectType.Evasion => "적의 공격을 회피할 확률이 높아집니다. 적 턴이 끝날 때마다 남은 지속 시간 1턴이 줄어듭니다.", // 회피 증가와 기간
+            BattleStatusEffectType.Disorientation => "효과가 유지되는 동안 공격 명중률이 5%p 감소합니다.", // 적용 기간의 명중률 감소
+            BattleStatusEffectType.ActionSpeedDown => "행동 속도가 낮아집니다. 적에게 적용하면 예고된 행동의 순서에 영향을 줍니다.", // 행동 속도 감소
+            _ => string.Empty // 설명이 등록되지 않은 새 상태의 기본값
+        }; // 기본 상태 설명 모음 종료
+    } // 기본 상태 설명 조회 종료
     private static Row[] LoadRows() // 원본 에셋 없이 도감 문자 목록 파싱
     { // 도감 목록 조회 시작
         if (rows == null) // 회차에서 처음으로 사용하는 도감 원본 확인

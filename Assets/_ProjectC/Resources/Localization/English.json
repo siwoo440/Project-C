@@ -1,6 +1,121 @@
 {
   "entries": [
     {
+      "source": "대상 진영의 턴 시작마다 중독 피해를 주고 중독 수치가 1 줄어듭니다.",
+      "english": "Deals poison damage at the start of the affected side’s turn, then reduces Poison by 1.",
+      "template": false
+    },
+    {
+      "source": "대상 진영의 턴 시작마다 체력을 회복합니다.",
+      "english": "Restores health at the start of the affected side’s turn.",
+      "template": false
+    },
+    {
+      "source": "피해를 주는 카드의 기본 피해를 높입니다.",
+      "english": "Increases the base damage of damage-dealing cards.",
+      "template": false
+    },
+    {
+      "source": "새로 부여되는 일반 디버프를 막습니다. 정신력 붕괴는 발생할 수 있습니다.",
+      "english": "Prevents new ordinary debuffs. Sanity Collapse can still occur.",
+      "template": false
+    },
+    {
+      "source": "물리 방어력이 올라 물리 피해를 줄입니다.",
+      "english": "Raises physical defense, reducing physical damage taken.",
+      "template": false
+    },
+    {
+      "source": "물리 방어력이 내려 물리 피해를 더 받습니다.",
+      "english": "Lowers physical defense, increasing physical damage taken.",
+      "template": false
+    },
+    {
+      "source": "마법 저항력이 올라 마법 피해를 줄입니다.",
+      "english": "Raises magic resistance, reducing magic damage taken.",
+      "template": false
+    },
+    {
+      "source": "마법 저항력이 내려 마법 피해를 더 받습니다.",
+      "english": "Lowers magic resistance, increasing magic damage taken.",
+      "template": false
+    },
+    {
+      "source": "부여되는 즉시 대상의 정신력이 4 감소합니다. 대상과 다른 생존 시전자는 정신력 2를 얻습니다.",
+      "english": "Immediately reduces the target’s Sanity by 4. A living caster other than the target gains 2 Sanity.",
+      "template": false
+    },
+    {
+      "source": "전차의 표식 카드가 명중하거나 전차가 같은 적에게 한 턴에 두 번째 공격을 명중시키면 돌파 표식이 쌓입니다. 전차가 다른 적을 맞히거나 아군 턴이 끝나면 표식이 사라집니다.",
+      "english": "Adds a Breakthrough mark when the Chariot hits with a marking card or lands a second hit on the same enemy in one turn. The marks expire when the Chariot hits a different enemy or the player turn ends.",
+      "template": false
+    },
+    {
+      "source": "다음 적 공격 직전에 방어도를 얻고 효과가 소모됩니다.",
+      "english": "Grants Block just before the next enemy attack, then expires.",
+      "template": false
+    },
+    {
+      "source": "다음 아군 턴 시작에 대상의 체력을 회복하고 효과가 소모됩니다.",
+      "english": "Restores the target’s health at the start of the next player turn, then expires.",
+      "template": false
+    },
+    {
+      "source": "별의 패시브가 예약한 추가 회복을 다음 아군 턴 시작에 대상에게 적용합니다.",
+      "english": "Applies the extra healing scheduled by the Star’s passive at the start of the next player turn.",
+      "template": false
+    },
+    {
+      "source": "대상 진영의 턴 종료마다 화상 피해를 주고 화상 수치가 1 줄어듭니다.",
+      "english": "Deals burn damage at the end of the affected side’s turn, then reduces Burn by 1.",
+      "template": false
+    },
+    {
+      "source": "효과가 유지되는 동안 대상의 공격 명중률이 낮아집니다.",
+      "english": "Reduces the affected unit’s attack accuracy for the duration.",
+      "template": false
+    },
+    {
+      "source": "정신력이 최대에 도달하면 발동합니다. 캐릭터에 따라 피해와 회복에 영향을 주며 강제로 해제할 수 없습니다.",
+      "english": "Triggers at maximum Sanity. Its effects on damage and healing depend on the character. It cannot be forcibly removed.",
+      "template": false
+    },
+    {
+      "source": "정신력이 최저에 도달하면 발동합니다. 캐릭터에 따라 피해와 회복에 영향을 주며 강제로 해제할 수 없습니다.",
+      "english": "Triggers at minimum Sanity. Its effects on damage and healing depend on the character. It cannot be forcibly removed.",
+      "template": false
+    },
+    {
+      "source": "적의 공격을 회피할 확률이 높아집니다. 적 턴이 끝날 때마다 남은 지속 시간 1턴이 줄어듭니다.",
+      "english": "Increases the chance to evade an enemy attack. The remaining duration decreases by one turn at the end of each enemy turn.",
+      "template": false
+    },
+    {
+      "source": "효과가 유지되는 동안 공격 명중률이 5%p 감소합니다.",
+      "english": "Reduces attack accuracy by 5 percentage points for the duration.",
+      "template": false
+    },
+    {
+      "source": "행동 속도가 낮아집니다. 적에게 적용하면 예고된 행동의 순서에 영향을 줍니다.",
+      "english": "Lowers action speed. On enemies, it affects the order of their planned actions.",
+      "template": false
+    },
+    {
+      "source": "선택한 적 하나에게 물리 피해 20을 줍니다.",
+      "english": "Deals 20 physical damage to one selected enemy.",
+      "template": false
+    },
+    {
+      "source": "종류순",
+      "english": "By Type",
+      "template": false
+    },
+    {
+      "source": "AP 비용순",
+      "english": "By AP Cost",
+      "template": false
+    },
+    {
       "source": "휴식 방",
       "english": "Rest Room",
       "template": false
@@ -8213,6 +8328,16 @@
     {
       "source": "이름순",
       "english": "Name Order",
+      "template": false
+    },
+    {
+      "source": "분류",
+      "english": "Category",
+      "template": false
+    },
+    {
+      "source": "저주",
+      "english": "Curse",
       "template": false
     },
     {
