@@ -166,9 +166,9 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
             if (action.IsExecutable && (arrowDisplayMode != ArrowDisplayMode.Single || action == selectedAction)) // 이번에 실제로 실행할 행동의 대상만 연결
             { // 행동 대상 화살표 연결 시작
                 BattleUnitView targetView = FindUnitView(unitViews, action.Target); // 실제 행동 대상 화면 조회
-                RectTransform targetPortrait = targetView != null ? targetView.transform.Find("Portrait") as RectTransform : null; // 대상 캐릭터 그림 영역 조회
+                RectTransform targetHead = targetView != null ? targetView.HeadTarget : null; // 행동 대상의 실제 머리 조준 영역 조회
                 bool focused = BattleEnemyIntentDetailView.Instance != null && BattleEnemyIntentDetailView.Instance.IsFocused(action); // 현재 행동 상세 선택 여부 확인
-                arrowsView.AddArrow(iconView.transform as RectTransform, targetPortrait, specialPattern, focused); // 적 행동 아이콘에서 대상까지 화살표 추가
+                arrowsView.AddArrow(iconView.transform as RectTransform, targetHead, specialPattern, focused); // 적 행동 아이콘에서 머리 중심으로 화살표 연결
             } // 행동 대상 화살표 연결 종료
         }
         arrowsView.EndFrame(); // 현재 예정 행동 화살표 화면 반영

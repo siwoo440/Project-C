@@ -106,12 +106,10 @@ public sealed class BattleCardDragHandler :
 
         ShowValidTargetHighlights(); // 유효 대상 후보 강조
         CreateDragGhost(); // 드래그 카드 복제 생성
-        UpdateDragGhostPosition(
-            currentPointerPosition); // 복제 카드를 포인터 위치로 이동
-
         currentTargetView =
             FindPointerTarget(
                 eventData); // 시작 위치의 대상 조회
+        UpdateDragGhostPosition(currentPointerPosition); // 조준 여부에 맞춘 카드 복제 위치
     }
 
     public void OnDrag(
@@ -139,12 +137,10 @@ public sealed class BattleCardDragHandler :
         currentPointerPosition =
             eventData.position; // 현재 포인터 위치 저장
 
-        UpdateDragGhostPosition(
-            currentPointerPosition); // 복제 카드 위치 갱신
-
         currentTargetView =
             FindPointerTarget(
                 eventData); // 현재 포인터 대상 갱신
+        UpdateDragGhostPosition(currentPointerPosition); // 머리와 화살촉을 가리지 않는 카드 복제 위치
     }
 
     public void OnEndDrag(
@@ -620,6 +616,14 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
+        if (currentTargetView != null && currentTargetView.RuntimeUnit?.IsDead == false && currentTargetView.HeadTarget != null) // 살아 있는 조준 대상을 가리지 않는 배치
+        { // 조준 중 카드 복제 이동 시작
+            Vector2 halfSize = dragGhostRect.rect.size * 0.5f; // 복제 카드의 중심 기준 모서리 거리
+            Rect bounds = canvasRect.rect; // 전투 화면의 카드 복제 표시 범위
+            float side = localPosition.x + halfSize.x * 2f + 18f <= bounds.xMax ? 1f : -1f; // 충분한 공간이 있는 포인터 옆 방향
+            localPosition.x += side * (halfSize.x + 18f); // 포인터와 화살촉을 가리지 않는 옆 여백
+            localPosition.y = Mathf.Clamp(localPosition.y - halfSize.y - 14f, bounds.yMin + halfSize.y, bounds.yMax - halfSize.y); // 조준 지점 아래의 화면 안쪽 위치
+        } // 조준 중 카드 복제 이동 종료
         dragGhostRect.anchoredPosition =
             localPosition; // 복제 카드를 포인터 위치로 이동
     }
@@ -638,7 +642,8 @@ public sealed class BattleCardDragHandler :
 
     private void OnGUI() // 드래그 중 카드 타겟 화살표 출력
     {
-        if (!dragging ||
+        if (Event.current.type != EventType.Repaint || // 실제 화면 그리기 이벤트만 사용
+            !dragging || // 카드 조준 드래그 여부 확인
             cancelRequested ||
             cardView == null)
         {
@@ -669,10 +674,11 @@ public sealed class BattleCardDragHandler :
                 startScreen.x,
                 Screen.height - startScreen.y); // IMGUI 좌표로 변환
 
-        Vector2 endGui =
-            new Vector2(
-                currentPointerPosition.x,
-                Screen.height - currentPointerPosition.y); // 포인터 IMGUI 좌표 변환
+        RectTransform targetHead = currentTargetView != null && currentTargetView.RuntimeUnit?.IsDead == false ? currentTargetView.HeadTarget : null; // 살아 있는 유효 대상의 머리 상자
+        Vector2 endScreen = targetHead != null // 확정된 대상과 아직 움직이는 포인터 구분
+            ? RectTransformUtility.WorldToScreenPoint(canvasCamera, targetHead.TransformPoint(targetHead.rect.center)) // 실제 유닛 머리 중심의 화면 좌표
+            : currentPointerPosition; // 대상 미지정 또는 부활에는 실제 포인터 유지
+        Vector2 endGui = new Vector2(endScreen.x, Screen.height - endScreen.y); // 화살촉의 화면 좌표 변환
 
         Color arrowColor =
             currentTargetView != null
@@ -692,7 +698,7 @@ public sealed class BattleCardDragHandler :
             endGui,
             4f,
             16f,
-            arrowColor); // 카드에서 포인터까지 타겟 화살표 출력
+            arrowColor); // 카드에서 실제 조준 지점까지의 곡선 출력
     }
 
     private static void DrawArrow(
@@ -700,7 +706,7 @@ public sealed class BattleCardDragHandler :
         Vector2 end,
         float thickness,
         float headSize,
-        Color color) // IMGUI 직선 화살표 출력
+        Color color) // 카드의 조준 곡선과 접선 방향 화살촉 출력
     {
         Vector2 direction =
             end - start; // 화살표 방향 계산
@@ -713,14 +719,18 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
-        direction /=
-            length; // 화살표 방향 정규화
-
-        DrawLine(
-            start,
-            end,
-            thickness,
-            color); // 화살표 본선 출력
+        Vector2 control = start + Vector2.Scale(direction, new Vector2(0.23f, 0.73f)); // 카드에서 먼저 위로 향하는 곡선 제어점
+        int segments = Mathf.Clamp(Mathf.CeilToInt(length / 24f), 6, 26); // 화면 거리별 곡선 분할 수
+        Vector2 previous = start; // 첫 선분의 시작 좌표
+        for (int index = 1; index <= segments; index++) // 현재 조준 곡선의 각 선분 순회
+        { // 조준 곡선 몸체 그리기 시작
+            float progress = index / (float)segments; // 카드에서 머리까지 이동하는 비율
+            Vector2 point = Vector2.Lerp(Vector2.Lerp(start, control, progress), Vector2.Lerp(control, end, progress), progress); // 이차 베지어 곡선의 현재 지점
+            float overlap = index < segments ? 0.75f : 0f; // 인접 선 사이의 작은 틈 방지 길이
+            DrawLine(previous, point + (point - previous).normalized * overlap, thickness, color); // 곡선 몸체의 연결 선분 출력
+            previous = point; // 다음 선분의 시작 좌표 저장
+        } // 조준 곡선 몸체 그리기 종료
+        direction = (end - control).normalized; // 머리에 닿는 곡선 끝의 접선 방향
 
         Vector2 leftDirection =
             Rotate(

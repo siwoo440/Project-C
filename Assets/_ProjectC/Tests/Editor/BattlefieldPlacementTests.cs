@@ -1,7 +1,9 @@
 using System.Collections; // 플레이 모드 대기 사용
+using System.Collections.Generic; // 머리 선택 영역의 레이캐스트 결과 목록
 using NUnit.Framework; // 전투 배치 검증 사용
 using TMPro; // 적 행동 순번 글자 검사 사용
 using UnityEngine; // 화면 좌표와 전투 객체 사용
+using UnityEngine.EventSystems; // 실제 화면 위치의 포인터 이벤트
 using UnityEngine.SceneManagement; // 실제 게임 씬 이동 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 화살표 표시 버튼 검사 사용
@@ -11,6 +13,11 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
     public IEnumerator UnitsAndStatusFitBattlefieldAboveHand() // 유닛과 상태 표시의 전투 영역 배치 확인
     { // 실제 전투 배치 검사 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
+        yield return VerifyBattlefieldPlacement(); // 전환 이후의 실제 전투 씬에서 별도 배치 검사
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 실제 전투 배치 검사 종료
+    private static IEnumerator VerifyBattlefieldPlacement() // 현재 플레이 모드의 전투 배치와 포인터 입력 검사
+    { // 실제 전투 흐름 검사 시작
         SceneManager.LoadScene("00_Boot"); // 실제 시작 씬 진입
         for (float end = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < end && Object.FindFirstObjectByType<MainMenuController>() == null;) // 시작 메뉴 대기
         { // 시작 메뉴 대기 시작
@@ -60,6 +67,12 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
         foreach (BattleUnitView unit in units) // 실제 전투 유닛 순회
         { // 유닛 화면 범위 확인 시작
             RectTransform portrait = unit.transform.Find("Portrait") as RectTransform; // 캐릭터 그림 영역 조회
+            RectTransform head = portrait.Find("HeadTarget") as RectTransform; // 같은 유닛의 독립 머리 선택 영역 조회
+            Assert.IsNotNull(head); // 아군과 적 모두의 머리 영역 확인
+            Image hitImage = head.GetComponent<Image>(); // 실제 머리 선택 입력 이미지 조회
+            Assert.AreEqual(0f, hitImage.color.a); // 게임 화면에서 영역 완전 투명 확인
+            Assert.IsFalse(hitImage.raycastTarget); // 평소 상태와 행동 예고 입력 유지 확인
+            Assert.Greater(head.localPosition.y, portrait.rect.center.y); // 몸통 위의 머리 영역 확인
             portrait.GetWorldCorners(corners); // 캐릭터 그림 꼭짓점 조회
             Assert.LessOrEqual(canvas.InverseTransformPoint(corners[1]).y, battlefieldTop + 1f); // 그림의 배경 상단 영역 포함 확인
             Assert.GreaterOrEqual(canvas.InverseTransformPoint(corners[0]).x, canvas.rect.xMin - 1f); // 그림의 화면 왼쪽 경계 확인
@@ -90,6 +103,22 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
             } // 상태 아이콘 유닛 저장 종료
         } // 상태 아이콘 유닛 탐색 종료
         Assert.IsNotNull(first); // 상태 아이콘 아군 화면 확인
+        RectTransform firstHead = first.transform.Find("Portrait/HeadTarget") as RectTransform; // 아군의 실제 머리 영역 조회
+        Assert.IsNotNull(firstHead); // 머리 상자의 정확한 입력 위치 확인
+        GraphicRaycaster raycaster = firstHead.GetComponentInParent<GraphicRaycaster>(); // 머리 상자를 그리는 실제 포인터 입력기 조회
+        Assert.IsNotNull(raycaster); // 머리 상자 캔버스의 입력 처리기 확인
+        EventSystem eventSystem = EventSystem.current; // 실제 전투 씬에서 활성화된 입력 이벤트 시스템
+        Assert.IsNotNull(eventSystem); // 화면을 처리하는 전투 이벤트 시스템 확인
+        Vector3 headWorld = firstHead.TransformPoint(firstHead.rect.center); // 화면 크기를 반영한 아군 머리 중심
+        var pointer = new PointerEventData(eventSystem) { position = RectTransformUtility.WorldToScreenPoint(raycaster.eventCamera, headWorld) }; // 실제 머리 위치의 포인터
+        var hits = new List<RaycastResult>(); // 아군 머리 포인터 판정 결과 목록
+        first.SetTargetable(true); // 카드 선택 가능한 아군 상태 준비
+        raycaster.Raycast(pointer, hits); // 실제 전투 화면 입력 영역 검사
+        Assert.IsTrue(hits.Exists(hit => hit.gameObject == firstHead.gameObject)); // 머리의 투명 상자로 카드 대상 선택 가능 확인
+        first.SetTargetable(false); // 원래 전투 입력 모드 복원
+        hits.Clear(); // 직전 카드 선택 단계의 입력 결과 제거
+        raycaster.Raycast(pointer, hits); // 선택 상태가 끝난 뒤 같은 자리 확인
+        Assert.IsFalse(hits.Exists(hit => hit.gameObject == firstHead.gameObject)); // 선택 해제 뒤 머리 상자가 일반 화면 입력을 막지 않는지 확인
         RectTransform backlight = first.transform.Find("MentalStateBacklight") as RectTransform; // 실제 각성 역광 영역 조회
         backlight.GetWorldCorners(corners); // 각성 역광 꼭짓점 조회
         Assert.LessOrEqual(canvas.InverseTransformPoint(corners[1]).y, battlefieldTop + 1f); // 역광의 배경 상단 영역 포함 확인
@@ -219,8 +248,8 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
             } // 변경된 대상 화면 저장 종료
         } // 변경된 대상 화면 탐색 종료
         Assert.IsNotNull(replacementView); // 변경된 대상 화면 존재 확인
-        RectTransform replacementPortrait = replacementView.transform.Find("Portrait") as RectTransform; // 변경된 대상 그림 영역 조회
-        Vector3 expectedWorld = replacementPortrait.TransformPoint(new Vector3(0f, replacementPortrait.rect.yMax - replacementPortrait.rect.height * 0.12f, 0f)); // 변경된 대상 머리 위치 계산
+        RectTransform replacementHead = replacementView.transform.Find("Portrait/HeadTarget") as RectTransform; // 변경된 대상의 실제 머리 선택 영역 조회
+        Vector3 expectedWorld = replacementHead.TransformPoint(replacementHead.rect.center); // 변경된 머리 영역 중심 계산
         Vector2 expectedEnd = arrows.rectTransform.InverseTransformPoint(expectedWorld); // 화살표 화면 기준 대상 위치 계산
         Assert.IsTrue(arrows.TryGetArrow(0, out Vector2 ignoredStart, out Vector2 changedEnd)); // 변경된 첫 행동 화살표 조회
         Assert.Less(Vector2.Distance(expectedEnd, changedEnd), 1f); // 변경된 실제 대상에 화살표 연결 확인
@@ -228,6 +257,5 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
         yield return new WaitForSecondsRealtime(0.1f); // 실제 게임 프레임의 행동 제거 화면 갱신 대기
         Assert.IsFalse(summonedView.transform.Find("EnemyActionOrder").gameObject.activeSelf); // 행동이 없는 적의 순번 숨김 확인
         Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 남은 행동에 맞춘 화살표 갱신 확인
-        yield return new ExitPlayMode(); // 플레이 모드 종료
-    } // 실제 전투 배치 검사 종료
+    } // 실제 전투 흐름 검사 종료
 } // 전투 배치 검사 종료

@@ -25,6 +25,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private BattleGroundShadow groundShadow; // 살아 있는 유닛의 석재 바닥 접지 그림자
     private Outline targetOutline; // 선택 가능 대상 윤곽선
     private Outline fallenTargetOutline; // 전투불능 표시에 붙는 부활 대상 윤곽선
+    private Image headTargetImage; // 카드 입력과 행동 예고가 공유하는 투명한 머리 상자
     private bool isTargetable; // 현재 선택할 수 있는 유닛 여부
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     private BattleMentalView mentalView; // 정신력 표시 화면
@@ -35,6 +36,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private TMP_Text partnerText; // 파트너 상태 텍스트
     private bool statusTooltipHovered; // 상태 상세 대상에 마우스 진입 여부
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
+    internal RectTransform HeadTarget => headTargetImage != null ? headTargetImage.rectTransform : null; // 유닛 머리의 공용 조준 영역
     internal Vector3 EffectAnchor => portraitImage != null // 실제 캐릭터 원화가 있는 경우 확인
         ? portraitImage.rectTransform.TransformPoint(portraitImage.rectTransform.rect.center) // 이동과 화면 배율을 반영한 원화 중심
         : transform.position; // 대체 표시에는 현재 유닛 중심 사용
@@ -66,6 +68,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
+        EnsureHeadTarget(); // 실제 표시 원화에 맞춘 머리 상자 설치
         if (portraitImage != null && portraitImage.sprite != null) // 실제 원화가 있는 캐릭터의 바닥 접점 준비
         { // 그림자 연결 시작
             groundShadow ??= gameObject.AddComponent<BattleGroundShadow>(); // 재연결에도 재사용할 접지 표시기
@@ -77,6 +80,49 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RefreshBlock(); // 방어도 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
     } // 연결 종료
+    private void EnsureHeadTarget() // 아군과 적에게 같은 방식으로 머리 상자 설치
+    { // 머리 선택 영역 준비 시작
+        if (portraitImage == null) // 유닛의 실제 원화 영역 확인
+        { // 원화 영역 없는 유닛 처리 시작
+            return; // 머리 상자 생성 생략
+        } // 원화 영역 없는 유닛 처리 종료
+        if (headTargetImage == null) // 기존 연결에서 만든 머리 상자 확인
+        { // 투명한 머리 상자 생성 시작
+            var hitbox = new GameObject("HeadTarget", typeof(RectTransform), typeof(Image)); // 원화를 따라 움직이는 입력 상자
+            hitbox.transform.SetParent(portraitImage.transform, false); // 피격과 이동 시 원화 좌표 상속
+            headTargetImage = hitbox.GetComponent<Image>(); // 유닛 입력이 전달되는 투명 이미지 조회
+            headTargetImage.color = Color.clear; // 화면에 보이지 않는 상자
+            headTargetImage.raycastTarget = false; // 카드 대상 선택 전 입력 비활성
+        } // 투명한 머리 상자 생성 종료
+        RefreshHeadTarget(); // 원화 가로세로 비율과 화면 위치 반영
+    } // 머리 선택 영역 준비 종료
+    private void OnRectTransformDimensionsChange() // 전투 화면 재배치 시 머리 상자 크기 갱신
+    { // 새 화면 크기 처리 시작
+        RefreshHeadTarget(); // 표시 원화 크기에 맞춘 머리 위치 갱신
+    } // 새 화면 크기 처리 종료
+    private void RefreshHeadTarget() // 실제 원화의 위쪽을 머리 선택 영역으로 설정
+    { // 머리 상자 위치 갱신 시작
+        if (headTargetImage == null) // 유닛 초기화 전 머리 영역 누락 확인
+        { // 초기 레이아웃 처리 시작
+            return; // 아직 연결되지 않은 머리 좌표 생략
+        } // 초기 레이아웃 처리 종료
+        RectTransform portrait = portraitImage.rectTransform; // 부모 원화의 실제 사각형 조회
+        Vector2 portraitSize = portrait.rect.size; // 원화 할당 화면 크기 조회
+        Vector2 start = Vector2.zero; // 표시 원화의 부모 안 시작점
+        Vector2 size = Vector2.one; // 전체 부모를 채울 때의 원화 비율
+        if (portraitImage.preserveAspect && portraitImage.sprite != null && portraitSize.x > 0f && portraitSize.y > 0f) // 비율을 유지하는 원화의 안쪽 여백 확인
+        { // 실제 표시 원화 범위 계산 시작
+            Vector2 artworkSize = portraitImage.sprite.rect.size; // 가져온 원본 스프라이트 크기
+            float scale = Mathf.Min(portraitSize.x / artworkSize.x, portraitSize.y / artworkSize.y); // 상자 안에 들어가는 원화 배율
+            size = artworkSize * scale / portraitSize; // 부모에 대한 실제 원화 가로세로 길이
+            start = Vector2.Scale(Vector2.one - size, portrait.pivot); // 유니티 이미지와 같은 상하좌우 여백
+        } // 실제 표시 원화 범위 계산 종료
+        RectTransform head = headTargetImage.rectTransform; // 투명한 머리 영역 좌표 조회
+        head.anchorMin = start + Vector2.Scale(size, new Vector2(0.29f, 0.76f)); // 원화 상단 중앙의 왼쪽 아래
+        head.anchorMax = start + Vector2.Scale(size, new Vector2(0.71f, 0.98f)); // 원화 상단 중앙의 오른쪽 위
+        head.offsetMin = Vector2.zero; // 머리 영역 왼쪽 아래의 고정 여백 제거
+        head.offsetMax = Vector2.zero; // 머리 영역 오른쪽 위의 고정 여백 제거
+    } // 머리 상자 위치 갱신 종료
     private void ApplyHealthGaugeArt() // 실제 체력 게이지 배경 이미지 적용
     { // 체력 게이지 디자인 적용 시작
         if (healthSlider == null) // 체력 게이지 존재 확인
@@ -294,6 +340,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     { // 대상 표시 시작
         isTargetable = targetable && RuntimeUnit != null; // 화면 연결과 선택 가능 상태 저장
         bool isFallen = RuntimeUnit?.IsDead == true; // 생존 초상화와 전투불능 표시 구분
+        if (headTargetImage != null) // 머리 입력 영역의 생성 여부 확인
+        { // 머리 상자 입력 상태 설정 시작
+            headTargetImage.raycastTarget = isTargetable && !isFallen; // 살아 있는 선택 가능 대상만 머리 입력 허용
+        } // 머리 상자 입력 상태 설정 종료
         if (targetOutline != null) // 생존 초상화 윤곽선 확인
         { // 초상화 강조 설정 시작
             targetOutline.enabled = isTargetable && !isFallen; // 생존 대상 초상화 강조
@@ -531,6 +581,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 사망 이벤트 무시
         } // 다른 유닛 처리 종료
         RefreshHealth(); // 사망 표시 갱신
+        SetTargetable(isTargetable); // 쓰러질 때 머리 입력을 끄고 전투불능 표시 규칙 적용
         RefreshMentalStateBacklight(); // 사망 유닛의 역광 표시 갱신
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
         { // 행동 예고 숨김 시작
