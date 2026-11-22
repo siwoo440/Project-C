@@ -65,6 +65,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal int DefeatedBurnAmount { get; private set; } // 정리 전 실제 전투불능 적에게 남은 화상 실효량
     internal bool DefeatedWhileShocked { get; private set; } // 상태 정리 직전에 쓰러진 적의 실제 활성 감전
+    internal bool DefeatedWhileBleeding { get; private set; } // 상태 정리 직전 실제 쓰러진 적의 활성 출혈
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
@@ -690,6 +691,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         long loss = weakness is { IsExpired: false } ? weakness.EffectiveValue : 0; // 실제로 아직 적용되는 아군 공격력 감소량
         return (int)Math.Clamp(totalBonus - loss, int.MinValue, int.MaxValue); // 기존 아군 강화와 약화를 한 번만 합친 부호 있는 공격력
     } // 공격력 증가 계산 종료
+    private RelicInventoryRuntime GetActiveAllyDamageRelics() // 현재 활성 교전에 실제 참가한 생존 아군의 방어 유물 조회
+    { // 사망과 다른 진영 및 끝난 교전 범위 확인 시작
+        return Team == BattleTeam.Ally && !IsDead && DamageRelicBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } battle // 실제 싸움이 진행 중인 생존 아군의 원래 참가 여부
+            ? battle.DamageRelicInventory : null; // 해당 전투에 장착한 유물만 원래 조회 반환
+    } // 사망과 다른 진영 및 끝난 교전 범위 확인 종료
+
     private int CalculateDefense(int baseDefense, BattleStatusEffectType increaseType, BattleStatusEffectType decreaseType) // 현재 방어력 계산
     { // 방어력 계산 시작
         int increasedDefense = GetStatusEffectValue(increaseType); // 방어 증가 수치 조회
@@ -706,7 +713,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             ? battle.DamageRelicInventory : null; // 기존 물리 방어와 적의 마법 저항에는 원본 수치 유지
         int surveillance = resistanceRelics?.FindEffect(RelicEffectType.SurveillanceCoreFragmentResistanceTrade)?.EffectValue ?? 0; // 이전 감시 코어의 실제 마법 저항 보너스 유지
         int deadlock = resistanceRelics?.FindEffect(RelicEffectType.DeadlockBackupChipOpeningMarksTrade)?.EffectValue ?? 0; // 백업칩이 활성인 현재 교전의 아군 마법 저항 거래
-        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus + surveillance - deadlock - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 일반 방어와 모든 별도 보정의 원래 영 하한과 정수 상한
+        int basaltFinger = increaseType == BattleStatusEffectType.PhysicalDefenseUp && (long)CurrentHealth * 2 <= MaxHealth // 마법 저항과 별개인 실제 물리 방어의 정확한 절반 이하 조건
+            ? Math.Max(0, GetActiveAllyDamageRelics()?.FindEffect(RelicEffectType.BasaltGiantFingerLowHealthDefense)?.EffectValue ?? 0) : 0; // 현재 살아 있는 아군의 정식 화산암 손가락 방어력
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus + surveillance + basaltFinger - deadlock - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 런타임 물리 방어 가산과 기존 마법 저항의 실제 범위 유지
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작
@@ -735,6 +744,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         DefeatedBurnAmount = DefeatedWhileBurning ? Math.Max(1, burn.EffectiveValue) : 0; // 실제 사망 전에 남은 화상 수치를 별도로 기록
         DefeatedWhileAfraid = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 공포 저장
         DefeatedWhileShocked = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false }; // 실제 처치에서 사라지기 전 활성 감전 여부 보관
+        DefeatedWhileBleeding = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Bleed) is { IsExpired: false }; // 원래 사망 상태 정리 전에 남아 있던 적 출혈 기록
         var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
         pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
     } // 전투불능 상태 기록 종료
@@ -869,7 +879,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 두 상태 합산 뒤 정수 범위의 실제 피해 내림
         int corrosion = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.CorrosionResistanceDown) is { IsExpired: false } corrosionStatus ? corrosionStatus.EffectiveValue : 0; // 실제 활성 실금석 약화의 경감 퍼센트포인트 조회
         int flameVein = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.FlameVeinResistanceDown) is { IsExpired: false } flameVeinStatus ? flameVeinStatus.EffectiveValue : 0; // 활성 광맥 약화가 더하는 마법 피해 저항 감소
-        int magicalResistanceLoss = (int)Math.Min(100L, (long)corrosion + flameVein); // 마법 피해 저항 감소의 기존 합산 상한
+        int ashResistance = damageType == BattleDamageType.Magical // 다른 물리 및 고정 피해 수치와 별개인 실제 마법 피해
+            ? Math.Clamp(GetActiveAllyDamageRelics()?.FindEffect(RelicEffectType.AshSealSigilResistanceHealingTrade)?.EffectValue ?? 0, 0, 100) : 0; // 실제 활성 아군의 원본 대비 저항 증가 퍼센트포인트
+        int magicalResistanceLoss = (int)Math.Clamp((long)corrosion + flameVein - ashResistance, -100L, 100L); // 침식과 광맥의 손실 및 봉인문양 경감의 부호 있는 원래 퍼센트포인트 합산
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, magicalResistanceLoss, magicalResistancePenetrationPercent); // 실제 피해와 예고에 같은 저항 수치 관통과 실금석 처리 전달
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
@@ -1380,9 +1392,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int cactusPenalty = Team == BattleTeam.Ally && BattleSupplyRelics.Find(RelicEffectType.DriedCactusSapPoisonDamageBonus) != null ? 5 : 0; // 현재 실제 회복을 받는 아군의 선인장 수액 고정 감소율
         int brokenHeartPenalty = GetBrokenHeartCombatPercent(); // 진행 중인 실제 아군 치유에 적용할 깨진 하트의 동일 원본 비율
         int waterDropPenalty = Team == BattleTeam.Ally ? DamageRelicBattle?.DesertWaterDropHealingPenalty ?? 0 : 0; // 실제 참가 중인 살아 있는 아군의 최초 회복 이후 감소율
-        if (increase > 0 || reduction > 0 || embroideryPercent > 0 || cactusPenalty > 0 || brokenHeartPenalty > 0 || waterDropPenalty > 0) // 기존 받는 회복과 실제 유물의 감소 활성 조건
+        int ashHealingPenalty = GetActiveAllyDamageRelics()?.FindEffect(RelicEffectType.AshSealSigilResistanceHealingTrade) != null ? 5 : 0; // 봉인문양을 현재 장착한 실제 아군의 수신 회복 고정 비율
+        if (increase > 0 || reduction > 0 || embroideryPercent > 0 || cactusPenalty > 0 || brokenHeartPenalty > 0 || waterDropPenalty > 0 || ashHealingPenalty > 0) // 기존 수신 배율과 별개인 봉인문양의 회복 감소 활성 확인
         { // 수신 회복 증가와 감소 공통 처리 시작
-            healAmount = (int)Math.Min(int.MaxValue, healAmount * ((100L + increase) / 100m) * ((100 - reduction) / 100m) * ((100L + embroideryPercent) / 100m) * ((100 - cactusPenalty) / 100m) * ((100 - brokenHeartPenalty) / 100m) * ((100 - waterDropPenalty) / 100m)); // 기존 독립 비율과 물방울 감소율을 함께 곱한 뒤 한 번만 정수 내림
+            healAmount = (int)Math.Min(int.MaxValue, healAmount * ((100L + increase) / 100m) * ((100 - reduction) / 100m) * ((100L + embroideryPercent) / 100m) * ((100 - cactusPenalty) / 100m) * ((100 - brokenHeartPenalty) / 100m) * ((100 - waterDropPenalty) / 100m) * ((100 - ashHealingPenalty) / 100m)); // 독립 수신 회복 배율을 끝까지 곱한 뒤 원래 한 번의 정수 내림
             if (healAmount == 0) // 실제 적용할 회복량이 없는 조건 확인
             { // 미회복 처리 시작
                 return 0; // 기존 회복 알림과 정신력 미발동

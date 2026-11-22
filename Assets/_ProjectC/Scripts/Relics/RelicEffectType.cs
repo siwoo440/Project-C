@@ -265,4 +265,12 @@ public enum RelicEffectType // 유물 효과 종류
     CanyonWindWhistleOpeningEvasion, // 전투를 시작한 모든 생존 아군의 회피율 증가
     WetReedKnotPoisonDamageReduction, // 아군에게 실제 적용되는 중독 피해 감소
     BlackSwampWaterBottlePoisonChance, // 아군 카드의 확률 중독 부여 보정
+    LeechFangNecklaceSingleTargetHealing, // 단일 공격 카드가 실제로 감소시킨 체력 비례 회복
+    MudCharmActionPointLossBlock, // 실제 행동력 감소를 받은 아군의 방어도 획득
+    MistFlowerPollenOpeningBlind, // 전투 시작에 확률로 무작위 적에 실명 부여
+    BasaltGiantFingerLowHealthDefense, // 체력이 절반 이하인 아군의 물리 방어력 증가
+    ObsidianExecutionMaskBleedingDefeatDamage, // 출혈 상태 적 처치 시 다른 적에게 고정 피해
+    LavaVeinGuardianCoreBurningEnemiesActionPoints, // 실제 아군 턴에 화상 적 수만큼 추가 행동력
+    RedCanyonBulwarkStoneOpeningBlockDrawTrade, // 첫 전투 방어도 증가와 시작 카드 한 장 감소
+    AshSealSigilResistanceHealingTrade, // 아군 마법 피해 감소와 받는 회복 감소
 }

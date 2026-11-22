@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: MistFlowerPollen
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_MIST_FLOWER_POLLEN
+  displayName: 안개 꽃가루
+  description: "전투 시작에 30% 확률로 무작위 생존 적 한 명에게 한 적 턴 동안 명중률을 25%p 낮추는 실명을 부여한다."
+  icon: {fileID: 21300000, guid: d390b67be0d75305b8f2244699155912, type: 3}
+  rarity: 0
+  triggerType: 34
+  effectType: 267
+  targetType: 8
+  triggerChancePercent: 30
+  effectValue: 25
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 15
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

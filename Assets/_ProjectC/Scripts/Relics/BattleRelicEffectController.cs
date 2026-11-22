@@ -186,6 +186,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         { // 공용 발동에서 전용 유물 제외 시작
             return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
         } // 공용 발동에서 전용 유물 제외 종료
+        if (relicData.EffectType is RelicEffectType.MistFlowerPollenOpeningBlind or RelicEffectType.LavaVeinGuardianCoreBurningEnemiesActionPoints or RelicEffectType.RedCanyonBulwarkStoneOpeningBlockDrawTrade or // 실제 교전 개막과 아군 차례에서 직접 처리하는 효과
+            RelicEffectType.LeechFangNecklaceSingleTargetHealing or RelicEffectType.MudCharmActionPointLossBlock or RelicEffectType.ObsidianExecutionMaskBleedingDefeatDamage) // 실제 명중과 행동력 감소 및 전투불능에서 직접 처리하는 효과
+        { // 직접 처리한 개발 일차 유물의 공용 발동 제외 시작
+            return false; // 공용 난수와 거짓 발동 기록의 중복 차단
+        } // 직접 처리한 개발 일차 유물의 공용 발동 제외 종료
         if (relicData.EffectType == RelicEffectType.PeriodicEnemyMentalLoss) // 실제 아군 턴 런타임이 이미 처리한 먼지시계 확인
         { // 공용 발동 제외 시작
             return false; // 상태 알림과 실제 감소의 중복 처리 방지
