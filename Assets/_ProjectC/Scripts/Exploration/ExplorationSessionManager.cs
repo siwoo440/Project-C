@@ -84,6 +84,17 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         PermanentAttackPower += gained; // 새 탐사 전까지 유지할 영구 공격력 누적 기록
         return gained; // 실제로 지급한 영구 수치 반환
     } // 영구 공격력 정산 종료
+    internal int PendingCaravanDraws { get; private set; } // 실제 상점 구입으로 받은 이번 탐사의 남은 드로우 보상
+    internal int AddCaravanDraws(int amount) // 성공한 실제 유물 구매의 추가 드로우 수 적립
+    { // 남은 드로우 보상 적립 시작
+        int added = System.Math.Min(System.Math.Max(0, amount), int.MaxValue - PendingCaravanDraws); // 구매당 양수 적립과 정수 범위 확인
+        PendingCaravanDraws += added; // 유물 보유와 별개인 실제 적립 수량 갱신
+        return added; // 표시할 실제 이번 적립량 반환
+    } // 남은 드로우 보상 적립 종료
+    internal void SpendCaravanDraws(int drawn) // 손패에 실제로 들어온 수만큼 사용한 상점 보상
+    { // 드로우 보상의 실제 사용 시작
+        PendingCaravanDraws -= System.Math.Clamp(drawn, 0, PendingCaravanDraws); // 실패한 드로우나 넘친 요청에 차감 없는 남은 적립 수량
+    } // 드로우 보상의 실제 사용 종료
     public int RunExperienceGained => runExperienceGained; // 이번 탐사 실제 경험치 조회
     public int RunGoldGained => runGoldGained; // 이번 탐사 실제 골드 조회
     public int RunScrewGained => runScrewGained; // 이번 탐사 실제 나사 조회
@@ -708,6 +719,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             IsZoneBossReservedForRun = snapshot.zoneBossReserved; // 도중 백 퍼센트와 구분한 실제 출발 시점 상태
         } // 탐사 선택과 이미 고정한 보스 예약의 복원 종료
         PermanentAttackPower = System.Math.Max(0, snapshot.permanentAttackPower); // 기존 저장에서 생략된 영 기본값과 정상 비음수 보너스 복원
+        PendingCaravanDraws = System.Math.Max(0, snapshot.pendingCaravanDraws); // 구형 파일의 기본 영과 새 파일의 실제 남은 적립 수량 복원
         encounterPoolVersion = snapshot.encounterPoolVersion; // 저장 당시 조우 목록 버전 복원
         EventPoolVersion = snapshot.eventPoolVersion; // 저장 당시 층의 이벤트 목록 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
@@ -762,6 +774,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         CurrentZoneLevel = 1; // 원래 탐사의 기본 첫 난이도
         IsZoneBossReservedForRun = false; // 이전 회차에서 고정한 보스 예약 제거
         PermanentAttackPower = 0; // 회차가 바뀌면 이전 처치의 영구 수치 초기화
+        PendingCaravanDraws = 0; // 새 탐사에 이전 회차의 유물 구매 적립 수량 전달 방지
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거

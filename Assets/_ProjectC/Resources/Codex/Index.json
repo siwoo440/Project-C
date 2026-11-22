@@ -1327,6 +1327,54 @@
       "artworkKey": "463e42e5c06056ef9f865e01044588de"
     },
     {
+      "category": 3,
+      "name": "잠들지 않는 저택의 심지",
+      "description": "성채 조우가 시작되면 생존 아군 전원이 방어도 15를 얻는다.",
+      "artworkKey": "5ee4170a247f518ab85c804d48b59198"
+    },
+    {
+      "category": 3,
+      "name": "사막 유리조각 팔찌",
+      "description": "사막 조우에서 적이 부여하는 실명에 대한 생존 아군 저항이 15%p 증가한다.",
+      "artworkKey": "3ed7d8b3e14f5349a0bc3bcce6aafd13"
+    },
+    {
+      "category": 3,
+      "name": "마른 물주머니 끈",
+      "description": "전투에서 승리하거나 도주를 완료하면 생존 아군 전원이 체력을 2 회복한다.",
+      "artworkKey": "03a8fa52c69c5fc89532333cc8a02b32"
+    },
+    {
+      "category": 3,
+      "name": "모래 묻은 뼛조각",
+      "description": "전투에서 출혈 중인 적에게 처음 명중하는 아군의 직접 카드 타격 피해가 2 증가한다.",
+      "artworkKey": "f2affd0bbfd55e2bac500b299c30562b"
+    },
+    {
+      "category": 3,
+      "name": "풍화된 발자국석",
+      "description": "사막 이벤트에서 고른 선택지가 주는 체력 피해가 20% 감소한다.",
+      "artworkKey": "c512002804615908bedd83e3267dfb33"
+    },
+    {
+      "category": 3,
+      "name": "검은 모래병",
+      "description": "아군이 적에게 확률로 부여하는 실명의 발동 확률이 5%p 증가한다.",
+      "artworkKey": "49e2e90342135899a1372e88cb0e40a4"
+    },
+    {
+      "category": 3,
+      "name": "카라반의 낡은 저울",
+      "description": "보유 중 새 유물을 상점에서 구매하면 다음 전투 첫 아군 턴의 드로우 한 장을 예약한다. 미사용 보상은 탐사 저장에 남는다.",
+      "artworkKey": "ae722547ba2950cc862606d4e334d4db"
+    },
+    {
+      "category": 3,
+      "name": "사막왕의 부서진 팔찌",
+      "description": "전투 시작에 무작위 생존 적 한 명의 공격력을 두 적 턴 동안 2 낮춘다.",
+      "artworkKey": "dc033edb8d205a40821414eea16f3fba"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

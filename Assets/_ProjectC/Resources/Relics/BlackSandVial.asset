@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: BlackSandVial
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_BLACK_SAND_VIAL
+  displayName: 검은 모래병
+  description: "아군이 적에게 확률로 부여하는 실명의 발동 확률이 5%p 증가한다."
+  icon: {fileID: 21300000, guid: 49e2e90342135899a1372e88cb0e40a4, type: 3}
+  rarity: 0
+  triggerType: 36
+  effectType: 190
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 5
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 15
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

@@ -225,11 +225,14 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         PartyStateChanged?.Invoke(); // 변경된 파티 상태 표시
     } // 이벤트 상태 변경 종료
 
-    internal static int GetEventTrapHealthDamage(int baseDamage) // 탐사 사건 함정에서 받을 체력 피해 조회
-    { // 함정 피해 계산 시작
-        int reduction = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.EventTrapDamageReduction)?.EffectValue ?? 0; // 현재 보유한 잔광 등불의 피해 감소량
-        return Mathf.Max(0, Mathf.Max(0, baseDamage) - reduction); // 피해 경감과 체력 피해의 영점 하한
-    } // 함정 피해 계산 종료
+    internal static int GetEventTrapHealthDamage(int baseDamage, ExplorationRegion region = ExplorationRegion.Winterfall) // 실제 탐사 지역의 선택 함정 체력 피해 조회
+    { // 확정한 함정의 고정 및 사막 비율 경감 시작
+        var inventory = RelicRunManager.Instance?.Inventory; // 실제 탐사에 보유한 유물 목록 조회
+        int reduction = inventory?.FindEffect(RelicEffectType.EventTrapDamageReduction)?.EffectValue ?? 0; // 현재 보유한 잔광 등불의 공용 고정 피해 감소
+        int damage = Mathf.Max(0, Mathf.Max(0, baseDamage) - reduction); // 기존 함정의 고정 피해 경감과 영 하한
+        int desertReduction = region == ExplorationRegion.Desert ? inventory?.FindEffect(RelicEffectType.WeatheredFootprintDesertEventProtection)?.EffectValue ?? 0 : 0; // 사막 함정에서만 적용할 현재 유물 비율
+        return (int)((long)damage * (100 - Mathf.Clamp(desertReduction, 0, 100)) / 100); // 남은 실제 체력 피해에 사막 비율과 정수 내림 반영
+    } // 확정한 함정의 고정 및 사막 비율 경감 종료
 
     public bool TryGetSavedAllyState(
         CharacterData characterData,

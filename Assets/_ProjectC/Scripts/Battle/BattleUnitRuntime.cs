@@ -57,6 +57,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal int EfficientUseApDiscount { get; set; } // 현재 아군 턴의 펜타클 기본 행동력 할인
+    internal BattleTurnRuntime SandBoneBattle { get; set; } // 예고 및 실제 피해에 연결된 현재 적의 전투 한정 유물 관리자
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
@@ -720,6 +721,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false, bool alliedDirectAttack = false, int magicalResistancePenetrationPercent = 0) // 직접 공격과 현재 저항 관통을 반영할 순수 피해 예고
     { // 기본 피해 예고 시작
         damageAmount = alliedDirectAttack ? ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out _) : damageAmount; // 표식을 소비하지 않는 실제 직접 타격 보정 예고
+        if (alliedDirectAttack) // 방어도 적용 전 실제 아군 카드 피해 예고의 조건
+        { // 가산 기회를 소모하지 않는 순수 예고 시작
+            damageAmount = ApplySandBoneDamageBonus(damageAmount, sourceUnit, out _); // 실제 같은 적에 대한 현재 추가 피해 계산
+        } // 가산 기회를 소모하지 않는 순수 예고 종료
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 현재 위험 차단과 저항 관통을 공용 피해 예고에 전달
     } // 기본 피해 예고 종료
     internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, bool enemyAreaAttack = false, bool applyDamageNullification = true, int magicalResistancePenetrationPercent = 0) // 기존 보호와 실제 마법 저항 관통을 반영한 피해 예고
@@ -835,6 +840,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 고해실의 못 피해 가산 시작
             damageAmount = ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out confession); // 예고와 같은 방어 이전 고해 표식과 은신 보정
         } // 고해실의 못 피해 가산 종료
+        var sandBattle = SandBoneBattle; // 이번 타격이 시작될 때의 실제 전투 관리자
+        bool usedSandBone = false; // 이번 직접 카드 타격이 실제 가산을 받은 상태
+        if (!wandEcho && (alliedDirectAttack || BattleCardDamageContext.IsPendingHit(sourceUnit, this))) // 원본 직접 카드와 태양의 별도 타격만 포함하고 반향 제외
+        { // 실제 방어 전 출혈 추가 피해 계산 시작
+            damageAmount = ApplySandBoneDamageBonus(damageAmount, sourceUnit, out usedSandBone); // 예고와 같게 이번 타격에만 임시 가산
+        } // 실제 방어 전 출혈 추가 피해 계산 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
         bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
@@ -903,6 +914,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 실제 발동한 방어 준비 제거
             GainBlock(damageResult.PreparedBlock); // 피해 적용 직전 준비 방어도 획득
         } // 준비 소모 종료
+        if (usedSandBone && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0)) // 무효 피해를 거른 실제 체력 또는 방어도 손실 확인
+        { // 피해 알림 전 전투당 첫 가산 확정 시작
+            sandBattle.ConsumeSandBoneDamage(); // 실제 다음 명중과 피해 예고에 같은 기회 재사용 차단
+        } // 피해 알림 전 전투당 첫 가산 확정 종료
         if (confession != null && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0) && RemoveStatusEffectInstance(confession)) // 실제 체력 또는 방어도 피해가 생긴 확정 명중 확인
         { // 실제 표식 사용 종료 알림 시작
             NotifyStatusEffectsChanged(); // 피해와 새 정신력 손실 신호 전에 한 번 사용한 표식의 제거 알림
@@ -1023,6 +1038,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int curtain = GetStatusEffect(BattleStatusEffectType.Stealth) is { IsExpired: false } ? BattleSupplyRelics.Find(RelicEffectType.CurtainPinStealthDamage)?.EffectValue ?? 0 : 0; // 실제 활성 은신 적의 커튼 고정핀 가산 조회
         return (int)Math.Min(int.MaxValue, (long)amount + (mark?.EffectiveValue ?? 0) + curtain); // 양쪽 독립 가산과 원래 정수 피해 상한 적용
     } // 아군 직접 피해 가산 종료
+
+    private int ApplySandBoneDamageBonus(int amount, BattleUnitRuntime source, out bool applied) // 실제 양수 직접 카드의 방어 전 출혈 적 가산
+    { // 실제 카드 피해 및 전투 상태 보정 시작
+        int bonus = amount > 0 ? SandBoneBattle?.GetSandBoneDamageBonus(source, this) ?? 0 : 0; // 유효 양수 피해와 활성 출혈에만 현재 보유 가산 확인
+        applied = bonus > 0; // 실제 피해 정산 때만 소모할 한 번 가산 적용 여부
+        return applied ? (int)Math.Min(int.MaxValue, (long)amount + bonus) : amount; // 정수 범위 안의 가산 피해 또는 원래 피해 반환
+    } // 실제 카드 피해 및 전투 상태 보정 종료
 
     private int ApplyHeartShardDamageBonus(int amount, BattleUnitRuntime sourceUnit) // 심장파편을 반영한 실제 아군 출처 피해
     { // 저체력 아군 피해 계산 시작

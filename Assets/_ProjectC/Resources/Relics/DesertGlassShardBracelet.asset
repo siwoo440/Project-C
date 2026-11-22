@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: DesertGlassShardBracelet
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_DESERT_GLASS_SHARD_BRACELET
+  displayName: 사막 유리조각 팔찌
+  description: "사막 조우에서 적이 부여하는 실명에 대한 생존 아군 저항이 15%p 증가한다."
+  icon: {fileID: 21300000, guid: 3ed7d8b3e14f5349a0bc3bcce6aafd13, type: 3}
+  rarity: 0
+  triggerType: 8
+  effectType: 186
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 15
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 15
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

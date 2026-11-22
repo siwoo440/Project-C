@@ -8,7 +8,7 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
     public const int Gaze = 0; // 응시 선택 순서
     public const int Shatter = 1; // 파괴 선택 순서
     public const int LookAway = 2; // 시선 회피 선택 순서
-    internal static int ShatterHealthDamage => BattleResultManager.GetEventTrapHealthDamage(7); // 눈 파편 함정의 실제 체력 피해
+    internal static int GetShatterHealthDamage(ExplorationRegion region) => BattleResultManager.GetEventTrapHealthDamage(7, region); // 현재 실제 지역의 함정 체력 피해
     private static bool resolving; // 결과 반영 중 같은 입력 재진입 방지
 
     internal static ExplorationEventData Create() // 이벤트 원본과 선택지 구성
@@ -54,7 +54,7 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
         return candidates.Count > 0 ? candidates[random.Next(candidates.Count)] : null; // 등록된 희귀 카드 한 장 선택
     } // 보상 조회 종료
 
-    public static bool TryResolve(string runtimeId, int choice, CharacterData actor, CharacterData owner, out string summary) // 행동자와 소유자 확정 후 결과 한 번 적용
+    public static bool TryResolve(string runtimeId, int choice, CharacterData actor, CharacterData owner, out string summary, ExplorationRegion region = ExplorationRegion.Winterfall) // 행동자와 소유자 확정 후 결과 한 번 적용
     { // 이벤트 결과 처리 시작
         summary = string.Empty; // 미확정 결과 초기화
         var session = ExplorationSessionManager.EnsureInstance(); // 탐사 상태 조회
@@ -79,7 +79,7 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
                     summary = $"{actor.DisplayName} 정신력 {mental} → {Mathf.Max(BattleMentalRuntime.MinimumMental, mental - 8)} · {owner.DisplayName} 카드 [{reward.DisplayName}] 획득"; // 행동자와 카드 소유자 구분 표시
                     break; // 응시 처리 종료
                 case Shatter: // 체력을 치르고 재료 획득
-                    party.ApplyEventChange(actor, ShatterHealthDamage, 0); // 눈 파편의 보정된 체력 피해 적용
+                    party.ApplyEventChange(actor, GetShatterHealthDamage(region), 0); // 눈 파편의 보정된 체력 피해 적용
                     party.TryGetSavedAllyState(actor, out int afterHealth, out _, out _); // 실제 파편 피해 뒤 남은 체력 조회
                     PlayerResourceManager.EnsureInstance().AddResources(0, 1, 1, 0); // 나사와 철판 한 개씩 지급
                     summary = $"{actor.DisplayName} 체력 {health} → {afterHealth} · 철판 +1 · 나사 +1"; // 실제 남은 체력과 재료 표시

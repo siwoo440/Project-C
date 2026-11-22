@@ -2115,7 +2115,7 @@
     {
       "sourceRow": 194,
       "name": "잠들지 않는 저택의 심지",
-      "description": "성채 구역에서 전투 시작 시 아군 전체 보호막 15",
+      "description": "성채 조우가 시작되면 생존 아군 전원이 방어도 15를 얻는다.",
       "buyMin": 278,
       "buyMax": 314,
       "buyVariance": 36,
@@ -2126,7 +2126,7 @@
     {
       "sourceRow": 195,
       "name": "사막 유리조각 팔찌",
-      "description": "사막 구역에서 실명 저항 +15%",
+      "description": "사막 조우에서 적이 부여하는 실명에 대한 생존 아군 저항이 15%p 증가한다.",
       "buyMin": 295,
       "buyMax": 338,
       "buyVariance": 43,
@@ -2137,7 +2137,7 @@
     {
       "sourceRow": 196,
       "name": "마른 물주머니 끈",
-      "description": "전투 종료 시 체력 2 회복",
+      "description": "전투에서 승리하거나 도주를 완료하면 생존 아군 전원이 체력을 2 회복한다.",
       "buyMin": 312,
       "buyMax": 348,
       "buyVariance": 36,
@@ -2148,7 +2148,7 @@
     {
       "sourceRow": 197,
       "name": "모래 묻은 뼛조각",
-      "description": "출혈 상태 적에게 첫 공격 피해 +2",
+      "description": "전투에서 출혈 중인 적에게 처음 명중하는 아군의 직접 카드 타격 피해가 2 증가한다.",
       "buyMin": 329,
       "buyMax": 372,
       "buyVariance": 43,
@@ -2159,7 +2159,7 @@
     {
       "sourceRow": 198,
       "name": "풍화된 발자국석",
-      "description": "사막 이벤트에서 피해 선택지 피해 -20%",
+      "description": "사막 이벤트에서 고른 선택지가 주는 체력 피해가 20% 감소한다.",
       "buyMin": 196,
       "buyMax": 232,
       "buyVariance": 36,
@@ -2170,7 +2170,7 @@
     {
       "sourceRow": 199,
       "name": "검은 모래병",
-      "description": "실명 부여 확률 +5%",
+      "description": "아군이 적에게 확률로 부여하는 실명의 발동 확률이 5%p 증가한다.",
       "buyMin": 213,
       "buyMax": 256,
       "buyVariance": 43,
@@ -2192,7 +2192,7 @@
     {
       "sourceRow": 201,
       "name": "카라반의 낡은 저울",
-      "description": "상점에서 유물 구매 후 카드 1장 드로우 보상 획득",
+      "description": "보유 중 새 유물을 상점에서 구매하면 다음 전투 첫 아군 턴의 드로우 한 장을 예약한다. 미사용 보상은 탐사 저장에 남는다.",
       "buyMin": 247,
       "buyMax": 290,
       "buyVariance": 43,
@@ -2203,7 +2203,7 @@
     {
       "sourceRow": 202,
       "name": "사막왕의 부서진 팔찌",
-      "description": "전투 시작 시 무작위 적 1명 약화(2턴)",
+      "description": "전투 시작에 무작위 생존 적 한 명의 공격력을 두 적 턴 동안 2 낮춘다.",
       "buyMin": 264,
       "buyMax": 300,
       "buyVariance": 36,

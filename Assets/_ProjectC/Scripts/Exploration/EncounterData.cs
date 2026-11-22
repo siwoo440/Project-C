@@ -10,6 +10,7 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     [SerializeField] private string encounterId; // 조우 고유 ID
     [SerializeField] private string displayName; // 조우 표시 이름
     [SerializeField] private BattleType battleType = BattleType.Normal; // 전투 유형
+    [SerializeField] private ExplorationRegion region = ExplorationRegion.Winterfall; // 기존 기록과 새 지역 자료의 실제 지역 지정
     [Min(0)] // 조우 목록 버전 최소값
     [SerializeField] private int minimumEncounterPoolVersion; // 조우가 처음 추가된 목록 버전
     [SerializeField] private bool legacyOnly; // 이전 탐사에서만 사용하는 임시 조우 표시
@@ -42,6 +43,7 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     public string EncounterId => encounterId; // 조우 ID 조회
     public string DisplayName => displayName; // 조우 이름 조회
     public BattleType BattleType => battleType; // 전투 유형 조회
+    public ExplorationRegion Region => region; // 원본 자료가 지정한 지역 조회
     public bool IsAvailableForPoolVersion(int version) // 저장된 조우 목록 버전 호환 확인
     { // 조우 버전 확인 시작
         return version >= 0 && minimumEncounterPoolVersion <= version && (!legacyOnly || version == 0) && (removedAtEncounterPoolVersion == 0 || version < removedAtEncounterPoolVersion); // 저장 버전의 조우 추가와 제거 범위 확인

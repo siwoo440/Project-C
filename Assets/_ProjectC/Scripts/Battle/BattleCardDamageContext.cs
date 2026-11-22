@@ -15,6 +15,12 @@ public static class BattleCardDamageContext // 카드 피해 계산 문맥
         targetIndex = 0; // 대상 순번 초기화
     }
 
+    internal static bool IsPendingHit(BattleUnitRuntime source, BattleUnitRuntime target) // 문맥을 소비하지 않고 현재 직접 카드 타격의 출처와 대상 대조
+    { // 원래 직접 카드 문맥 확인 시작
+        return activeCard != null && activeCard.OwnerUnit == source && activeTargets != null && // 실제 카드 소유자와 원래 대상 목록 확인
+            targetIndex < activeTargets.Count && activeTargets[targetIndex] == target; // 다음 현재 대상과 일치할 때만 직접 타격 인정
+    } // 원래 직접 카드 문맥 확인 종료
+
     public static bool TryConsume(
         out CardInstance card,
         out BattleUnitRuntime target) // 다음 카드 피해 대상 조회

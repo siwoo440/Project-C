@@ -259,16 +259,23 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             return CompleteTransaction(ShopPurchaseResult.Unavailable, "현재 파티 캐릭터를 선택하세요."); // 소유자 선택 필요 알림
         } // 소유자 선택 오류 종료
         ShopPurchaseResult result; // 실제 거래 결과 보관
+        var exploration = ExplorationSessionManager.Instance; // 지금 판매가 일어날 실제 탐사 회차 조회
+        int caravanDrawsAdded = 0; // 구매 완료 화면에 전달할 실제 예약 장수
         purchasing = true; // 상품 지급과 할인 소모까지 거래 잠금
         try // 외부 보관함 알림에도 거래 잠금 정리
         { // 원자 구매 시작
             int markedPrice = GetOfferPriceBeforeDrawer(offer); // 기존 영구 할인과 상점 표식을 적용한 금액
             int drawerPercent = GetDrawerDiscountPercent(markedPrice); // 상품을 받기 직전 손잡이 보유와 회차 할인 여부 보관
             int charged = ApplyDrawerDiscount(markedPrice, drawerPercent); // 실제 골드 결제 금액 확정
+            int caravanDraws = GetCaravanDrawsForPurchase(exploration, offer); // 지급 전에 이미 보유한 상단 저울과 실제 유물 상품 확인
             result = transactionService.TryPurchase(offer.OfferId, charged, () => CanDeliver(offer, owner), () => Deliver(offer, owner)); // 현재 표시 가격으로 거래 실행
             if (result == ShopPurchaseResult.Success) // 실제 첫 상품 구매 성공 확인
             { // 할인 소모 시작
                 drawerDiscountUsed |= drawerPercent > 0 && charged > 0; // 손잡이를 적용하고 지불한 첫 상품에서 회차 혜택 소모
+                if (caravanDraws > 0) // 실제 방의 유물 구입 성공과 사전 보유 조건 확인
+                { // 다음 교전 드로우 적립 시작
+                    caravanDrawsAdded = exploration.AddCaravanDraws(caravanDraws); // 성공 알림의 원래 자동 저장보다 먼저 실제 예약 기록
+                } // 다음 교전 드로우 적립 종료
                 if (IsSpecialStock(offer)) // 잿빛 도장이 진열한 특수 카드 실제 결제 확인
                 { // 방별 특수 상품 구매 완료 기록 시작
                     relicReserves[activeRoomRuntimeId].specialCardSold = true; // 방과 저장에서 품절 상태 유지
@@ -281,9 +288,22 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             purchasing = false; // 다음 정상 거래 허용
         } // 잠금 정리 종료
         string message = BuildPurchaseMessage(result, offer.DisplayName); // 거래 결과 문구 생성
+        if (caravanDrawsAdded > 0) // 실제 유물 구매로 쌓인 이번 예약 확인
+        { // 접수한 실제 보상 안내 시작
+            message += $" · 다음 전투 첫 손패 드로우 +{caravanDrawsAdded}"; // 기존 거래 안내에 실제 적립 표시
+        } // 접수한 실제 보상 안내 종료
         return CompleteTransaction(result, message); // 거래 결과 알림과 반환
     } // 상품 구매 종료
 
+    private int GetCaravanDrawsForPurchase(ExplorationSessionManager exploration, ShopOfferData offer) // 실제 탐사 상점의 사전 보유 저울 구매 보상 확인
+    { // 상단 저울의 구매 전 자격 확인 시작
+        if (string.IsNullOrWhiteSpace(activeRoomRuntimeId) || exploration is not { HasCurrentFloorSeed: true, IsExplorationCompleted: false, ActiveEncounter: null } || // 정상 탐사에서 방문한 실제 상점 방 확인
+            offer.OfferType != ShopOfferType.Relic || offer.Relic.EffectType == RelicEffectType.CaravanScalesShopRelicDraw) // 일반 유물 상품과 저울 자체 구매 구분
+        { // 드로우를 예약하지 않는 구매 경로 시작
+            return 0; // 일반 상품이나 완료된 탐사의 적립 생략
+        } // 드로우를 예약하지 않는 구매 경로 종료
+        return RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.CaravanScalesShopRelicDraw)?.EffectValue ?? 0; // 이번 상품을 받기 전 이미 가진 실제 저울의 드로우 수치
+    } // 상단 저울의 구매 전 자격 확인 종료
     internal void CollectStock(out List<ShopOfferData> available, out List<ShopOfferData> sold) // 현재 방의 구매 가능 목록과 품절 목록 생성
     { // 진열 계산 시작
         available = new List<ShopOfferData>(); // 판매 가능한 실제 상품
