@@ -35,7 +35,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     private RectTransform choiceContainer; // 선택지 버튼 컨테이너
 
     private Coroutine showCoroutine; // 현재 표시 코루틴
-    private Texture2D blurTexture; // 현재 블러 텍스처
+    private RenderTexture blurTexture; // 재사용하는 축소 배경 렌더 텍스처
     private ExplorationEventView currentEventView; // 현재 열린 이벤트 뷰
     private ExplorationEventData currentEventData; // 현재 열린 이벤트 데이터
     private string currentRuntimeEventId; // 현재 열린 이벤트 런타임 ID
@@ -114,6 +114,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
     private IEnumerator ShowEventRoutine() // 블러 캡처 후 이벤트 패널 표시
     {
+        ClearBlurBackground(); // 이전 사건 배경을 제거한 뒤 새 화면 캡처
         panelRoot.gameObject.SetActive(false); // 패널 본문 임시 숨김
         rootCanvas.enabled = true; // 배경 캔버스 활성화
         dimOverlayImage.color = new Color(0f, 0f, 0f, 0.45f); // 캡처 전 어두운 오버레이 표시
@@ -733,70 +734,77 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             panelRoot.gameObject.SetActive(false); // 패널 본문 비활성화
         }
 
-        ReleaseBlurTexture(); // 블러 텍스처 해제
+        ClearBlurBackground(); // 화면 참조 해제와 같은 크기 텍스처 재사용
     }
 
-    private void ApplyBlurCapture() // 현재 화면을 캡처해 블러 텍스처 생성
-    {
-        ReleaseBlurTexture(); // 이전 블러 텍스처 정리
+    private void ApplyBlurCapture() // 현재 화면을 GPU에서 축소해 이벤트 배경에 적용
+    { // 이벤트 배경 캡처 시작
+        int screenWidth = Screen.width; // 캡처할 현재 화면 너비
+        int screenHeight = Screen.height; // 캡처할 현재 화면 높이
+        if (screenWidth < 1 || screenHeight < 1 || SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) // 캡처할 그래픽 화면 확인
+        { // 화면 캡처 불가 처리 시작
+            return; // 현재 어두운 기본 배경 유지
+        } // 화면 캡처 불가 처리 종료
 
-        Texture2D sourceTexture =
-            ScreenCapture.CaptureScreenshotAsTexture(); // 현재 화면 캡처
+        int width = Mathf.Max(1, screenWidth / BlurDownsample); // 흐리게 표시할 축소 너비
+        int height = Mathf.Max(1, screenHeight / BlurDownsample); // 흐리게 표시할 축소 높이
+        if (blurTexture == null || blurTexture.width != width || blurTexture.height != height) // 배경 캐시의 크기 확인
+        { // 축소 배경 교체 시작
+            ReleaseBlurTexture(); // 크기가 달라진 이전 배경 해제
+            blurTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32) // 깊이 버퍼가 없는 작은 배경 생성
+            { // 배경 샘플링 설정 시작
+                name = "Exploration Event Blur", // 렌더 텍스처 메모리 추적 이름
+                filterMode = FilterMode.Bilinear, // 작은 배경을 부드럽게 확대하는 필터
+                wrapMode = TextureWrapMode.Clamp // 화면 모서리에서 반대쪽 픽셀 유입 방지
+            }; // 배경 샘플링 설정 종료
+        } // 축소 배경 교체 종료
+        if (!blurTexture.IsCreated() && !blurTexture.Create()) // 새 배경 또는 재생성할 그래픽 리소스 확인
+        { // 배경 생성 실패 처리 시작
+            ReleaseBlurTexture(); // 만들지 못한 배경 참조 정리
+            return; // 현재 어두운 기본 배경 유지
+        } // 배경 생성 실패 처리 종료
 
-        if (sourceTexture == null)
-        {
-            blurBackgroundImage.texture = null; // 캡처 실패 시 텍스처 제거
-            blurBackgroundImage.color = new Color(0f, 0f, 0f, 0.65f); // 대체 어두운 색상 적용
-            return;
-        }
+        RenderTexture previousTarget = RenderTexture.active; // 현재 활성 렌더 텍스처 보관
+        bool previousSrgbWrite = GL.sRGBWrite; // 기존 sRGB 출력 상태 보관
+        RenderTexture source = RenderTexture.GetTemporary(screenWidth, screenHeight, 0, RenderTextureFormat.ARGB32); // 화면 캡처용 Unity 임시 렌더 텍스처
+        try // 그래픽 상태와 임시 텍스처 복구 보장
+        { // GPU 배경 캡처 시작
+            source.filterMode = FilterMode.Bilinear; // 원래 픽셀 보간과 같은 축소 필터
+            source.wrapMode = TextureWrapMode.Clamp; // 화면 모서리의 픽셀 샘플 제한
+            ScreenCapture.CaptureScreenshotIntoRenderTexture(source); // CPU 픽셀 복사 없이 현재 화면 캡처
+            GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear && blurTexture.sRGB; // 배경 대상의 색 공간에 맞춘 기록
+            Vector2 scale = SystemInfo.graphicsUVStartsAtTop ? new Vector2(1f, -1f) : Vector2.one; // 그래픽 API의 캡처 세로 방향 보정
+            Vector2 offset = SystemInfo.graphicsUVStartsAtTop ? Vector2.up : Vector2.zero; // 뒤집은 세로 좌표를 텍스처 내부로 이동
+            Graphics.Blit(source, blurTexture, scale, offset); // GPU에서 방향을 보존한 채 화면을 배경 크기로 축소
+        } // GPU 배경 캡처 종료
+        finally // 후속 카메라와 UI의 그래픽 상태 복구
+        { // 캡처 리소스 정리 시작
+            GL.sRGBWrite = previousSrgbWrite; // 원래 sRGB 출력 복구
+            RenderTexture.active = previousTarget; // 원래 렌더 텍스처 복구
+            RenderTexture.ReleaseTemporary(source); // 전체 화면 임시 텍스처를 Unity 풀로 반환
+        } // 캡처 리소스 정리 종료
+        blurBackgroundImage.texture = blurTexture; // 기존 RawImage를 통해 작은 배경 표시
+        blurBackgroundImage.color = Color.white; // 화면 배경의 기존 표시 색상
+    } // 이벤트 배경 캡처 종료
 
-        int width =
-            Mathf.Max(1, sourceTexture.width / BlurDownsample); // 축소 블러 폭 계산
+    private void ClearBlurBackground() // 표시 중인 배경과 대체 색상 정리
+    { // 배경 표시 초기화 시작
+        if (blurBackgroundImage != null) // 배경 이미지 생성 여부 확인
+        { // 기본 배경 복원 시작
+            blurBackgroundImage.texture = null; // 숨긴 배경의 UI 텍스처 참조 해제
+            blurBackgroundImage.color = new Color(0f, 0f, 0f, 0.65f); // 캡처 전과 실패 시의 기존 대체 색상
+        } // 기본 배경 복원 종료
+    } // 배경 표시 초기화 종료
 
-        int height =
-            Mathf.Max(1, sourceTexture.height / BlurDownsample); // 축소 블러 높이 계산
-
-        blurTexture =
-            new Texture2D(width, height, TextureFormat.RGB24, false); // 축소 블러 텍스처 생성
-
-        blurTexture.filterMode = FilterMode.Bilinear; // 확대 시 부드럽게 보이도록 설정
-
-        for (int y = 0;
-             y < height;
-             y++)
-        {
-            for (int x = 0;
-                 x < width;
-                 x++)
-            {
-                float u = (x + 0.5f) / width; // 원본 샘플 U 좌표 계산
-                float v = (y + 0.5f) / height; // 원본 샘플 V 좌표 계산
-                Color sampledColor = sourceTexture.GetPixelBilinear(u, v); // 원본 색상 샘플링
-                blurTexture.SetPixel(x, y, sampledColor); // 축소 텍스처 픽셀 설정
-            }
-        }
-
-        blurTexture.Apply(); // 축소 텍스처 적용
-        blurBackgroundImage.texture = blurTexture; // 블러 텍스처 표시
-        blurBackgroundImage.color = Color.white; // 블러 텍스처 색상 적용
-
-        Destroy(sourceTexture); // 원본 캡처 텍스처 정리
-    }
-
-    private void ReleaseBlurTexture() // 블러 텍스처 메모리 해제
-    {
-        if (blurTexture != null)
-        {
-            Destroy(blurTexture); // 블러 텍스처 제거
-            blurTexture = null; // 블러 텍스처 참조 정리
-        }
-
-        if (blurBackgroundImage != null)
-        {
-            blurBackgroundImage.texture = null; // 배경 텍스처 참조 제거
-            blurBackgroundImage.color = new Color(0f, 0f, 0f, 0.65f); // 대체 색상 적용
-        }
-    }
+    private void ReleaseBlurTexture() // 창 크기 변경 또는 패널 제거 시 배경 폐기
+    { // 축소 배경 해제 시작
+        if (blurTexture != null) // 생성된 렌더 텍스처 확인
+        { // 작은 배경 리소스 해제 시작
+            blurTexture.Release(); // GPU 메모리 해제
+            Destroy(blurTexture); // 배경 오브젝트 제거
+            blurTexture = null; // 폐기한 배경 참조 초기화
+        } // 작은 배경 리소스 해제 종료
+    } // 축소 배경 해제 종료
 
     private void ClearChoiceButtons() // 현재 버튼 목록 제거
     {
