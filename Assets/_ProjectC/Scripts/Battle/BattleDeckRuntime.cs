@@ -19,6 +19,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
+    private readonly List<CardInstance> historicCopies = new List<CardInstance>(); // 실제 전투에서만 보관할 복제 주문의 실물 카드 목록
     private CardInstance battleCopy; // 전투 종료 시 모든 더미에서 지울 복사본
     private CardInstance openingTemporaryCard; // 첫 아군 손패에 한 번 들어오는 전투 한정 무료 찌르기
     private CardInstance pendingHandDiscard; // 현재 한 번의 버림 판정을 기다리는 손패
@@ -441,17 +442,40 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 복사 불가 시작
             return false; // 원래 손패와 미사용 기회 유지
         } // 복사 불가 종료
-        battleCopy = source.IsBattleOnlySingleUse // 다른 유물이 복사한 실제 카드의 무료 및 일회 규칙 확인
-            ? CardInstance.CreateBattleOnlySingleUse(source.SourceData, source.OwnerUnit, cards.Count) // 복사한 실제 임시 카드의 무료 비용과 사용 제외 유지
-            : CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 카드의 정상 비용과 소유자 및 강화 단계 복사
-        battleCopy.RelicApDiscount = relicApDiscount; // 현재 첫 턴의 유물 할인 물려주기
-        battleCopy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 다음 카드 유물 할인 물려주기
-        battleCopy.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 아직 남은 전투의 첫 방어 할인 물려주기
+        battleCopy = CreateTransientCopy(source); // 고유 복사본의 실제 소유자와 원래 강화 및 비용 설정
         cards.Add(battleCopy); // 전투 전용 카드 등록
         hand.Add(battleCopy); // 복사본을 실제 손패에 추가
         StateChanged?.Invoke(); // 변경된 손패 표시
         return true; // 전투당 한 번 복사 성공
     } // 복사 종료
+    internal bool TryPlayAndCopyHistory(CardInstance played, CardInstance template) // 정상 사용으로 빈자리를 만든 뒤 실제 사용 기록의 원본 복제
+    { // 현재 실물과 전투 덱 검증 시작
+        if (played == null || template == null || played == template || !hand.Contains(played) || !cards.Contains(template)) // 원본의 현재 손패와 복제할 실제 전투 카드 확인
+        { // 존재하지 않는 현재 결제 원본의 정산 거절 시작
+            return false; // 카드 영역과 손패에 변경 없음
+        } // 존재하지 않는 현재 결제 원본의 정산 거절 종료
+        CardInstance copy = CreateTransientCopy(template); // 원본도 소유자도 유지한 새 실물 인스턴스 생성
+        hand.Remove(played); // 가득 찬 손패에서도 사용 카드가 먼저 빈자리 확보
+        historicCopies.Add(copy); // 전투 종료에서 모든 위치를 함께 제거할 새 복제 카드 등록
+        cards.Add(copy); // 회차 원본 덱과 별개인 현재 전투에만 추가
+        hand.Add(copy); // 정상 사용으로 생긴 실제 빈자리에 새 카드 지급
+        PlacePlayedCard(played); // 복제를 사용한 카드에 기존 사용 버림 및 제외 규칙 적용
+        EnsureValidState(); // 실제 소유 카드와 모든 영역의 일관성 확인
+        StateChanged?.Invoke(); // 사용 원본과 복제 결과를 표시
+        return true; // 원래 카드 한 장의 사용과 복제 한 장의 지급 완료
+    } // 현재 실물과 전투 덱 검증 종료
+
+    private CardInstance CreateTransientCopy(CardInstance source) // 기존 유물과 복제 주문이 공유하는 독립 실물 복제
+    { // 원본의 실제 소유자와 강화 단계 처리 시작
+        var copy = source.IsBattleOnlySingleUse // 다른 전투 임시 카드의 원래 고유 사용 처리 유지
+            ? CardInstance.CreateBattleOnlySingleUse(source.SourceData, source.OwnerUnit, cards.Count) // 무료 일회 카드의 정상 제외 속성 유지
+            : CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 일반 카드의 원래 비용과 실제 강화 단계 유지
+        copy.RelicApDiscount = relicApDiscount; // 현재 전투의 기존 공용 유물 할인 연결
+        copy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 현재 다음 카드 유물 할인 연결
+        copy.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 현재 첫 방어 카드 할인 연결
+        return copy; // 원본의 일회 예약을 공유하지 않는 새 카드 반환
+    } // 원본의 실제 소유자와 강화 단계 처리 종료
+
     internal bool TryAddOpeningTemporaryCard(CardData source, BattleUnitRuntime owner) // 첫 아군 손패의 실제 전투 한정 찌르기 생성
     { // 새 임시 손패 생성 시작
         if (source == null || owner == null || owner.IsDead || owner.Team != BattleTeam.Ally || openingTemporaryCard != null || hand.Count >= MaxHandSize) // 첫 한 번의 실제 주인과 정상 손패 상한 확인
@@ -475,6 +499,12 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         bool removed = RemoveBattleOnlyCard(ref battleCopy); // 기존 유물의 전투 전용 복사본 정리
         removed |= RemoveBattleOnlyCard(ref openingTemporaryCard); // 모든 전투 더미에서 단추의 무료 찌르기 정리
+        foreach (var tracked in historicCopies) // 복제 주문이 만든 이번 전투 실물 전체 순회
+        { // 개별 복제의 각 카드 영역 제거 시작
+            var copy = tracked; // 공유 전투 전용 제거에 전달할 실제 복제 참조
+            removed |= RemoveBattleOnlyCard(ref copy); // 손패와 드로우 및 버림과 제외의 모든 영역 정리
+        } // 개별 복제의 각 카드 영역 제거 종료
+        historicCopies.Clear(); // 정리한 전투 복제 카드 추적 해제
         if (removed) // 실제로 손패 또는 전투 더미가 바뀐 경우 확인
         { // 전투 임시 덱 변경 알림 시작
             StateChanged?.Invoke(); // 완전히 정리한 실제 카드 상태 화면 갱신

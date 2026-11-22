@@ -15,6 +15,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
     public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction; // 정해진 행동과 실제 피해 또는 다음 아군 턴을 기다리는 상태
+    public bool LastsUntilBattleEnd => EffectType is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown; // 턴 횟수와 별개인 분배 상태의 전투 수명
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -62,15 +63,15 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 같은 강화 병합 종료
     public void AdvanceDuration() // 지속 횟수 감소
     { // 지속 감소 시작
-        if (IsProtectedMentalState) // 정신 상태의 외부 턴 감소 확인
-        { // 정신 상태 외부 감소 차단 시작
-            return; // 정신력 규칙에 의한 턴 진행 유지
-        } // 정신 상태 외부 감소 차단 종료
+        if (IsProtectedMentalState || LastsUntilBattleEnd) // 정신력 규칙과 전투 지속 상태의 일반 턴 감소 제외
+        { // 별도 수명의 일반 감소 차단 시작
+            return; // 정신력 규칙 또는 전투 종료까지 유지
+        } // 별도 수명의 일반 감소 차단 종료
         RemainingTurns = Math.Max(0, RemainingTurns - 1); // 남은 횟수 한 단계 감소
     } // 지속 감소 종료
     internal bool TryExtendActiveDuration(int turns) // 기존 활성 상태의 지속 시간만 연장
     { // 실제 상태 연장 검사 시작
-        if (turns <= 0 || IsExpired || IsProtectedMentalState || RemainingTurns == int.MaxValue) // 유효 시간과 활성 시간제 상태 확인
+        if (turns <= 0 || IsExpired || IsProtectedMentalState || LastsUntilBattleEnd || RemainingTurns == int.MaxValue) // 이미 별도 수명 또는 활성 시간제 연장 조건 확인
         { // 잘못된 연장 시도 처리 시작
             return false; // 이미 끝났거나 더 늘릴 수 없는 상태 보존
         } // 잘못된 연장 시도 처리 종료
@@ -149,6 +150,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "검격 반사"; // 검격 반사 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "다음 공격 약화"; // 다음 공격 약화 표시
+            case BattleStatusEffectType.DistributionAttackUp: // 전투 지속 분배 공격력 증가 종류
+                return "분배 공격력 증가"; // 실제 강화 상태의 표시 이름
+            case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 전투 지속 분배 물리 방어 감소 종류
+                return "분배 물리 방어 감소"; // 실제 약화 상태의 표시 이름
             case BattleStatusEffectType.AttackPowerDown: // 이번 적 턴 공격 약화
                 return "공격력 감소"; // 청동 경보장치의 약화 표시
             case BattleStatusEffectType.ChargeDefenseDown: // 돌진 약화 종류
@@ -299,7 +304,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.LordFinalOrderWeakenedDefense || effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
+        return effectType == BattleStatusEffectType.DistributionPhysicalDefenseDown || effectType == BattleStatusEffectType.LordFinalOrderWeakenedDefense || effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 분배와 취약 및 나머지 부정 상태의 디버프 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -461,6 +466,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
                 return "취약"; // 취약 아이콘의 대체 글자
+            case BattleStatusEffectType.DistributionAttackUp: // 분배 공격 강화 표시 약칭
+                return "공+"; // 공격력 증가 아이콘의 이름
+            case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 분배 방어 약화 표시 약칭
+                return "방−"; // 물리 방어 감소 아이콘의 이름
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
                 return "공명"; // 공명 표식 표시
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
@@ -533,6 +542,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
                 return $"피해 카드 원본 피해 증가 {effectiveValue}"; // 공격 증가 설명 반환
+            case BattleStatusEffectType.DistributionAttackUp: // 분배의 실제 전투 지속 공격력 상세
+                return $"공격력 +{effectiveValue}"; // 일반 피해 카드에 더할 공격력 안내
+            case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 분배의 실제 전투 지속 물리 방어 상세
+                return $"물리 방어력 −{effectiveValue}"; // 정화할 수 있는 실제 물리 감소 안내
             case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
                 return "새 일반 디버프 차단, 정신력 붕괴 제외"; // 상태 면역과 붕괴 예외 설명 반환
             case BattleStatusEffectType.PhysicalDefenseUp: // 물리 방어 증가 종류

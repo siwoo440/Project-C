@@ -31,6 +31,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
     internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && !SourceData.SpendsAllActionPoints && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
     internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인
+        SourceData.PentacleRule == PentacleCardRule.SecureSupplies || // 사용한 시전자에게 실제 기본 방어도를 부여하는 보급 확보
         EffectType == CardEffectType.ApplyStatusEffect && CardType == CardType.Shield && StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(StatusEffectType); // 방패 카드의 양의 상태 효과 확인
     private bool HasFriendlyTarget => TargetType is CardTargetType.Self or CardTargetType.SingleAlly or CardTargetType.AllAllies; // 본인과 일반 아군 대상 확인
     private bool HasAuthoredDefense => HasFriendlyTarget && HasDefensivePrimaryEffect || // 아군에게 주는 기본 방어 효과 확인
@@ -44,7 +45,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             { // 고정 무료 기본 비용 적용 시작
                 return 0; // 다음 유료 카드 할인의 발동 조건에서도 이미 무료인 비용 반환
             } // 고정 무료 기본 비용 적용 종료
-            int upgradedCost = CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 강화 단계 반영 기본 비용
+            int upgradedCost = HasRunePower ? 0 : UnmodifiedFixedBaseCost; // 다음 실제 사용까지 유지하며 별도 행동력은 건드리지 않는 기본 비용 면제
             int efficientUse = SourceData.SpendsAllActionPoints ? 0 : OwnerUnit.EfficientUseApDiscount; // X 비용에는 적용하지 않는 이번 아군 턴의 별도 기본 할인
             long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse; // 고정 기본 비용에 함께 적용되는 각 독립 할인 합계
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
@@ -69,6 +70,11 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
 
+    public bool HasRunePower { get; private set; } // 다음 실제 사용까지 실물 카드에 남는 기본 비용 면제
+    private int UnmodifiedFixedBaseCost => CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 별도 대가와 다른 일시 할인 이전의 기본 행동력
+    internal bool CanReceiveRunePower => !HasRunePower && !IsBattleOnlySingleUse && !SourceData.SpendsAllActionPoints && EffectType != CardEffectType.Unplayable && UnmodifiedFixedBaseCost > 0; // 실제 유료 고정 기본 비용 카드 여부
+    internal void ApplyRunePower() => HasRunePower = true; // 지정 실물의 다음 한 번 기본 행동력 면제
+    internal void ConsumeRunePower() => HasRunePower = false; // 실제 사용한 실물의 기본 비용 복원
     private int enchantmentPercent; // 이 실물 카드의 다음 사용에만 남는 강화 백분율
     public int EnchantmentPercent => enchantmentPercent; // 현재 카드 상세 화면의 일회 강화 표시
     public int EffectValue => EnchantmentPercent == 0 ? EffectValueBeforeEnchantment : ApplyEnchantment(EffectValueBeforeEnchantment, EnchantmentPercent); // 실제 다음 한 번의 기본 효과

@@ -571,7 +571,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
             if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark || // 일반 강화와 맥박줄 및 종복 계약의 기존 가산
-                statusEffect.EffectType == BattleStatusEffectType.LordFinalOrderAttack && !statusEffect.IsExpired) // 실제 남은 명령서의 독립 공격력 증가 확인
+                (statusEffect.EffectType is BattleStatusEffectType.LordFinalOrderAttack or BattleStatusEffectType.DistributionAttackUp) && !statusEffect.IsExpired) // 활성 명령서와 분배의 독립 일반 공격력 증가 확인
             { // 공격력 증가 누적 시작
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
@@ -591,7 +591,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int orderLoss = order is { IsExpired: false } ? order.EffectiveValue : 0; // 실제로 지속 중인 명령서의 물리 방어 감소량
         var ward = increaseType == BattleStatusEffectType.MagicalResistanceUp ? FindStatusEffect(BattleStatusEffectType.ArcaneWard) : null; // 마법 저항 계산에서만 실제 마력 보호막 상태 확인
         int wardBonus = ward is { IsExpired: false } ? ward.EffectiveValue : 0; // 활성 중인 정수 저항 증가량
-        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss - orderLoss, 0L, int.MaxValue); // 다른 원래 약화와 명령서까지 합친 최종 방어의 영 하한
+        int distributionLoss = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.DistributionPhysicalDefenseDown) : 0; // 분배의 별도 감소를 물리 방어에만 적용
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 모든 활성 물리 방어 약화 또는 마법 저항의 최종 영 하한
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작

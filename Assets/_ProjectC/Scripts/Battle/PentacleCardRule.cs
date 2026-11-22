@@ -9,5 +9,13 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     EfficientUse, // 이번 아군 턴 동안 기본 행동력 비용 감소
     AncientRune, // 아군 공용 손패에 카드 두 장 드로우
     WheelOfFate, // 실제 지불한 행동력만큼 카드 소멸과 전체 회복
-    Contract // 시전자 체력 지불과 현재 행동력 회복
+    Contract, // 시전자 체력 지불과 현재 행동력 회복
+    Distribution, // 선택 아군의 전투 지속 공격 강화와 물리 방어 약화
+    CardCopy, // 현재 아군 턴에 실제 사용한 카드의 독립 인스턴스 복제
+    RunePower, // 한 아군의 손패 카드 하나의 기본 행동력 비용 제거
+    Ritual, // 비치명 체력 지불과 행동력 회복
+    FusionOfPower, // 공용 드로우와 아군 회복 및 적 전체 피해
+    PickUpCoin, // 행동력 회복과 사용 카드의 전투 제외
+    SecureSupplies, // 한 장 드로우와 시전자 방어도
+    TemporarySupplies // 지정 아군 회복과 확률 행동력 회복
 } // 직렬화 규칙 종료

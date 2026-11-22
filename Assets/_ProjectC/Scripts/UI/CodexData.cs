@@ -167,6 +167,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown) // 전투 한정 힘의 분배 상태 확인
+                    { // 힘의 분배 상태의 도감 문구 시작
+                        int amount = effect == BattleStatusEffectType.DistributionAttackUp ? 8 : 4; // 원본의 공격력 및 물리 방어 값
+                        description = $"{BattleStatusEffectInstance.GetDescription(effect, amount)} · 전투 종료까지"; // 실제 전투와 같은 수치 및 유지 범위
+                    } // 힘의 분배 상태의 도감 문구 종료
                     else if (effect == BattleStatusEffectType.LordFinalOrderAttack || effect == BattleStatusEffectType.LordFinalOrderWeakenedDefense) // 영주 명령의 두 단계 실제 효과 표시
                     { // 원본 수치 설명 연결 시작
                         int amount = effect == BattleStatusEffectType.LordFinalOrderAttack ? 3 : 2; // 공격 강화 또는 물리 방어 감소 값
