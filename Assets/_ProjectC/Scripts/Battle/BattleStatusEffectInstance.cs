@@ -12,9 +12,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public bool IsExpired => RemainingTurns <= 0 || (EffectType == BattleStatusEffectType.Burn || EffectType == BattleStatusEffectType.Poison) && EffectiveValue <= 0; // 지속 종료 또는 지속 피해 수치 소진 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
-    public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
+    public string Description => PublicMarkCountsEnemyTurns ? "적 턴이 끝날 때마다 지속 시간 차감. 직접 카드 피해 표식 효과 적용" : GetDescription(EffectType, EffectiveValue); // 전술 표식의 실제 적 턴 또는 기존 상태 상세 설명
+    public bool PublicMarkCountsEnemyTurns { get; private set; } // 전술 표식이 사용하는 기존 공명 표식 인스턴스의 적 턴 수명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction; // 정해진 행동과 실제 피해 또는 다음 아군 턴을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction || EffectType == BattleStatusEffectType.ToolMaintenanceAttackUp; // 원래 사건과 도구 손질의 유효 직접 명중을 기다리는 상태
     public bool LastsUntilBattleEnd => EffectType is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown; // 턴 횟수와 별개인 분배 상태의 전투 수명
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
@@ -52,6 +53,11 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             damageDecay = (int)Math.Min(damageDecay, Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - Math.Max(1, value))); // 새 효과 수치 이상이 되도록 감소량 보정
         } // 지속 피해 갱신 처리 종료
     } // 재적용 종료
+    internal void SetPublicMarkEnemyTurnLifetime() // 실제 전술 카드의 공명 표식에서 적 턴 수명 지정
+    { // 인스턴스에서 독립 표식 수명 저장 시작
+        PublicMarkCountsEnemyTurns = true; // 같은 상태 종류의 원래 아군 턴 수명과 분리
+    } // 인스턴스에서 독립 표식 수명 저장 종료
+
     internal BattleStatusEffectInstance CopyBlessingState() // 실제 수치와 지속을 가진 독립 강화 복제
     { // 상태 복제 시작
         return (BattleStatusEffectInstance)MemberwiseClone(); // 원본 상태 개체와 분리된 중첩 및 지속 예약 복사
@@ -152,6 +158,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마무리 자세"; // 마무리 자세 표시
             case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
                 return "회복량 감소"; // 회복량 감소 표시
+            case BattleStatusEffectType.ToolMaintenanceAttackUp: // 선택 아군의 다음 명중 강화 이름
+                return "도구 손질"; // 기존 칼날 정비와 별개인 상태 표시
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return "칼날 정비"; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
@@ -340,6 +348,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마"; // 마무리 자세 표시
             case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
                 return "감"; // 회복량 감소 표시
+            case BattleStatusEffectType.ToolMaintenanceAttackUp: // 도구 손질의 표시 약칭 종류
+                return "손"; // 다음 실제 직접 명중 상태 아이콘 문구
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return "정"; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류
@@ -528,6 +538,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"이번 턴 체력 절반 이하인 적에게 주는 카드 피해 +{effectiveValue}%"; // 마무리 자세 표시
             case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
                 return $"받는 체력 회복량 −{effectiveValue}% · 소수점 이하 내림"; // 회복량 감소 표시
+            case BattleStatusEffectType.ToolMaintenanceAttackUp: // 다음 유효 직접 타격의 별도 피해 증가
+                return $"다음 유효 직접 카드 타격 피해 +{effectiveValue}"; // 이미 빗나가거나 무효 피해가 난 경우에는 유지되는 강화 설명
             case BattleStatusEffectType.BladeMaintenance: // 칼날 정비 종류
                 return $"이번 턴 다음 검 피해 카드의 모든 타격에 피해 +{effectiveValue}. 사용 시 소모."; // 칼날 정비 표시
             case BattleStatusEffectType.PhysicalRiposte: // 검격 반사 종류

@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ToolMaintenanceAttackUp) // 실제 도구 손질의 지정 수치
+                    { // 도감의 다음 명중 효과 표시 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 4); // 전투와 같은 원본 수치 4 표시
+                    } // 도구 손질 도감 문구 적용 종료
                     else if (effect is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown) // 전투 한정 힘의 분배 상태 확인
                     { // 힘의 분배 상태의 도감 문구 시작
                         int amount = effect == BattleStatusEffectType.DistributionAttackUp ? 8 : 4; // 원본의 공격력 및 물리 방어 값

@@ -20,7 +20,8 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
         Action<CardInstance> selected, // 실제 선택을 전달할 동작
         string titleText = "가져올 카드 한 장 선택", // 중앙 프레임 안의 선택 안내
         Action cancelled = null, // 선택 취소를 전달할 동작
-        string relicName = null) // 별도 명패에 표시할 유물 이름
+        string relicName = null, // 별도 명패에 표시할 유물 이름
+        Action confirmed = null) // 선택을 확정할 때 실행할 동작
     { // 화면 생성 시작
         GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(Image)); // 별도 그리기와 입력을 갖는 화면 가림막 생성
         RectTransform rootRect = root.GetComponent<RectTransform>(); // 가림막 영역 조회
@@ -70,10 +71,16 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
         } // 페이지 이동 화면 생성 종료
         if (cancelled != null) // 확인 없이 손패로 돌아갈 수 있는 선택 요청 확인
         { // 명시적인 취소 입력 추가 시작
-            float cancelX = cards.Count > CardsPerPage ? 348f : 0f; // 페이지 조작과 떨어지는 취소 위치 결정
+            float cancelX = cards.Count > CardsPerPage ? 348f : confirmed == null ? 0f : -84f; // 페이지 조작과 완료 입력을 피하는 취소 위치
             var cancelButton = CreatePageButton("CancelChoice", rootRect, "취소", cancelX); // 기존 직접 취소 동작과 하단 위치 연결
             cancelButton.onClick.AddListener(() => view.Select(null, _ => cancelled())); // 선택 카드 없이 창을 닫은 뒤 취소 결과 전달
         } // 명시적인 취소 입력 추가 종료
+        if (confirmed != null) // 고른 카드를 확정하는 별도 입력 확인
+        { // 확인 버튼 생성 시작
+            float confirmX = cards.Count > CardsPerPage ? -348f : 84f; // 페이지 조작 또는 취소 버튼과 떨어지는 완료 위치
+            var finish = CreatePageButton("FinishChoice", rootRect, "완료", confirmX); // 하단의 손패 선택 완료 버튼
+            finish.onClick.AddListener(() => view.Select(null, _ => confirmed())); // 창을 닫고 실제 선택 확정
+        } // 확인 버튼 생성 종료
         view.SetPage(0); // 첫 페이지 표시
         return view; // 생성 화면 반환
     } // 화면 생성 종료

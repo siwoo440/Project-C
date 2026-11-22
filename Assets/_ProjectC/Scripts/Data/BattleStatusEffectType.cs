@@ -88,5 +88,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     LordFinalOrderAttack = 85, // 처음 두 아군 턴의 명령서 공격력 증가
     LordFinalOrderWeakenedDefense = 86, // 뒤이어 오는 적 턴의 물리 방어 감소
     DistributionAttackUp = 87, // 전투가 지속되는 동안 분배 대상의 공격력 증가
-    DistributionPhysicalDefenseDown = 88 // 전투가 지속되는 동안 분배 대상의 물리 방어 감소
+    DistributionPhysicalDefenseDown = 88, // 전투가 지속되는 동안 분배 대상의 물리 방어 감소
+    ToolMaintenanceAttackUp = 89 // 같은 아군의 다음 실제 직접 명중을 기다리는 피해 증가
 } // 열거형 종료

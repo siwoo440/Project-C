@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetTacticalMark
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_TACTICAL_MARK
+  displayName: "전술 표시"
+  description: "선택한 생존 적 한 명에게 두 적 턴 동안 표식을 부여한다."
+  artwork: {fileID: 21300000, guid: d759fbb94c425fa38ce18846ab21671e, type: 3}
+  cardType: 3
+  targetType: 3
+  apCost: 1
+  effectType: 22
+  damageType: 0
+  effectValue: 1
+  mentalChangeValue: 0
+  pentacleRule: 19
+  statusEffectType: 33
+  statusDuration: 2
+  statusMaximumStacks: 1

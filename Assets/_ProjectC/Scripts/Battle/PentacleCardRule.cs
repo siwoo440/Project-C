@@ -17,5 +17,13 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     FusionOfPower, // 공용 드로우와 아군 회복 및 적 전체 피해
     PickUpCoin, // 행동력 회복과 사용 카드의 전투 제외
     SecureSupplies, // 한 장 드로우와 시전자 방어도
-    TemporarySupplies // 지정 아군 회복과 확률 행동력 회복
+    TemporarySupplies, // 지정 아군 회복과 확률 행동력 회복
+    ExchangeProposal, // 다른 손패 한 장을 버린 뒤 두 장 드로우
+    RuneRecording, // 소유자의 다음 실제 기본 비용 한 점 감소
+    TacticalMark, // 지정 적에게 두 적 턴 동안 일반 표식 부여
+    Improvisation, // 일반 등급 카드 하나의 전투 전용 생성
+    EmergencyFunds, // 다음 아군 턴의 최고치와 현재 행동력 증가
+    ToolMaintenance, // 다음 실제 명중한 아군 직접 공격 피해 증가
+    HandSorting, // 하나 또는 둘을 골라 같은 수의 공용 드로우
+    SeizeOpportunity // 이 카드가 실제 첫 사용 카드일 때 행동력 회복
 } // 직렬화 규칙 종료

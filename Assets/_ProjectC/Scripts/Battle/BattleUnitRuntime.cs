@@ -57,6 +57,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal int EfficientUseApDiscount { get; set; } // 현재 아군 턴의 펜타클 기본 행동력 할인
+    internal int RuneRecordingApDiscount { get; set; } // 다음 실제 일반 기본 비용 사용까지 보존되는 이 아군의 한 번 룬 기록
     internal BattleTurnRuntime AlliedDirectDamageBattle { get; set; } // 예고 및 실제 피해에 연결된 현재 적의 전투 한정 유물 관리자
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal int DefeatedBurnAmount { get; private set; } // 정리 전 실제 전투불능 적에게 남은 화상 실효량
@@ -252,6 +253,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 맥동핵의 성공 침식 피해 처리 종료
         return result; // 부모 효과에 기존 실제 상태 결과 그대로 반환
     } // 일반 상태 적용 종료
+    internal BattleStatusEffectApplyResult ApplyTacticalPublicMark(int value, int duration, BattleUnitRuntime source) // 전술 카드의 기존 공명 표식과 새 적 턴 수명 요청
+    { // 일반 상태 부여 규칙에 전술 수명 연결 시작
+        return ApplyStatusEffectCore(BattleStatusEffectType.PublicMark, value, duration, 1, source, null, publicMarkCountsEnemyTurns: true); // 실제 마킹과 기존 면역 및 한 중첩 보존
+    } // 일반 상태 부여 규칙에 전술 수명 연결 종료
+
     internal BattleStatusEffectApplyResult ApplyReflectedDebuff(BattleStatusEffectInstance debuff, BattleUnitRuntime source) // 두 반사 유물이 공유하는 활성 약화 복사
     { // 반사 약화 적용 시작
         return ApplyStatusEffectCore(debuff.EffectType, debuff.Value, debuff.RemainingTurns, debuff.MaximumStacks, source, debuff, allowOutgoingBurnExtension: false); // 기존 면역과 함께 실제 값 및 중첩과 기간의 독립 복제 처리
@@ -269,7 +275,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 복사한 강화 적용 시작
         return ApplyStatusEffectCore(blessing.EffectType, blessing.Value, blessing.RemainingTurns, blessing.MaximumStacks, caster, blessing); // 원래 강화의 현재 시간과 수치 전달
     } // 복사한 강화 적용 종료
-    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true) // 일반 상태와 복사한 실제 상태의 공통 면역 및 부여
+    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true, bool publicMarkCountsEnemyTurns = false) // 일반 시계와 전술 표식의 실제 공통 상태 면역 및 부여
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -332,6 +338,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
             var status = blessing?.CopyBlessingState() ?? new BattleStatusEffectInstance(effectType, value, duration, maximumStacks); // 복사한 독립 상태 또는 일반 신규 상태 생성
+            if (publicMarkCountsEnemyTurns) // 일반 새 상태 중 적 턴 수명의 전술 표식 확인
+            { // 원본 전술 표식 수명 지정 시작
+                status.SetPublicMarkEnemyTurnLifetime(); // 일반 처리와 알림 전에 실제 적 턴 시계 적용
+            } // 원본 전술 표식 수명 지정 종료
             status.RecordPoisonApplication(sourceUnit, preserveExisting: false); // 반사와 신규 적용 모두 이번 실제 중독 적용자의 진영만 기록
             statusEffects.Add(status); // 실제 첫 약화 또는 강화 등록
             return ResolveAppliedStatus(status, sourceUnit, BattleStatusEffectApplyResult.Applied, blessing != null, previousPhysicalDefense); // 신규 등록 뒤 상태 정화 및 적용 결과 전달
@@ -345,6 +355,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 복사 중첩 합산 시작
             existingEffect.MergeBlessingCopy(blessing); // 원본을 지키면서 수령자 쪽 중첩과 기존 지속 병합
         } // 복사 중첩 합산 종료
+        if (publicMarkCountsEnemyTurns || blessing?.PublicMarkCountsEnemyTurns == true) // 실제 같은 표식의 새 전술 수명 또는 원본 복사 확인
+        { // 새 전술 표식의 기존 단일 상태 수명 갱신 시작
+            existingEffect.SetPublicMarkEnemyTurnLifetime(); // 원래 한 중첩 갱신 뒤 아무 알림 전 적 턴 수명 보관
+        } // 새 전술 표식의 기존 단일 상태 수명 갱신 종료
         existingEffect.RecordPoisonApplication(sourceUnit, preservePoisonSource); // 기존 활성 중첩과 이번 중독 적용 출처를 같은 실제 상태에 연결
         return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null, previousPhysicalDefense); // 중첩 갱신 뒤 상태 정화 및 적용 결과 전달
     } // 상태 이상 적용 종료
@@ -750,7 +764,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         damageAmount = alliedDirectAttack ? ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out _) : damageAmount; // 표식을 소비하지 않는 실제 직접 타격 보정 예고
         if (alliedDirectAttack) // 방어도 적용 전 실제 아군 카드 피해 예고의 조건
         { // 가산 기회를 소모하지 않는 순수 예고 시작
-            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, preview: true, out _); // 실제 타격과 같은 사막 유물들의 순수 피해 예고
+            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, preview: true, out _, out _); // 실제 직접 타격의 모든 공유 가산을 표시하되 도구 손질 미소모
         } // 가산 기회를 소모하지 않는 순수 예고 종료
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 현재 위험 차단과 저항 관통을 공용 피해 예고에 전달
     } // 기본 피해 예고 종료
@@ -868,10 +882,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             damageAmount = ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out confession); // 예고와 같은 방어 이전 고해 표식과 은신 보정
         } // 고해실의 못 피해 가산 종료
         var sandBattle = AlliedDirectDamageBattle; // 이번 타격이 시작될 때의 실제 전투 관리자
+        BattleStatusEffectInstance usedMaintenance = null; // 실제 명중에 적용한 아군의 도구 손질 원본 상태
         bool usedSandBone = false; // 이번 직접 카드 타격이 실제 가산을 받은 상태
         if (!wandEcho && (alliedDirectAttack || BattleCardDamageContext.IsPendingHit(sourceUnit, this))) // 원본 직접 카드와 태양의 별도 타격만 포함하고 반향 제외
         { // 실제 방어 전 출혈 추가 피해 계산 시작
-            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, preview: false, out usedSandBone); // 실제 첫 명중과 현재 상태 및 체력 조건의 방어 전 가산
+            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, preview: false, out usedSandBone, out usedMaintenance); // 현재 유효한 직접 상태와 실제 피해에 쓸 도구 손질 선택
         } // 실제 방어 전 출혈 추가 피해 계산 종료
         if (damageAmount <= 0) // 예약 가산을 포함해도 적용할 유효 양수 피해가 없는 경우
         { // 최종 무효 피해 처리 시작
@@ -945,6 +960,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 실제 발동한 방어 준비 제거
             GainBlock(damageResult.PreparedBlock); // 피해 적용 직전 준비 방어도 획득
         } // 준비 소모 종료
+        if (usedMaintenance != null && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0) && sourceUnit.RemoveStatusEffectInstance(usedMaintenance)) // 실제 양수 체력 또는 방어도 피해를 준 원래 소유자의 동일 강화만 소모
+        { // 유효 직접 타격 뒤 도구 손질 해제 시작
+            sourceUnit.NotifyStatusEffectsChanged(); // 다음 실제 타격과 화면에 남지 않는 한 번의 해제 알림
+        } // 유효 직접 타격 뒤 도구 손질 해제 종료
         if (usedSandBone && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0)) // 무효 피해를 거른 실제 체력 또는 방어도 손실 확인
         { // 피해 알림 전 전투당 첫 가산 확정 시작
             sandBattle.ConsumeSandBoneDamage(); // 실제 다음 명중과 피해 예고에 같은 기회 재사용 차단
@@ -1070,8 +1089,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return (int)Math.Min(int.MaxValue, (long)amount + (mark?.EffectiveValue ?? 0) + curtain); // 양쪽 독립 가산과 원래 정수 피해 상한 적용
     } // 아군 직접 피해 가산 종료
 
-    private int ApplyAlliedDirectRelicDamage(int amount, BattleDamageType damageType, BattleUnitRuntime source, bool preview, out bool usedSandBone) // 실제와 예고가 공유하는 방어 전 직접 아군 유물 피해
+    private int ApplyAlliedDirectRelicDamage(int amount, BattleDamageType damageType, BattleUnitRuntime source, bool preview, out bool usedSandBone, out BattleStatusEffectInstance usedMaintenance) // 실제와 예고가 공유하는 방어 전 직접 아군 보정 피해
     { // 원본 카드의 활성 전투와 양쪽 생존 확인 시작
+        usedMaintenance = null; // 유효한 원래 직접 피해에서만 소비할 상태 기본값
         usedSandBone = false; // 아직 소모할 혈흔 대상 가산이 없는 기본값
         var battle = AlliedDirectDamageBattle; // 실제 공격을 처리하는 현재 전투 연결
         if (battle == null || battle.IsBattleEnded || battle.HasPendingBossPhaseTransition || Team != BattleTeam.Enemy || IsDead || source is not { Team: BattleTeam.Ally, IsDead: false }) // 실제 생존 아군의 진행 중인 생존 적 타격만 인정
@@ -1083,7 +1103,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         usedSandBone = sandBone > 0; // 방어도나 체력 손실 뒤 확정할 출혈 가산 기록
         int lens = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.Blind) is { IsExpired: false } // 실제 마법 직접 피해 대상의 현재 활성 실명 확인
             ? BattleSupplyRelics.Find(RelicEffectType.GlassSandLensMagicVsBlind)?.EffectValue ?? 0 : 0; // 현재 보유한 유리모래 렌즈의 원본 고정 증가량
-        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens); // 같은 타격에 해당하는 독립 고정 가산 합계
+        usedMaintenance = source.GetStatusEffect(BattleStatusEffectType.ToolMaintenanceAttackUp) is { IsExpired: false } maintenance ? maintenance : null; // 바로 이 아군의 다음 직접 피해 강화 상태 조회
+        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens + (usedMaintenance?.EffectiveValue ?? 0)); // 현재 소유자의 도구 손질을 포함한 같은 타격의 독립 고정 피해 합계
         int strap = (long)CurrentHealth * 2 <= MaxHealth ? BattleSupplyRelics.Find(RelicEffectType.RuinedLeatherStrapLowHealthEnemyDamage)?.EffectValue ?? 0 : 0; // 타격 직전 실제 최대 체력 절반 이하에서만 비율 증가
         return strap > 0 && flatDamage > 0 ? (int)Math.Min(int.MaxValue, (long)flatDamage * (100L + strap) / 100L) : flatDamage; // 원본 양수 비율을 반올림 없이 방어 이전 정수로 내림
     } // 원본 카드의 활성 전투와 양쪽 생존 확인 종료

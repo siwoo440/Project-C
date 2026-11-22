@@ -454,7 +454,22 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 존재하지 않는 현재 결제 원본의 정산 거절 시작
             return false; // 카드 영역과 손패에 변경 없음
         } // 존재하지 않는 현재 결제 원본의 정산 거절 종료
-        CardInstance copy = CreateTransientCopy(template); // 원본도 소유자도 유지한 새 실물 인스턴스 생성
+        return PlayAndAddTransientCard(played, CreateTransientCopy(template)); // 복제 원본의 소유자와 강화 단계가 같은 전투 카드 생성
+    } // 현재 실물과 전투 덱 검증 종료
+
+    internal bool TryPlayAndGenerateCard(CardInstance played, CardData template) // 실제 등록한 일반 원본의 전투 한정 카드 생성
+    { // 생성의 원래 시전자와 현재 손패 승인 확인 시작
+        if (template == null || played == null || !hand.Contains(played)) // 유효한 원본과 실제 사용하는 손패 카드 검사
+        { // 사용할 수 없는 생성 입력 확인 시작
+            return false; // 원래 카드와 전투 덱 위치 보존
+        } // 사용할 수 없는 생성 입력 확인 종료
+        var generated = CardInstance.Create(template, played.OwnerUnit, cards.Count, 0); // 시전자 소유의 강화 없는 새 실물 생성
+        ApplyCurrentRelicDiscounts(generated); // 기존 다른 전투 생성 카드와 같은 공용 할인 표시
+        return PlayAndAddTransientCard(played, generated); // 한 사용으로 시전자 손패에 독립 생성 카드 지급
+    } // 생성의 원래 시전자와 현재 손패 승인 확인 종료
+
+    private bool PlayAndAddTransientCard(CardInstance played, CardInstance copy) // 생성과 사용 기록 복제의 공용 전투 카드 이동
+    { // 실제 사용한 자리를 비우며 새 임시 카드 지급 시작
         hand.Remove(played); // 가득 찬 손패에서도 사용 카드가 먼저 빈자리 확보
         historicCopies.Add(copy); // 전투 종료에서 모든 위치를 함께 제거할 새 복제 카드 등록
         cards.Add(copy); // 회차 원본 덱과 별개인 현재 전투에만 추가
@@ -470,11 +485,15 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         var copy = source.IsBattleOnlySingleUse // 다른 전투 임시 카드의 원래 고유 사용 처리 유지
             ? CardInstance.CreateBattleOnlySingleUse(source.SourceData, source.OwnerUnit, cards.Count) // 무료 일회 카드의 정상 제외 속성 유지
             : CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 일반 카드의 원래 비용과 실제 강화 단계 유지
-        copy.RelicApDiscount = relicApDiscount; // 현재 전투의 기존 공용 유물 할인 연결
-        copy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 현재 다음 카드 유물 할인 연결
-        copy.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 현재 첫 방어 카드 할인 연결
+        ApplyCurrentRelicDiscounts(copy); // 현재 전투에서 유효한 공용 할인만 새 카드에 제공
         return copy; // 원본의 일회 예약을 공유하지 않는 새 카드 반환
     } // 원본의 실제 소유자와 강화 단계 처리 종료
+    private void ApplyCurrentRelicDiscounts(CardInstance card) // 전투 생성과 복제가 공유하는 공용 비용 할인 처리
+    { // 현재 전투의 실제 카드 할인 연결 시작
+        card.RelicApDiscount = relicApDiscount; // 현재 전투의 기존 공용 유물 할인 연결
+        card.NextCardRelicApDiscount = nextCardRelicApDiscount; // 현재 다음 카드 유물 할인 연결
+        card.FirstDefensiveRelicApDiscount = firstDefensiveRelicApDiscount; // 현재 첫 방어 카드 할인 연결
+    } // 현재 전투의 실제 카드 할인 연결 종료
 
     internal bool TryAddOpeningTemporaryCard(CardData source, BattleUnitRuntime owner) // 첫 아군 손패의 실제 전투 한정 찌르기 생성
     { // 새 임시 손패 생성 시작
@@ -573,26 +592,39 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             pendingHandDiscard = previous; // 바깥 버림 대상 복구
         } // 대상 복구 종료
     } // 버림 판정 종료
-    internal bool TrySpendAndDiscardHandPair(CardInstance source, CardInstance first, CardInstance second, BattleActionPointRuntime points, int cost) // 두 실물 손패와 행동력의 원래 버림 결제
-    { // 원본 및 고른 두 장의 버림 거래 확인 시작
-        if (!HasDiscardablePair(source, first, second) || !points.CanSpend(cost) || // 원본과 실제 다른 두 장 및 공용 행동력 확인
-            IsHandDiscardPrevented(first) || IsHandDiscardPrevented(second) || !HasDiscardablePair(source, first, second) || !points.CanSpend(cost)) // 기존 버림 보호 이벤트 뒤에도 유효한 두 장과 지불 확인
-        { // 한쪽이라도 실제 버림이 불가능한 결제 거절 시작
-            return false; // 행동력과 두 장의 물리 손패를 함께 보존
-        } // 한쪽이라도 실제 버림이 불가능한 결제 거절 종료
-        MoveHandCardToDiscard(first); // 첫 실물의 버림과 개막 유지 해제 처리
-        MoveHandCardToDiscard(second); // 두 번째 실물도 같은 그룹에서 실제 버림
-        points.Spend(cost); // 중간 알림 없이 앞서 확인한 실제 행동력 결제
-        EnsureValidState(); // 두 실물 카드가 단일 위치를 가졌는지 확인
-        StateChanged?.Invoke(); // 모두 이동한 손패를 한 번 알림
-        return true; // 실제 두 장 버림과 행동력 전부 정산됨
-    } // 원본 및 고른 두 장의 버림 거래 확인 종료
+    internal bool TrySpendAndDiscardHandCards(CardInstance source, IReadOnlyList<CardInstance> selected, BattleActionPointRuntime points, int cost) // 확인한 실물 한 장 이상과 공용 행동력의 원래 버림 결제
+    { // 원본과 선택 카드 및 현재 행동력 정산 시작
+        if (!HasDiscardableHandCards(source, selected) || !points.CanSpend(cost)) // 선택 카드와 원래 공용 행동력이 유효한지 먼저 확인
+        { // 전체를 변경하지 않는 비용 거절 시작
+            return false; // 무효 원본과 부족한 행동력은 상태 보존
+        } // 전체를 변경하지 않는 비용 거절 종료
+        foreach (var card in selected) // 원래 각 카드가 받을 수 있는 실제 버림 보호 확인
+        { // 선택된 개별 실물의 원래 버림 보호 처리 시작
+            if (IsHandDiscardPrevented(card)) // 네이티브 버림 보호에 걸렸는지 확인
+            { // 다른 실물과 행동력을 함께 보존 시작
+                return false; // 일부 카드만 버리지 않고 전체 결제 중단
+            } // 다른 실물과 행동력을 함께 보존 종료
+        } // 선택된 개별 실물의 원래 버림 보호 처리 종료
+        if (!HasDiscardableHandCards(source, selected) || !points.CanSpend(cost)) // 실제 버림 이벤트 뒤 현재 실물과 비용 재검증
+        { // 오래된 확인의 실제 비용 취소 시작
+            return false; // 물리 손패와 행동력 미변경
+        } // 오래된 확인의 실제 비용 취소 종료
+        foreach (var card in selected) // 확정한 실제 한 장 또는 두 장의 정상 버림 이동
+        { // 하나의 손패 상태 변경 처리 시작
+            MoveHandCardToDiscard(card); // 원래 효과 버림 및 개막 유지 해제 경로
+        } // 하나의 손패 상태 변경 처리 종료
+        points.Spend(cost); // 이동한 전체 실물과 일치하는 공용 행동력 지불
+        EnsureValidState(); // 실제 카드 영역의 고유한 위치 검증
+        StateChanged?.Invoke(); // 뽑기 전 최종으로 버린 상태를 원래 손패에 알림
+        return true; // 모든 선택과 행동력을 같은 결제로 승인
+    } // 원본과 선택 카드 및 현재 행동력 정산 종료
 
-    private bool HasDiscardablePair(CardInstance source, CardInstance first, CardInstance second) // 전술 교환의 현재 물리 손패 검증
-    { // 세 실물 카드의 현재 위치 확인 시작
-        return source != null && first != null && second != null && source != first && source != second && first != second && // 원본과 다른 서로 다른 두 실물 확인
-            hand.Contains(source) && hand.Contains(first) && hand.Contains(second); // 세 카드의 현재 물리 손패 위치 확인
-    } // 세 실물 카드의 현재 위치 확인 종료
+    private bool HasDiscardableHandCards(CardInstance source, IReadOnlyList<CardInstance> selected) // 원본과는 다른 최대 두 실제 손패의 고유 검증
+    { // 현재 손패와 정확한 지원 효과 입력 수 확인 시작
+        return source != null && hand.Contains(source) && selected != null && selected.Count is (1 or 2) && // 사용할 원본과 한 장 또는 두 장의 실제 후보 목록 확인
+            selected[0] != null && selected[0] != source && hand.Contains(selected[0]) && // 독립 첫 번째 실물 카드의 현재 위치 확인
+            (selected.Count == 1 || selected[1] != null && selected[1] != source && selected[1] != selected[0] && hand.Contains(selected[1])); // 두 번째를 고른 경우에만 별도의 동일 손패 확인
+    } // 현재 손패와 정확한 지원 효과 입력 수 확인 종료
 
     private void MoveHandCardToDiscard(CardInstance card) // 일반 선택과 전술 교환의 실제 버림 이동
     { // 원본 사용과 다른 손패 버림 처리 시작
