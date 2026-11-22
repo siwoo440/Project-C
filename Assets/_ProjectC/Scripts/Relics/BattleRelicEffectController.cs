@@ -202,6 +202,13 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         { // 별도 네이티브 정산의 중복 방지 시작
             return false; // 일반 이벤트의 불필요한 확률과 중복 발동 기록 제외
         } // 별도 네이티브 정산의 중복 방지 종료
+        if (relicData.EffectType is RelicEffectType.EmberlessBrazierBurnDamageActionPoints or RelicEffectType.RockfallProphecyStoneFourTurnDamage or // 원래 화상 피해와 실제 아군 턴에 연결된 유물
+            RelicEffectType.SwampGuardianTreeSeedOpeningRegeneration or RelicEffectType.BlackSwampHeartwaterPoisonedAttackLoss or // 실제 전투 시작과 공통 적 공격 계산의 유물
+            RelicEffectType.WraithMistLanternMentalDamageAccuracyTrade or RelicEffectType.RottenGuardianStoneLateDamageReduction or // 공용 정신 피해와 후반의 수신 피해 유물
+            RelicEffectType.SunkenAltarRootLowPartyShield) // 실제 파티의 생존 체력을 확인하는 한 번의 방어도 유물
+        { // 유물별 실제 전투 결과 이외의 중복 정산 방지 시작
+            return false; // 기존 전용 발동과 무관한 공용 확률 소모 및 잘못된 발동 기록 제외
+        } // 유물별 실제 전투 결과 이외의 중복 정산 방지 종료
         if (relicData.EffectType == RelicEffectType.BattleEndCleanseOne) // 순백 손수건의 실제 종료 추첨 확인
         { // 전투 종료 정화 판정 시작
             if (endCleanseChecked || eventContext == null || eventContext.Result == BattleResult.None) // 유효한 실제 종료와 한 번의 판정 확인

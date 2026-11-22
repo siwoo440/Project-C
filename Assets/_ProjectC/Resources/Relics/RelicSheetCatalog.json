@@ -3204,7 +3204,7 @@
     {
       "sourceRow": 293,
       "name": "불씨 없는 화로",
-      "description": "화상 피해가 발생할 때 20% 확률로 코스트 +1",
+      "description": "아군 또는 적이 화상으로 체력을 실제 잃으면 20% 확률로 아군 행동력 1을 얻는다. 적 턴에 발동하면 다음 아군 턴에 얻는다.",
       "buyMin": 311,
       "buyMax": 354,
       "buyVariance": 43,
@@ -3215,7 +3215,7 @@
     {
       "sourceRow": 294,
       "name": "낙석의 예언석",
-      "description": "4턴마다 적 전체 16 피해, 아군 전체 4 피해",
+      "description": "실제 아군 턴이 네 번 시작될 때마다 생존 적 전체에게 일반 피해 16, 생존 아군 전체에게 일반 피해 4를 준다.",
       "buyMin": 328,
       "buyMax": 364,
       "buyVariance": 36,
@@ -3226,7 +3226,7 @@
     {
       "sourceRow": 295,
       "name": "늪의 수호목 씨앗",
-      "description": "전투 시작 시 재생(3턴)을 아군 전체에 부여",
+      "description": "전투 시작에 생존 아군 전체에게 각자 세 아군 턴 동안 재생 2를 부여한다.",
       "buyMin": 195,
       "buyMax": 238,
       "buyVariance": 43,
@@ -3237,7 +3237,7 @@
     {
       "sourceRow": 296,
       "name": "검은 늪의 심장수",
-      "description": "중독 상태 적의 공격력 -10%",
+      "description": "전투 중 중독 상태인 적의 공격력이 10% 감소한다.",
       "buyMin": 212,
       "buyMax": 248,
       "buyVariance": 36,
@@ -3248,7 +3248,7 @@
     {
       "sourceRow": 297,
       "name": "망령 안개의 등불",
-      "description": "적 전체 정신력 피해 +20%, 아군 전체 명중률 -5%",
+      "description": "적이 받는 정신 피해가 20% 증가하고, 생존 아군 전체의 명중률은 5%p 감소한다.",
       "buyMin": 229,
       "buyMax": 272,
       "buyVariance": 43,
@@ -3259,7 +3259,7 @@
     {
       "sourceRow": 298,
       "name": "부패한 수호석",
-      "description": "5턴 이후 아군 전체 받는 피해 -20%",
+      "description": "실제 아군 턴이 다섯 번 끝나면 그 다음 아군 턴부터 생존 아군 전체가 받는 피해가 20% 감소한다.",
       "buyMin": 246,
       "buyMax": 282,
       "buyVariance": 36,
@@ -3270,7 +3270,7 @@
     {
       "sourceRow": 299,
       "name": "가라앉은 제단의 뿌리",
-      "description": "전투당 1회 아군 전체 체력 30% 이하일 때 보호막 25",
+      "description": "전투당 한 번, 생존 아군 모두의 현재 체력이 각각 최대 체력의 30% 이하가 되면 생존 아군 전원에게 방어도 25를 준다.",
       "buyMin": 263,
       "buyMax": 306,
       "buyVariance": 43,

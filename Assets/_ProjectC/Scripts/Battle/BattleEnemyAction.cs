@@ -68,7 +68,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             damage = crownPenalty ? BattleUnitRuntime.ApplyPercentage(damage, 10) : damage; // 원래 조우 효과를 공통 방어 전 수치에 먼저 적용
             int blindReduction = directEnemyAttack && IntendedTarget?.Team == BattleTeam.Ally && Actor.GetStatusEffect(BattleStatusEffectType.Blind) is { IsExpired: false } // 자기 대상이나 단순 상태 행동을 제외한 실제 실명 적의 아군 직접 타격
                 ? BattleSupplyRelics.Find(RelicEffectType.ColdWindowBlindEnemyProtection)?.EffectValue ?? 0 : 0; // 보유한 차가운 창문의 원본 피해 감소율
-            return blindReduction > 0 ? BattleUnitRuntime.ApplyPercentage(damage, -Math.Min(100, blindReduction)) : damage; // 명중한 실제 타격과 예고에 동일한 방어 전 보호 계산
+            damage = blindReduction > 0 ? BattleUnitRuntime.ApplyPercentage(damage, -Math.Min(100, blindReduction)) : damage; // 기존 실제 타격과 예고의 원래 방어 전 보호 보존
+            int heartwater = directEnemyAttack && !Actor.IsDead && Actor.GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false } && // 살아 있는 적의 실제 직접 공격과 활성 중독 확인
+                Actor.DamageRelicBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } heartwaterBattle // 실제 교전에 등록된 적만 조회
+                ? Math.Clamp(heartwaterBattle.DamageRelicInventory?.FindEffect(RelicEffectType.BlackSwampHeartwaterPoisonedAttackLoss)?.EffectValue ?? 0, 0, 100) : 0; // 실제 장착한 심장수의 고정 감소율
+            return (int)((long)damage * (100 - heartwater) / 100L); // 같은 원본 공격과 예고의 최종 방어 전 공격력을 내림
         } // 현재 적 공격력 계산 종료
     } // 적 공격 피해 조회 종료
 

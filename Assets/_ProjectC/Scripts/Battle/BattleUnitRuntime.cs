@@ -188,8 +188,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return BattleMentalChangeResult.NoChange(CurrentMental, MentalState, MentalRemainingTurns, delta, reason); // 변화 없음 반환
         } // 사망 상태 처리 종료
         int adjusted = ApplyPilgrimMentalProtection(GetEncounterMentalChange(delta), reason, sourceUnit); // 퇴색 손실 완화 뒤 남은 실제 적발 정신 피해의 나침판 보정
+        adjusted = ApplyWraithMistMentalDamage(adjusted, reason, sourceUnit); // 살아 있는 적의 유효한 전투 정신 피해만 증폭
         return mentalRuntime.ChangeMental(adjusted, reason, delta, sourceUnit, PreventIncomingMentalLoss); // 원래 요청과 실제 보정 및 최초 정신 피해 보호를 기존 파이프라인에 전달
     } // 정신력 증감 종료
+    private int ApplyWraithMistMentalDamage(int delta, BattleMentalChangeReason reason, BattleUnitRuntime source) // 실제 적이 받는 적대 정신 피해의 등불 증폭
+    { // 현재 전투와 실제 정신 피해 원인 확인 시작
+        if (delta >= 0 || Team != BattleTeam.Enemy || DamageRelicBattle is not { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } battle || // 살아 있는 현재 전투 적의 음수 변화 확인
+            (source != null && (source.Team != BattleTeam.Ally || source.DamageRelicBattle != battle)) || // 명시 출처가 있다면 같은 교전의 적대 아군만 인정
+            reason is not (BattleMentalChangeReason.ReceiveDamage or BattleMentalChangeReason.HeavyDamage or BattleMentalChangeReason.DisruptReceived or // 기존 직접 피격과 큰 피해 및 교란의 원인
+                BattleMentalChangeReason.CardEffect or BattleMentalChangeReason.RelicEffect or BattleMentalChangeReason.ConsumableEffect)) // 실제 카드와 유물 및 소모품의 전투 중 명시 피해
+        { // 정신력 회복과 아군 및 비용 또는 저장 초기화 제외 시작
+            return delta; // 이미 들어간 다른 보정과 원래 수치 유지
+        } // 정신력 회복과 아군 및 비용 또는 저장 초기화 제외 종료
+        int percent = Math.Clamp(battle.DamageRelicInventory?.FindEffect(RelicEffectType.WraithMistLanternMentalDamageAccuracyTrade)?.EffectValue ?? 0, 0, 100); // 현재 교전에 장착한 망령 안개 등불의 실제 증폭률
+        int magnitude = (int)Math.Min(int.MaxValue, -(long)delta); // 음수 정수 최솟값의 절댓값으로 인한 범위 초과 방지
+        return percent > 0 ? -ApplyPercentage(magnitude, percent) : delta; // 기존 양수 피해 반올림을 적용한 뒤 실제 원래 요청과 정신력 범위 보존
+    } // 현재 전투와 실제 정신 피해 원인 확인 종료
+
     private int ApplyPilgrimMentalProtection(int delta, BattleMentalChangeReason reason, BattleUnitRuntime source) // 순례자 나침판의 낮은 정신력 적발 피해 완화
     { // 실제 적발 정신 피해 확인 시작
         if (delta >= 0 || Team != BattleTeam.Ally || source?.Team != BattleTeam.Enemy || // 아군이 적에게서 받은 실제 감소만 확인
@@ -891,9 +906,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         var hostileBattle = enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 양쪽 실제 적 직접 타격의 원본과 생존 상태 확인
             sourceUnit.DamageRelicBattle == DamageRelicBattle ? DamageRelicBattle : null; // 같은 출전 전투에 연결된 실제 피해만 유효
         int hangar = hostileBattle?.GetHangarOpeningDamageReduction() ?? 0; // 같은 보스 조우의 완료된 실제 적 차례 기반 경감
+        int rotten = GetRottenGuardianDamageReduction(); // 같은 살아 있는 아군의 실제 늦은 아군 차례 경감
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
-            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack, sourceUnit, hangar) // 방패와 성역 및 광역 보호의 기존 비율에 보스 개시 보호 합산
-            : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage); // 일반 및 지속 피해의 성역 경감량
+            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack, sourceUnit, hangar, rotten) // 기존 모든 직접 방패 상태와 보호의 원래 한 번 내림
+            : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage, rotten); // 일반 및 지속 피해의 동일한 후기 비율 적용
         int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction() + GetMechanicalDirectDamageReduction(sourceUnit, enemyDirectAttack)); // 기계형 직접 공격 감소를 포함한 공용 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
         { // 피해 무효 예고 시작
@@ -935,17 +951,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
 
     private int SanctuaryReductionPercent => Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.SanctuaryWard)); // 모든 피해를 경감하는 성역의 유효 비율
 
-    private int ApplySanctuaryDamageReduction(int damage) // 다른 비율 경감이 없는 피해의 성역 적용
-    { // 성역 직접 비율 계산 시작
-        return (int)((long)damage * (100 - SanctuaryReductionPercent) / 100); // 정수 범위와 한 번의 내림을 적용한 남은 피해
-    } // 성역 직접 비율 계산 종료
+    private int GetRottenGuardianDamageReduction() // 이 유닛의 실제 생존 매치와 후기 보호 수치 확인
+    { // 현재 등록된 아군에게만 실제 후반 경감 반환
+        return Team == BattleTeam.Ally && !IsDead ? DamageRelicBattle?.GetRottenGuardianDamageReduction() ?? 0 : 0; // 실제 전투에 연결된 살아 있는 아군의 공통 피해 범위
+    } // 현재 등록된 아군에게만 실제 후반 경감 반환 종료
 
-    internal int GetUnblockedDamageAfterReduction(int damage) // 실제 분담과 출혈 및 분담 예고의 공통 경감
+    private int ApplySanctuaryDamageReduction(int damage, int rotten) // 일반 피해와 방어 우회의 실제 공통 비율
+    { // 성역 및 후반 수호석의 공통 피해 계산 시작
+        return (int)((long)damage * (100 - SanctuaryReductionPercent) * (100 - rotten) / 10_000L); // 기존 수치 범위와 두 독립 비율을 곱한 실제 한 번의 내림
+    } // 성역 및 후반 수호석의 공통 피해 계산 종료
+
+    internal int GetUnblockedDamageAfterReduction(int damage, bool sharesResolvedDamage = false) // 독립 무방어 피해와 이미 감소된 파티 분담 공통 처리
     { // 방어도 없는 피해 경감 시작
-        return Math.Max(0, ApplySanctuaryDamageReduction(damage) - GetLowHealthDamageReduction()); // 성역 비율 뒤 저체력 고정 감소와 영 하한 적용
+        int rotten = sharesResolvedDamage ? 0 : GetRottenGuardianDamageReduction(); // 원래 대상에서 이미 적용한 동일 파티 경감의 중복 차단
+        return Math.Max(0, ApplySanctuaryDamageReduction(damage, rotten) - GetLowHealthDamageReduction()); // 두 비율 뒤 기존 저체력 고정 감소와 원래 영 하한
     } // 방어도 없는 피해 경감 종료
 
-    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack, BattleUnitRuntime source, int hangar) // 실제 적 직접 타격의 기존 비율과 격납고 개시 보호
+    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack, BattleUnitRuntime source, int hangar, int rotten) // 직접 적 공격과 기존 방패 및 후기 팀 보호
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
         int protection = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.GuardianCircle)); // 수호의 원 피해 경감률
@@ -959,7 +981,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             ? Math.Clamp(battle.DamageRelicInventory?.FindEffect(RelicEffectType.MechanicalBugShellAreaReduction)?.EffectValue ?? 0, 0, 100) : 0; // 원본 유물의 광역 피해 경감 비율과 최대 범위
         int adjusted = (int)((decimal)damage * (100 - resistance) * (100 - protection) * (100 - interception) // 기존 마법 저항과 수호 및 위험 차단 비율
             * (100 - focus) * (100 - spread) * (100 - fortify) * (100 - eternalShield) * (100 - eternalResistance) // 집중·분산과 요새화 및 영원의 방패 비율
-            * (100 - SanctuaryReductionPercent) * ((100m - shell) / 100m) * ((100m - hangar) / 100m) / 1_000_000_000_000_000_000m); // 기존 비율과 격납고 보스 보호를 함께 계산한 실제 한 번 내림
+            * (100 - SanctuaryReductionPercent) * ((100m - shell) / 100m) * ((100m - hangar) / 100m) * ((100m - rotten) / 100m) / 1_000_000_000_000_000_000m); // 독립 직접 보호 배율의 원래 한 번 내림
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
@@ -971,6 +993,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 실제 적 타격 처리 시작
         return TakeDamageCore(damageAmount, damageType, source, sharingAlly, preventHealthDamage, 0, reduceHealthDamage, true, isAreaAttack, onRedirect, false, party); // 실제 명중과 대상의 피해 분배 및 기존 보호 전환
     } // 실제 적 타격 처리 종료
+    internal BattleDamageResult TakeBurnDamage(int amount) // 상태 처리기에서 확정한 일반 화상 피해 접수
+    { // 양 진영의 원래 화상 피해 종류 전달 시작
+        return TakeDamageCore(amount, BattleDamageType.None, null, null, null, 0, null, false, false, null, false, burnTick: true); // 실제 방어도와 피해 면역을 쓰는 원래 지속 피해 처리
+    } // 양 진영의 원래 화상 피해 종류 전달 종료
     internal BattleDamageResult TakeWandEchoDamage(int amount, BattleUnitRuntime source) // 반향가 복제한 실제 마법 피해 접수
     { // 반향의 공용 피해 경로 시작
         return TakeDamageCore(amount, BattleDamageType.Magical, source, null, null, 0, null, false, false, null, false, wandEcho: true); // 기존 저항과 방어도 및 실제 사망 처리에 반향 출처 전달
@@ -983,7 +1009,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 적격 피해 처리 끝
     } // 침식 기록 끝
 
-    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null, bool alliedDirectAttack = false, bool wandEcho = false, int magicalResistancePenetrationPercent = 0, CardType? directCardType = null) // 직접 피해와 반향 및 원본 계열의 공용 정산
+    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null, bool alliedDirectAttack = false, bool wandEcho = false, int magicalResistancePenetrationPercent = 0, CardType? directCardType = null, bool burnTick = false) // 직접 피해와 반향 및 실제 화상 지속 피해의 공용 정산
     { // 피해 처리 시작
         if (IsDead) // 실제 전투불능 대상의 피해 제외
         { // 전투불능 대상 처리 시작
@@ -1108,6 +1134,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             MarkDefeated(); // 실제 전투불능과 씨앗 사용 가능 여부 저장
             damageResult = damageResult.WithDefeatedTarget(); // 이후 부활과 독립된 이 타격의 전투불능 기록
         } // 사망 처리 종료
+        if (burnTick && damageResult.AppliedDamage > 0) // 일반 방어도 흡수나 무효를 제외한 실제 양수 화상 체력 손실 확인
+        { // 이번 정상 화상에만 독립 유물의 발동 기회 전달 시작
+            sandBattle?.RecordEmberlessBrazierBurnLoss(this, damageResult.AppliedDamage); // 실제 전투 종료 알림 전 각 화상 체력 피해의 한 번 처리
+        } // 이번 정상 화상에만 독립 유물의 발동 기회 전달 종료
         if (enemyDirectAttack && sourceUnit?.Team == BattleTeam.Enemy) // 실제 적이 직접 명중한 피해 결과 확인
         { // 직접 피해 출처 지정 시작
             damageResult = damageResult.FromResolvedEnemyAttack(); // 실제 피해 신호 전에 직접 적 공격 출처 고정
@@ -1162,7 +1192,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 피해 처리 종료
     internal int PreviewUnblockedHealthDamage(int amount) // 분담 예고에서 같은 방어도 없는 보호와 체력 경감 사용
     { // 분담받는 실제 체력 피해 예고 시작
-        int reduced = GetUnblockedDamageAfterReduction(amount); // 기존 성역과 저체력 경감의 실제 무방어 값
+        int reduced = GetUnblockedDamageAfterReduction(amount, sharesResolvedDamage: true); // 실제 원래 대상을 통해 이미 팀 비율을 지난 분담 예고
         if (IsDead || reduced == 0 || GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 죽은 분담자와 피해 없는 보호 조건 확인
         { // 이번 분담에서 실제 손실 없음 시작
             return 0; // 일회 보호를 소비하지 않는 체력 피해 없음 예고
@@ -1183,7 +1213,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int incomingDamagePercent = GetMountainShoulderDamagePercent(damageType); // 방어를 우회하는 독립 물리 또는 마법 피해의 현재 수신 배율
             amount = (int)Math.Min(int.MaxValue, (long)amount * (100L + incomingDamagePercent) / 100L); // 이미 계산된 분담을 제외한 방어 우회 피해의 동일 유형 조정
         } // 독립적인 방어 우회 피해 증가 종료
-        int reduced = GetUnblockedDamageAfterReduction(amount); // 성역과 고정 감소가 반영된 실제 무방어 피해
+        int reduced = GetUnblockedDamageAfterReduction(amount, sharesResolvedDamage); // 원래 한 타격을 공유한 몫에는 같은 팀 경감 중복 제외
         if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
         { // 무방어 피해 무효 시작
             return 0; // 체력 소모와 불굴 발동을 막은 피해 반환

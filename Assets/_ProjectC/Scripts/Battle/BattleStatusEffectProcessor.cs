@@ -189,7 +189,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 화상 피해 처리 시작
                 int reduction = runtimeUnit.Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.ReducePeriodicBurnDamage)?.EffectValue ?? 0 : 0; // 실제 생존 아군 화상의 보유 유물 경감량
                 int damage = ResolveSaltLeatherPeriodicDamage(previousValue, runtimeUnit, BattleStatusEffectType.Burn, -reduction); // 기존 화상 경감량과 받는 아군 피해 증가의 합계
-                applied = runtimeUnit.TakeDamage(damage, BattleDamageType.None).AppliedDamage; // 실제 방어도와 피해 무효가 반영된 화상 체력 손실
+                applied = runtimeUnit.TakeBurnDamage(damage).AppliedDamage; // 실제 방어도와 피해 무효를 거치는 원래 화상 체력 손실
                 if (applied > 0 && applied < healthBefore && runtimeUnit.Team == BattleTeam.Ally && !runtimeUnit.IsDead && // 화상 피격 당시 생존 및 실제 양수 체력 손실 확인
                     runtimeUnit.DamageRelicBattle is { IsBattleEnded: false } battle) // 실제 화상을 받아 살아남은 같은 조우 아군의 양수 체력 손실
                 { // 이번 유닛의 독립적인 방열판 확률 처리 시작
