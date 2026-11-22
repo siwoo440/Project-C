@@ -217,4 +217,12 @@ public enum RelicEffectType // 유물 효과 종류
     SandQueenBannerEnemySummonAttack, // 완료한 적 소환마다 아군 공격력 누적 상승
     GlassDesertBrokenHeartReflectTrade, // 적 직접 체력 손실 반사와 아군 회복 감소
     EndlessPilgrimBellLateTurnPulse, // 다섯 아군 턴 이후 회복과 적 정신력 감소
+    DesertLastWaterDropRecoveryTrade, // 아군 전체 회복 한 번과 이후 받는 회복 감소
+    StormKingSpinningRingDodgeDamage, // 아군 회피 후 무작위 생존 적 피해
+    BuriedCityCrestDesertExtraReward, // 사막 이벤트의 추가 회차 보상 선택
+    BrokenCopperWireShockChance, // 아군의 감전 부여 확률 증가
+    UsedBatteryShardOpeningActionTrade, // 첫 두 실제 아군 턴의 행동력 변화
+    RustedScrewBundleMechanicalDamageReduction, // 기계형 적의 직접 공격 피해 감소
+    BrokenLensCapMarkedAccuracy, // 표식이 있는 적에 대한 실제 명중률 증가
+    BlackoutRecordChipBunkerTrapReduction, // 실제 벙커 이벤트 함정 피해 경감
 }

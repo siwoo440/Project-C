@@ -35,6 +35,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public EscapeGoldClaim[] escapeGoldClaims; // 조우별 선지급 도주 골드 목록
         public CharredWellRunState well; // 사용자별 물과 현재 및 다음 층 봉인 저장
         public BurntCartRunState cart; // 수레 매복과 상점 할인 저장
+        public string buriedCityCrestEventId; // 완료한 원래 사막 사건의 보상 대기 또는 지급 기록
+        public bool buriedCityCrestRewardClaimed; // 이 지갑 상태에서 추가 보상을 지급했는지 저장
         public string[] relics; // 획득 순서 유물 목록
         public int permanentAttackPower; // 유물을 제거한 뒤에도 보존하는 회차 영구 공격력
         public int pendingCaravanDraws; // 이전 파일에서 생략 가능하고 탐사에 유지하는 저울의 예약 드로우
@@ -219,6 +221,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 usedSealedMap = consumedMap != null || session.UsedSealedMap, // 이동과 소모를 같은 저장에 반영
                 well = session.Well, // 우물 회복과 봉인 판정 기록
                 cart = session.Cart, // 수레가 남긴 매복과 미사용 할인 기록
+                buriedCityCrestEventId = session.BuriedCityCrestEventId, // 실제 보상 최초 사건 기록과 현재 완료 방 저장
+                buriedCityCrestRewardClaimed = session.BuriedCityCrestRewardClaimed, // 지갑과 같은 스냅샷의 단 한 번 선택 정산
                 glassFieldEffects = session.PendingGlassFieldEffects, // 들판 선택의 미사용 전투 효과 저장
                 wandererCry = session.WandererCry, // 선택한 방과 확정 카드 후보를 함께 저장
                 compass = session.Compass, // 출발 기회와 현재 층 사건 원본 저장
@@ -436,6 +440,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 상점 기록 오류 시작
             return false; // 복원 불가 반환
         } // 상점 기록 오류 종료
+        if (string.IsNullOrEmpty(snapshot.buriedCityCrestEventId) ? snapshot.buriedCityCrestRewardClaimed : Array.IndexOf(snapshot.events, snapshot.buriedCityCrestEventId) < 0) // 지급 기록의 실제 완료 원본과 이전 저장의 기본값 확인
+        { // 원래 사건이 없는 비정상적인 대기와 정산 상태 처리 시작
+            return false; // 대기 선택 재생에 필요한 지급 구분 검증 실패
+        } // 원래 사건이 없는 비정상적인 대기와 정산 상태 처리 종료
         if (snapshot.cart != null && !snapshot.cart.IsValid(snapshot.events, snapshot.cleared, snapshot.encounterPoolVersion)) // 수레 원본과 미사용 상태 확인
         { // 손상된 수레 저장 처리 시작
             return false; // 잘못된 매복과 할인 복원 차단

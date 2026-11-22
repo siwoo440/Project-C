@@ -19,6 +19,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
     public bool UsedSealedMap { get; private set; } // 현재 탐사에서 봉인된 지도 사용 여부
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
+    internal string BuriedCityCrestEventId { get; private set; } // 실제 보상을 지급한 사막 사건의 회차 원본
+    internal bool BuriedCityCrestRewardClaimed { get; private set; } // 선택된 추가 보상의 실제 일회 지급 기록
+    internal string PendingBuriedCityCrestEventId => BuriedCityCrestRewardClaimed ? null : BuriedCityCrestEventId; // 아직 지급하지 않은 선택의 원래 사건 조회
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
     internal int PendingSpecimenDraw { get; private set; } // 괴생체 승리로 예약한 다음 전투 드로우
@@ -512,6 +515,26 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
                clearedEncounterIds.Contains(runtimeEncounterId); // 클리어 목록 포함 여부 반환
     }
 
+    internal bool TryQueueBuriedCityCrestReward(string runtimeEventId) // 실제 완료한 기존 사막 사건에서 회차당 기회 하나 예약
+    { // 원래 방 완료와 일회 기회 확인 시작
+        if (IsExplorationCompleted || BuriedCityCrestEventId != null || !IsEventResolved(runtimeEventId)) // 같은 회차의 첫 확인된 사건만 예약 확인
+        { // 이미 사용했거나 완료하지 않은 방 처리 시작
+            return false; // 기존 회차 상태 유지
+        } // 이미 사용했거나 완료하지 않은 방 처리 종료
+        BuriedCityCrestEventId = runtimeEventId; // 네이티브 이벤트 런타임 식별자 그대로 기록
+        return true; // 처음 여는 선택 가능한 추가 보상 등록
+    } // 원래 방 완료와 일회 기회 확인 종료
+
+    internal bool TryClaimBuriedCityCrestReward(string runtimeEventId) // 원래 대기 선택과 일치할 때만 지급 가능
+    { // 두 번 누르거나 이전 저장 복원한 경우 확인 시작
+        if (IsExplorationCompleted || string.IsNullOrWhiteSpace(runtimeEventId) || PendingBuriedCityCrestEventId != runtimeEventId) // 완료 탐사와 이미 정산했거나 다른 사건의 요청 확인
+        { // 늦은 입력 및 중복 지급 차단 시작
+            return false; // 현재 보상 기록을 유지한 결과
+        } // 늦은 입력 및 중복 지급 차단 종료
+        BuriedCityCrestRewardClaimed = true; // 지갑에 추가하기 전 중복 재입력 방지
+        return true; // 지급의 일회성 확보
+    } // 두 번 누르거나 이전 저장 복원한 경우 확인 종료
+
     public bool IsEventResolved(string runtimeEventId) // 이벤트 처리 완료 여부 확인
     {
         return !string.IsNullOrWhiteSpace(runtimeEventId) &&
@@ -733,6 +756,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
         UsedSealedMap = snapshot.usedSealedMap; // 기존 저장의 기본값 또는 사용한 지도 기록 복원
         Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
+        BuriedCityCrestEventId = string.IsNullOrEmpty(snapshot.buriedCityCrestEventId) ? null : snapshot.buriedCityCrestEventId; // 이전 저장의 빈 값 또는 실제 사건의 대기 및 사용 기록 복원
+        BuriedCityCrestRewardClaimed = snapshot.buriedCityCrestRewardClaimed; // 저장한 동일 시점의 지갑과 사용 여부 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
         WandererCry = snapshot.wandererCry ?? new WandererCryRunState(); // 이전 저장은 방랑자 효과 없이 복원
         Compass = snapshot.compass ?? new CrackedCompassRunState(); // 구버전 저장의 기존 방 배치 보존
@@ -780,6 +805,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
         UsedSealedMap = false; // 새 탐사에서 지도 사용 기회 복원
         Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
+        BuriedCityCrestEventId = null; // 새 탐사의 첫 사막 사건 보상 기회 복구
+        BuriedCityCrestRewardClaimed = false; // 이전 회차의 사용 결과 정리
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
         WandererCry = new WandererCryRunState(); // 새 탐사의 추적과 카드 후보 초기화
         Compass = CrackedCompassRunState.ForDeparture(RelicRunManager.Instance?.Inventory); // 출발 시 보유한 나침반의 기회 기록

@@ -13,8 +13,8 @@ public enum ExplorationTreasureRewardType // 보물 방 랜덤 보상 종류
 
 public static class ExplorationTreasureRewardService // 57일차 보물 방 랜덤 보상 서비스
 {
-    private const int GoldRewardAmount = 150; // Prototype 골드 보상
-    private const int ResourceRewardAmount = 40; // Prototype 제작 자원 보상
+    internal const int GoldRewardAmount = 150; // Prototype 골드 보상
+    internal const int ResourceRewardAmount = 40; // Prototype 제작 자원 보상
 
     public static bool TryGrantReward(string runtimeId, out string message) // 보물 방 랜덤 보상 지급
     { // 기존 보물 보상 시작

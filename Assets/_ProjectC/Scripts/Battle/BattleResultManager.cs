@@ -230,8 +230,13 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         var inventory = RelicRunManager.Instance?.Inventory; // 실제 탐사에 보유한 유물 목록 조회
         int reduction = inventory?.FindEffect(RelicEffectType.EventTrapDamageReduction)?.EffectValue ?? 0; // 현재 보유한 잔광 등불의 공용 고정 피해 감소
         int damage = Mathf.Max(0, Mathf.Max(0, baseDamage) - reduction); // 기존 함정의 고정 피해 경감과 영 하한
-        int desertReduction = region == ExplorationRegion.Desert ? inventory?.FindEffect(RelicEffectType.WeatheredFootprintDesertEventProtection)?.EffectValue ?? 0 : 0; // 사막 함정에서만 적용할 현재 유물 비율
-        return (int)((long)damage * (100 - Mathf.Clamp(desertReduction, 0, 100)) / 100); // 남은 실제 체력 피해에 사막 비율과 정수 내림 반영
+        int regionalReduction = region switch // 함정 피해의 실제 원본 지역별 보유 오차 없는 비율
+        { // 사막과 벙커의 실제 지역 독립 처리 시작
+            ExplorationRegion.Desert => inventory?.FindEffect(RelicEffectType.WeatheredFootprintDesertEventProtection)?.EffectValue ?? 0, // 기존 사막 함정의 비율 경감
+            ExplorationRegion.Bunker => inventory?.FindEffect(RelicEffectType.BlackoutRecordChipBunkerTrapReduction)?.EffectValue ?? 0, // 벙커 원본 함정의 정전 기록칩 비율 경감
+            _ => 0 // 성채와 원래 지역 없는 판정의 기존 피해
+        }; // 사막과 벙커의 실제 지역 독립 처리 종료
+        return (int)((long)damage * (100 - Mathf.Clamp(regionalReduction, 0, 100)) / 100); // 기존 고정 감소 뒤 같은 비율과 내림으로 미리보기 및 실제 피해 적용
     } // 확정한 함정의 고정 및 사막 비율 경감 종료
 
     public bool TryGetSavedAllyState(

@@ -843,7 +843,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
             ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack) // 기존 방패 보호와 성역을 한 번에 적용
             : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage); // 일반 및 지속 피해의 성역 경감량
-        int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction()); // 기존 비율 경감 뒤 저체력 고정 감소와 방어도 이전 정산
+        int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction() + GetMechanicalDirectDamageReduction(sourceUnit, enemyDirectAttack)); // 기계형 직접 공격 감소를 포함한 공용 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
         { // 피해 무효 예고 시작
             return damageResult.WithoutDamage(); // 방어도와 체력을 모두 보존하는 결과 반환
@@ -861,6 +861,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 방어도 이전 피해 분배 종료
         return damageResult.WithBlock((int)Math.Min(int.MaxValue, (long)currentBlock + preparedBlock), CurrentHealth, preparedBlock, reduction); // 광역 사전 방어와 별도 준비 방어가 동시에 늘어도 현재 방어도 정수 상한 유지
     } // 예상 피해 계산 종료
+    private int GetMechanicalDirectDamageReduction(BattleUnitRuntime source, bool enemyDirectAttack) // 기계형 적의 실제 직접 공격에만 나사 묶음 적용
+    { // 원본 기계형 진영과 피해 종류 확인 시작
+        if (!enemyDirectAttack || Team != BattleTeam.Ally || IsDead || source is not { Team: BattleTeam.Enemy, IsDead: false, EnemySource: { IsMechanical: true } }) // 살아 있는 아군의 실제 기계형 적 직접 피격 조건
+        { // 유효한 직접 공격 이외의 피해 보존 시작
+            return 0; // 기존 일반 피해와 다른 진영 및 기계형이 아닌 적 유지
+        } // 유효한 직접 공격 이외의 피해 보존 종료
+        return BattleSupplyRelics.Find(RelicEffectType.RustedScrewBundleMechanicalDamageReduction)?.EffectValue ?? 0; // 실제 나사 묶음의 방어도 적용 전 고정 감산
+    } // 원본 기계형 진영과 피해 종류 확인 종료
+
     internal int GetLowHealthDamageReduction() // 일반·분담 피해가 공통으로 쓰는 저체력 감소량
     { // 빛 없는 목걸이 조건 확인 시작
         if (Team != BattleTeam.Ally || IsDead || (long)CurrentHealth * 10 > (long)MaxHealth * 3) // 피해 이전의 실제 생존 아군과 최대 체력 삼십 퍼센트 확인
@@ -1267,9 +1276,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int reduction = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.HealingReceivedDown)); // 기존 수신 회복 감소율과 최대 백 보정
         int cactusPenalty = Team == BattleTeam.Ally && BattleSupplyRelics.Find(RelicEffectType.DriedCactusSapPoisonDamageBonus) != null ? 5 : 0; // 현재 실제 회복을 받는 아군의 선인장 수액 고정 감소율
         int brokenHeartPenalty = GetBrokenHeartCombatPercent(); // 진행 중인 실제 아군 치유에 적용할 깨진 하트의 동일 원본 비율
-        if (increase > 0 || reduction > 0 || embroideryPercent > 0 || cactusPenalty > 0 || brokenHeartPenalty > 0) // 기존 모든 받는 회복과 새 보유 유물의 적용 조건
+        int waterDropPenalty = Team == BattleTeam.Ally ? DamageRelicBattle?.DesertWaterDropHealingPenalty ?? 0 : 0; // 실제 참가 중인 살아 있는 아군의 최초 회복 이후 감소율
+        if (increase > 0 || reduction > 0 || embroideryPercent > 0 || cactusPenalty > 0 || brokenHeartPenalty > 0 || waterDropPenalty > 0) // 기존 받는 회복과 실제 유물의 감소 활성 조건
         { // 수신 회복 증가와 감소 공통 처리 시작
-            healAmount = (int)Math.Min(int.MaxValue, healAmount * ((100L + increase) / 100m) * ((100 - reduction) / 100m) * ((100L + embroideryPercent) / 100m) * ((100 - cactusPenalty) / 100m) * ((100 - brokenHeartPenalty) / 100m)); // 기존 모든 독립 비율과 하트 계수를 차례로 곱한 뒤 마지막 정수 내림
+            healAmount = (int)Math.Min(int.MaxValue, healAmount * ((100L + increase) / 100m) * ((100 - reduction) / 100m) * ((100L + embroideryPercent) / 100m) * ((100 - cactusPenalty) / 100m) * ((100 - brokenHeartPenalty) / 100m) * ((100 - waterDropPenalty) / 100m)); // 기존 독립 비율과 물방울 감소율을 함께 곱한 뒤 한 번만 정수 내림
             if (healAmount == 0) // 실제 적용할 회복량이 없는 조건 확인
             { // 미회복 처리 시작
                 return 0; // 기존 회복 알림과 정신력 미발동

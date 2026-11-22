@@ -2478,7 +2478,7 @@
     {
       "sourceRow": 227,
       "name": "사막의 마지막 물방울",
-      "description": "전투당 1회 아군 전체 체력 20 회복, 이후 모든 회복량 -20%",
+      "description": "전투에서 처음으로 부상한 생존 아군이 있는 아군 턴 시작에 생존 아군 전원의 체력을 20 회복한다. 이후 전투가 끝날 때까지 아군이 받는 체력 회복량이 20% 감소한다.",
       "buyMin": 239,
       "buyMax": 282,
       "buyVariance": 43,
@@ -2489,7 +2489,7 @@
     {
       "sourceRow": 228,
       "name": "폭풍왕의 회전 고리",
-      "description": "아군이 회피할 때 무작위 적에게 6 피해",
+      "description": "아군이 적의 공격을 회피할 때 무작위 생존 적에게 일반 피해 6을 준다.",
       "buyMin": 256,
       "buyMax": 292,
       "buyVariance": 36,
@@ -2500,7 +2500,7 @@
     {
       "sourceRow": 229,
       "name": "묻힌 도시의 문장",
-      "description": "사막 구역 이벤트 보상 1회 추가 선택",
+      "description": "한 탐사에서 한 번 사막 이벤트의 보상을 받은 뒤 추가 보상을 하나 고른다.",
       "buyMin": 273,
       "buyMax": 316,
       "buyVariance": 43,
@@ -2511,7 +2511,7 @@
     {
       "sourceRow": 230,
       "name": "끊어진 구리선",
-      "description": "감전 부여 확률 +5%",
+      "description": "아군이 확률로 감전을 부여할 때 적용 확률을 5%p 높인다. 적용 확률의 상한은 100%다.",
       "buyMin": 290,
       "buyMax": 326,
       "buyVariance": 36,
@@ -2522,7 +2522,7 @@
     {
       "sourceRow": 231,
       "name": "폐전지 조각",
-      "description": "첫 턴 코스트 +1, 2턴째 코스트 -1",
+      "description": "첫 실제 아군 턴의 최대 및 현재 행동력을 1 높인다. 두 번째 실제 아군 턴의 최대 및 현재 행동력을 1 낮춘다.",
       "buyMin": 307,
       "buyMax": 350,
       "buyVariance": 43,
@@ -2533,7 +2533,7 @@
     {
       "sourceRow": 232,
       "name": "녹슨 나사 묶음",
-      "description": "기계형 적에게 받는 피해 -2",
+      "description": "기계형 적이 아군에게 직접 주는 공격 피해를 2 줄인다.",
       "buyMin": 324,
       "buyMax": 360,
       "buyVariance": 36,
@@ -2544,7 +2544,7 @@
     {
       "sourceRow": 233,
       "name": "깨진 렌즈캡",
-      "description": "표식 상태 적에게 명중률 +10%",
+      "description": "표식이 활성인 적에게 아군이 가하는 공격의 명중률을 10%p 높인다.",
       "buyMin": 191,
       "buyMax": 234,
       "buyVariance": 43,
@@ -2555,7 +2555,7 @@
     {
       "sourceRow": 234,
       "name": "정전 기록칩",
-      "description": "벙커 함정 피해 -15%",
+      "description": "벙커 이벤트의 함정이 주는 체력 피해를 15% 줄인다.",
       "buyMin": 208,
       "buyMax": 244,
       "buyVariance": 36,

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: BrokenLensCap
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_BROKEN_LENS_CAP
+  displayName: 깨진 렌즈캡
+  description: "표식이 활성인 적에게 아군이 가하는 공격의 명중률을 10%p 높인다."
+  icon: {fileID: 21300000, guid: ab2f92ad94b35d4788553141ad3fb9d1, type: 3}
+  rarity: 0
+  triggerType: 19
+  effectType: 223
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 10
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
