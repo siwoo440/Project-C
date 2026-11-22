@@ -97,5 +97,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     MagneticEvasionDown = 94, // 적이 받는 두 턴의 자기장 회피율 약화
     WasteHeatAttackPowerUp = 95, // 실제 화상 피해 뒤 분리되어 유지되는 공격 강화
     FlameVeinResistanceDown = 96, // 화염 광맥으로 약해진 마법 피해 저항률
-    CanyonWindEvasionUp = 97 // 협곡 바람피리로 증가한 아군 회피율
+    CanyonWindEvasionUp = 97, // 협곡 바람피리로 증가한 아군 회피율
+    SwampFairyEvasionUp = 98 // 늪의 요정 날개가루로 증가한 아군 회피율
 } // 열거형 종료

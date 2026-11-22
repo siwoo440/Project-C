@@ -179,6 +179,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 협곡 바람의 도감 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 8); // 실제 회피율 증가폭
                     } // 협곡 바람의 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.SwampFairyEvasionUp) // 회복을 받은 아군의 요정 회피 강화
+                    { // 요정 회피 강화의 도감 표시 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 10); // 실제 전투와 같은 회피율 증가 폭
+                    } // 요정 회피 강화의 도감 표시 종료
                     else if (effect == BattleStatusEffectType.WasteHeatAttackPowerUp) // 폐열을 이용한 아군 공격력 강화
                     { // 폐열 공격력 상태의 도감 표시 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 전투와 같은 실제 공격력 증가량

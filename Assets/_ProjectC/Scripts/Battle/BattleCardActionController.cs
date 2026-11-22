@@ -868,7 +868,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         bool resolveEffectsBeforeVictory = leechHealingPercent > 0 || cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 피해와 회복을 함께 처리하는 카드 확인
             cardInstance.SourceData.WandRule == WandCardRule.TimeStop || // 시간 정지의 실제 상태 효과와 한 장 드로우까지 승리 보류
             cardInstance.SourceData.PentacleRule == PentacleCardRule.FusionOfPower; // 힘의 융합의 전체 회복과 마지막 공유 드로우까지 승리 보류
-        turnRuntime.BeginCardResolution(resolveEffectsBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0 || cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm); // 복합 카드와 연속 타격의 실제 카드 이동 뒤 승리 정산
+        turnRuntime.BeginCardResolution(resolveEffectsBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0 || cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm, cardInstance); // 결제한 실제 카드의 직접 피해 및 복합 효과 종료 뒤 승리 정산
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan, pentacleHandCards, improvisedCard, leechHealingPercent); // 실제 카드 공격과 단일 대상 회복 및 사용 카드 이동 처리
@@ -2811,8 +2811,25 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             cupHealingBonusForCurrentCard = cupBonus; // 이 카드의 남은 부상 아군에게도 같은 가산 적용
         } // 전투당 첫 성수 마개 회복 확정 종료
         ApplySyringeWeakness(card, target, restored, syringe); // 기존 회복 처리 뒤 실제 체력 증가가 있는 대상의 주사기 부작용 판정
+        ApplySwampFairyHealingEvasion(card, target); // 최대 체력도 포함한 실제 직접 회복 카드 대상의 독립 회피
         return restored; // 실제 카드 체력 회복량 반환
     } // 실제 카드 회복 종료
+
+    private void ApplySwampFairyHealingEvasion(CardInstance card, BattleUnitRuntime target) // 직접 치유 카드가 확정한 생존 아군의 늪지 회피 강화
+    { // 실제 카드 정산까지 남아 있는 아군과 같은 전투 확인 시작
+        if (!turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded || card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } source || // 원래 합법 직접 카드 시전의 실제 아군 차례 및 생존 시전자
+            target is not { Team: BattleTeam.Ally, IsDead: false } || source.DamageRelicBattle != turnRuntime || target.DamageRelicBattle != turnRuntime) // 치유 대상으로 실제 살아 있는 같은 교전 참가 아군
+        { // 다른 교전과 잘못된 수신자의 새 회피 처리 제외
+            return; // 기존 실제 회복 정산만 보존
+        } // 다른 교전과 잘못된 수신자의 새 회피 처리 제외 종료
+        var dust = turnRuntime.DamageRelicInventory?.FindEffect(RelicEffectType.SwampFairyWingDustHealingEvasion); // 이번 실제 교전에 보유한 요정 날개가루
+        if (dust is { EffectValue: > 0, StatusDuration: > 0 }) // 실제 새 회피의 양수 원본과 적 차례 수명 확인
+        { // 현재 카드의 실제 아군 수신자에게 회피 적용 시작
+            var result = target.ApplyStatusEffect(BattleStatusEffectType.SwampFairyEvasionUp, dust.EffectValue, dust.StatusDuration, 1, source); // 기존 일반 회피와 별개인 한 중첩 상태 갱신
+            FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.SwampFairyEvasionUp, result); // 실제 사용한 카드 대상의 상태 표시
+        } // 현재 카드의 실제 아군 수신자에게 회피 적용 종료
+    } // 실제 카드 정산까지 남아 있는 아군과 같은 전투 확인 종료
+
     private void ArmTurretAfterShield(CardInstance card) // 실제 방패 카드 완료의 감전 준비
     { // 원래 방패 카드와 실제 시전자 확인 시작
         if (card.CardType == CardType.Shield && card.OwnerUnit.Team == BattleTeam.Ally) // 완료한 아군 방패의 실제 속성 확인

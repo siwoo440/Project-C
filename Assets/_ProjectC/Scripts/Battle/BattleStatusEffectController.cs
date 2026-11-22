@@ -152,7 +152,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료
-    private static void AdvanceEnemyTurnDefense(BattleUnitRuntime ally, BattleStatusEffectType type) // 적 공격을 받는 방어 상태의 남은 기간 계산
+    internal static void AdvanceEnemyTurnDefense(BattleUnitRuntime ally, BattleStatusEffectType type) // 적 공격을 받는 방어 상태와 독립 유물 회피의 남은 기간 계산
     { // 방어 지속 시간 처리 시작
         var effect = ally.GetStatusEffect(type); // 해당 방어 상태 조회
         if (effect == null) // 남은 방어 상태가 있는지 확인

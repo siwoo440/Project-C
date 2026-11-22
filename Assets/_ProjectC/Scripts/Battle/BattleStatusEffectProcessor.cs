@@ -147,7 +147,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance || // 적 턴 종료에만 차감하는 기존 영원의 방패
                 effect.EffectType == BattleStatusEffectType.SanctuaryWard || effect.EffectType == BattleStatusEffectType.FearResistance || // 성역과 찬가의 실제 적 턴 종료 차감
                 effect.EffectType == BattleStatusEffectType.PainDistribution || // 고통 분산의 두 실제 적 턴 종료만 계산
-                effect.EffectType == BattleStatusEffectType.CanyonWindEvasionUp) // 아군 개별 종료와 무관한 실제 적 완료 차례 전용 회피
+                effect.EffectType == BattleStatusEffectType.CanyonWindEvasionUp || // 아군 개별 종료와 무관한 실제 적 완료 차례 전용 협곡 회피
+                effect.EffectType == BattleStatusEffectType.SwampFairyEvasionUp) // 시간 동전의 실제 아군 차례에서도 줄지 않는 늪 요정 회피
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료

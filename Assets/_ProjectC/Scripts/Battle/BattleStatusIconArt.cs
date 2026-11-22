@@ -10,7 +10,7 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
         { // 취약 아이콘 조회 시작
             return GetIndividualIcon(type); // VulnerableStatusIcon 원화 반환
         } // 취약 아이콘 조회 종료
-        if (type is BattleStatusEffectType.FlameVeinResistanceDown or BattleStatusEffectType.CanyonWindEvasionUp) // 화염 광맥과 협곡 바람의 독립 전투 상태 확인
+        if (type is BattleStatusEffectType.FlameVeinResistanceDown or BattleStatusEffectType.CanyonWindEvasionUp or BattleStatusEffectType.SwampFairyEvasionUp) // 화염 광맥과 협곡·늪 회피의 독립 상태 확인
         { // 유물 상태 원화 참조 시작
             return GetIndividualIcon(type); // 실제 효과를 구별하는 유물별 작은 원화 반환
         } // 유물 상태 원화 참조 종료

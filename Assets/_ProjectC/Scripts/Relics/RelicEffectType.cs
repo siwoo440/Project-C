@@ -273,4 +273,12 @@ public enum RelicEffectType // 유물 효과 종류
     LavaVeinGuardianCoreBurningEnemiesActionPoints, // 실제 아군 턴에 화상 적 수만큼 추가 행동력
     RedCanyonBulwarkStoneOpeningBlockDrawTrade, // 첫 전투 방어도 증가와 시작 카드 한 장 감소
     AshSealSigilResistanceHealingTrade, // 아군 마법 피해 감소와 받는 회복 감소
+    SwampLeechSinewBleedingDamageHealing, // 출혈 적에서 감소한 체력에 따른 회복
+    VenomSapCorePoisonedDefeatSpread, // 중독 적 처치의 생존 적 중독 확산
+    MudGolemCoreMudBlockEndHealing, // 실제 아군 턴 종료에 방어도 보유 아군 회복
+    SwampFairyWingDustHealingEvasion, // 아군 직접 회복 카드의 수신자 회피율 증가
+    HollowPredatorStomachKillHealing, // 실제 처치자 회복과 개시 체력 지불
+    ScorchedRavineHeartBurningTargetDamage, // 화상 활성 적에게 주는 실제 피해 증가
+    MountainStatueShoulderPhysicalMagicTrade, // 아군이 받는 물리와 마법 피해의 반대 보정
+    LavaKingThroneShardOpeningBurn, // 적 전체와 선두 아군의 실제 개시 화상
 }

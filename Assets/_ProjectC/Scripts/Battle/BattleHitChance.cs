@@ -18,11 +18,12 @@ public static class BattleHitChance // 공격 명중 여부 계산
         bool canEvade = target?.GetStatusEffect(BattleStatusEffectType.Fear) == null; // 기존 공포와 회피 가능 상태 확인
         int evasion = canEvade ? Math.Min(100, target?.GetStatusEffect(BattleStatusEffectType.Evasion)?.EffectiveValue ?? 0) : 0; // 회피 가능한 대상의 기존 회피율
         var enemyBattle = attacker.Team == BattleTeam.Enemy && attacker.DamageRelicBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } battle ? battle : null; // 실제 활성 교전에서 살아 있는 적의 현재 명중
-        if (canEvade && enemyBattle != null && target is { Team: BattleTeam.Ally, IsDead: false } && target.DamageRelicBattle == enemyBattle && // 같은 활성 전투의 회피 가능한 실제 아군
-            target.GetStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp) is { IsExpired: false } canyonWind) // 적 차례 만료 전 독립 협곡 바람 강화
-        { // 별도 기존 회피와 협곡 강화 합산 시작
-            evasion = (int)Math.Min(100, (long)evasion + canyonWind.EffectiveValue); // 두 원본 회피의 실제 합산과 최대 백 상한
-        } // 별도 기존 회피와 협곡 강화 합산 종료
+        if (canEvade && enemyBattle != null && target is { Team: BattleTeam.Ally, IsDead: false } && target.DamageRelicBattle == enemyBattle) // 같은 활성 전투의 회피 가능한 실제 아군
+        { // 일반 회피와 두 독립 유물 회피의 실제 합산 시작
+            int canyon = target.GetStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp) is { IsExpired: false } wind ? wind.EffectiveValue : 0; // 별개 협곡 바람의 실제 퍼센트포인트
+            int fairy = target.GetStatusEffect(BattleStatusEffectType.SwampFairyEvasionUp) is { IsExpired: false } dust ? dust.EffectiveValue : 0; // 카드 치유의 별개 늪 요정 퍼센트포인트
+            evasion = (int)Math.Min(100, (long)evasion + canyon + fairy); // 같은 적 명중 예고와 실제에 쓰는 누적 회피와 백 상한
+        } // 일반 회피와 두 독립 유물 회피의 실제 합산 종료
         if (canEvade && target?.Team == BattleTeam.Ally && !target.IsDead && target.GetStatusEffect(BattleStatusEffectType.Stealth) is { IsExpired: false }) // 실제 은신이 유지되는 생존 아군의 회피 조건 확인
         { // 꺼진 등불 심지의 은신 회피 시작
             int bonus = BattleSupplyRelics.Find(RelicEffectType.StealthEvasionBonus)?.EffectValue ?? 0; // 현재 보유한 심지의 추가 회피 수치

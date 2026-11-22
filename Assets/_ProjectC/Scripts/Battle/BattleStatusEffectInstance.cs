@@ -7,8 +7,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public int StackCount { get; private set; } // 현재 중첩 수
     public int MaximumStacks { get; private set; } // 최대 중첩 수
     private int damageDecay; // 전체 지속 피해 수치에서 감소한 누적량
+    private bool preserveOpeningBurnTick; // 용암왕 개막 화상의 다음 적 종료에서 한 점 수치를 보존할 표시
+    private int venomSapPoisonTicks; // 독수액 핵의 중독량 한 점을 보장할 남은 실제 발동 횟수
     private bool skipNextDurationDecrease; // 자신의 턴에 받은 상태의 첫 감소 생략 여부
-    public int EffectiveValue => (int)Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - damageDecay); // 표시 범위와 누적 감소를 반영한 전체 수치
+    public int EffectiveValue => (int)Math.Max(venomSapPoisonTicks > 0 ? 1L : 0L, Math.Min(int.MaxValue, (long)Value * StackCount) - damageDecay); // 일반 누적 감소와 독수액 중독의 남은 하한
     public bool IsExpired => RemainingTurns <= 0 || (EffectType == BattleStatusEffectType.Burn || EffectType == BattleStatusEffectType.Poison) && EffectiveValue <= 0; // 지속 종료 또는 지속 피해 수치 소진 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
@@ -116,11 +118,19 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         skipNextDurationDecrease = false; // 사용한 생략 예약 제거
         return skip; // 이전 생략 여부 반환
     } // 생략 여부 소비 종료
+    internal void KeepVenomSapPoisonFor(int turns) // 성공한 독수액 부여의 중독 한 점 하한 기록
+    { // 독수액 중독 발동 횟수 등록 시작
+        if (EffectType == BattleStatusEffectType.Poison) // 기존 네이티브 중독 종류에서만 출처 하한 적용
+        { // 같은 중독의 기존 남은 발동 보존 시작
+            venomSapPoisonTicks = Math.Max(venomSapPoisonTicks, turns); // 반복 부여에서도 오래 지속되는 남은 실제 발동 횟수 채택
+        } // 같은 중독의 기존 남은 발동 보존 종료
+    } // 독수액 중독 발동 횟수 등록 종료
     public void DecayPoison() // 전체 중독 수치 한 점 감소
     { // 중독 감소 시작
         if (EffectType == BattleStatusEffectType.Poison && EffectiveValue > 0) // 감소 가능한 중독 확인
         { // 중독 감소 처리 시작
             damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + 1); // 전체 피해 수치의 감소량 누적
+            venomSapPoisonTicks = Math.Max(0, venomSapPoisonTicks - 1); // 실제 중독 발동이 끝난 뒤 독수액의 남은 보장 횟수 한 단계 감소
         } // 중독 감소 처리 종료
     } // 중독 감소 종료
     public void MergeTransferredState(BattleStatusEffectInstance transferred) // 이전한 디버프의 감소 상태 병합
@@ -131,12 +141,19 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         } // 병합 불가 처리 종료
         damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + transferred.damageDecay); // 이전한 지속 피해 감소량 보존
         skipNextDurationDecrease |= transferred.skipNextDurationDecrease; // 이전한 지속 감소 생략 여부 보존
+        venomSapPoisonTicks = Math.Max(venomSapPoisonTicks, transferred.venomSapPoisonTicks); // 이전한 실제 중독의 남은 독수액 보장 횟수도 보존
     } // 이전 상태 병합 종료
+    internal void PreserveOpeningBurnTick() // 실제 두 적 턴을 갖는 개막 화상의 한 점 보존 예약
+    { // 성공한 개막 화상의 별개 기간 검사 시작
+        preserveOpeningBurnTick = EffectType == BattleStatusEffectType.Burn && RemainingTurns > 1; // 일반 화상과 별개로 첫 감소 때 소모할 실제 플래그
+    } // 성공한 개막 화상의 별개 기간 검사 종료
     public void DecayBurn() // 화상 수치 한 단계 감소
     { // 화상 감소 시작
         if (EffectType == BattleStatusEffectType.Burn && EffectiveValue > 0) // 감소 가능한 화상 확인
         { // 화상 수치 감소 시작
-            damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + 1); // 전체 화상 수치의 감소량 누적
+            int decay = preserveOpeningBurnTick && RemainingTurns > 1 && EffectiveValue == 1 ? 0 : 1; // 실제 두 적 턴의 첫 종료에 남길 한 점과 일반 자연 감소 구분
+            preserveOpeningBurnTick = false; // 더 강한 합산 화상을 포함해 첫 감소에서만 사용하는 예약 소모
+            damageDecay = (int)Math.Min(int.MaxValue, (long)damageDecay + decay); // 일반 화상의 원래 수치 감소와 개막의 보존 반영
         } // 화상 수치 감소 종료
     } // 화상 감소 종료
     public static string GetDisplayName(BattleStatusEffectType effectType) // 상태 이상 표시 이름 조회
@@ -195,6 +212,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "회피"; // 회피 이름 반환
             case BattleStatusEffectType.CanyonWindEvasionUp: // 협곡 바람피리의 독립 개막 회피 상태
                 return "협곡 바람"; // 기본 회피와 다른 강화 이름
+            case BattleStatusEffectType.SwampFairyEvasionUp: // 늪 요정 날개가루의 독립 카드 치유 회피
+                return "요정 날개 회피"; // 협곡 바람과 다른 실제 강화 이름
             case BattleStatusEffectType.ActionPointDown: // 전투에서 실제로 확인하는 별도 행동력 감소 종류
                 return "행동력 감소"; // 활성 약화의 이름
             case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
@@ -393,6 +412,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "회"; // 회피 아이콘 문구
             case BattleStatusEffectType.CanyonWindEvasionUp: // 협곡 개막 회피의 독립 상태 기호
                 return "풍"; // 협곡 상태 아이콘의 대체 글자
+            case BattleStatusEffectType.SwampFairyEvasionUp: // 치유 뒤 요정 회피의 별개 상태 모양
+                return "요"; // 전용 원화가 없을 때의 작은 대체 글자
             case BattleStatusEffectType.ActionPointDown: // 행동력 감소 상태 아이콘의 대체 글자
                 return "AP−"; // 기존 실제 행동력 기호로 약화 표시
             case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
@@ -601,6 +622,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"적 공격 회피율 {effectiveValue}%p 증가 · 적 턴 종료에 지속 감소"; // 회피 설명 반환
             case BattleStatusEffectType.CanyonWindEvasionUp: // 별개의 협곡 바람 강화 상세
                 return $"적 공격 회피율 +{effectiveValue}%p · 실제 적 차례 종료에 지속 감소"; // 정식 가산과 적 차례 기준의 툴팁
+            case BattleStatusEffectType.SwampFairyEvasionUp: // 직접 치유 카드로 받은 실제 한 적 차례 회피
+                return $"치유 카드 대상의 적 공격 회피율 +{effectiveValue}%p · 실제 적 차례 종료에 지속 감소"; // 실제 회피 수치와 만료 기준 안내
             case BattleStatusEffectType.ActionPointDown: // 일반 적 턴의 실제 기간제 행동력 감소 상세
                 return $"행동력 {effectiveValue} 감소 · 다음 적 행동 한 번 취소"; // 실제 행동 감소가 적용되는 기존 한 번의 적 예정 행동 안내
             case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류

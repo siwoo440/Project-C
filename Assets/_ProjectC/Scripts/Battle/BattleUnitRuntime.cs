@@ -66,6 +66,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal int DefeatedBurnAmount { get; private set; } // 정리 전 실제 전투불능 적에게 남은 화상 실효량
     internal bool DefeatedWhileShocked { get; private set; } // 상태 정리 직전에 쓰러진 적의 실제 활성 감전
     internal bool DefeatedWhileBleeding { get; private set; } // 상태 정리 직전 실제 쓰러진 적의 활성 출혈
+    internal bool DefeatedWhilePoisoned { get; private set; } // 일반 상태 정리 직전에 실제 사망한 적의 활성 중독
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
@@ -745,6 +746,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         DefeatedWhileAfraid = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 공포 저장
         DefeatedWhileShocked = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false }; // 실제 처치에서 사라지기 전 활성 감전 여부 보관
         DefeatedWhileBleeding = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Bleed) is { IsExpired: false }; // 원래 사망 상태 정리 전에 남아 있던 적 출혈 기록
+        DefeatedWhilePoisoned = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false }; // 사망 원인과 무관하게 실제 죽기 전에 붙어 있던 중독 기록
         var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
         pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
     } // 전투불능 상태 기록 종료
@@ -882,7 +884,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int ashResistance = damageType == BattleDamageType.Magical // 다른 물리 및 고정 피해 수치와 별개인 실제 마법 피해
             ? Math.Clamp(GetActiveAllyDamageRelics()?.FindEffect(RelicEffectType.AshSealSigilResistanceHealingTrade)?.EffectValue ?? 0, 0, 100) : 0; // 실제 활성 아군의 원본 대비 저항 증가 퍼센트포인트
         int magicalResistanceLoss = (int)Math.Clamp((long)corrosion + flameVein - ashResistance, -100L, 100L); // 침식과 광맥의 손실 및 봉인문양 경감의 부호 있는 원래 퍼센트포인트 합산
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, magicalResistanceLoss, magicalResistancePenetrationPercent); // 실제 피해와 예고에 같은 저항 수치 관통과 실금석 처리 전달
+        int incomingDamagePercent = GetMountainShoulderDamagePercent(damageType); // 생존 아군에게만 적용할 실제 물리 또는 마법 수신 배율
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, magicalResistanceLoss, magicalResistancePenetrationPercent, incomingDamagePercent); // 실제 피해와 예고에 일반 방어와 저항 및 유형별 수신 배율 공통 적용
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         var hostileBattle = enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 양쪽 실제 적 직접 타격의 원본과 생존 상태 확인
@@ -1094,6 +1097,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             NotifyStatusEffectsChanged(); // 실제 피해 신호 전에 소모 상태 표시 갱신
         } // 환영 보호 제거 표시 종료
         LoseHealth(damageResult.AppliedDamage); // 현재 체력 감소
+        if (alliedDirectAttack && !wandEcho) // 원래 카드의 네이티브 직접 접촉 분류 확인
+        { // 실제 체력 손실과 상태 정리 직전의 출혈 확인 시작
+            sandBattle?.RecordSwampLeechDamage(sourceUnit, this, damageResult.AppliedDamage); // 방어로 차단된 원본 피해와 별도 반응을 제외한 이번 접촉 집계
+        } // 실제 체력 손실과 상태 정리 직전의 출혈 확인 종료
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
@@ -1173,6 +1180,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         if (!sharesResolvedDamage) // 원래 피해의 비율 증폭을 거친 분담 조각의 제외
         { // 독립적인 방어 우회 피해 증가 시작
             amount = ApplyCaravanDamageRelics(amount); // 출혈과 감전 및 실제 반사의 독립 피해 조정
+            int incomingDamagePercent = GetMountainShoulderDamagePercent(damageType); // 방어를 우회하는 독립 물리 또는 마법 피해의 현재 수신 배율
+            amount = (int)Math.Min(int.MaxValue, (long)amount * (100L + incomingDamagePercent) / 100L); // 이미 계산된 분담을 제외한 방어 우회 피해의 동일 유형 조정
         } // 독립적인 방어 우회 피해 증가 종료
         int reduced = GetUnblockedDamageAfterReduction(amount); // 성역과 고정 감소가 반영된 실제 무방어 피해
         if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
@@ -1284,16 +1293,29 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 실제 진행 중인 피해가 아닌 경우 종료
         var relics = battle.DamageRelicInventory; // 전투를 시작할 때 연결한 현재 보유 유물
         int percent = 0; // 실제 조건을 통과한 피해 증가율
+        int ravinePercent = 0; // 불타는 적에게 별도로 적용되는 협곡 심장편 배율
         if (Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }) // 지금 화상이 활성화된 적 대상 확인
         { // 검은 태양의 재 증가율 조회 시작
             percent = relics?.FindEffect(RelicEffectType.BlackSunAshBurningEnemyDamageUp)?.EffectValue ?? 0; // 기존 원본의 화상 피해 증가율
+            ravinePercent = battle.CurrentRound > 0 ? Math.Max(0, relics?.FindEffect(RelicEffectType.ScorchedRavineHeartBurningTargetDamage)?.EffectValue ?? 0) : 0; // 실제 진행 중인 조우의 화상 적에게만 별개 심장편 배율 조회
         } // 검은 태양의 재 증가율 조회 종료
         else if (Team == BattleTeam.Ally && battle.BattleType == BattleType.Elite && relics?.FindEffect(RelicEffectType.CaravanSecretLedgerVictoryTrade) != null) // 비밀장부 보유 중인 정확한 정예 조우의 아군 피해 확인
         { // 비밀장부의 정예 불이익 시작
             percent = 5; // 승리 보상률과 별개인 정예 피해의 고정 증가율
         } // 비밀장부의 정예 불이익 종료
-        return (int)Math.Min(int.MaxValue, (long)amount * (100L + percent) / 100L); // 방어도 흡수 이전 정수 범위 내림
+        int adjusted = (int)Math.Min(int.MaxValue, (long)amount * (100L + percent) / 100L); // 기존 유물 피해와 정수 범위의 원래 내림 유지
+        return (int)Math.Min(int.MaxValue, (long)adjusted * (100L + ravinePercent) / 100L); // 독립 협곡 심장편의 실제 양수 피해 배율과 내림
     } // 카라반 피해 유물 계산 종료
+
+    private int GetMountainShoulderDamagePercent(BattleDamageType damageType) // 실제 생존 아군의 독립 피해 종류별 배율 조회
+    { // 산맥석상 어깨조각의 활성 조우와 피해 종류 확인 시작
+        if (damageType is not (BattleDamageType.Physical or BattleDamageType.Magical)) // 일반 및 침식 피해의 원래 수치 확인
+        { // 유형 거래 외의 기존 피해 유지 시작
+            return 0; // 원래 일반 수신 배율 유지
+        } // 유형 거래 외의 기존 피해 유지 종료
+        var shoulder = GetActiveAllyDamageRelics()?.FindEffect(RelicEffectType.MountainStatueShoulderPhysicalMagicTrade); // 현재 실제 아군이 보유한 산맥석상 어깨조각
+        return shoulder == null ? 0 : damageType == BattleDamageType.Physical ? -Math.Clamp(shoulder.EffectValue, 0, 100) : 5; // 물리 원본 비율을 빼고 마법에 고정 오 퍼센트 가산
+    } // 산맥석상 어깨조각의 활성 조우와 피해 종류 확인 종료
 
     private int GetBrokenHeartCombatPercent() // 생존 전투에 적용 중인 깨진 하트의 공통 실제 비율 조회
     { // 깨진 하트의 피해와 회복 범위 확인 시작

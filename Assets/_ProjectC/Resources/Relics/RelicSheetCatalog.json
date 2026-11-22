@@ -3116,7 +3116,7 @@
     {
       "sourceRow": 285,
       "name": "늪지 거머리 심줄",
-      "description": "출혈 상태 적 공격 시 피해의 10% 회복",
+      "description": "아군 카드가 출혈 중인 적에게 직접 명중해 줄인 체력의 10%를 사용자에게 회복한다.",
       "buyMin": 325,
       "buyMax": 368,
       "buyVariance": 43,
@@ -3127,7 +3127,7 @@
     {
       "sourceRow": 286,
       "name": "독수액 핵",
-      "description": "중독 상태 적이 사망하면 적 전체 중독(2턴) 25%",
+      "description": "중독 중인 적이 전투불능이 되면 25% 확률로 남은 생존 적 전체에게 두 적 턴 동안 중독 1을 부여한다.",
       "buyMin": 192,
       "buyMax": 228,
       "buyVariance": 36,
@@ -3138,7 +3138,7 @@
     {
       "sourceRow": 287,
       "name": "진흙 골렘의 심토",
-      "description": "턴 종료 시 방어도가 남아 있으면 체력 3 회복",
+      "description": "실제 아군 턴 종료에 방어도가 남은 생존 아군의 체력을 각각 3 회복한다.",
       "buyMin": 209,
       "buyMax": 252,
       "buyVariance": 43,
@@ -3149,7 +3149,7 @@
     {
       "sourceRow": 288,
       "name": "늪의 요정 날개가루",
-      "description": "회복 카드 사용 시 대상 회피율 +10% (1턴)",
+      "description": "아군 회복 카드를 받은 생존 대상의 회피율이 실제 적 턴 한 번 동안 10%p 증가한다.",
       "buyMin": 226,
       "buyMax": 262,
       "buyVariance": 36,
@@ -3160,7 +3160,7 @@
     {
       "sourceRow": 289,
       "name": "포식괴물의 빈 위장",
-      "description": "적 처치 시 체력 10 회복, 전투 시작 시 체력 -5",
+      "description": "아군이 적을 처치하면 처치자가 체력 10을 회복한다. 전투 시작에 생존 아군 각각은 체력을 최대 5 지불하고 최소 1을 유지한다.",
       "buyMin": 243,
       "buyMax": 286,
       "buyVariance": 43,
@@ -3171,7 +3171,7 @@
     {
       "sourceRow": 290,
       "name": "불타는 협곡의 심장편",
-      "description": "화상 상태 적에게 모든 피해 +20%",
+      "description": "전투 중 화상 상태인 적에게 가해지는 양수 피해가 20% 증가한다.",
       "buyMin": 260,
       "buyMax": 296,
       "buyVariance": 36,
@@ -3182,7 +3182,7 @@
     {
       "sourceRow": 291,
       "name": "산맥석상의 어깨조각",
-      "description": "아군 전체 받는 물리 피해 -15%, 마법 피해 +5%",
+      "description": "전투 중 아군이 받는 물리 피해가 15% 감소하고 마법 피해가 5% 증가한다.",
       "buyMin": 277,
       "buyMax": 320,
       "buyVariance": 43,
@@ -3193,7 +3193,7 @@
     {
       "sourceRow": 292,
       "name": "용암왕의 왕좌파편",
-      "description": "전투 시작 시 적 전체 화상(2턴), 자신도 화상(1턴)",
+      "description": "전투 시작에 생존 적 전원에게 적 턴 두 번의 화상 1을, 선두 생존 아군에게 아군 턴 한 번의 화상 1을 부여한다.",
       "buyMin": 294,
       "buyMax": 330,
       "buyVariance": 36,
