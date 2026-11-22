@@ -59,7 +59,9 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             bool wasDefeated = false; // 같은 시점의 부활과 구분할 실제 전투불능 초기값
             if (statusEffect.EffectType == BattleStatusEffectType.Poison) // 중독 상태 확인
             { // 중독 처리 시작
-                BattleDamageResult damageResult = runtimeUnit.TakeDamage(statusEffect.EffectiveValue, BattleDamageType.None); // 방어 무시 피해 적용
+                int bonus = !statusEffect.IsExpired && statusEffect.HasAlliedPoisonSource ? BattleSupplyRelics.Find(RelicEffectType.DriedCactusSapPoisonDamageBonus)?.EffectValue ?? 0 : 0; // 실제 활성 아군 중독 중첩에만 보유 수액의 고정 피해 가산
+                int damage = (int)System.Math.Min(int.MaxValue, (long)statusEffect.EffectiveValue + bonus); // 중독 수치나 자연 수명을 바꾸지 않는 이번 실제 피해
+                BattleDamageResult damageResult = runtimeUnit.TakeDamage(damage, BattleDamageType.None); // 기존 일반 피해와 실제 방어도 정산
                 appliedAmount = damageResult.AppliedDamage; // 실제 중독 피해 저장
                 wasDefeated = damageResult.WasTargetDefeated; // 실제 중독 타격으로 쓰러진 결과 저장
                 wasTriggered = true; // 중독 발동 저장

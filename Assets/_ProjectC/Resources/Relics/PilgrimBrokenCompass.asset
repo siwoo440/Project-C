@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: PilgrimBrokenCompass
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_PILGRIM_BROKEN_COMPASS
+  displayName: 순례자의 깨진 나침판
+  description: "정신력이 최대 정신력의 30% 이하인 생존 아군이 적에게서 받는 정신 피해가 30% 감소한다."
+  icon: {fileID: 21300000, guid: 210d8cccc703586ea293f0df8a9a5bd9, type: 3}
+  rarity: 0
+  triggerType: 49
+  effectType: 199
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 30
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

@@ -2214,7 +2214,7 @@
     {
       "sourceRow": 203,
       "name": "유리모래 렌즈",
-      "description": "실명 상태 적에게 마법 피해 +4",
+      "description": "아군이 실명 중인 적에게 명중시키는 직접 마법 카드 타격의 피해가 4 증가한다.",
       "buyMin": 281,
       "buyMax": 324,
       "buyVariance": 43,
@@ -2225,7 +2225,7 @@
     {
       "sourceRow": 204,
       "name": "말라붙은 선인장즙",
-      "description": "중독 피해 +1, 회복량 -5%",
+      "description": "아군이 건 중독의 지속 피해가 1 증가하고 전투 중 생존 아군이 받는 체력 회복이 5% 감소한다.",
       "buyMin": 298,
       "buyMax": 334,
       "buyVariance": 36,
@@ -2236,7 +2236,7 @@
     {
       "sourceRow": 205,
       "name": "폭풍막이 천조각",
-      "description": "광역 피해를 받을 때 방어도 +3",
+      "description": "아군이 적의 직접 광역 공격에 실제로 명중당할 때 피해 적용 직전에 방어도 3을 얻는다.",
       "buyMin": 315,
       "buyMax": 358,
       "buyVariance": 43,
@@ -2247,7 +2247,7 @@
     {
       "sourceRow": 206,
       "name": "잠복충 더듬이",
-      "description": "첫 턴 첫 공격 피해 +6",
+      "description": "첫 실제 아군 턴에 사용한 첫 직접 공격 카드의 첫 타격 피해가 6 증가한다.",
       "buyMin": 182,
       "buyMax": 218,
       "buyVariance": 36,
@@ -2258,7 +2258,7 @@
     {
       "sourceRow": 207,
       "name": "폐광 검은 모래",
-      "description": "적에게 방어력 감소를 부여하면 중독(2턴) 20%",
+      "description": "아군이 적에게 물리 방어력을 낮추는 상태를 실제로 부여하면 20% 확률로 두 적 턴 동안 중독을 부여한다.",
       "buyMin": 199,
       "buyMax": 242,
       "buyVariance": 43,
@@ -2269,7 +2269,7 @@
     {
       "sourceRow": 208,
       "name": "황폐한 가죽끈",
-      "description": "체력 50% 이하 적에게 주는 피해 +10%",
+      "description": "현재 체력이 최대 체력의 50% 이하인 적에게 아군이 주는 직접 카드 타격 피해가 10% 증가한다.",
       "buyMin": 216,
       "buyMax": 252,
       "buyVariance": 36,
@@ -2280,7 +2280,7 @@
     {
       "sourceRow": 209,
       "name": "순례자의 깨진 나침판",
-      "description": "정신력 30% 이하일 때 받는 정신 피해 -30%",
+      "description": "정신력이 최대 정신력의 30% 이하인 생존 아군이 적에게서 받는 정신 피해가 30% 감소한다.",
       "buyMin": 233,
       "buyMax": 276,
       "buyVariance": 43,
@@ -2291,7 +2291,7 @@
     {
       "sourceRow": 210,
       "name": "재폭풍 재주머니",
-      "description": "화상 상태 적이 사망하면 무작위 적 1명에게 화상(2턴)",
+      "description": "화상 중인 적이 실제로 쓰러지면 다른 무작위 생존 적 한 명에게 같은 수치의 화상을 두 적 턴 동안 부여한다.",
       "buyMin": 250,
       "buyMax": 286,
       "buyVariance": 36,

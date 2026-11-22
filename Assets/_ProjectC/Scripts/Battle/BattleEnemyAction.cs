@@ -307,6 +307,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         }
 
         int modifiedAmount = AttackAmount; // 실제 공격 약화와 정신 상태를 반영한 피해
+        block += GetStormguardAreaBlock(target, modifiedAmount, block); // 실제 방어도를 바꾸지 않고 광역 사전 방어도를 원래 보호 계산에 포함
         return target.PreviewDamageWithParty( // 실제 파티 분담을 포함한 현재 대상의 예상 피해 계산
             modifiedAmount, // 정신 상태 포함 피해량 전달
             DamageType, // 공격 피해 유형 전달
@@ -405,6 +406,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 executedAttackTarget = protector; // 피해 이벤트와 후속 연출에 실제 대상 전달
             } // 단일 피격 대상 기록 종료
         } // 명중 후 대상 전환 종료
+        attackTarget.GainBlock(GetStormguardAreaBlock(attackTarget, attackDamage, attackTarget.CurrentBlock)); // 실제로 명중한 광역의 원래 참가 대상에게 피해 직전 방어도 지급
         BattleDamageResult damageResult = attackTarget.TakeEnemyHit(attackDamage, DamageType, Actor, IsAreaAttack ? null : SharedDamageRecipient, preventHealthDamage, reduceHealthDamage, IsAreaAttack, RecordRedirect, GetPainDistributionParty(attackTarget)); // 명중에 한해 기존 수호자와 파티 분담 순서 반영
         attackTarget = finalTarget; // 추가 상태와 응징의 실제 피격 대상 복원
         recipient = finalTarget; // 광역 공격 결과에도 수호 전환된 대상 전달
@@ -415,7 +417,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? attackTarget.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 실제 피격 대상의 추가 상태 적용
         if (survivedImpact && AdditionalMentalChange != 0) // 부활하기 전에 버틴 대상만 추가 정신력 변화 확인
         { // 정신력 압박 적용 시작
-            attackTarget.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived); // 실제 피격 대상의 정신력 변화 적용
+            attackTarget.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived, Actor); // 실제 피격 대상에게 정신 피해를 준 적의 출처 전달
         } // 정신력 압박 적용 종료
         var retaliation = attackTarget.GetStatusEffect(BattleStatusEffectType.RetributionBulwark); // 원래 타격의 실제 피격 아군에 남은 응징 방벽
         if (retaliation != null && !Actor.IsDead && Actor.Team == BattleTeam.Enemy && survivedImpact && attackTarget.Team == BattleTeam.Ally && !damageResult.WasDamageNullified && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0)) // 실제 생존과 무효가 아닌 방어도 또는 체력 피해 확인
@@ -425,6 +427,15 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     } // 개별 피격 처리 종료
 
+    internal int GetStormguardAreaBlock(BattleUnitRuntime target, int damage, int currentBlock) // 광역 공격의 원래 직접 대상에게 줄 실제 사전 방어도
+    { // 광역 피격 전 방어 자격 검사 시작
+        if (damage <= 0 || Actor.Team != BattleTeam.Enemy || !IsAreaAttack || target?.Team != BattleTeam.Ally || !HitsTarget(target)) // 명시적 광역과 양수 직접 공격 및 실제 생존 대상 확인
+        { // 적용되지 않는 공격 처리 시작
+            return 0; // 단일 및 간접 피해와 실제 광역 대상 밖의 방어도 유지
+        } // 적용되지 않는 공격 처리 종료
+        int amount = BattleSupplyRelics.Find(RelicEffectType.StormguardClothAreaDamageBlock)?.EffectValue ?? 0; // 보유 중인 폭풍막이 천조각의 기존 양수 방어도
+        return Math.Clamp(amount, 0, int.MaxValue - Math.Max(0, currentBlock)); // 실제 방어도 증가와 같은 정수 상한의 신규 보상
+    } // 광역 피격 전 방어 자격 검사 종료
     private void ApplyDanceShoeEvade(BattleUnitRuntime target) // 공통 실제 회피 이후 무도화의 독립 보상 처리
     { // 무도화의 기존 강화 확인 시작
         if (target.GetStatusEffect(BattleStatusEffectType.DanceShoeDamageUp) is { IsExpired: false }) // 이미 예약된 한 번의 기존 강화 제외

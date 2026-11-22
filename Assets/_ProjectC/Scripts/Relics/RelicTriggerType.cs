@@ -56,5 +56,7 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     EnemySummoned, // 전체 전투 관리자에 적 소환이 완료된 시점
     AttackEvaded, // 아군의 회피율로 실제 적 공격이 빗나간 시점
     TreasureRoomCompleted, // 방의 기본 보상 획득과 저장이 확정되는 시점
-    ShopRelicPurchased // 상점에서 유물 구매와 원본 지급이 완료된 시점
+    ShopRelicPurchased, // 상점에서 유물 구매와 원본 지급이 완료된 시점
+    BeforePoisonDamage, // 아군의 중독 지속 피해를 적용하기 직전
+    BeforeAreaDamage // 적의 광역 직접 공격이 명중한 아군에게 피해를 적용하기 직전
 }

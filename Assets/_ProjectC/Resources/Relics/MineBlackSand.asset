@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: MineBlackSand
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_MINE_BLACK_SAND
+  displayName: 폐광 검은 모래
+  description: "아군이 적에게 물리 방어력을 낮추는 상태를 실제로 부여하면 20% 확률로 두 적 턴 동안 중독을 부여한다."
+  icon: {fileID: 21300000, guid: 4804c2c0b94a5910a44f770f0bfb46ca, type: 3}
+  rarity: 0
+  triggerType: 8
+  effectType: 197
+  targetType: 6
+  triggerChancePercent: 20
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 1
+  statusDuration: 2
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

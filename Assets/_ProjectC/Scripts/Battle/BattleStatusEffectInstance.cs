@@ -29,6 +29,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         MaximumStacks = Math.Max(1, maximumStacks); // 최소 최대 중첩 보정
         StackCount = 1; // 첫 중첩 적용
     } // 생성자 종료
+    internal bool HasAlliedPoisonSource { get; private set; } // 활성 중독의 실제 아군 부여 이력
+    internal void RecordPoisonApplication(BattleUnitRuntime source, bool preserveExisting) // 현재 중독 인스턴스의 아군 출처 갱신
+    { // 중독의 합산 중첩에 대한 출처 처리 시작
+        if (EffectType == BattleStatusEffectType.Poison) // 다른 상태의 원래 출처 계산은 건드리지 않음
+        { // 이번과 기존 중독 출처 확인 시작
+            HasAlliedPoisonSource = source?.Team == BattleTeam.Ally || preserveExisting && HasAlliedPoisonSource; // 남은 같은 중독 안에서 실제 아군 기여 유지
+        } // 이번과 기존 중독 출처 확인 종료
+    } // 중독의 합산 중첩에 대한 출처 처리 종료
     public void Refresh(int value, int duration, int maximumStacks) // 동일 상태 이상 재적용
     { // 재적용 시작
         if (IsProtectedMentalState) // 정신 상태의 외부 재적용 확인

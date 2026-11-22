@@ -793,6 +793,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 충돌 처리 종료
         finally // 충돌 처리 종료에 예약 드로우 정리 보장
         { // 카드 정산 범위 정리 시작
+            turnRuntime.EndFirstAllyAttack(); // 전부 빗나간 최초 공격도 이번 카드 종료에 남은 가산 해제
             turnRuntime.EndCardResolution(); // 비워진 손패 자리에 처치 보상 지급
         } // 카드 정산 범위 정리 종료
     } // 카드 정산 범위 종료
@@ -812,6 +813,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             usedFirstHealingCard = true; // 대상이 최대 체력이어도 첫 사용 기록
             bandageBonus = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FirstHealingCardBonus)?.EffectValue ?? 0; // 실제 보유한 붕대의 대상별 가산
         } // 첫 회복 카드 처리 종료
+        turnRuntime.BeginFirstAllyAttack(cardInstance); // 실제 확정 피해 카드의 첫 아군 공격 선언과 한 번 가산 예약
         suitHitRelics.BeginCard(cardInstance, turnRuntime.CurrentRound, RelicRunManager.Instance?.Inventory); // 이번 피해 카드의 첫 직접 명중 보너스 예약
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록

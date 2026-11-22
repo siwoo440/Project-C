@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: DriedCactusSap
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_DRIED_CACTUS_SAP
+  displayName: 말라붙은 선인장즙
+  description: "아군이 건 중독의 지속 피해가 1 증가하고 전투 중 생존 아군이 받는 체력 회복이 5% 감소한다."
+  icon: {fileID: 21300000, guid: b41d8c6643d3573bb019ded5fd5090ff, type: 3}
+  rarity: 0
+  triggerType: 57
+  effectType: 194
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 1
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
