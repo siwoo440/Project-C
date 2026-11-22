@@ -922,7 +922,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (damagesAndHeals) // 적에게만 피해를 주고 지정 아군에게만 회복하는 효과 분리
         { // 두 대상 충돌 처리 시작
             totalAppliedAmount = ApplyCardEffect(cardInstance, targetUnits[0]); // 선택한 적 한 명의 일반 직접 피해 처리
-            int healing = GetDirectCardHealing(cardInstance, cardInstance.SourceData.SecondaryEffectValue); // 기존 회복 보정을 포함한 원본 보조 회복량 계산
+            int healing = GetDirectCardHealing(cardInstance, cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 보조 회복의 원래 양과 원래 시전자 보정 계산
             totalAppliedAmount += RestoreDirectCardHealth(cardInstance, targetUnits[1], healing); // 명중 여부와 별개로 선택한 아군 한 명의 회복 처리
         } // 두 대상 충돌 처리 종료
         else if (cardInstance.EffectType == CardEffectType.CopyAllyBlessing) // 선택한 두 아군 사이의 축복 이전 확인
@@ -993,10 +993,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             PentacleCardRule.Focus or PentacleCardRule.AncientRune => CardInstance.ApplyEnchantment(cardInstance.SourceData.EffectValue, cardInstance.EnchantmentPercent), // 기존 두 원본의 수치와 한 번 강화 기준 유지
             PentacleCardRule.FusionOfPower => 2, // 대상 수와 별개인 힘의 융합의 원본 공유 두 장
             PentacleCardRule.AncientFormula => cardInstance.SourceData.EffectValue, // 원본의 기본 세 장을 실제 일반 드로우와 손패 상한으로 적용
+            PentacleCardRule.CompletedRitual => cardInstance.EffectValue, // 적 수와 관계없는 아군의 한 번 공유 드로우와 실제 손패 상한
             PentacleCardRule.SecureSupplies => cardInstance.SourceData.SecondaryEffectValue, // 방어도와 별개인 보급 확보의 공유 한 장
             PentacleCardRule.TemporaryContract => cardInstance.EffectValue, // 실제 생존 체력의 선결제 뒤 공용 손패로 뽑는 기본 두 장
             _ => 0 // 다른 카드의 기존 개별 후속 정산 유지
         }; // 공유 카드의 원본 드로우 수 확인 종료
+        if (cardInstance.SourceData.PentacleRule is PentacleCardRule.Focus or PentacleCardRule.AncientRune or PentacleCardRule.FusionOfPower or PentacleCardRule.AncientFormula or PentacleCardRule.SecureSupplies) // 원본이나 보조 데이터에서 직접 읽은 일반 드로우 수
+        { // 원래 드로우와 후속 유물의 가산을 분리
+            pentacleDraw = cardInstance.ScaleQuantitativeEffect(pentacleDraw); // 아직 룬을 거치지 않은 카드 기본 장수만 강화
+        } // 원래 드로우와 후속 유물의 가산 분리 종료
         bool followUpDefense = false; // 드로우 카드에 별도 후속 방어가 없는 기본값
         int drawn = 0; // 실제 손패로 이동한 이번 카드 효과 드로우 수
         bool discarded = pentacleDraw > 0 // 하나의 사용 이동으로 처리할 펜타클 드로우인지 확인
@@ -1041,7 +1046,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             { // 스킬 드로우 예약 시작
                 if (cardInstance.SourceData.WandRule == WandCardRule.TimeStop && turnRuntime.IsPlayerTurn && !turnRuntime.IsBattleEnded) // 실제 사용을 완료한 시간 정지의 공용 손패 지급 확인
                 { // 실제 사용 카드가 비운 공용 손패 드로우 시작
-                    runtimeDeck.DrawRelicCardsIntoHand(cardInstance.SourceData.SecondaryEffectValue); // 기존 상한을 지키며 공용 손패에 실제 한 장 지급
+                    runtimeDeck.DrawRelicCardsIntoHand(cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 현재 카드의 실제 드로우 수를 기존 상한으로 지급
                 } // 실제 사용 카드가 비운 공용 손패 드로우 종료
                 bool firstCardOfTurn = turnRuntime.RecordCompletedPlayerCardUse(); // 실제 손패를 정상적으로 떠난 모든 카드의 첫 사용 여부 확인
                 if (paidWithRuneRecording) // 이번 결제에 실제 룬으로 줄인 양수 일반 비용이 있었는지 확인
@@ -1088,22 +1093,31 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 끝난 전투와 관련 없는 카드 제외 종료
         return card.SourceData.PentacleRule switch // 카드별 정식 보유 자원 정산
         { // 펜타클 자원 효과 선택 시작
-            PentacleCardRule.GoldenCoin => sharedActionPoints.Gain(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 현재 공용 최대치 안에서 원본 행동력 한 점 회복
+            PentacleCardRule.SageRune => ResolveSageRune(card), // 정상 완료한 원본의 고정 AP와 이후 공용 카드 강화 설정
+            PentacleCardRule.GoldenCoin => sharedActionPoints.Gain(card.ScaleQuantitativeEffect(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent))), // 원래 일회 강화와 실제 직접 행동력 회복 적용
             PentacleCardRule.Ritual or PentacleCardRule.PickUpCoin or PentacleCardRule.PayThePrice => sharedActionPoints.Gain(card.EffectValue), // 실제 체력 지불 또는 동전 제외 뒤 현재 행동력 회복
             PentacleCardRule.SecretVault => ResolveSecretVault(card), // 카드 비용 지불 뒤 현재 행동력 지급과 다음 기본 드로우 차감
             PentacleCardRule.CompoundEffect => sharedActionPoints.AddCompoundGainBonus(card.EffectValue), // 이번 아군 턴의 이후 양수 지급에 복리 한 건 누적
-            PentacleCardRule.InfiniteContract => sharedActionPoints.GainWithTurnCapacity(SwordCardCombat.ScaleByActionPoints(paid, card.EffectValue)), // 지불한 실제 전액의 보상과 필요한 이번 아군 턴 상한 확보
+            PentacleCardRule.InfiniteContract => sharedActionPoints.GainWithTurnCapacity(card.ScaleQuantitativeEffect(SwordCardCombat.ScaleByActionPoints(paid, card.EffectValue))), // 지불한 실제 전액의 보상과 필요한 이번 아군 턴 상한 확보
             PentacleCardRule.EfficientUse => turnRuntime.SetEfficientUseDiscount(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 실제 현재 아군 턴의 기존 기본 비용 한 점 할인 갱신
             PentacleCardRule.RuneRecording => turnRuntime.SetRuneRecordingDiscount(card.OwnerUnit, card.EffectValue), // 방금 실제로 시전한 소유자의 다음 양수 일반 카드 비용 예약
-            PentacleCardRule.RuneBarrier => turnRuntime.QueueEmergencyActionPoints(card.SourceData.SecondaryEffectValue), // 살아 있는 파티의 개별 방어도 처리 뒤 다음 실제 아군 턴 행동력 한 점 예약
+            PentacleCardRule.RuneBarrier => turnRuntime.QueueEmergencyActionPoints(card.ScaleQuantitativeEffect(card.SourceData.SecondaryEffectValue)), // 현재 카드가 확정한 별도 다음 턴 행동력 예약
             PentacleCardRule.EmergencyFunds => turnRuntime.QueueEmergencyActionPoints(card.EffectValue), // 이번 아군 턴과 분리할 다음 실제 행동력 예약
+            PentacleCardRule.TimeCoin => turnRuntime.QueueTimeCoinTurn(card.SourceData.EffectValue), // 강화와 별개인 원본 추가 차례 행동력 부담 예약
             PentacleCardRule.SeizeOpportunity when firstCardOfTurn => sharedActionPoints.Gain(card.EffectValue), // 자기 원본이 아군 전체 첫 사용일 때만 실제 현재 행동력 환급
             PentacleCardRule.CalculatedInvestment => turnRuntime.QueueEmergencyActionPoints(paid), // 이번에 두 번 차감하지 않은 실제 전액을 다음 아군 턴에만 추가
+            PentacleCardRule.CompletedRitual => ResolveCompletedRitual(card), // 공유 드로우를 마친 실제 사용에서 행동력과 적 전체 약화 정산
             PentacleCardRule.GambleMove => ApplyGambleMove(card), // 정상 사용을 확정한 원본 한 장의 성공 또는 정신력 대가
             PentacleCardRule.MechanicalCalculation => turnRuntime.SetMechanicalCalculationDiscount(card.EffectValue), // 현재 아군 턴에 정해진 펜타클 기본 비용 할인
             _ => 0 // 드로우와 선택 및 다른 자원 처리 규칙의 후속 정산 없음
         }; // 펜타클 자원 효과 선택 종료
     } // 실제 원본 펜타클 지원 확인 종료
+
+    private int ResolveSageRune(CardInstance card) // 이번 차례의 룬과 원래 카드 행동력 지급
+    { // 실제 결제와 원본 카드 이동 뒤 공용 강화 시작
+        turnRuntime.ActivateSageRune(); // 아직 완료하지 않은 이후 실제 카드에만 적용할 룬 활성화
+        return sharedActionPoints.Gain(card.SourceData.EffectValue); // 반복 룬 자신의 원래 두 점에 기존 공용 상한 사용
+    } // 실제 결제와 원본 카드 이동 뒤 공용 강화 종료
 
     private int ResolveSecretVault(CardInstance card) // 성공한 금고의 현재 지급과 다음 아군 턴의 기본 손패 부담
     { // 금고의 두 자원 변화 처리 시작
@@ -1124,7 +1138,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private long ApplyFusionOfPower(CardInstance card) // 힘의 융합의 두 진영을 대상으로 하는 혼합 효과
     { // 한 번의 광역 회복과 피해 정산 시작
         long applied = 0; // 각 생존 아군 회복과 실제 적 체력 피해의 합계
-        int healing = GetDirectCardHealing(card, card.SourceData.SecondaryEffectValue); // 원본 열 점과 일반 시전자 회복 보정 계산
+        int healing = GetDirectCardHealing(card, card.ScaleQuantitativeEffect(card.SourceData.SecondaryEffectValue)); // 직접 보조 회복 원본과 실제 시전자 보정 처리
         foreach (var ally in CollectValidTargets(card, allyUnitViews)) // 실제 충돌 때 살아 있는 모든 아군을 다시 확인
         { // 개별 생존 아군의 회복 시작
             applied += RestoreDirectCardHealth(card, ally, healing); // 현재 최대 체력과 실제 회복 효과를 적용한 개별 지급
@@ -1141,7 +1155,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         int chance = Math.Clamp(card.SourceData.SecondaryEffectValue, 0, 100); // 회복량과 독립인 원본 행동력 지급 확률
         if (chance > 0 && (chance >= 100 || UnityEngine.Random.Range(0, 100) < chance)) // 소유자의 진짜 행동력 지급을 별도로 한 번 굴림
         { // 독립 행동력 지급 시작
-            int gained = sharedActionPoints.Gain(1); // 기존 최대 행동력 아래에서 실제 한 점 회복
+            int gained = sharedActionPoints.Gain(card.ScaleQuantitativeEffect(1)); // 확률은 유지하고 성공한 원래 행동력 지급 수치만 강화
             if (gained > 0) // 상한에 걸리지 않은 실제 회복량 확인
             { // 현재 행동력 피드백 시작
                 FindUnitView(card.OwnerUnit)?.ShowStatusFeedback($"행동력 +{gained}", true); // 지급된 실제 행동력만 시전자 화면에 표시
@@ -1149,6 +1163,25 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 독립 행동력 지급 종료
         return restored; // 실제 개별 회복 효과의 총량 반환
     } // 임시 보급의 실제 지급 종료
+    private int ResolveCompletedRitual(CardInstance card) // 결제를 마친 완성된 의식의 공유 행동력과 적 전체 약화
+    { // 같은 실제 카드 한 번의 공유 보상 및 적 상태 처리 시작
+        int gained = sharedActionPoints.Gain(card.ScaleQuantitativeEffect(card.SourceData.SecondaryEffectValue)); // 일반 공유 상한 안에서 실제 행동력 한 번 회복
+        if (gained > 0) // 실제로 회복한 행동력이 있는지 확인
+        { // 시전자 행동력 피드백 시작
+            FindUnitView(card.OwnerUnit)?.ShowStatusFeedback($"행동력 +{gained}", true); // 상한을 반영한 실제 행동력 회복만 화면 표시
+        } // 시전자 행동력 피드백 종료
+        int applied = gained; // 실제 행동력과 원래 적용한 적 상태의 정상 합계 초기화
+        int amount = card.ScaleQuantitativeEffect(1); // 원본의 한 점 공격력 약화에 카드의 실제 효과 강화 적용
+        BattleStatusEffectType type = card.StatusEffectType; // 등록한 원본의 기존 공격력 감소 상태
+        foreach (var target in CollectValidTargets(card, enemyUnitViews)) // 도착한 시점에 살아 있는 실제 전체 적의 고유 목록
+        { // 기존 상태 면역과 두 적 턴의 약화 처리 시작
+            var result = target.ApplyStatusEffect(type, amount, card.StatusDuration, 1, card.OwnerUnit); // 이전 상태의 면역 및 일반 지속과 같은 공격력 감소 적용
+            FindUnitView(target)?.ShowStatusApplyFeedback(type, result); // 실제 적용 또는 면역의 원래 전투 화면 표시
+            applied += result is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? 1 : 0; // 성공한 적별 약화만 로그에 합산
+        } // 기존 상태 면역과 두 적 턴의 약화 처리 종료
+        return applied; // 실제 공유 행동력과 성공한 상태 개수 반환
+    } // 같은 실제 카드 한 번의 공유 보상 및 적 상태 처리 종료
+
     private void ResolveWandArithmeticAfterUse(CardInstance card) // 사용을 정상 완료한 지팡이 카드의 시전자 후속 상태
     { // 지팡이 시전 결과 처리 시작
         var owner = card.OwnerUnit; // 실제 카드를 사용한 원래 시전자 조회
@@ -1210,6 +1243,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             var result = card.OwnerUnit.ApplyStatusEffect(BattleStatusEffectType.Evasion, value, card.StatusDuration, 1, card.OwnerUnit); // 공격 명중과 무관하게 한 적 턴 회피율 증가
             FindUnitView(card.OwnerUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.Evasion, result); // 실제 회피 상승 표시
         } // 자기 회피 처리 종료
+        value = card.ScaleQuantitativeEffect(value); // 회피 비율 뒤의 고정 방어와 회복 및 일반 드로우용 수치
         if (card.SourceData.SwordRule == SwordCardRule.RageRelease || card.SourceData.SwordRule == SwordCardRule.BattlefieldResolve) // 이번 턴부터 세는 아군 공격력 강화 확인
         { // 아군별 보조 효과 시작
             foreach (var target in targets) // 실제 카드를 받은 생존 대상 순회
@@ -1873,7 +1907,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 원래 공용 행동력의 현재 상한 회복 종료
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate) // 실제로 지불한 행동력만큼 전체 생존 회복의 개별 대상 확인
         { // 수레바퀴의 실제 회복 시작
-            int baseHealing = (int)Math.Min(int.MaxValue, (long)cardInstance.EffectValue * paidActionPoints); // 받아들인 전액 비용마다 원본 회복량을 계산한 기본값
+            int baseHealing = cardInstance.ScaleQuantitativeEffect(SwordCardCombat.ScaleByActionPoints(paidActionPoints, cardInstance.EffectValue)); // 지불 전체와 별개인 기본 광역 회복량만 강화
             return RestoreDirectCardHealth(cardInstance, targetUnit, GetDirectCardHealing(cardInstance, baseHealing)); // 원래 직접 회복의 시전자 및 대상 보정과 최대 체력 제한 적용
         } // 수레바퀴의 실제 회복 종료
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.Contract) // 앞서 실제 체력 비용을 지불한 자기 대상 계약 확인
@@ -1927,7 +1961,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 실제 지정한 아군의 활성 강화 연장 종료
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.ToolMaintenance) // 선택한 아군의 실제 다음 타격을 준비하는 카드 확인
         { // 원래 아군의 독립 한 번 강화 부여 시작
-            int value = cardInstance.SourceData.EffectValue; // 원본 도구 손질의 다음 유효 타격 가산값
+            int value = cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.EffectValue); // 시전 시점에 확정할 다음 실제 타격의 원래 가산값
             var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.ToolMaintenanceAttackUp, value, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 같은 원본 상태의 재시전 갱신과 최대 한 중첩
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.ToolMaintenanceAttackUp, result); // 원래 선택 아군의 실제 강화 결과 표시
             return result is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? value : 0; // 성공한 아군 적용의 원래 수치 반환
@@ -1935,8 +1969,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.Distribution) // 실제 사용한 분배의 선택 아군 효과 확인
         { // 한 아군에게 독립 전투 강화 및 약화 시작
             var view = FindUnitView(targetUnit); // 실제 상태 결과를 표시할 선택 아군 화면
-            int attack = cardInstance.SourceData.EffectValue; // 원본 분배가 정한 공격력 증가
-            int defenseLoss = cardInstance.SourceData.SecondaryEffectValue; // 원본 분배가 정한 물리 방어 감소
+            int attack = cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.EffectValue); // 원본 분배가 정한 고정 공격력 증가
+            int defenseLoss = cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue); // 원본 분배가 정한 고정 물리 방어 감소
             var attackResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.DistributionAttackUp, attack, 1, 1, cardInstance.OwnerUnit); // 일반 상태 분류를 따르는 비중첩 전투 공격 강화 부여
             view?.ShowStatusApplyFeedback(BattleStatusEffectType.DistributionAttackUp, attackResult); // 실제 강화의 부여 또는 갱신 결과 표시
             var defenseResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.DistributionPhysicalDefenseDown, defenseLoss, 1, 1, cardInstance.OwnerUnit); // 별도 상태 면역과 정화를 따르는 비중첩 물리 방어 약화
@@ -2019,7 +2053,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 BattleUnitRuntime additional = worldCoordination.FindAdditionalTarget(cardInstance.OwnerUnit, targetUnit); // 체력 비율이 가장 낮은 다른 생존 아군 조회
                 if (additional != null) // 유효한 추가 아군 확인
                 { // 추가 아군 방어 적용 시작
-                    gainedBlock += additional.GainBlock(cardInstance.SourceData.SecondaryEffectValue); // 다른 아군의 실제 방어도 획득량 합산
+                    gainedBlock += additional.GainBlock(cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 다른 아군의 실제 방어도 획득량 합산
                 } // 추가 아군 방어 적용 종료
             } // 추가 아군 방어 종료
             return gainedBlock; // 전체 실제 방어도 획득량 반환
@@ -2040,12 +2074,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.EffectType == CardEffectType.ProtectAttackTarget) // 공격 예고 대상 보호 효과 확인
         { // 여사제 전용 효과 시작
             BattleStatusEffectApplyResult physicalResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 물리 방어력 증가
-            BattleStatusEffectApplyResult magicalResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.MagicalResistanceUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 마법 저항력 증가
+            BattleStatusEffectApplyResult magicalResult = targetUnit.ApplyStatusEffect(BattleStatusEffectType.MagicalResistanceUp, cardInstance.EffectValueWithoutSageRune, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 마법 저항력 증가
             BattleUnitView targetView = FindUnitView(targetUnit); // 보호 대상 화면 조회
             targetView?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseUp, physicalResult); // 물리 방어 효과 표시
             targetView?.ShowStatusApplyFeedback(BattleStatusEffectType.MagicalResistanceUp, magicalResult); // 마법 저항 효과 표시
             int physicalAmount = physicalResult == BattleStatusEffectApplyResult.Applied || physicalResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 적용된 물리 방어 수치
-            int magicalAmount = magicalResult == BattleStatusEffectApplyResult.Applied || magicalResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 적용된 마법 저항 수치
+            int magicalAmount = magicalResult == BattleStatusEffectApplyResult.Applied || magicalResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValueWithoutSageRune : 0; // 적용된 마법 저항의 원래 비율
             return physicalAmount + magicalAmount; // 전체 보호 효과 수치 반환
         } // 여사제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도와 방어 효과 확인
@@ -2095,15 +2129,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                     targetUnit.NotifyStatusEffectsChanged(); // 실제 남은 기간의 기존 상태 변경 알림
                 } // 남은 출혈 표시 갱신 종료
             } // 붕대 매듭의 대상별 출혈 감소 종료
-            int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
+            int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
             if (cardInstance.SourceData.PentacleRule == PentacleCardRule.GoldenRule) // 원래 비용을 지불한 뒤 남은 실제 공용 행동력의 광역 회복 확인
             { // 전체 대상에 동일한 기본 회복량 적용 시작
-                baseHealing = SwordCardCombat.ScaleByActionPoints(remainingActionPointsAfterPayment, cardInstance.EffectValue); // 다른 대상 처리 중의 행동력 변화와 별개인 기본 회복
+                baseHealing = cardInstance.ScaleQuantitativeEffect(SwordCardCombat.ScaleByActionPoints(remainingActionPointsAfterPayment, cardInstance.EffectValue)); // 비용 뒤 잔여로 계산한 기본 회복의 마지막 수치 강화
             } // 전체 대상에 동일한 기본 회복량 적용 종료
             bool grailMiracle = cardInstance.SourceData.CupRule == CupCardRule.GrailMiracle; // 실제 지불량을 읽는 성배 회복 확인
             if (grailMiracle) // 가변 회복의 배수 적용 여부 확인
             { // 성배의 기적 회복량 계산 시작
-                baseHealing = (int)Math.Min(int.MaxValue, (long)baseHealing * paidActionPoints); // 실제로 지불한 행동력과 정수 상한을 반영한 기본 치유
+                baseHealing = cardInstance.ScaleQuantitativeEffect(SwordCardCombat.ScaleByActionPoints(paidActionPoints, baseHealing)); // 실제 지불을 거친 최종 기본 회복만 증가
             } // 성배의 기적 회복량 계산 종료
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
             int restored = RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 기존 회복 유물과 실제 체력 상한 반영
@@ -2118,12 +2152,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 실제 대상의 약화 제거 종료
             if (cardInstance.SourceData.CupRule == CupCardRule.CelestialGrace) // 최대 체력과 무관한 은총의 긍정 강화 확인
             { // 이번 턴 아군 공격력 처리 시작
-                var result = targetUnit.ApplyCurrentAllyTurnAttackPower(cardInstance.SourceData.SecondaryEffectValue, cardInstance.OwnerUnit); // 장기 공격력과 독립인 실제 이번 턴 강화
+                var result = targetUnit.ApplyCurrentAllyTurnAttackPower(cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue), cardInstance.OwnerUnit); // 장기 공격력과 독립인 실제 이번 턴 강화
                 FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.AttackPowerUp, result); // 적용된 공격력 강화 표시
             } // 이번 턴 아군 공격력 처리 종료
             if (cardInstance.SourceData.CupRule == CupCardRule.WaterOfLife) // 생명수의 직접 회복과 별개인 다음 턴 효과 확인
             { // 생명수 예약 회복 처리 시작
-                var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.DelayedHealing, cardInstance.SourceData.SecondaryEffectValue, 1, int.MaxValue, cardInstance.OwnerUnit); // 다음 아군 턴 시작에 한 번 지급할 회복량 예약
+                var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.DelayedHealing, cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue), 1, int.MaxValue, cardInstance.OwnerUnit); // 다음 아군 턴 시작에 한 번 지급할 회복량 예약
                 FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.DelayedHealing, result); // 직접 회복량과 구별되는 예약 상태 표시
             } // 생명수 예약 회복 처리 종료
             return restored; // 카드의 실제 체력 회복량 반환
@@ -2472,7 +2506,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 무작위 피해 굴림 종료
         if (echoPlan.Percent > 0) // 별도 명중에 성공한 순수 마법 반향 확인
         { // 원래 카드의 후속 효과를 거치지 않는 실제 반향 피해 시작
-            int printedBonus = baseOverride.HasValue ? 0 : SwordCardCombat.GetConditionalWandDamageBonus(cardInstance, targetUnit); // 표식과 감전의 조건부 원본 및 굴린 원본 피해의 구분
+            int printedBonus = baseOverride.HasValue ? 0 : SwordCardCombat.GetConditionalWandDamageBonus(cardInstance, targetUnit, applySageRune: false); // 별도 반향이 참조하는 조건부 원래 피해 보존
             int echoedDamage = ScaleWandEchoDamage(cardInstance, baseOverride, echoPlan.Paid, echoPlan.Percent, printedBonus); // 실제 지불량과 확인한 원본 기본 피해의 비율 내림
             return targetUnit.TakeWandEchoDamage(echoedDamage, cardInstance.OwnerUnit).AppliedDamage; // 표준 저항과 방어도의 실제 체력 피해만 정산
         } // 원래 카드의 후속 효과를 거치지 않는 실제 반향 피해 종료
@@ -2480,10 +2514,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 이번 원래 피해 굴림의 일회 강화 시작
             baseOverride = CardInstance.ApplyEnchantment(baseOverride.Value, cardInstance.EnchantmentPercent); // 난수 횟수와 별개로 선택된 원래 기본 수치만 변경
         } // 이번 원래 피해 굴림의 일회 강화 종료
-        long printedDamage = baseOverride.HasValue ? (long)baseOverride.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 가변 또는 고정 카드의 공격력 합산
+        long printedDamage = baseOverride.HasValue ? (long)cardInstance.ScaleQuantitativeEffect(baseOverride.Value) + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 독립 반향 이후의 원본 가변 피해와 별도 시전자 공격력 합산
         if (cardInstance.SourceData.CupRule == CupCardRule.HolyWater && targetUnit.EnemySource?.IsUndead == true) // 불사형 추가 피해 카드가 실제 명중한 대상 확인
         { // 언데드 대상 추가 피해 시작
-            printedDamage += cardInstance.SourceData.SecondaryEffectValue; // 방어와 저항 적용 전 같은 불사형 추가 피해 가산
+            printedDamage += cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue); // 실제 불사 대상의 원래 별도 피해 입력 강화
         } // 언데드 대상 추가 피해 종료
         int baseDamage = (int)Math.Min(int.MaxValue, printedDamage + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
@@ -2517,7 +2551,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         ApplyVoidCollapseFailureCost(cardInstance, damageResult.WasTargetDefeated && targetUnit.IsDead); // 이번 원래 타격에 실제로 쓰러진 적인지 판별한 실패 비용 처리
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
         { // 마력 흡수 회복 시작
-            int regained = sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 기존 최대치 안에서 실제 현재 행동력 한 점 회복
+            int regained = sharedActionPoints.Gain(cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 기존 확률 성공 뒤 원래 카드의 실제 행동력 획득
             if (regained > 0) // 실제로 행동력을 되찾았는지 확인
             { // 회복 표시 시작
                 FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"행동력 +{regained}", true); // 소유자의 실제 행동력 회복 수치 표시
@@ -2526,11 +2560,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.SourceData.WandRule == WandCardRule.MentalShock && targetUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 직접 타격 뒤 실제 생존 적 확인
             !turnRuntime.IsBattleEnded && cardInstance.SourceData.SecondaryEffectValue > 0) // 진행 중인 원래 타격과 원본 정신력 감소 수치 확인
         { // 정신 충격의 명중 후 정신력 감소 시작
-            targetUnit.ChangeMental(-cardInstance.SourceData.SecondaryEffectValue, BattleMentalChangeReason.CardEffect, cardInstance.OwnerUnit); // 카드 소유자가 실제로 준 정신력 피해를 기존 전투 신호로 전달
+            targetUnit.ChangeMental(-cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue), BattleMentalChangeReason.CardEffect, cardInstance.OwnerUnit); // 원래 대상에게 준 정신력 피해의 양수 크기만 강화
         } // 정신 충격의 명중 후 정신력 감소 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.ExecutionerSword && healthBefore > 0 && damageResult.AppliedDamage == healthBefore && targetUnit.IsDead) // 이 카드의 직접 체력 피해로 적 처치 확인
         { // 처치 환급 시작
-            sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 공용 행동력 최대치 안에서 환급
+            sharedActionPoints.Gain(cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 실제 카드를 통한 처치 보상을 공용 상한 안에서 지급
         } // 처치 환급 종료
         bool voidHand = cardInstance.SourceData.WandRule == WandCardRule.VoidHand && targetUnit.Team == BattleTeam.Enemy && !damageResult.WasDamageNullified; // 살아 있는 적에게 들어간 공허의 손의 피해 무효 여부 확인
         if (!targetUnit.IsDead && (voidHand || cardInstance.SourceData.SwordRule == SwordCardRule.JudgmentSlash || cardInstance.SourceData.CupRule == CupCardRule.JudgmentWater)) // 살아 있는 적의 실제 명중 뒤 일반 강화 하나 해제
@@ -2543,7 +2577,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중한 카드의 기존 강화 해제 종료
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
         { // 돌진 후속 효과 시작
-            targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 피격 대상의 다음 턴 물리 방어 약화 예약
+            targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 예약 시점의 카드 원본 물리 약화 수치 확정
         } // 돌진 후속 효과 종료
         bool hasAuthoredBlind = cardInstance.StatusEffectType == BattleStatusEffectType.Blind && cardInstance.SourceData.OptionalBlindChancePercent >= 0; // 별도 판정을 사용하도록 명시한 공격 실명 확인
         if (!targetUnit.IsDead && !hasAuthoredBlind && cardInstance.SourceData.SwordRule == SwordCardRule.FlameSlash) // 명중한 화염 참격의 일반 상태만 처리
@@ -2563,7 +2597,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             appliedStatus = cardInstance.StatusEffectType; // 원본이 지정한 감전과 기절 및 일반 지팡이 상태 종류 확인
             statusResult = appliedStatus == BattleStatusEffectType.Stagger && cardInstance.SourceData.CardId == "CRD_SHEET_FROST_PRISON" // 시트에 행동력 감소가 있는 실제 서리 감옥 명중 상태
                 ? targetUnit.ApplyFrostPrisonActionLoss(cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit) // 단일 네이티브 경직과 해당 상태의 원본 출처
-                : BattleSupplyRelics.ApplyDirectHitStatus(targetUnit, cardInstance.OwnerUnit, ref appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 다른 지팡이 및 유효 기계 출혈 치환의 기존 면역과 피드백
+                : BattleSupplyRelics.ApplyDirectHitStatus(targetUnit, cardInstance.OwnerUnit, ref appliedStatus, cardInstance.ScaleStatusAmount(appliedStatus, cardInstance.SourceData.SecondaryEffectValue), cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 확률과 면역 뒤의 실제 고정 상태 수치만 강화
             if (appliedStatus == BattleStatusEffectType.ActionSpeedDown && statusResult is (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked)) // 실제 명중으로 적의 속도가 느려졌는지 확인
             { // 확정된 적 행동 순서 갱신 시작
                 enemyActions.RefreshActionOrder(); // 같은 행동과 대상 및 원래 속도 난수를 보존한 순서 변경
@@ -2581,7 +2615,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SuppressionStrike && !targetUnit.IsDead) // 억제 타격이 명중한 생존 적 확인
         { // 적 공격력 약화 처리 시작
             appliedStatus = BattleStatusEffectType.AttackPowerDown; // 기존 적 공격력 감소 상태 사용
-            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 대상의 두 적 턴 동안의 공격력 약화 부여
+            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.ScaleStatusAmount(appliedStatus, cardInstance.SourceData.SecondaryEffectValue), cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 대상 약화의 고정 수치 강화와 원래 적 턴 기간 유지
         } // 적 공격력 약화 처리 종료
         if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
         { // 검 전용 상태 피드백 시작

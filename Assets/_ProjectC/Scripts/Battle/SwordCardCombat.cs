@@ -63,6 +63,10 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 추적 대상 없음 시작
             return false; // 카드 사용과 행동력 지불 차단
         } // 추적 대상 없음 종료
+        if (card.SourceData.PentacleRule == PentacleCardRule.TimeCoin && (!turn.CanQueueTimeCoinTurn || card.SourceData.EffectValue <= 0)) // 남은 실제 적 턴 사이의 중복 예약과 잘못된 원본 대가 확인
+        { // 현재 차례의 시간 동전 입력 거절 시작
+            return false; // 기존 행동력과 실제 원본 카드 위치를 결제 전 보존
+        } // 현재 차례의 시간 동전 입력 거절 종료
         if (card.SourceData.PentacleRule == PentacleCardRule.ResourceCycle && !turn.HasRecoverableBattleExclusion) // 실제 전투 제외에 회수할 대상이 있는지 확인
         { // 되돌릴 물리 카드가 없는 비용 방지 시작
             return false; // 원본 사용과 현재 행동력 지불 모두 제외
@@ -169,7 +173,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return living[selected]; // 이번 타격을 받을 생존 적 반환
     } // 실제 타격 대상 결정 종료
 
-    internal static int GetConditionalWandDamageBonus(CardInstance card, BattleUnitRuntime target) // 실제 지팡이의 대상별 원본 추가 피해 계산
+    internal static int GetConditionalWandDamageBonus(CardInstance card, BattleUnitRuntime target, bool applySageRune = true) // 실제 원본과 별도 재생의 조건부 피해 계산
     { // 표식 또는 감전 가산 확인 시작
         bool matches = card.SourceData.WandRule switch // 카드마다 사용할 활성 조건 선택
         { // 대상 약화 조건 선택 시작
@@ -177,7 +181,8 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             WandCardRule.EyeOfStorm => target?.GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false }, // 각 타격 직전 현재 활성 감전
             _ => false // 조건부 추가 피해가 없는 일반 지팡이
         }; // 대상 약화 조건 선택 종료
-        return matches ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 조건별 음수 없는 피해 가산량 반환
+        int amount = matches ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 조건부 원본 피해의 수치와 기존 음수 없는 경계
+        return applySageRune ? card.ScaleQuantitativeEffect(amount) : amount; // 별도 재생이 읽는 원래 원본의 마법 피해 보존
     } // 표식 또는 감전 가산 확인 종료
 
     internal static int ScaleByActionPoints(int balance, int multiplier) // 잔여 또는 실제 납부한 행동력 배수의 공용 계산
@@ -189,15 +194,15 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
     { // 원본 피해 계산 시작
         if (card.SourceData.SpendsAllActionPoints && card.EffectType == CardEffectType.Damage) // 실제 지불량에 연동하는 피해 카드 확인
         { // 가변 피해 배수 계산 시작
-            return (int)Math.Clamp((long)paid * card.EffectValue, 0L, int.MaxValue); // 비용과 원본 배수의 곱을 실제 피해 상한에 맞춤
+            return card.ScaleQuantitativeEffect(ScaleByActionPoints(paid, card.EffectValue)); // 행동력은 그대로 쓰고 가변 기본 피해의 최종 수치만 강화
         } // 가변 피해 배수 계산 종료
         switch (card.SourceData.SwordRule) // 카드별 일반 공격의 조건부 수치 확인
         { // 피해 종류 선택 시작
             case SwordCardRule.BloodEdge: // 출혈 중인 적의 추가 피해
-                int bonus = target?.GetStatusEffect(BattleStatusEffectType.Bleed) != null ? card.SourceData.SecondaryEffectValue : 0; // 타격 직전 출혈 유무 확인
+                int bonus = target?.GetStatusEffect(BattleStatusEffectType.Bleed) != null ? card.ScaleQuantitativeEffect(card.SourceData.SecondaryEffectValue) : 0; // 실제 출혈 대상의 원래 고정 피해 가산
                 return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + bonus); // 기본 공격과 출혈 추가 수치 합산
             case SwordCardRule.Counterattack: // 직전 적 턴 이후 체력 손실 반격
-                return card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue); // 실제 잃은 체력의 절반 내림
+                return card.ScaleQuantitativeEffect(card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue)); // 고정 비율대로 계산한 실제 반격 피해량 강화
             default: // 표기 피해의 일반 공격
                 return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + GetConditionalWandDamageBonus(card, target)); // 타격과 미리보기의 원본 및 대상별 상태 가산 합계
         } // 피해 종류 선택 종료
@@ -244,7 +249,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 대상 사망 처리 시작
             return BattleStatusEffectType.None; // 전투불능 대상의 신규 상태 차단
         } // 대상 사망 처리 종료
-        result = BattleSupplyRelics.ApplyDirectHitStatus(target, card.OwnerUnit, ref type, value, card.StatusDuration, 1, corrosionFamily: card.SourceData.IsCorrosionStatus && card.StatusEffectType == type); // 확률을 통과한 검의 실제 부여와 기계 출혈 치환 처리
+        result = BattleSupplyRelics.ApplyDirectHitStatus(target, card.OwnerUnit, ref type, card.ScaleStatusAmount(type, value), card.StatusDuration, 1, corrosionFamily: card.SourceData.IsCorrosionStatus && card.StatusEffectType == type); // 이전 확률을 거친 원래 고정 상태만 강화
         return type; // 피격과 면역 피드백 종류 반환
     } // 후속 상태 처리 종료
 

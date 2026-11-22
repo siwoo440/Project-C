@@ -49,5 +49,8 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     RunawayRuneDevice, // 원본 결제 직후 잔여 행동력의 광역 마법 피해
     GoldenRule, // 원본 결제 직후 잔여 행동력의 광역 회복
     RewriteFate, // 기존 손패의 소비와 서로 다른 전설 카드 두 장 생성
-    InfiniteContract // 전액 행동력과 시전자 체력을 함께 쓰는 무한 계약
+    InfiniteContract, // 전액 행동력과 시전자 체력을 함께 쓰는 무한 계약
+    SageRune, // 현재 아군 턴의 카드 적용 수치 강화와 행동력
+    TimeCoin, // 적 턴 이전 추가 아군 턴과 행동력 감소
+    CompletedRitual // 공유 드로우 및 행동력과 생존 적 약화
 } // 직렬화 규칙 종료
