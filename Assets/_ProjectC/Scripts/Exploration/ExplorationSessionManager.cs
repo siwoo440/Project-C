@@ -833,36 +833,19 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         int experienceReward =
             encounterData.CharacterExperienceReward; // 현재 조우 경험치 보상 저장
 
-        int bonusPercent = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.VictoryGoldPercent)?.EffectValue ?? 0; // 보유한 동전지갑의 승리 골드 증가율
-        int goldReward = (int)System.Math.Min(int.MaxValue, (long)encounterData.GoldReward * (100L + bonusPercent) / 100L); // 기본 골드에만 비율 가산 후 소수점 버림
-        goldReward = Mathf.Max(0, goldReward - previousEscapeGold); // 이미 도주에서 받은 골드를 실제 승리 지급량에서 차감
-
-        int baseScrewReward =
-            encounterData.ScrewReward; // 현재 조우 기본 나사 보상 저장
-
-        int baseIronPlateReward =
-            encounterData.IronPlateReward; // 현재 조우 기본 철판 보상 저장
-
-        int baseWireReward =
-            encounterData.WireReward; // 현재 조우 기본 전선 보상 저장
-
-        int rewardedScrew =
-            facilityManager.ApplyResourceRewardBonus(baseScrewReward); // 실제 나사 획득량 계산
-
-        int rewardedIronPlate =
-            facilityManager.ApplyResourceRewardBonus(baseIronPlateReward); // 실제 철판 획득량 계산
-
-        int rewardedWire =
-            facilityManager.ApplyResourceRewardBonus(baseWireReward); // 실제 전선 획득량 계산
+        var inventory = RelicRunManager.Instance?.Inventory; // 현재 정상 보유 유물의 공통 조회
+        int pursePercent = inventory?.FindEffect(RelicEffectType.VictoryGoldPercent)?.EffectValue ?? 0; // 기존 동전지갑의 골드 가산율
+        int ledgerPercent = inventory?.FindEffect(RelicEffectType.CaravanSecretLedgerVictoryTrade)?.EffectValue ?? 0; // 비밀장부의 네 승리 재화 가산율
+        int goldReward = ApplyVictoryResourceBonus(encounterData.GoldReward, (long)pursePercent + ledgerPercent); // 기본 골드에 두 원본 배율을 합산
+        goldReward = Mathf.Max(0, goldReward - previousEscapeGold); // 앞서 도주에서 실제 지급한 골드 차감
+        int rewardedScrew = facilityManager.ApplyResourceRewardBonus(ApplyVictoryResourceBonus(encounterData.ScrewReward, ledgerPercent)); // 나사의 기본 보상 증가 뒤 창고 계산 한 번
+        int rewardedIronPlate = facilityManager.ApplyResourceRewardBonus(ApplyVictoryResourceBonus(encounterData.IronPlateReward, ledgerPercent)); // 철판의 기본 보상 증가 뒤 창고 계산 한 번
+        int rewardedWire = facilityManager.ApplyResourceRewardBonus(ApplyVictoryResourceBonus(encounterData.WireReward, ledgerPercent)); // 전선의 기본 보상 증가 뒤 창고 계산 한 번
 
         int appliedExperience =
             progressionManager.AddExperience(experienceReward); // 캐릭터 경험치 지급
 
-        resourceManager.AddClearReward(
-            goldReward,
-            baseScrewReward,
-            baseIronPlateReward,
-            baseWireReward); // 기존 경로로 실제 클리어 자원 지급
+        resourceManager.AddResources(goldReward, rewardedScrew, rewardedIronPlate, rewardedWire); // 보상 화면과 합계의 동일 수치를 추가 설비 계산 없이 지갑에 지급
 
         runExperienceGained += appliedExperience; // 실제 경험치 런 합계 누적
         runGoldGained += goldReward; // 실제 골드 런 합계 누적
@@ -890,6 +873,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             $"전선 +{rewardedWire} / " +
             $"런 누적 Gold {runGoldGained}"); // 실제 지급량과 런 누적 로그
     }
+
+    private static int ApplyVictoryResourceBonus(int amount, long percent) // 유물의 실제 승리 배율과 두 원본 합계 처리
+    { // 소수점 버림과 정수 범위 보정 시작
+        return (int)System.Math.Min(int.MaxValue, amount * (100m + percent) / 100m); // 두 유물의 큰 합계에도 중간 곱셈 손실 없는 지급 상한
+    } // 소수점 버림과 정수 범위 보정 종료
 
     private void OnDestroy() // 탐사 관리자 제거 처리
     {
