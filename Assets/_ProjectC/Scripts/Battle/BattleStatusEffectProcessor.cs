@@ -60,7 +60,11 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             if (statusEffect.EffectType == BattleStatusEffectType.Poison) // 중독 상태 확인
             { // 중독 처리 시작
                 int bonus = !statusEffect.IsExpired && statusEffect.HasAlliedPoisonSource ? BattleSupplyRelics.Find(RelicEffectType.DriedCactusSapPoisonDamageBonus)?.EffectValue ?? 0 : 0; // 실제 활성 아군 중독 중첩에만 보유 수액의 고정 피해 가산
-                int damage = (int)System.Math.Min(int.MaxValue, (long)statusEffect.EffectiveValue + bonus); // 중독 수치나 자연 수명을 바꾸지 않는 이번 실제 피해
+                var battle = runtimeUnit.DamageRelicBattle; // 중독 피해를 받는 유닛의 실제 진행 전투
+                var reed = !statusEffect.IsExpired && runtimeUnit.Team == BattleTeam.Ally && battle is { CurrentRound: > 0, IsBattleEnded: false } // 활성 중독을 받는 실제 교전의 생존 아군 확인
+                    ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.WetReedKnotPoisonDamageReduction) : null; // 현재 전투에 보유한 젖은 갈대매듭 조회
+                int reduction = System.Math.Max(0, reed?.EffectValue ?? 0); // 중독 피해에서 실제로 뺄 음수 없는 고정값
+                int damage = (int)System.Math.Clamp((long)statusEffect.EffectiveValue + bonus - reduction, 0L, int.MaxValue); // 중독 수명과 수치를 유지한 실제 피해의 영점과 정수 상한
                 BattleDamageResult damageResult = runtimeUnit.TakeDamage(damage, BattleDamageType.None); // 기존 일반 피해와 실제 방어도 정산
                 appliedAmount = damageResult.AppliedDamage; // 실제 중독 피해 저장
                 wasDefeated = damageResult.WasTargetDefeated; // 실제 중독 타격으로 쓰러진 결과 저장
@@ -142,7 +146,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             } // 사망 처리 종료
             if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance || // 적 턴 종료에만 차감하는 기존 영원의 방패
                 effect.EffectType == BattleStatusEffectType.SanctuaryWard || effect.EffectType == BattleStatusEffectType.FearResistance || // 성역과 찬가의 실제 적 턴 종료 차감
-                effect.EffectType == BattleStatusEffectType.PainDistribution) // 고통 분산의 두 실제 적 턴 종료만 계산
+                effect.EffectType == BattleStatusEffectType.PainDistribution || // 고통 분산의 두 실제 적 턴 종료만 계산
+                effect.EffectType == BattleStatusEffectType.CanyonWindEvasionUp) // 아군 개별 종료와 무관한 실제 적 완료 차례 전용 회피
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료

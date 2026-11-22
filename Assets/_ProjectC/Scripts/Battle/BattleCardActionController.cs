@@ -36,6 +36,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int cupHealingBonusForCurrentCard; // 먼저 성공한 성배 카드의 모든 회복 대상에게 주는 가산량
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
     private readonly HashSet<BattleUnitRuntime> recoveryDroneHookTargets = new HashSet<BattleUnitRuntime>(); // 원래 카드 한 장의 실제 명중 대상별 난수 기록
+    private readonly HashSet<BattleUnitRuntime> obsidianBladeShardTargets = new HashSet<BattleUnitRuntime>(); // 한 검 카드에서 이미 출혈을 판정한 대상
     private readonly BattleSupplyRelics supplyRelics = new BattleSupplyRelics(); // 이번 전투의 심장핀과 구슬 발동 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int preparedWandDamage; // 사용이 확정된 지팡이 한 장의 모든 명중에 더할 피해
@@ -899,6 +900,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 첫 회복 카드 처리 종료
         turnRuntime.BeginFirstAllyAttack(cardInstance); // 실제 확정 피해 카드의 첫 아군 공격 선언과 한 번 가산 예약
         recoveryDroneHookTargets.Clear(); // 새로 결제를 마친 카드의 대상별 갈고리 판정 초기화
+        obsidianBladeShardTargets.Clear(); // 결제를 마친 새 카드의 출혈 판정 대상 초기화
         suitHitRelics.BeginCard(cardInstance, turnRuntime.CurrentRound, RelicRunManager.Instance?.Inventory); // 이번 피해 카드의 첫 직접 명중 보너스 예약
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
@@ -2207,6 +2209,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 선택 실명 미적용 종료
             BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 일반 상태와 명시 침식 상태의 실제 결과 적용
             ApplyCrystalMarkDefenseLoss(cardInstance, targetUnit, cardInstance.StatusEffectType, applyResult); // 명시한 실제 카드 표식의 적 방어 감소
+            ApplyFlameVeinBurnResistance(cardInstance, targetUnit, cardInstance.StatusEffectType, applyResult); // 일반 상태 카드의 실제 화상 성공 처리
             bool includesCastTurn = cardInstance.StatusEffectType is BattleStatusEffectType.SwordSaintStance or BattleStatusEffectType.MiracleEcho or BattleStatusEffectType.MagicAttackPowerUp or BattleStatusEffectType.WandEcho or BattleStatusEffectType.WandOverload; // 실제 시전 턴 종료부터 만료할 반향 및 과부하 포함
             if (includesCastTurn && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 실제 신규 적용 또는 갱신 확인
             { // 시전 턴부터 차감 시작
@@ -2588,6 +2591,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 화상 부여 시작
             var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 명시 침식 여부를 보존한 화염 카드 상태 적용
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
+            ApplyFlameVeinBurnResistance(cardInstance, targetUnit, cardInstance.StatusEffectType, result); // 실제 화염 참격으로 붙은 화상의 별도 저항 감소
         } // 화상 부여 종료
         if (hasAuthoredBlind && TryRollAuthoredBlind(cardInstance, targetUnit, cardInstance.SourceData.SecondaryEffectValue)) // 실제 명중 카드에 명시한 확률 실명 한 번 확인
         { // 명중 후 선택 실명 처리 시작
@@ -2624,7 +2628,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
         { // 검 전용 상태 피드백 시작
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(appliedStatus, statusResult); // 명중 후 상태 부여 결과 표시
+            ApplyFlameVeinBurnResistance(cardInstance, targetUnit, appliedStatus, statusResult); // 명중 후 카드에 적힌 화상 성공 여부 처리
         } // 검 전용 상태 피드백 종료
+        ApplyObsidianBladeShard(cardInstance, targetUnit); // 원래 직격과 후속 상태 뒤 살아 있는 검 카드 대상의 판정
         if (SunChainAttack.IsChainCard(cardInstance) && !turnRuntime.HasPendingBossPhaseTransition) // 보스 전환이 예약되지 않은 태양 연속 공격 확인
         { // 태양 추가 공격 시작
             ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용
@@ -2822,6 +2828,39 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         var result = target.ApplyStatusEffect(BattleStatusEffectType.ActionPointDown, hook.EffectValue, hook.StatusDuration, 1, card.OwnerUnit); // 다음 실제 적 행동 취소의 원래 면역과 수명 적용
         FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.ActionPointDown, result); // 실제 적용이나 면역 결과의 전투 표시
     } // 실제 아군 카드와 적중 대상 확인 종료
+
+    private void ApplyObsidianBladeShard(CardInstance card, BattleUnitRuntime target) // 실제 검 직격 대상의 흑요석 칼편 출혈 처리
+    { // 직격 뒤 출혈 판정 시작
+        if (card.CardType != CardType.Sword || card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } || // 살아 있는 아군이 쓴 실제 검 카드 확인
+            target is not { Team: BattleTeam.Enemy, IsDead: false } || !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition) // 같은 원본 턴과 살아 있는 적의 실제 명중 확인
+        { // 출혈을 시도할 수 없는 직격 처리 시작
+            return; // 유물과 난수 사용 없이 원래 처리 계속
+        } // 출혈을 시도할 수 없는 직격 처리 종료
+        if (turnRuntime.DamageRelicInventory?.FindEffect(RelicEffectType.ObsidianBladeShardSwordBleed) is not { EffectValue: > 0, StatusDuration: > 0, TriggerChancePercent: > 0 } shard || // 실제 출혈 유물 데이터와 유효 수치 확인
+            !obsidianBladeShardTargets.Add(target) || !supplyRelics.RollOptionalStatus(target, shard.TriggerChancePercent, BattleStatusEffectType.Bleed, card.OwnerUnit, authoredCardEffect: false)) // 같은 검 카드의 살아 있는 대상별 최초 확률 판정
+        { // 미장착 및 중복 또는 실패 처리 시작
+            return; // 유물 출혈 없이 정상 타격 처리 계속
+        } // 미장착 및 중복 또는 실패 처리 종료
+        var type = BattleStatusEffectType.Bleed; // 흑요석 칼편의 원래 상태
+        var result = BattleSupplyRelics.ApplyDirectHitStatus(target, card.OwnerUnit, ref type, shard.EffectValue, shard.StatusDuration, 1); // 치환과 면역을 포함한 원래 상태 적용
+        FindUnitView(target)?.ShowStatusApplyFeedback(type, result); // 실제 출혈 또는 방어 약화 결과 표시
+    } // 직격 뒤 출혈 판정 종료
+
+    private void ApplyFlameVeinBurnResistance(CardInstance card, BattleUnitRuntime target, BattleStatusEffectType type, BattleStatusEffectApplyResult result) // 실제 카드 화상의 별도 마법 저항 감소
+    { // 화염 광맥 부스러기 확인 시작
+        if (type != BattleStatusEffectType.Burn || result is not (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked) || // 화상 종류와 실제 신규 적용 또는 갱신 확인
+            card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } || target is not { Team: BattleTeam.Enemy, IsDead: false } || // 실제 아군 카드 소유자와 살아 있는 적 확인
+            target.GetStatusEffect(BattleStatusEffectType.Burn) is not { IsExpired: false } || !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition) // 부여 뒤 남은 화상과 현재 정상 아군 턴 확인
+        { // 실제로 새로운 화상이 남지 않은 경우 처리 시작
+            return; // 추가 저항 감소 없이 카드 처리 계속
+        } // 실제로 새로운 화상이 남지 않은 경우 처리 종료
+        if (turnRuntime.DamageRelicInventory?.FindEffect(RelicEffectType.FlameVeinDebrisBurnResistance) is not { EffectValue: > 0, StatusDuration: > 0 } debris) // 실제 부스러기의 유효한 수치와 기간 확인
+        { // 적용할 화염 광맥 부스러기 미보유 처리 시작
+            return; // 원래 화상만 유지
+        } // 적용할 화염 광맥 부스러기 미보유 처리 종료
+        var resistance = target.ApplyStatusEffect(BattleStatusEffectType.FlameVeinResistanceDown, debris.EffectValue, debris.StatusDuration, 1, card.OwnerUnit); // 원래 침식과 별개인 마법 저항 약화 부여
+        FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.FlameVeinResistanceDown, resistance); // 실제 저항 감소 결과 표시
+    } // 화염 광맥 부스러기 확인 종료
 
     private void ApplyTurretShock(CardInstance card, BattleUnitRuntime target) // 이 공격에서 직접 명중한 첫 적의 감전 처리
     { // 현재 공격의 실제 첫 표적 검사 시작
@@ -3128,6 +3167,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 현재 공격의 실제 추가 적중 처리 시작
             ApplyRecoveryDroneHook(card, target, recoveryDroneMark); // 같은 원본 카드의 추가 명중이 표식 적에 들어간 경우 판정
             ApplyTurretShock(card, target); // 원래 공격이 모두 빗나갔다면 실제 첫 연쇄 적중에서 같은 기회 정산
+            ApplyObsidianBladeShard(card, target); // 원래 검 카드의 실제 연쇄 명중에도 같은 대상별 판정
         } // 현재 공격의 실제 추가 적중 처리 종료
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작

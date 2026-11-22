@@ -868,7 +868,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         vulnerability += damageType == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.IncomingMagicDamageUp)) : 0; // 마법 피해에만 별도 취약을 합산
         int vulnerableDamage = (int)Math.Clamp((long)damageAmount * (100L + vulnerability) / 100L, 0L, int.MaxValue); // 두 상태 합산 뒤 정수 범위의 실제 피해 내림
         int corrosion = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.CorrosionResistanceDown) is { IsExpired: false } corrosionStatus ? corrosionStatus.EffectiveValue : 0; // 실제 활성 실금석 약화의 경감 퍼센트포인트 조회
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, corrosion, magicalResistancePenetrationPercent); // 실제 피해와 예고에 같은 저항 수치 관통과 실금석 처리 전달
+        int flameVein = damageType == BattleDamageType.Magical && GetStatusEffect(BattleStatusEffectType.FlameVeinResistanceDown) is { IsExpired: false } flameVeinStatus ? flameVeinStatus.EffectiveValue : 0; // 활성 광맥 약화가 더하는 마법 피해 저항 감소
+        int magicalResistanceLoss = (int)Math.Min(100L, (long)corrosion + flameVein); // 마법 피해 저항 감소의 기존 합산 상한
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, magicalResistanceLoss, magicalResistancePenetrationPercent); // 실제 피해와 예고에 같은 저항 수치 관통과 실금석 처리 전달
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         var hostileBattle = enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 양쪽 실제 적 직접 타격의 원본과 생존 상태 확인
@@ -988,6 +990,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 최종 무효 피해 처리 시작
             return BattleDamageResult.Empty(damageType); // 원래 방어도와 상태에 영향 없는 결과
         } // 최종 무효 피해 처리 종료
+        var stoneThorn = enemyDirectAttack && Team == BattleTeam.Ally && sandBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } && // 다친 주 대상과 시작 당시 실제 활성 전투 확인
+            sourceUnit is { Team: BattleTeam.Enemy, IsDead: false } && sourceUnit.DamageRelicBattle == sandBattle // 같은 교전에 실제 살아 있는 적 직접 공격의 출처 확인
+            ? sandBattle.DamageRelicInventory?.FindEffect(RelicEffectType.StoneThornBundleRetaliation) : null; // 이 타격을 받을 때의 확정 돌가시 보유 원본
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
         bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
@@ -1104,16 +1109,19 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 알림 시작
             SettleDefeat(sourceUnit); // 사망 신호와 가능한 씨앗 부활을 순서대로 정산
         } // 사망 알림 종료
+        bool impactConsumedDefense = damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0; // 실제 한 번의 직격이 감소시킨 체력 또는 방어도 집계
         if (distribution != null) // 전환되지 않고 제대로 맞은 직접 타격의 파티 몫 확인
         { // 실제 고통 분산의 개별 조각 적용 시작
             for (int index = 0; index < distribution.Recipients.Count; index++) // 고정 출전 명단의 분담 순서 순회
             { // 분담받는 아군의 개별 무방어 피해 처리 시작
-                distribution.Recipients[index].TakeUnblockedDamage(distribution.GetPortion(index), damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 원래 타격과 연결하되 새 공격과 보호·분담을 발생시키지 않는 피해
+                int portion = distribution.Recipients[index].TakeUnblockedDamage(distribution.GetPortion(index), damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 무효와 보호를 반영한 실제 파티 분담 손실
+                impactConsumedDefense |= portion > 0; // 같은 원래 한 번의 공격에 속한 양수 체력 피해만 집계
             } // 분담받는 아군의 개별 무방어 피해 처리 종료
         } // 실제 고통 분산의 개별 조각 적용 종료
         if (sharedDamage > 0 && sharingAlly != null && !sharingAlly.IsDead) // 실제 분담 피해와 생존 상태 확인
         { // 분담 피해 적용 시작
-            sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 동일 직접 공격과 연결된 실제 분담 피해 적용
+            int portion = sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 같은 실제 타격에서 명확하게 감소시킨 동료 체력
+            impactConsumedDefense |= portion > 0; // 주 대상과 같은 한 번의 공격이 실제로 소비시킨 체력 반영
         } // 분담 피해 적용 종료
         if (!IsDead && damageResult.AppliedDamage > 0 && damageType == BattleDamageType.Physical && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 직접 물리 공격의 실제 생존 피해 확인
         { // 검격 반사 시작
@@ -1130,6 +1138,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             sourceUnit.TakeUnblockedDamage(GetStatusEffectValue(BattleStatusEffectType.ShieldCounter), BattleDamageType.None, this); // 공격자 방어와 방어도를 무시한 고정 반격
         } // 방패 반격 종료
         ReflectBrokenHeartDamage(sourceUnit, damageResult); // 원래 반격 뒤 아직 생존한 적에게 자신의 직접 실제 체력 손실 반사
+        ApplyStoneThornRetaliation(sourceUnit, sandBattle, stoneThorn, impactConsumedDefense); // 전환과 분담 및 기존 반격을 마친 실제 한 타격의 반격 한 번
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
     internal int PreviewUnblockedHealthDamage(int amount) // 분담 예고에서 같은 방어도 없는 보호와 체력 경감 사용
@@ -1280,6 +1289,19 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return Team == BattleTeam.Ally && battle is { IsBattleEnded: false, HasPendingBossPhaseTransition: false } // 끝났거나 전환 중인 교전 및 적 제외
             ? Math.Clamp(battle.DamageRelicInventory?.FindEffect(RelicEffectType.GlassDesertBrokenHeartReflectTrade)?.EffectValue ?? 0, 0, 100) : 0; // 실제 같은 보유 유물의 원본 비율
     } // 깨진 하트의 피해와 회복 범위 확인 종료
+
+    private void ApplyStoneThornRetaliation(BattleUnitRuntime attacker, BattleTurnRuntime battle, RelicData relic, bool positive) // 한 번의 실제 양수 적 직격 뒤 돌가시 반격 판정
+    { // 살아 있는 실제 공격자와 유효 피격의 반격 확인 시작
+        if (!positive || relic is not { EffectValue: > 0, TriggerChancePercent: > 0 } || // 실제 양수 손실과 활성 돌가시 원본 및 양수 확률 확인
+            attacker is not { Team: BattleTeam.Enemy, IsDead: false } || attacker.DamageRelicBattle != battle) // 타격 정산이 끝난 뒤에도 같은 교전의 생존 공격자인지 확인
+        { // 반격이 없는 실제 타격 결과 처리 시작
+            return; // 피해나 난수 없이 원래 결과만 보존
+        } // 반격이 없는 실제 타격 결과 처리 종료
+        if (relic.TriggerChancePercent >= 100 || UnityEngine.Random.Range(0, 100) < relic.TriggerChancePercent) // 양수 피해를 발생시킨 공격마다 단 한 번의 실제 백분율 굴림
+        { // 원래 공격자에게 직접 돌가시 피해 적용 시작
+            attacker.TakeUnblockedDamage(relic.EffectValue, BattleDamageType.None, this); // 새 적 직접 타격으로 분류되지 않는 원래 고정 반격
+        } // 원래 공격자에게 직접 돌가시 피해 적용 종료
+    } // 살아 있는 실제 공격자와 유효 피격의 반격 확인 종료
 
     private void ReflectBrokenHeartDamage(BattleUnitRuntime attacker, BattleDamageResult damage) // 자신의 실제 직접 체력 손실만 살아 있는 적에게 고정 반사
     { // 깨진 하트의 실제 피격 후 반사 시작

@@ -4,5 +4,6 @@ public enum ExplorationRegion // 실제 조우와 탐사 이벤트에 지정할 
     Winterfall = 0, // 기존 지역의 생략 및 저장 호환 기본값
     Desert = 1, // 명시적으로 지정된 사막 지역
     Fortress = 2, // 명시적으로 지정된 성채 지역
-    Bunker = 3 // 성채와 구분되는 명시적 벙커 지역
+    Bunker = 3, // 성채와 구분되는 명시적 벙커 지역
+    BurningCanyon = 4 // 불타는 협곡의 탐사 함정 적용 지역
 } // 이전 저장과 새 지역의 고정 번호 종료

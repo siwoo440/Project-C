@@ -17,6 +17,12 @@ public static class BattleHitChance // 공격 명중 여부 계산
         int penalty = blind == null ? 0 : Math.Min(100, blind.EffectiveValue); // 실명 명중률 감소 범위 보정
         bool canEvade = target?.GetStatusEffect(BattleStatusEffectType.Fear) == null; // 기존 공포와 회피 가능 상태 확인
         int evasion = canEvade ? Math.Min(100, target?.GetStatusEffect(BattleStatusEffectType.Evasion)?.EffectiveValue ?? 0) : 0; // 회피 가능한 대상의 기존 회피율
+        var enemyBattle = attacker.Team == BattleTeam.Enemy && attacker.DamageRelicBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } battle ? battle : null; // 실제 활성 교전에서 살아 있는 적의 현재 명중
+        if (canEvade && enemyBattle != null && target is { Team: BattleTeam.Ally, IsDead: false } && target.DamageRelicBattle == enemyBattle && // 같은 활성 전투의 회피 가능한 실제 아군
+            target.GetStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp) is { IsExpired: false } canyonWind) // 적 차례 만료 전 독립 협곡 바람 강화
+        { // 별도 기존 회피와 협곡 강화 합산 시작
+            evasion = (int)Math.Min(100, (long)evasion + canyonWind.EffectiveValue); // 두 원본 회피의 실제 합산과 최대 백 상한
+        } // 별도 기존 회피와 협곡 강화 합산 종료
         if (canEvade && target?.Team == BattleTeam.Ally && !target.IsDead && target.GetStatusEffect(BattleStatusEffectType.Stealth) is { IsExpired: false }) // 실제 은신이 유지되는 생존 아군의 회피 조건 확인
         { // 꺼진 등불 심지의 은신 회피 시작
             int bonus = BattleSupplyRelics.Find(RelicEffectType.StealthEvasionBonus)?.EffectValue ?? 0; // 현재 보유한 심지의 추가 회피 수치
@@ -35,7 +41,8 @@ public static class BattleHitChance // 공격 명중 여부 계산
         int markedBonus = attacker.Team == BattleTeam.Ally && target is { Team: BattleTeam.Enemy, IsDead: false } && // 실제 아군 공격과 살아 있는 적 대상 확인
             (target.HasActiveCardDamageMark || target.GetStatusEffect(BattleStatusEffectType.DuelMark) is { IsExpired: false }) // 기존 카드 표식 또는 현재 활성 결투 표식
             ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.BrokenLensCapMarkedAccuracy)?.EffectValue ?? 0, 0, 100) : 0; // 원본 렌즈캡의 고정 명중 퍼센트포인트
-        return Math.Clamp(100 + mapAccuracyBonus + markedBonus - penalty - evasion - disorientation - poisonPenalty, 0, 100); // 모든 가감의 최종 명중 백분율을 예고와 실제에서 공용 계산
+        int ashPenalty = Math.Clamp(enemyBattle?.DamageRelicInventory?.FindEffect(RelicEffectType.AshDustStatueEyeEnemyAccuracyDown)?.EffectValue ?? 0, 0, 100); // 등록 적의 현재 재먼지 명중 감소 퍼센트포인트
+        return Math.Clamp(100 + mapAccuracyBonus + markedBonus - penalty - evasion - disorientation - poisonPenalty - ashPenalty, 0, 100); // 예고와 원래 실제 명중에 공용으로 적용한 최종 값
     } // 명중률 조회 종료
     public static bool Hits(BattleUnitRuntime attacker, int roll, BattleUnitRuntime target = null) // 공격자와 대상의 지정 난수 판정
     { // 명중 계산 시작

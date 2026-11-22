@@ -105,14 +105,16 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         return target.ApplyStatusEffect(type, value, duration, maximumStacks, source, corrosionFamily: corrosionFamily); // 기존 일반 상태의 실제 종류와 수명 유지
     } // 유물 보유와 원래 직접 출혈의 치환 종료
 
-    internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null) // 실제 상태 종류와 출처를 포함한 명중 후 약화 굴림
+    internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null, bool authoredCardEffect = true) // 실제 명중 후 상태 종류와 원래 카드 확률 여부의 판정
     { // 명중 후 효과 굴림 시작
         bool alliedAgainstEnemy = source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy; // 실제 아군이 적에게 시도한 원본 효과 확인
         bool alliedBleed = alliedAgainstEnemy && type == BattleStatusEffectType.Bleed; // 기존 포크의 확률형 출혈 범위
         bool alliedShock = alliedAgainstEnemy && type == BattleStatusEffectType.Shock; // 실제 아군이 적에게 확률 감전 시도한 경우 확인
         int blindBonus = alliedAgainstEnemy && type == BattleStatusEffectType.Blind && chance is > 0 and < 100 // 실제 아군의 비확정 실명에만 검은 모래병 보정 확인
             ? Find(RelicEffectType.BlackSandBlindChanceBonus)?.EffectValue ?? 0 : 0; // 실제 보유의 다섯 퍼센트포인트 조회
-        if (alliedBleed || alliedShock || blindBonus > 0) // 출혈과 감전 및 유효한 검은 모래병 실명 보정 확인
+        int poisonBonus = authoredCardEffect && alliedAgainstEnemy && !source.IsDead && type == BattleStatusEffectType.Poison && chance is > 0 and < 100 // 살아 있는 아군의 원래 비확정 중독 확인
+            ? Math.Max(0, Find(RelicEffectType.BlackSwampWaterBottlePoisonChance)?.EffectValue ?? 0) : 0; // 실제 늪물병이 더하는 중독 확률
+        if (alliedBleed || alliedShock || blindBonus > 0 || poisonBonus > 0) // 기존 약화와 적용 가능한 중독 확률 보정 확인
         { // 확률형 약화의 원본 확인 시작
             if (target.IsDead || chance <= 0) // 생존 적과 실제 선택 약화 확률 여부 확인
             { // 무효 약화 처리 시작
@@ -122,7 +124,7 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
             { // 원래 면역 결과 처리 시작
                 return true; // 확률을 소비하지 않고 원래 상태 부여에서 면역 결과 반환
             } // 원래 면역 결과 처리 종료
-            int bonus = alliedBleed ? Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0 : blindBonus; // 출혈 또는 실명에 해당하는 실제 유물 확률 가산
+            int bonus = alliedBleed ? Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0 : blindBonus + poisonBonus; // 실제 출혈 또는 대상에 해당하는 실명과 중독 확률 보정
             int conveyorChance = FindMechanicalBleedConversion(source, target, type) is { EffectValue: > 0 } conveyor ? conveyor.TriggerChancePercent : 0; // 실제 기계형 출혈 시도의 별도 확률 가산 조회
             chance = alliedShock ? GetShockApplicationChance(source, target, type, chance) : (int)Math.Clamp((long)chance + bonus + conveyorChance, 0L, 100L); // 유효 확률을 모두 한 번 합산해 영과 백 사이의 실제 판정
             if (chance >= 100) // 기존 확률과 유물 보정으로 완전히 보장된 약화 확인
@@ -130,7 +132,7 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
                 return true; // 다른 확률 유물과 무작위 없이 확정 적용 반환
             } // 확정 약화 처리 종료
         } // 확률형 약화의 원본 확인 종료
-        if (!usedGlassMarble && chance > 0 && chance < 100 && !target.HasStatusImmunity && Find(RelicEffectType.GuaranteeOptionalCardEffect) != null) // 발동 가능한 확률 효과와 전투 최초 유물 확인
+        if (authoredCardEffect && !usedGlassMarble && chance > 0 && chance < 100 && !target.HasStatusImmunity && Find(RelicEffectType.GuaranteeOptionalCardEffect) != null) // 원래 카드의 확률 상태에만 전투 최초 구슬 적용
         { // 유리 구슬 발동 시작
             usedGlassMarble = true; // 같은 전투의 두 번째 보정 차단
             return true; // 해당 상태 효과의 한 번 적용 보장

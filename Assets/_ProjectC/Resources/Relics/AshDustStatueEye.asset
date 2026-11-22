@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: AshDustStatueEye
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_ASH_DUST_STATUE_EYE
+  displayName: 재먼지 석상 눈
+  description: "전투 중 모든 생존 적의 명중률이 5%p 낮아진다."
+  icon: {fileID: 21300000, guid: 59fafe2c601150d1802328b550c9b51a, type: 3}
+  rarity: 0
+  triggerType: 19
+  effectType: 260
+  targetType: 4
+  triggerChancePercent: 100
+  effectValue: 5
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

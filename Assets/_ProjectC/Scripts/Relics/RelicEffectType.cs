@@ -257,4 +257,12 @@ public enum RelicEffectType // 유물 효과 종류
     BlackBasaltShardFirstHitDamageReduction, // 검은 현무암 조각의 전투 효과
     AshStainedGlovesBurningSwordDamage, // 재 묻은 장갑의 전투 효과
     LavaMossSporeBottlePeriodicHealing, // 용암 이끼 포자병의 전투 효과
+    RockfallWarningPlaqueCanyonTrapReduction, // 불타는 협곡의 탐사 함정 피해 감소
+    ObsidianBladeShardSwordBleed, // 검 카드 명중 뒤 일정 확률로 출혈 부여
+    FlameVeinDebrisBurnResistance, // 화상을 부여받은 적의 마법 피해 저항률 감소
+    AshDustStatueEyeEnemyAccuracyDown, // 적 전체의 실제 명중률 감소
+    StoneThornBundleRetaliation, // 아군을 직접 공격한 적에게 확률 반격
+    CanyonWindWhistleOpeningEvasion, // 전투를 시작한 모든 생존 아군의 회피율 증가
+    WetReedKnotPoisonDamageReduction, // 아군에게 실제 적용되는 중독 피해 감소
+    BlackSwampWaterBottlePoisonChance, // 아군 카드의 확률 중독 부여 보정
 }

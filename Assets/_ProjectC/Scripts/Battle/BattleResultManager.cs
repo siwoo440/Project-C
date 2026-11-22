@@ -234,6 +234,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         { // 사막과 벙커의 실제 지역 독립 처리 시작
             ExplorationRegion.Desert => inventory?.FindEffect(RelicEffectType.WeatheredFootprintDesertEventProtection)?.EffectValue ?? 0, // 기존 사막 함정의 비율 경감
             ExplorationRegion.Bunker => inventory?.FindEffect(RelicEffectType.BlackoutRecordChipBunkerTrapReduction)?.EffectValue ?? 0, // 벙커 원본 함정의 정전 기록칩 비율 경감
+            ExplorationRegion.BurningCanyon => inventory?.FindEffect(RelicEffectType.RockfallWarningPlaqueCanyonTrapReduction)?.EffectValue ?? 0, // 불타는 협곡 원본 함정의 낙석 경고패 피해 경감
             _ => 0 // 성채와 원래 지역 없는 판정의 기존 피해
         }; // 사막과 벙커의 실제 지역 독립 처리 종료
         return (int)((long)damage * (100 - Mathf.Clamp(regionalReduction, 0, 100)) / 100); // 기존 고정 감소 뒤 같은 비율과 내림으로 미리보기 및 실제 피해 적용
