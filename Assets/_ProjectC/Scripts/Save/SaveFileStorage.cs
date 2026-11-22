@@ -100,16 +100,16 @@ public static class SaveFileStorage // 저장 원본과 이전 정상본 관리
                 return false; // 기존 파일 유지
             } // 잘못된 저장 처리 종료
             string fullPath = Path.GetFullPath(path); // 절대 저장 경로 계산
-            if (IsUnsupportedVersion(fullPath)) // 지원하지 않는 새 버전 원본 확인
-            { // 새 버전 덮어쓰기 방지 시작
-                return false; // 기존 원본과 복구본 보존
-            } // 새 버전 덮어쓰기 방지 종료
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)); // 저장 폴더 준비
             temporaryPath = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp"; // 고유 임시 저장 경로 생성
             File.WriteAllText(temporaryPath, json); // 임시 파일에 정상 저장 내용 기록
             if (File.Exists(fullPath)) // 현재 저장 원본 존재 확인
             { // 기존 파일 교체 시작
                 string old = File.ReadAllText(fullPath); // 현재 저장 내용 조회
+                if (HasFutureVersion(old)) // 교체 직전 읽은 원본에 지원하지 않는 버전 존재 확인
+                { // 새 버전 덮어쓰기 방지 시작
+                    return false; // 원본과 복구본 유지 및 임시본 정리
+                } // 새 버전 덮어쓰기 방지 종료
                 string backup = IsKnownValid(old) ? BackupPath(fullPath) : null; // 정상 원본만 이전 저장으로 보관
                 if (backup != null && IsUnsupportedVersion(backup)) // 복구본의 새 저장 버전 확인
                 { // 새 버전 복구본 보호 시작

@@ -45,8 +45,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 카드 연결 중단
         } // 카드 누락 처리 종료
         EnsureVisualStructure(); // 카드 내부 UI 확인
-        SetHovered(false); // 카드 확대 상태 초기화
-        pointerInside = false; // 이전 카드 마우스 진입 상태 초기화
+        ResetPointerState(); // 새 카드에 남지 않을 이전 포인터 상태 초기화
         RuntimeCard = cardInstance; // 카드 인스턴스 저장
         nameText.text = RuntimeCard.DisplayName; // 카드 이름 적용
         descriptionText.text = RuntimeCard.SourceData.Description; // 카드 설명 적용
@@ -59,6 +58,11 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         artworkImage.sprite = RuntimeCard.Artwork; // 카드 일러스트 적용
         artworkImage.color = RuntimeCard.Artwork != null ? Color.white : new Color(0.22f, 0.22f, 0.26f, 1f); // 일러스트 유무 색상 적용
     } // 카드 연결 종료
+    internal void ResetPointerState() // 카드의 확대와 포인터 진입 초기화
+    { // 카드 포인터 초기화 시작
+        SetHovered(false); // 원래 손패 순서와 크기 복원
+        pointerInside = false; // 이전 마우스 위치에 연결된 상태 해제
+    } // 카드 포인터 초기화 종료
     public void SetSelected(bool selected) // 카드 선택 표시 설정
     { // 선택 표시 시작
         EnsureVisualStructure(); // 카드 내부 UI 확인

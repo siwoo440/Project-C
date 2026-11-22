@@ -49,7 +49,9 @@ public sealed class RestRoomViewTests // 휴식 화면의 실제 선택과 닫�
             ExecuteEvents.ExecuteHierarchy(scroll.viewport.gameObject, wheel, ExecuteEvents.scrollHandler); // 표시된 뷰포트의 휠 입력 실행
             Assert.Greater(scroll.content.anchoredPosition.y, 0f); // 실제 목록 이동 확인
 
-            FindChild<Button>(host, "Card_10").onClick.Invoke(); // 원본이 같은 열한 번째 슬롯 직접 선택
+            Button chosenRow = FindChild<Button>(host, "Card_10"); // 실제 선택할 열한 번째 카드 행
+            Button otherRow = FindChild<Button>(host, "Card_0"); // 강화 대상이 아닌 첫 카드의 화면 참조
+            chosenRow.onClick.Invoke(); // 원본이 같은 열한 번째 슬롯 직접 선택
             Assert.IsTrue(execute.interactable); // 유효한 카드 선택 후 휴식 허용 확인
             execute.onClick.Invoke(); // 실제 버튼을 통한 휴식 실행
             IReadOnlyList<RunDeckCardEntry> cards = RunDeckManager.EnsureInstance().Cards; // 영속 회차 덱 조회
@@ -60,6 +62,11 @@ public sealed class RestRoomViewTests // 휴식 화면의 실제 선택과 닫�
             Assert.IsTrue(result.TryGetSavedAllyState(owner, out int hp, out int sanity, out _)); // 휴식 적용 뒤 실제 캐릭터 상태 조회
             Assert.AreEqual(RestRoomRecoveryService.CalculateRecoveredHealth(1, owner.MaxHealth, 2, RestRoomRecoveryService.CampRecoveryBonus, RestRoomRecoveryService.CampFlatHealthBonus), hp); // 고정 위험도 기준 HP 회복 확인
             Assert.AreEqual(35 + RestRoomRecoveryService.CampMentalRecovery, sanity); // 실제 영속 상태의 정신력 회복 확인
+            yield return null; // 예약된 덱 변경을 반영할 다음 프레임 대기
+            yield return null; // UI 제거가 있는 경로의 프레임 끝 정리 대기
+            Assert.AreSame(otherRow, FindChild<Button>(host, "Card_0")); // 미변경 카드 행의 원래 화면 재사용 확인
+            Assert.AreSame(chosenRow, FindChild<Button>(host, "Card_10")); // 강화 카드 행에서 기존 화면 유지 확인
+            Assert.AreEqual("강화 +1", chosenRow.transform.Find("UpgradeLevel").GetComponent<TMP_Text>().text); // 기존 행에 실제 강화 단계 반영 확인
 
             FindChild<Button>(host, "CloseRest").onClick.Invoke(); // 닫기 버튼으로 실제 창 정리
             Assert.AreEqual(0.65f, Time.timeScale); // 모달 열기 직전의 시간 배율 복원 확인

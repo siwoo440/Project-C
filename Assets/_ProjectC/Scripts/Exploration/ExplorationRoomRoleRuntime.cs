@@ -96,7 +96,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         mapRuntime.ClearEncounterObjects(); // 기존 절차 조우 전체 정리
         mapRuntime.ClearEventObjects(); // 기존 절차 이벤트 전체 정리
 
-        List<EncounterData> allEncounters = ExpeditionZoneEncounters.LoadRandom(zone, session.EncounterPoolVersion); // 현재 지역의 일반·정예 및 기존 조우 후보
+        List<EncounterData> allEncounters = mapRuntime.GetFloorEncounterPool(); // 원래 층 생성과 공유하는 지역·저장 버전별 조우 후보
         List<EncounterData> normalEncounters = FilterEncounters(allEncounters, BattleType.Normal); // 일반 조우 분리
         List<EncounterData> eliteEncounters = FilterEncounters(allEncounters, BattleType.Elite); // 엘리트 조우 분리
         List<EncounterData> bossEncounters = FilterEncounters(allEncounters, BattleType.Boss); // 보스 조우 분리

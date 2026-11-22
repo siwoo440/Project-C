@@ -228,10 +228,30 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
         RefreshPileLayout(); // 현재 패널 크기의 양쪽 카드 더미 배치
     } // 화면 구조 준비 종료
-    private void Refresh() // 손패 화면 갱신
+    private void Refresh(ISet<CardInstance> currentCards = null) // 손패 화면 갱신
     { // 화면 갱신 시작
         EnsureVisualStructure(); // 손패 내부 UI 확인
-        ClearSpawnedCardViews(); // 기존 카드 화면 제거
+        BattleCardView pointerCard = !interactionLocked && draggedCardView == null ? hoveredCardView : null; // 손패에 남아 있으면 다시 강조할 포인터 카드
+        if (draggedCardView != null) // 덱 변경 직전 남은 드래그 확인
+        { // 오래된 드래그 정리 시작
+            draggedCardView.GetComponent<BattleCardDragHandler>()?.ResetDrag(); // 덱 변경 전 조준과 드래그 복제 정리
+            draggedCardView = null; // 기존 드래그 카드 참조 해제
+        } // 오래된 드래그 정리 종료
+        hoveredCardView?.ResetPointerState(); // 이전 손패에 맞춰진 카드 강조와 순서 복원
+        HideTooltip(); // 이전 손패의 상세 표시 해제
+        previewView?.Hide(); // 선택과 포인터에 맞춰 확대 화면 다시 표시
+        if (runtimeDeck != null && spawnedCardViews.Count > 0 && currentCards == null) // 덱 이벤트 외 손패 대조가 필요한 경우 확인
+        { // 현재 카드 집합 구성 시작
+            currentCards = new HashSet<CardInstance>(runtimeDeck.Hand); // 화면에 남겨둘 실제 카드 인스턴스
+        } // 현재 카드 집합 구성 종료
+        for (int index = spawnedCardViews.Count - 1; index >= 0; index--) // 이전 손패의 카드와 입력 영역 순회
+        { // 빠진 카드 확인 시작
+            BattleCardView view = spawnedCardViews[index]; // 실제 카드에 연결된 이전 화면
+            if (view == null || currentCards == null || !currentCards.Contains(view.RuntimeCard)) // 제거됐거나 더 이상 손패에 없는 카드 확인
+            { // 빠진 카드 정리 시작
+                RemoveCardViewAt(index); // 빠진 카드의 화면과 입력 영역만 제거
+            } // 빠진 카드 정리 종료
+        } // 빠진 카드 확인 종료
         RefreshPileImages(); // 실제 덱 상태에 맞춘 카드 더미 표시 갱신
         if (runtimeDeck == null) // 런타임 덱 연결 확인
         { // 덱 미연결 처리 시작
@@ -241,17 +261,53 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 덱 미연결 처리 종료
         RefreshActionPointStatus(); // 공용 행동력 수량 표시
         RefreshTurnStatus(); // 라운드와 턴 상태 표시
-        foreach (CardInstance cardInstance in runtimeDeck.Hand) // 현재 손패 카드 순회
-        { // 카드 화면 생성 시작
-            BattleCardView cardView = CreateCardView(cardInstance); // 카드 화면 코드 생성
+        for (int index = 0; index < runtimeDeck.HandCount; index++) // 현재 실제 손패 순서대로 카드 확인
+        { // 카드 화면 배치 시작
+            CardInstance cardInstance = runtimeDeck.Hand[index]; // 이 위치에 연결할 실물 카드
+            BattleCardView cardView = GetOrPlaceCardView(cardInstance, index); // 같은 카드면 이전 화면과 입력 영역 재사용
             cardView.SetSelected(cardInstance == selectedCard); // 현재 카드 선택 표시 적용
             cardView.SetInteractable(IsCardUsable(cardInstance)); // 카드 사용 가능 표시 적용
-            spawnedCardViews.Add(cardView); // 생성 카드 화면 목록 등록
-            cardHitRegions.Add(CreateHitRegion(cardView)); // 카드별 독립 입력 영역 등록
-        } // 카드 화면 생성 종료
-        LayoutHand(); // 손패 장수와 화면 너비 기준 카드 배치
-        RefreshCardPreview(); // 선택 중인 카드 확대 화면 갱신
+        } // 카드 화면 배치 종료
+        if (pointerCard != null && currentCards?.Contains(pointerCard.RuntimeCard) == true) // 같은 입력 오브젝트에 마우스가 남은 카드 확인
+        { // 이전 포인터 표시 복원 시작
+            pointerCard.OnPointerEnter(null); // 새 손패 순서에서 카드 강조와 툴팁 다시 적용
+        } // 이전 포인터 표시 복원 종료
+        else // 포인터로 다시 표시할 손패 카드 없음 확인
+        { // 일반 손패 배치 시작
+            LayoutHand(); // 손패 장수와 화면 너비 기준 카드 배치
+            RefreshCardPreview(); // 선택 중인 카드 확대 화면 갱신
+        } // 일반 손패 배치 종료
     } // 화면 갱신 종료
+    private BattleCardView GetOrPlaceCardView(CardInstance card, int index) // 실제 손패 위치에 카드 그림과 입력 영역 배치
+    { // 손패 카드 배치 시작
+        int existing = index; // 앞에 배치된 카드 뒤에서 현재 카드 검색
+        while (existing < spawnedCardViews.Count && spawnedCardViews[existing].RuntimeCard != card) // 같은 실물 카드를 가리키는 기존 화면 찾기
+        { // 다음 기존 카드 확인 시작
+            existing++; // 아직 배치하지 않은 다음 위치로 이동
+        } // 다음 기존 카드 확인 종료
+        bool isNew = existing == spawnedCardViews.Count; // 이전 손패에 해당 실물 카드가 없었는지 확인
+        BattleCardView view = isNew ? CreateCardView(card) : spawnedCardViews[existing]; // 새 카드만 생성하고 나머지는 기존 그림 조회
+        RectTransform hit = isNew ? CreateHitRegion(view) : cardHitRegions[existing]; // 같은 실물 카드의 입력 사각형 조회
+        if (isNew || existing != index) // 카드가 추가됐거나 원래 손패 순서가 바뀌었는지 확인
+        { // 실제 순서 갱신 시작
+            if (!isNew) // 손패에 있던 카드를 앞 자리로 옮기는 경우 확인
+            { // 이전 목록 위치 비우기 시작
+                spawnedCardViews.RemoveAt(existing); // 현재 카드의 이전 그림 위치 제거
+                cardHitRegions.RemoveAt(existing); // 같은 카드의 이전 입력 위치 제거
+            } // 이전 목록 위치 비우기 종료
+            spawnedCardViews.Insert(index, view); // 실제 손패 순서 위치에 카드 그림 배치
+            cardHitRegions.Insert(index, hit); // 같은 순서에 실제 클릭 위치 배치
+        } // 실제 순서 갱신 종료
+        if (view.transform.GetSiblingIndex() != index) // 카드 그림의 실제 그리기 순서 확인
+        { // 카드 그리기 순서 보정 시작
+            view.transform.SetSiblingIndex(index); // 손패 인덱스와 같은 카드 겹침 순서
+        } // 카드 그리기 순서 보정 종료
+        if (hit.GetSiblingIndex() != index) // 입력 영역의 실제 계층 순서 확인
+        { // 입력 순서 보정 시작
+            hit.SetSiblingIndex(index); // 손패 인덱스와 같은 입력 영역 순서
+        } // 입력 순서 보정 종료
+        return view; // 선택과 사용 가능 표시를 갱신할 카드 화면 반환
+    } // 손패 카드 배치 종료
     private BattleCardView CreateCardView(CardInstance cardInstance) // 카드 화면 코드 생성
     { // 카드 화면 생성 시작
         string objectName = $"Card_{cardInstance.InstanceId}"; // 카드 오브젝트 이름 생성
@@ -473,34 +529,25 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 파트너 후보 없음 처리 종료
         return turnRuntime.CanAcceptPlayerInput && SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime); // 개막 선택 완료 여부와 일반 공용 행동력 및 대상 조건 확인
     } // 카드 사용 가능 검사 종료
-    private void ClearSpawnedCardViews() // 생성 카드 화면 제거
+    private void RemoveCardViewAt(int index) // 현재 손패에 없는 카드 화면과 별도 입력 제거
     { // 카드 화면 제거 시작
-        draggedCardView = null; // 기존 드래그 카드 참조 제거
-        previewView?.Hide(); // 기존 카드의 확대 화면 숨김
-        foreach (RectTransform hitRegion in cardHitRegions) // 기존 카드 입력 영역 순회
-        { // 개별 입력 영역 제거 시작
-            if (hitRegion != null) // 입력 영역 존재 확인
-            { // 유효 입력 영역 제거 시작
-                hitRegion.gameObject.SetActive(false); // 기존 입력 즉시 차단
-                Destroy(hitRegion.gameObject); // 기존 입력 영역 제거
-            } // 유효 입력 영역 제거 종료
-        } // 개별 입력 영역 제거 종료
-        cardHitRegions.Clear(); // 입력 영역 목록 초기화
-        foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
-        { // 카드 화면 제거 시작
-            if (cardView == null) // 제거된 카드 화면 확인
-            { // 제거된 화면 처리 시작
-                continue; // 다음 카드 화면 이동
-            } // 제거된 화면 처리 종료
+        RectTransform hitRegion = cardHitRegions[index]; // 제거할 카드의 독립 입력 사각형
+        BattleCardView cardView = spawnedCardViews[index]; // 제거할 카드의 실제 그림
+        cardHitRegions.RemoveAt(index); // 손패 배치에서 빠진 입력 참조 정리
+        spawnedCardViews.RemoveAt(index); // 손패 배치에서 빠진 그림 참조 정리
+        if (hitRegion != null) // 아직 존재하는 카드 입력 영역 확인
+        { // 입력 영역 제거 시작
+            hitRegion.gameObject.SetActive(false); // 이전 카드의 입력 즉시 차단
+            Destroy(hitRegion.gameObject); // 프레임 끝에 입력 영역 정리
+        } // 입력 영역 제거 종료
+        if (cardView != null) // 아직 존재하는 카드 그림 확인
+        { // 카드 그림 제거 시작
             cardView.Clicked -= HandleCardViewClicked; // 카드 클릭 이벤트 해제
             cardView.HoverEntered -= HandleCardHoverEntered; // 카드 마우스 진입 이벤트 해제
             cardView.HoverExited -= HandleCardHoverExited; // 카드 마우스 이탈 이벤트 해제
             cardView.gameObject.SetActive(false); // 카드 화면 즉시 숨김
-            Destroy(cardView.gameObject); // 카드 화면 오브젝트 제거
-        } // 카드 화면 제거 종료
-        spawnedCardViews.Clear(); // 생성 카드 화면 목록 비우기
-        HideTooltip(); // 카드 툴팁 숨김
-        previewView?.Hide(); // 제거된 카드의 확대 화면 최종 숨김
+            Destroy(cardView.gameObject); // 프레임 끝에 카드 그림 정리
+        } // 카드 그림 제거 종료
     } // 카드 화면 제거 종료
     private void HandleCardViewClicked(BattleCardView cardView) // 카드 화면 클릭 처리
     { // 카드 클릭 처리 시작
@@ -619,7 +666,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 변경된 덱 우선 처리
             dealElapsed = -1f; // 새 손패 상태로 전환
         } // 덱 변경 처리 종료
-        Refresh(); // 손패 화면 자동 갱신
+        Refresh(currentCards); // 이동 연출과 같은 실제 손패 집합으로 화면 자동 갱신
         Vector2 drawPosition = root.InverseTransformPoint(DrawPileAnchor.TransformPoint(DrawPileAnchor.rect.center)); // 실제 뽑기 더미 중앙 위치 조회
         Vector2 discardPosition = root.InverseTransformPoint(DiscardPileAnchor.TransformPoint(DiscardPileAnchor.rect.center)); // 실제 버리기 더미 중앙 위치 조회
         foreach (KeyValuePair<CardInstance, Vector2> removed in removedPositions) // 손패에서 버려진 카드 순회
