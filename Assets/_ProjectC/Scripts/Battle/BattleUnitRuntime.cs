@@ -261,9 +261,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 맥동핵의 성공 침식 피해 처리 종료
         return result; // 부모 효과에 기존 실제 상태 결과 그대로 반환
     } // 일반 상태 적용 종료
-    internal BattleStatusEffectApplyResult ApplyTacticalPublicMark(int value, int duration, BattleUnitRuntime source) // 전술 카드의 기존 공명 표식과 새 적 턴 수명 요청
+    internal BattleStatusEffectApplyResult ApplyTacticalPublicMark(int value, int duration, BattleUnitRuntime source) // 기존 공명 표식과 실제 대상 진영의 자기 턴 수명 요청
     { // 일반 상태 부여 규칙에 전술 수명 연결 시작
-        return ApplyStatusEffectCore(BattleStatusEffectType.PublicMark, value, duration, 1, source, null, publicMarkCountsEnemyTurns: true); // 실제 마킹과 기존 면역 및 한 중첩 보존
+        return ApplyStatusEffectCore(BattleStatusEffectType.PublicMark, value, duration, 1, source, null, publicMarkCountsTargetTurns: true); // 실제 피해 표식과 기존 면역 및 한 중첩 보존
     } // 일반 상태 부여 규칙에 전술 수명 연결 종료
 
     internal BattleStatusEffectApplyResult ApplyReflectedDebuff(BattleStatusEffectInstance debuff, BattleUnitRuntime source) // 두 반사 유물이 공유하는 활성 약화 복사
@@ -322,7 +322,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return ApplyStatusEffectCore(BattleStatusEffectType.Stagger, value, duration, maximumStacks, source, null, authoredActionPointLoss: true); // 별도 상태 사건 없는 원본 경직과 출처 전달
     } // 기존 경직 면역과 단일 적용 실행 종료
 
-    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true, bool publicMarkCountsEnemyTurns = false, bool authoredActionPointLoss = false) // 실제 공통 상태 면역과 기존 경직의 원본 출처 부여
+    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true, bool publicMarkCountsTargetTurns = false, bool authoredActionPointLoss = false) // 실제 공통 상태 면역과 기존 경직의 원본 출처 부여
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -386,10 +386,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
             var status = blessing?.CopyBlessingState() ?? new BattleStatusEffectInstance(effectType, value, duration, maximumStacks); // 복사한 독립 상태 또는 일반 신규 상태 생성
-            if (publicMarkCountsEnemyTurns) // 일반 새 상태 중 적 턴 수명의 전술 표식 확인
-            { // 원본 전술 표식 수명 지정 시작
-                status.SetPublicMarkEnemyTurnLifetime(); // 일반 처리와 알림 전에 실제 적 턴 시계 적용
-            } // 원본 전술 표식 수명 지정 종료
+            if (publicMarkCountsTargetTurns || blessing?.PublicMarkTurnTeam != null) // 신규 상태의 전술 표식 또는 다른 진영에서 복사한 실제 기간 확인
+            { // 원래 대상과 별개인 현재 표식 대상의 수명 지정 시작
+                status.SetPublicMarkTargetTurnLifetime(Team); // 일반 처리와 알림 전에 현재 참가자의 자기 차례 기준 적용
+            } // 원래 대상과 별개인 현재 표식 대상의 수명 지정 종료
             status.HasAuthoredActionPointLoss = authoredActionPointLoss; // 일반 새 상태와 반사에 원래 서리 감옥 출처 복제 제외
             status.RecordPoisonApplication(sourceUnit, preserveExisting: false); // 반사와 신규 적용 모두 이번 실제 중독 적용자의 진영만 기록
             statusEffects.Add(status); // 실제 첫 약화 또는 강화 등록
@@ -405,9 +405,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 복사 중첩 합산 시작
             existingEffect.MergeBlessingCopy(blessing); // 원본을 지키면서 수령자 쪽 중첩과 기존 지속 병합
         } // 복사 중첩 합산 종료
-        if (publicMarkCountsEnemyTurns || blessing?.PublicMarkCountsEnemyTurns == true) // 실제 같은 표식의 새 전술 수명 또는 원본 복사 확인
+        if (publicMarkCountsTargetTurns || blessing?.PublicMarkTurnTeam != null) // 실제 같은 표식의 새 수명이나 원본 복사의 참가자 기준 확인
         { // 새 전술 표식의 기존 단일 상태 수명 갱신 시작
-            existingEffect.SetPublicMarkEnemyTurnLifetime(); // 원래 한 중첩 갱신 뒤 아무 알림 전 적 턴 수명 보관
+            existingEffect.SetPublicMarkTargetTurnLifetime(Team); // 최대 기간과 한 중첩 갱신 뒤 같은 현재 대상의 진영 기준 보관
         } // 새 전술 표식의 기존 단일 상태 수명 갱신 종료
         existingEffect.RecordPoisonApplication(sourceUnit, preserveActiveSource); // 기존 활성 중첩과 이번 중독 적용 출처를 같은 실제 상태에 연결
         return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null, previousPhysicalDefense, enteringStealth); // 중첩 갱신 뒤 상태 정화 및 적용 결과 전달
@@ -663,7 +663,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
             if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark || // 일반 강화와 맥박줄 및 종복 계약의 기존 가산
-                (statusEffect.EffectType is BattleStatusEffectType.LordFinalOrderAttack or BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.SandQueenSummonAttackGrow) && !statusEffect.IsExpired) // 활성 명령서와 분배의 독립 일반 공격력 증가 확인
+                (statusEffect.EffectType is BattleStatusEffectType.LordFinalOrderAttack or BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.SandQueenSummonAttackGrow or BattleStatusEffectType.WasteHeatAttackPowerUp) && !statusEffect.IsExpired) // 실제 활성인 독립 일반 공격력 강화 합산
             { // 공격력 증가 누적 시작
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
@@ -684,7 +684,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         var ward = increaseType == BattleStatusEffectType.MagicalResistanceUp ? FindStatusEffect(BattleStatusEffectType.ArcaneWard) : null; // 마법 저항 계산에서만 실제 마력 보호막 상태 확인
         int wardBonus = ward is { IsExpired: false } ? ward.EffectiveValue : 0; // 활성 중인 정수 저항 증가량
         int distributionLoss = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.DistributionPhysicalDefenseDown) : 0; // 분배의 별도 감소를 물리 방어에만 적용
-        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 모든 활성 물리 방어 약화 또는 마법 저항의 최종 영 하한
+        int surveillance = increaseType == BattleStatusEffectType.MagicalResistanceUp && Team == BattleTeam.Ally && DamageRelicBattle is { IsBattleEnded: false } battle // 현재 같은 전투에 참가한 아군의 마법 저항 기준
+            ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.SurveillanceCoreFragmentResistanceTrade)?.EffectValue ?? 0 : 0; // 원래 전투의 보유 유물에서 별도 저항 보너스 합산
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus + surveillance - decreasedDefense - charge - crystalLoss - orderLoss - distributionLoss, 0L, int.MaxValue); // 기존 강화와 약화를 모두 더한 실제 방어 또는 마법 저항 영 하한
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작
@@ -1170,6 +1172,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return amount; // 원래 피해 유지
         } // 전투 상태 및 진영 조건을 벗어난 가산 제외 종료
         amount = ApplyCompressionPincerDamage(amount); // 활성 행동력 감소의 양수 직접 카드 원본 피해를 예고와 실제에 공통 적용
+        amount = ApplySecurityEnforcerBadgeDamage(amount); // 기절과 행동력 감소의 실제 직접 피해 가산
         int antenna = battle.ResolveFirstAllyAttackBonus(source, preview); // 동일한 최초 카드의 첫 확인 피해 또는 순수 예고
         int sandBone = amount > 0 ? battle.GetSandBoneDamageBonus(source, this) : 0; // 실제 양수 직접 카드의 기존 출혈 가산 조건
         usedSandBone = sandBone > 0; // 방어도나 체력 손실 뒤 확정할 출혈 가산 기록
@@ -1187,14 +1190,29 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
 
     private int ApplyCompressionPincerDamage(int amount) // 실제 행동력 감소 상태를 확인한 집게 손잡이의 비율 가산
     { // 유효한 양수 원본과 활성 약화 확인 시작
-        if (amount <= 0 || (GetStatusEffect(BattleStatusEffectType.ActionPointDown) is not { IsExpired: false } && // 명시 행동력 감소의 실제 활성 상태 확인
-            GetStatusEffect(BattleStatusEffectType.Stagger) is not { IsExpired: false, HasAuthoredActionPointLoss: true })) // 서리 감옥이 실제 부여한 활성 행동 취소의 원본 출처 확인
+        if (amount <= 0 || !HasActiveActionPointLoss()) // 명시 행동력 감소나 서리 감옥의 원본 출처 확인
         { // 조건 없는 정상 피해 유지 시작
             return amount; // 원래 피해나 영점의 상태 그대로 반환
         } // 조건 없는 정상 피해 유지 종료
         int bonus = BattleSupplyRelics.Find(RelicEffectType.CompressionPincerHandleReducedActionDamage)?.EffectValue ?? 0; // 실제 보유한 압착 집게 손잡이의 비율 수치
         return (int)Math.Min(int.MaxValue, (long)amount * (100L + bonus) / 100L); // 기존 방어와 피해 보정 이전의 정수 내림 및 상한
     } // 유효한 양수 원본과 활성 약화 확인 종료
+
+    private int ApplySecurityEnforcerBadgeDamage(int amount) // 기절 또는 행동력 감소를 받는 적의 직접 피해 가산
+    { // 실제 활성 약화와 양수 원본 피해 확인 시작
+        if (amount <= 0 || (GetStatusEffect(BattleStatusEffectType.Stun) is not { IsExpired: false } && !HasActiveActionPointLoss())) // 기절과 명시 행동력 감소 중 하나의 현재 유효 상태
+        { // 유효한 약화 없는 대상 처리 시작
+            return amount; // 적용 대상이 아니면 원래 직접 피해 유지
+        } // 유효한 약화 없는 대상 처리 종료
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.SecurityEnforcerBadgeDebuffedDamage)?.EffectValue ?? 0; // 실제 보유한 배지의 원본 피해 증가율
+        return (int)Math.Min(int.MaxValue, (long)amount * (100L + bonus) / 100L); // 방어 전 독립 비율과 안전한 정수 피해
+    } // 실제 활성 약화와 양수 원본 피해 확인 종료
+
+    private bool HasActiveActionPointLoss() // 실제 행동력을 줄인 원래 상태 종류 확인
+    { // 원본 행동력 감소의 유효 기간과 종류 확인 시작
+        return GetStatusEffect(BattleStatusEffectType.ActionPointDown) is { IsExpired: false } || // 보유한 명시 행동력 감소의 실제 유효 상태
+            GetStatusEffect(BattleStatusEffectType.Stagger) is { IsExpired: false, HasAuthoredActionPointLoss: true }; // 서리 감옥이 실제 부여한 활성 경직 출처
+    } // 원본 행동력 감소의 유효 기간과 종류 확인 종료
 
     private int ApplyCaravanDamageRelics(int amount) // 방어도 전에 공용 적용하는 두 카라반 피해 보정
     { // 카라반 피해 유물 계산 시작

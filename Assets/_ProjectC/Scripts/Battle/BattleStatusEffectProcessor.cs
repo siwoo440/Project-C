@@ -131,6 +131,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
         { // 실제 지속 회복 뒤에 종료할 상태 재배치 시작
             snapshot.Add(healingIncrease); // 기존 효과 순서를 유지한 마지막 회복 증가 만료
         } // 실제 지속 회복 뒤에 종료할 상태 재배치 종료
+        RelicData radiatorReward = null; // 현재 유닛의 실제 화상에 맞춰 이번 턴 종료 뒤 부여할 강화
         foreach (BattleStatusEffectInstance effect in snapshot) // 대상 상태 순회
         { // 턴 종료 효과 확인 시작
             if (runtimeUnit.IsDead) // 이전 효과로 사망 확인
@@ -143,7 +144,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.DuelMark || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.EffectType == BattleStatusEffectType.ShockAbsorption || effect.EffectType == BattleStatusEffectType.ResistanceStance || effect.EffectType == BattleStatusEffectType.ActionSpeedUp || effect.EffectType == BattleStatusEffectType.ShieldCounter || effect.EffectType == BattleStatusEffectType.RetributionBulwark || effect.EffectType == BattleStatusEffectType.GuardianCircle || effect.EffectType == BattleStatusEffectType.FocusedDefense || effect.EffectType == BattleStatusEffectType.BleedResistance || effect.EffectType == BattleStatusEffectType.UndyingGuard || effect.EffectType == BattleStatusEffectType.DistributedDefense || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || (effect.EffectType == BattleStatusEffectType.PublicMark && !effect.PublicMarkCountsEnemyTurns) || effect.EffectType == BattleStatusEffectType.StethoscopeMark) // 기존 공명 표식은 아군 종료에만 해제하고 전술 표식은 대상 적 턴에 차감
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.DuelMark || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.EffectType == BattleStatusEffectType.ShockAbsorption || effect.EffectType == BattleStatusEffectType.ResistanceStance || effect.EffectType == BattleStatusEffectType.ActionSpeedUp || effect.EffectType == BattleStatusEffectType.ShieldCounter || effect.EffectType == BattleStatusEffectType.RetributionBulwark || effect.EffectType == BattleStatusEffectType.GuardianCircle || effect.EffectType == BattleStatusEffectType.FocusedDefense || effect.EffectType == BattleStatusEffectType.BleedResistance || effect.EffectType == BattleStatusEffectType.UndyingGuard || effect.EffectType == BattleStatusEffectType.DistributedDefense || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || (effect.EffectType == BattleStatusEffectType.PublicMark && !effect.PublicMarkTurnTeam.HasValue) || effect.EffectType == BattleStatusEffectType.StethoscopeMark) // 기존 수신기는 아군 종료에만 해제하고 전술 공명 표식은 실제 대상의 자기 턴에 차감
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
@@ -180,7 +181,17 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 화상 피해 처리 시작
                 int reduction = runtimeUnit.Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.ReducePeriodicBurnDamage)?.EffectValue ?? 0 : 0; // 실제 생존 아군 화상의 보유 유물 경감량
                 int damage = ResolveSaltLeatherPeriodicDamage(previousValue, runtimeUnit, BattleStatusEffectType.Burn, -reduction); // 기존 화상 경감량과 받는 아군 피해 증가의 합계
-                applied = runtimeUnit.TakeDamage(damage, BattleDamageType.None).AppliedDamage; // 화상의 기존 방어도와 피해 무효 경로 유지
+                applied = runtimeUnit.TakeDamage(damage, BattleDamageType.None).AppliedDamage; // 실제 방어도와 피해 무효가 반영된 화상 체력 손실
+                if (applied > 0 && applied < healthBefore && runtimeUnit.Team == BattleTeam.Ally && !runtimeUnit.IsDead && // 화상 피격 당시 생존 및 실제 양수 체력 손실 확인
+                    runtimeUnit.DamageRelicBattle is { IsBattleEnded: false } battle) // 실제 화상을 받아 살아남은 같은 조우 아군의 양수 체력 손실
+                { // 이번 유닛의 독립적인 방열판 확률 처리 시작
+                    var relic = battle.DamageRelicInventory?.FindEffect(RelicEffectType.WasteHeatRadiatorBurnAttackUp); // 현재 전투에 등록한 폐열 방열판 확인
+                    int chance = relic?.TriggerChancePercent ?? 0; // 기존 정수 확률 규칙과 같은 원본 범위
+                    if (relic?.EffectValue > 0 && chance > 0 && (chance >= 100 || UnityEngine.Random.Range(0, 100) < chance)) // 한 번의 양수 화상마다 독립 성공 판정
+                    { // 실제 기존 효과의 지속시간 처리 뒤 강화 예약 시작
+                        radiatorReward = relic; // 이번 종료에 새 강화의 첫 기간 차감 방지
+                    } // 실제 기존 효과의 지속시간 처리 뒤 강화 예약 종료
+                } // 이번 유닛의 독립적인 방열판 확률 처리 종료
             } // 화상 피해 처리 종료
             else if (renew) // 생존 아군 자신의 실제 턴 종료인 경우
             { // 재생 지속 회복 시작
@@ -204,6 +215,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             } // 상태 만료 처리 종료
             results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, effect.RemainingTurns, effect.StackCount, triggered, reason)); // 턴 종료 처리 결과 기록
         } // 턴 종료 효과 확인 종료
+        if (radiatorReward != null && !runtimeUnit.IsDead) // 이번 종료에 실제 화상을 받은 뒤 아직 생존한 대상 확인
+        { // 다음 두 아군 차례의 독립 공격력 강화 시작
+            runtimeUnit.ApplyStatusEffect(BattleStatusEffectType.WasteHeatAttackPowerUp, radiatorReward.EffectValue, radiatorReward.StatusDuration, radiatorReward.StatusMaximumStacks); // 기존 공격력 강화와 겹쳐도 자기 자신만 한 중첩 갱신
+        } // 다음 두 아군 차례의 독립 공격력 강화 종료
         if (results.Count > 0 && !runtimeUnit.IsDead) // 실제 상태 변경 여부 확인
         { // 상태 변경 알림 시작
             runtimeUnit.NotifyStatusEffectsChanged(); // 상태 화면 갱신 알림

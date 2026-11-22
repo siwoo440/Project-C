@@ -12,8 +12,14 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public bool IsExpired => RemainingTurns <= 0 || (EffectType == BattleStatusEffectType.Burn || EffectType == BattleStatusEffectType.Poison) && EffectiveValue <= 0; // 지속 종료 또는 지속 피해 수치 소진 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
-    public string Description => PublicMarkCountsEnemyTurns ? "적 턴이 끝날 때마다 지속 시간 차감. 직접 카드 피해 표식 효과 적용" : GetDescription(EffectType, EffectiveValue); // 전술 표식의 실제 적 턴 또는 기존 상태 상세 설명
-    public bool PublicMarkCountsEnemyTurns { get; private set; } // 전술 표식이 사용하는 기존 공명 표식 인스턴스의 적 턴 수명
+    public string Description => PublicMarkTurnTeam switch // 기존 공명 표식의 전투 중 실제 진영 수명 안내
+    { // 현재 표식의 실제 턴 또는 원래 설명 선택 시작
+        BattleTeam.Ally => "아군 턴이 끝날 때마다 지속 시간 차감", // 아군에게 붙은 공명 표식의 실제 차례
+        BattleTeam.Enemy => "적 턴이 끝날 때마다 지속 시간 차감. 직접 카드 피해 표식 효과 적용", // 적에게 붙은 전술 표식과 기존 직접 카드 연계
+        _ => GetDescription(EffectType, EffectiveValue), // 전술 표식이 아니면 기존 상태의 상세 설명 사용
+    }; // 현재 표식의 실제 턴 또는 원래 설명 선택 종료
+    public bool PublicMarkCountsEnemyTurns => PublicMarkTurnTeam == BattleTeam.Enemy; // 기존 적 전술 표식의 공용 조회 계약
+    internal BattleTeam? PublicMarkTurnTeam { get; private set; } // 원래 수신기와 별개인 대상 진영의 실제 턴 수명
     internal bool HasAuthoredActionPointLoss { get; set; } // 원본이 행동력 감소로 지정한 경직의 실제 적용 출처
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
     public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction || EffectType == BattleStatusEffectType.ToolMaintenanceAttackUp; // 원래 사건과 도구 손질의 유효 직접 명중을 기다리는 상태
@@ -54,9 +60,9 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             damageDecay = (int)Math.Min(damageDecay, Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - Math.Max(1, value))); // 새 효과 수치 이상이 되도록 감소량 보정
         } // 지속 피해 갱신 처리 종료
     } // 재적용 종료
-    internal void SetPublicMarkEnemyTurnLifetime() // 실제 전술 카드의 공명 표식에서 적 턴 수명 지정
+    internal void SetPublicMarkTargetTurnLifetime(BattleTeam team) // 실제 전술 표식에서 대상의 자기 진영 턴 수명 지정
     { // 인스턴스에서 독립 표식 수명 저장 시작
-        PublicMarkCountsEnemyTurns = true; // 같은 상태 종류의 원래 아군 턴 수명과 분리
+        PublicMarkTurnTeam = team; // 원래 수신기와 독립인 현재 표식 대상의 실제 차례
     } // 인스턴스에서 독립 표식 수명 저장 종료
 
     internal BattleStatusEffectInstance CopyBlessingState() // 실제 수치와 지속을 가진 독립 강화 복제
@@ -195,6 +201,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "재생"; // 재생 이름 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격력 증가 종류
                 return "공격 증가"; // 공격력 증가 이름 반환
+            case BattleStatusEffectType.WasteHeatAttackPowerUp: // 폐열 방열판의 독립 공격력 강화
+                return "폐열 강화"; // 원래 강화와 구분되는 상태 표시 이름
             case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
                 return "상태 면역"; // 상태 면역 이름 반환
             case BattleStatusEffectType.PhysicalDefenseUp: // 물리 방어 증가 종류
@@ -283,6 +291,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 취약"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
                 return "회피율 감소"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.MagneticEvasionDown: // 자기장 압축핵의 별도 회피 약화
+                return "자기장 회피 감소"; // 전투와 도감에 표시되는 자기장 상태 이름
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return "마력 집중"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인
@@ -329,7 +339,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.ActionPointDown || effectType == BattleStatusEffectType.DistributionPhysicalDefenseDown || effectType == BattleStatusEffectType.LordFinalOrderWeakenedDefense || effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown || effectType == BattleStatusEffectType.GoldenLureAttackPercentDown; // 실제 기존 부정 상태와 새 금빛 미끼 약화 분류
+        return effectType == BattleStatusEffectType.MagneticEvasionDown || effectType == BattleStatusEffectType.ActionPointDown || effectType == BattleStatusEffectType.DistributionPhysicalDefenseDown || effectType == BattleStatusEffectType.LordFinalOrderWeakenedDefense || effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown || effectType == BattleStatusEffectType.GoldenLureAttackPercentDown; // 실제 기존 부정 상태와 새 금빛 미끼 약화 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -385,6 +395,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "재"; // 재생 아이콘 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
                 return "공"; // 공격 증가 아이콘 반환
+            case BattleStatusEffectType.WasteHeatAttackPowerUp: // 폐열 방열판 상태의 표시 기호
+                return "열"; // 작은 상태 아이콘의 대체 글자
             case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
                 return "면"; // 상태 면역 아이콘 반환
             case BattleStatusEffectType.PhysicalDefenseUp: // 물리 방어 증가 종류
@@ -473,6 +485,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법피해+"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
                 return "회피−"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.MagneticEvasionDown: // 자기장에 의해 따로 감소한 회피 약화
+                return "자기장−"; // 원본 투명 상태 아이콘의 대체 글자
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return "집중"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인
@@ -578,11 +592,13 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             case BattleStatusEffectType.Evasion: // 회피 종류
                 return $"적 공격 회피율 {effectiveValue}%p 증가 · 적 턴 종료에 지속 감소"; // 회피 설명 반환
             case BattleStatusEffectType.ActionPointDown: // 일반 적 턴의 실제 기간제 행동력 감소 상세
-                return $"행동력 감소 상태 · 수치 {effectiveValue}"; // 행동력 예산과 별개인 실제 약화 상태 수치 표시
+                return $"행동력 {effectiveValue} 감소 · 다음 적 행동 한 번 취소"; // 실제 행동 감소가 적용되는 기존 한 번의 적 예정 행동 안내
             case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
                 return $"첫 아군 턴 공격 명중률 {effectiveValue}%p 감소"; // 귀를 막은 효과 설명
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
+            case BattleStatusEffectType.WasteHeatAttackPowerUp: // 화상 피해 뒤 생긴 독립 공격력 강화 설명
+                return $"공격력 +{effectiveValue} · 아군 차례 종료에 지속 감소"; // 폐열 강화가 제공하는 실제 공격력과 남은 차례
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
                 return $"피해 카드 원본 피해 증가 {effectiveValue}"; // 공격 증가 설명 반환
             case BattleStatusEffectType.SandQueenSummonAttackGrow: // 실제 전투 중 소환만 누적한 강화 상태
@@ -679,6 +695,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"받는 마법 피해 {effectiveValue}% 증가"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
                 return $"현재 회피율 {effectiveValue}%p 감소"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.MagneticEvasionDown: // 자기장 압축핵이 만든 실제 두 적 턴 상태
+                return $"현재 회피율 {effectiveValue}%p 감소 · 적 턴 종료에 지속 감소"; // 자기장 상태의 실제 감소량과 남은 시간 기준
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return $"다음으로 사용하는 지팡이 피해 카드의 각 명중 피해 {effectiveValue} 증가"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인

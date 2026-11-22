@@ -167,6 +167,14 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.MagneticEvasionDown) // 적의 실제 회피율을 낮추는 상태
+                    { // 자기장 회피 약화의 도감 표시 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 10); // 전투와 같은 10퍼센트포인트 감소 문구
+                    } // 자기장 회피 약화의 도감 표시 종료
+                    else if (effect == BattleStatusEffectType.WasteHeatAttackPowerUp) // 폐열을 이용한 아군 공격력 강화
+                    { // 폐열 공격력 상태의 도감 표시 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 전투와 같은 실제 공격력 증가량
+                    } // 폐열 공격력 상태의 도감 표시 종료
                     else if (effect == BattleStatusEffectType.ActionPointDown) // 적의 행동력 감소 상태 표시
                     { // 행동력 감소 도감 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 전투의 실제 상태 설명과 같은 문구

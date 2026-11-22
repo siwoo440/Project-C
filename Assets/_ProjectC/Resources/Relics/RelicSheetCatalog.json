@@ -2676,7 +2676,7 @@
     {
       "sourceRow": 245,
       "name": "보안 집행체 배지",
-      "description": "기절 또는 행동력 감소 상태 적에게 피해 +15%",
+      "description": "기절이나 행동력 감소가 활성인 적에게 아군 카드가 직접 주는 피해가 15% 증가한다. 서리 감옥의 동작 취소도 포함한다.",
       "buyMin": 245,
       "buyMax": 288,
       "buyVariance": 43,
@@ -2687,7 +2687,7 @@
     {
       "sourceRow": 246,
       "name": "회수 드론 갈고리",
-      "description": "표식 상태 적을 공격하면 20% 확률로 행동력 -1",
+      "description": "아군의 카드가 표식이 있는 생존 적에게 명중하면 카드 한 번당 같은 적을 한 번 판정한다. 20% 확률로 그 적의 다음 예정 행동 하나를 취소한다.",
       "buyMin": 262,
       "buyMax": 298,
       "buyVariance": 36,
@@ -2698,7 +2698,7 @@
     {
       "sourceRow": 247,
       "name": "자기장 압축핵",
-      "description": "3턴마다 적 전체 회피율 -10% (2턴)",
+      "description": "아군의 실제 턴이 세 번 시작될 때마다 생존 적 전체의 회피율을 두 적 턴 동안 10%p 낮춘다.",
       "buyMin": 279,
       "buyMax": 322,
       "buyVariance": 43,
@@ -2709,7 +2709,7 @@
     {
       "sourceRow": 248,
       "name": "감시 코어 조각",
-      "description": "아군 전체 저항력 +10%, 첫 턴 드로우 -1",
+      "description": "전투 중 모든 아군의 마법 저항력이 10 증가하고, 첫 아군 턴의 기본 드로우는 한 장 줄어든다.",
       "buyMin": 296,
       "buyMax": 332,
       "buyVariance": 36,
@@ -2720,7 +2720,7 @@
     {
       "sourceRow": 249,
       "name": "폐열 방열판",
-      "description": "화상 피해를 받을 때 40% 확률로 공격력 +1 (2턴)",
+      "description": "아군이 화상으로 실제 체력을 잃으면 40% 확률로 그 아군의 공격력을 두 아군 턴 동안 1 높인다.",
       "buyMin": 313,
       "buyMax": 356,
       "buyVariance": 43,
@@ -2731,7 +2731,7 @@
     {
       "sourceRow": 250,
       "name": "긴급 재부팅 스위치",
-      "description": "전투당 1회 체력 30% 이하 아군 체력 12 회복",
+      "description": "전투당 한 번, 피해를 받은 뒤 체력이 최대치의 30% 이하가 된 생존 아군의 체력을 12 회복한다.",
       "buyMin": 180,
       "buyMax": 216,
       "buyVariance": 36,
@@ -2742,7 +2742,7 @@
     {
       "sourceRow": 251,
       "name": "고장 난 블랙박스",
-      "description": "아군이 전투불능이 되면 카드 2장 드로우",
+      "description": "아군이 실제로 전투불능이 될 때 공용 손패로 카드를 최대 두 장 뽑는다.",
       "buyMin": 197,
       "buyMax": 240,
       "buyVariance": 43,
@@ -2753,7 +2753,7 @@
     {
       "sourceRow": 252,
       "name": "격리실 번호표",
-      "description": "전투 시작 시 적 1명과 아군 1명 표식(2턴)",
+      "description": "전투 시작에 무작위 생존 아군 한 명과 적 한 명에게 각자의 두 턴 동안 표식을 부여한다.",
       "buyMin": 214,
       "buyMax": 250,
       "buyVariance": 36,

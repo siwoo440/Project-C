@@ -35,6 +35,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool usedFirstCupHealingBonus; // 전투에서 실제 회복으로 성수 마개를 사용한 여부
     private int cupHealingBonusForCurrentCard; // 먼저 성공한 성배 카드의 모든 회복 대상에게 주는 가산량
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
+    private readonly HashSet<BattleUnitRuntime> recoveryDroneHookTargets = new HashSet<BattleUnitRuntime>(); // 원래 카드 한 장의 실제 명중 대상별 난수 기록
     private readonly BattleSupplyRelics supplyRelics = new BattleSupplyRelics(); // 이번 전투의 심장핀과 구슬 발동 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int preparedWandDamage; // 사용이 확정된 지팡이 한 장의 모든 명중에 더할 피해
@@ -897,6 +898,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             bandageBonus = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FirstHealingCardBonus)?.EffectValue ?? 0; // 실제 보유한 붕대의 대상별 가산
         } // 첫 회복 카드 처리 종료
         turnRuntime.BeginFirstAllyAttack(cardInstance); // 실제 확정 피해 카드의 첫 아군 공격 선언과 한 번 가산 예약
+        recoveryDroneHookTargets.Clear(); // 새로 결제를 마친 카드의 대상별 갈고리 판정 초기화
         suitHitRelics.BeginCard(cardInstance, turnRuntime.CurrentRound, RelicRunManager.Instance?.Inventory); // 이번 피해 카드의 첫 직접 명중 보너스 예약
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
@@ -2546,7 +2548,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.DefeatWard); // 일반 피해 무효와 별개인 전투불능 방지 제거
         } // 명중 대상의 생존 보호 제거 종료
         int penetration = cardInstance.SourceData.WandRule == WandCardRule.ArcaneSurge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 이번 비전 쇄도가 무시할 현재 마법 저항 비율
+        bool recoveryDroneMark = HasRecoveryDroneMark(targetUnit); // 실제 타격 직전의 유효한 대상 표식 저장
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true, magicalResistancePenetrationPercent: penetration, directCardType: cardInstance.CardType); // 원본 카드 계열과 저항 관통을 전달한 직접 타격
+        ApplyRecoveryDroneHook(cardInstance, targetUnit, recoveryDroneMark); // 원래 피해 계산 뒤 생존한 표식 적에게 행동 제한 판정
         ApplyTurretShock(cardInstance, targetUnit); // 명중한 원래 피해 경로 뒤 첫 생존 적의 감전 판정
         ApplyVoidCollapseFailureCost(cardInstance, damageResult.WasTargetDefeated && targetUnit.IsDead); // 이번 원래 타격에 실제로 쓰러진 적인지 판별한 실패 비용 처리
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
@@ -2796,6 +2800,28 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             armedTurretShell = null; // 빗나가도 다른 공격으로 준비가 넘어가지 않도록 즉시 소비
         } // 이전 방패의 공격 기회 정산 종료
     } // 순서가 확정된 이번 공격 검사 종료
+
+    private static bool HasRecoveryDroneMark(BattleUnitRuntime target) // 기존 직접 피해 표식과 활성 결투 표식 확인
+    { // 갈고리가 인식할 원본 표식 확인 시작
+        return target.HasActiveCardDamageMark || target.GetStatusEffect(BattleStatusEffectType.DuelMark) is { IsExpired: false }; // 기존 표식 명중률 유물과 같은 실제 표식 종류
+    } // 갈고리가 인식할 원본 표식 확인 종료
+
+    private void ApplyRecoveryDroneHook(CardInstance card, BattleUnitRuntime target, bool wasMarked) // 실제 표식 명중의 대상별 한 번 행동 감소
+    { // 실제 아군 카드와 적중 대상 확인 시작
+        if (!wasMarked || target is not { Team: BattleTeam.Enemy, IsDead: false } || card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } || // 표식이 있던 생존 적과 실제 아군 공격자 확인
+            !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition) // 현재 유효한 원래 아군 공격 타격 확인
+        { // 유효하지 않은 타격의 발동 제외 시작
+            return; // 사망이나 종료 및 표식 없는 대상에서 확률 보존
+        } // 유효하지 않은 타격의 발동 제외 종료
+        var hook = turnRuntime.DamageRelicInventory?.FindEffect(RelicEffectType.RecoveryDroneHookMarkedActionLoss); // 실제 탐사에서 보유한 원본 갈고리 조회
+        if (hook == null || hook.EffectValue <= 0 || hook.StatusDuration <= 0 || hook.TriggerChancePercent <= 0 || // 실제 유효한 행동력 감소 수치 및 기간과 확률 확인
+            !recoveryDroneHookTargets.Add(target) || (hook.TriggerChancePercent < 100 && UnityEngine.Random.Range(0, 100) >= hook.TriggerChancePercent)) // 같은 한 장의 동일 적 판정과 실제 원본 성공률 확인
+        { // 발동 실패나 이미 판정된 대상 제외 시작
+            return; // 같은 카드의 반복 타격 또는 기존 실패 확률 보존
+        } // 발동 실패나 이미 판정된 대상 제외 종료
+        var result = target.ApplyStatusEffect(BattleStatusEffectType.ActionPointDown, hook.EffectValue, hook.StatusDuration, 1, card.OwnerUnit); // 다음 실제 적 행동 취소의 원래 면역과 수명 적용
+        FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.ActionPointDown, result); // 실제 적용이나 면역 결과의 전투 표시
+    } // 실제 아군 카드와 적중 대상 확인 종료
 
     private void ApplyTurretShock(CardInstance card, BattleUnitRuntime target) // 이 공격에서 직접 명중한 첫 적의 감전 처리
     { // 현재 공격의 실제 첫 표적 검사 시작
@@ -3089,12 +3115,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 펜촉 드로우 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
+        bool recoveryDroneMark = false; // 별도 연쇄 타격의 표식 이전 상태 기본값
         BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, // 다른 적의 독립 명중 처리
             preparedSwordDamage: preparedSwordDamage, // 정비 보너스가 남아 있는 검 피해
-            applyTargetBonus: (hit, damage) => ApplyDirectHitRelics(card, hit, damage), // 태양 연속 공격의 기존 명중 유물
+            applyTargetBonus: (hit, damage) => // 연속 공격의 정상 명중 유물과 사전 표식 확인
+            { // 독립 명중의 원래 피해 계산 시작
+                recoveryDroneMark = HasRecoveryDroneMark(hit); // 기존 피해 정산 이전의 활성 표식 저장
+                return ApplyDirectHitRelics(card, hit, damage); // 태양 연속 공격의 원래 명중 유물 계산
+            }, // 독립 명중의 원래 피해 계산 종료
             applyFlatTargetBonus: (hit, damage) => ApplyLandedFlatCardDamage(card, hit, damage)); // 치명타 뒤 한 번 제한의 직접 타격 가산
         if (target != null && !missed) // 추가 타격이 직접 명중한 적 확인
         { // 현재 공격의 실제 추가 적중 처리 시작
+            ApplyRecoveryDroneHook(card, target, recoveryDroneMark); // 같은 원본 카드의 추가 명중이 표식 적에 들어간 경우 판정
             ApplyTurretShock(card, target); // 원래 공격이 모두 빗나갔다면 실제 첫 연쇄 적중에서 같은 기회 정산
         } // 현재 공격의 실제 추가 적중 처리 종료
         if (target != null && missed) // 추가 공격 빗나감 확인
