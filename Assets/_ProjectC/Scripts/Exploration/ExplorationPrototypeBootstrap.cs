@@ -164,8 +164,14 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
         WorldTutorialProgress tutorial = new WorldTutorialProgress(WorldTutorialKind.Exploration, new PlayerPrefsSettingsStore()); // 기기별 탐사 안내 진행 생성
         WorldTutorialView tutorialView = WorldTutorialView.Create(canvas, tutorial, () => tutorialPlayer != null ? (Vector2)tutorialPlayer.transform.position : Vector2.zero, step => null, true); // 실제 이동을 확인하는 탐사 안내 화면 생성
         tutorialView.BindPlayer(tutorialPlayer); // 맵 자동 배치와 직접 이동 구분 연결
+        Vector2 sideButtonSize = new Vector2(170f, 72f); // 중앙 상태판 양옆의 같은 버튼 크기
+        float sideButtonOffset = progressPlate.sizeDelta.x * 0.5f + 22f; // 상태판 가장자리와 버튼 사이 여백
+        relics.ToggleRect.pivot = new Vector2(1f, 0.5f); // 상태판 쪽에 유물 버튼의 오른쪽 기준점 설정
+        tutorialView.ReplayRect.pivot = new Vector2(0f, 0.5f); // 상태판 쪽에 도움말 버튼의 왼쪽 기준점 설정
+        PreparationUi.Place(relics.ToggleRect, progressPlate.anchorMin, new Vector2(-sideButtonOffset, progressPlate.anchoredPosition.y), sideButtonSize); // 중앙 상태판 바로 왼쪽의 유물 버튼
+        PreparationUi.Place(tutorialView.ReplayRect, progressPlate.anchorMin, new Vector2(sideButtonOffset, progressPlate.anchoredPosition.y), sideButtonSize); // 중앙 상태판 바로 오른쪽의 탐사 도움말
         hudRect = (RectTransform)canvas.transform; // 상단 요소의 사용 가능 너비 확인
-        RectTransform[] controls = { (RectTransform)inventory.transform, relics.ToggleRect, tutorialView.ReplayRect, progressPlate, (RectTransform)resources.transform }; // 각 상단 영역의 원래 부모 보존
+        RectTransform[] controls = { (RectTransform)inventory.transform, relics.ToggleRect, progressPlate, tutorialView.ReplayRect, (RectTransform)resources.transform }; // 왼쪽부터 확인할 상단 요소의 원래 부모 보존
         headerControls = new (RectTransform, Vector2)[controls.Length]; // 기준 위치를 저장할 상단 요소 목록
         for (int index = 0; index < controls.Length; index++) // 창을 줄이기 전의 위치와 영역 순회
         { // 상단 기준 위치 저장 시작
