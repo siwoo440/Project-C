@@ -7,11 +7,11 @@ public sealed class ExplorationResourceHud : MonoBehaviour // 탐사 중 보유 
     private readonly TMP_Text[] values = new TMP_Text[4]; // 골드와 세 가지 재료의 숫자
     private PlayerResourceManager resources; // 실제 보유 재화 관리자
 
-    public static void Create(Canvas canvas, PlayerResourceManager source) // 오른쪽 위 재화 패널 생성
+    public static ExplorationResourceHud Create(Canvas canvas, PlayerResourceManager source) // 오른쪽 위 재화 패널 생성
     { // 패널 생성 시작
         RectTransform panel = PreparationUi.CreatePanel("ExplorationResources", canvas.transform, Vector2.one, Vector2.one); // 오른쪽 위 패널 생성
         panel.pivot = Vector2.one; // 패널 오른쪽 위 기준점
-        PreparationUi.Place(panel, Vector2.one, new Vector2(-20f, -20f), new Vector2(500f, 56f)); // 화면 경계 안쪽 배치
+        PreparationUi.Place(panel, Vector2.one, new Vector2(-32f, -28f), new Vector2(570f, 88f)); // 확대된 오른쪽 자원 영역 배치
         Image frame = panel.GetComponent<Image>(); // 네 칸 배경 조회
         LobbyUiArt.Apply(frame, "ExplorationResourceFrame"); // 제작한 재화 테두리 연결
         frame.raycastTarget = false; // 탐사 입력 통과
@@ -24,6 +24,7 @@ public sealed class ExplorationResourceHud : MonoBehaviour // 탐사 중 보유 
         } // 개별 재화 칸 생성 종료
         source.ResourcesChanged += hud.Refresh; // 획득과 소비 즉시 반영
         hud.Refresh(); // 첫 화면에 현재 수량 표시
+        return hud; // 창 크기에 맞춰 배치할 재화 패널 반환
     } // 패널 생성 종료
 
     private TMP_Text CreateEntry(string iconName, int index) // 재화 한 칸 구성
@@ -35,7 +36,7 @@ public sealed class ExplorationResourceHud : MonoBehaviour // 탐사 중 보유 
         LobbyUiArt.Apply(icon, iconName); // 로비와 동일한 재화 아이콘 사용
         icon.preserveAspect = true; // 원본 비율 유지
         icon.raycastTarget = false; // 아이콘 입력 통과
-        TMP_Text label = PreparationUi.CreateText("Value", entry, string.Empty, 24f); // 수량 글자 생성
+        TMP_Text label = PreparationUi.CreateText("Value", entry, string.Empty, 29f); // 확대된 수량 글자 생성
         PreparationUi.Stretch(label.rectTransform, new Vector2(0.42f, 0.12f), new Vector2(0.91f, 0.88f)); // 아이콘 오른쪽 숫자 영역
         label.alignment = TextAlignmentOptions.MidlineRight; // 수량 오른쪽 정렬
         label.textWrappingMode = TextWrappingModes.NoWrap; // 큰 수량 한 줄 표시

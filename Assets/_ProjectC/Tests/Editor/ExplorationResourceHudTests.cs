@@ -58,6 +58,16 @@ public sealed class ExplorationResourceHudTests // 탐사 재화 표시와 상�
         Assert.IsFalse(progress.text.Contains("호감도")); // 호감도 문구 제거 확인
         Assert.IsFalse(progress.text.Contains("이번 탐사 클리어")); // 클리어 조우 문구 제거 확인
         Assert.IsFalse(progress.text.Contains("Gold") || progress.text.Contains("나사") || progress.text.Contains("철판") || progress.text.Contains("전선")); // 재화 이름 글자 제거 확인
+        Transform plate = progress.transform.parent; // 성장 정보가 들어간 중앙 상태판 조회
+        Assert.AreEqual("ExplorationProgressPlate", plate.name); // 우측 재화와 분리된 중앙 상태판 확인
+        Assert.IsNotNull(plate.GetComponent<Image>().sprite); // 제작한 중앙 배경 이미지 등록 확인
+        TMP_Text floor = plate.Find("Floor").GetComponent<TMP_Text>(); // 현재 층의 독립 문구 조회
+        Assert.AreEqual($"F{ExplorationSessionManager.Instance.CurrentFloor}", floor.text); // 접두어 없는 F1 형식 확인
+        Assert.AreEqual(Color.white, floor.color); // 현재 층의 흰색 글자 확인
+        Assert.AreEqual(FontStyles.Bold, floor.fontStyle); // 현재 층의 굵은 스타일 확인
+        Assert.Greater(floor.fontSizeMax, progress.fontSizeMax); // 성장 정보보다 큰 층 글자 확인
+        CharacterProgressionManager.Instance.RestoreProgress(2, 7); // 현재 탐사에서 즉시 성장 기록 복원
+        StringAssert.Contains("EXP 7/30", progress.text); // 화면 전환 없이 바뀐 경험치 확인
         ShopPrototypeView shop = Object.FindFirstObjectByType<ShopPrototypeView>(); // 실제 상점 화면 조회
         Assert.IsNotNull(shop); // 실제 상점 화면 유지 확인
         ExplorationMapRuntime map = Object.FindFirstObjectByType<ExplorationMapRuntime>(); // 실제 탐사 맵 조회

@@ -12,6 +12,7 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
     private Button replayButton; // 탐사 안내 다시 보기 버튼
     private TutorialPanelLayout panelLayout; // 예시 이미지와 설명 공통 배치
     private ExplorationPlayerController trackedPlayer; // 자동 위치 변경을 감시할 탐사 플레이어
+    internal RectTransform ReplayRect => replayButton != null ? (RectTransform)replayButton.transform : null; // 탐사 도움말 버튼 배치 영역
     public static WorldTutorialView Create(Canvas canvas, WorldTutorialProgress tutorial, Func<Vector2> position, Func<int, RectTransform> target, bool showReplayButton) // 거점 또는 탐사 안내 생성
     { // 안내 화면 생성 시작
         if (canvas == null || tutorial == null || position == null || target == null) // 필수 안내 연결 확인
@@ -51,7 +52,7 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
     { // 안내 구성 시작
         if (showReplayButton) // 탐사 화면 전용 다시 보기 확인
         { // 다시 보기 생성 시작
-            replayButton = PreparationUi.CreateButton("ReplayButton", transform, "탐사 도움말", new Vector2(0.64f, 0.98f), new Vector2(0f, -8f), new Vector2(150f, 42f), Replay); // 탐사 안내 다시 보기 생성
+            replayButton = PreparationUi.CreateButton("ReplayButton", transform, "탐사 도움말", new Vector2(0.359375f, 1f), new Vector2(0f, -55f), new Vector2(170f, 72f), Replay); // 왼쪽 소모품과 중앙 층 사이의 확대 도움말
         } // 다시 보기 생성 종료
         guide = PreparationUi.CreatePanel("Guide", transform, Vector2.zero, Vector2.one); // 안내 전체 배경 생성
         Image background = guide.GetComponent<Image>(); // 안내 전체 배경 조회

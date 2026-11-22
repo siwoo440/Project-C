@@ -18,6 +18,7 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
     private bool previousInputBlocked; // 화면 열기 전 탐사 입력 상태
     private bool isOpen; // 실제 유물 화면 열림 여부
     private bool dirty = true; // 닫힌 동안 유물 목록 변경 여부
+    internal RectTransform ToggleRect { get; private set; } // 왼쪽 상단의 유물 열기 버튼 영역
     public static ExplorationRelicWindow Create(Canvas canvas, RelicInventoryRuntime source) // 실제 탐사 유물 화면 생성
     { // 유물 화면 생성 시작
         if (canvas == null || source == null) // 실제 캔버스와 보관함 확인
@@ -39,11 +40,12 @@ public sealed class ExplorationRelicWindow : MonoBehaviour // 탐사 중 보유 
         inventory = source; // 실제 유물 보관함 저장
         Button toggle = CreateButton("RelicButton", transform, "유물", 24f); // 아이템 칸 오른쪽 유물 버튼 생성
         RectTransform toggleRect = toggle.GetComponent<RectTransform>(); // 유물 버튼 영역 조회
+        ToggleRect = toggleRect; // UI 너비 변화에 맞출 유물 버튼 보관
         toggleRect.anchorMin = new Vector2(0f, 1f); // 유물 버튼 왼쪽 위 최소 앵커
         toggleRect.anchorMax = new Vector2(0f, 1f); // 유물 버튼 왼쪽 위 최대 앵커
         toggleRect.pivot = new Vector2(0f, 1f); // 유물 버튼 왼쪽 위 기준점
-        toggleRect.anchoredPosition = new Vector2(348f, -20f); // 실제 아이템 칸 오른쪽 배치
-        toggleRect.sizeDelta = new Vector2(150f, 60f); // 유물 버튼 크기 설정
+        toggleRect.anchoredPosition = new Vector2(432f, -14f); // 확대된 소모품 영역 오른쪽 배치
+        toggleRect.sizeDelta = new Vector2(150f, 65f); // 유물 버튼 높이 확대
         toggle.onClick.AddListener(Open); // 유물 창 열기 연결
         CreateOverlay(); // 유물 상세와 격자 화면 생성
         inventory.Changed += HandleInventoryChanged; // 실제 유물 획득과 제거 연결
