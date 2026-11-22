@@ -33,6 +33,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool dryWaterskinSettled; // 실제 종료 저장 전 물주머니 회복 처리 여부
     private int firstActualAllyTurnRound; // 실제 첫 아군 차례의 라운드 번호
     private bool firstAllyAttackDeclared; // 실제 첫 아군 턴의 최초 공격 선언 여부
+    private bool heatSeekerAttackUsed; // 이번 전투에서 실명 공격 보정을 실제 사용한 기록
+    private CardInstance heatSeekerAttack; // 하나의 실제 공격 범위에서만 실명 감소를 무시할 원본
     private BattleUnitRuntime firstAttackBonusOwner; // 확정한 최초 공격의 실제 카드 소유자
     private int pendingFirstAttackBonus; // 현재 첫 공격 카드의 첫 명중에 남은 가산량
     private bool sandBoneUsed; // 이번 전투에서 출혈 적에게 실제 직접 피해 가산 사용 여부
@@ -254,6 +256,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
         ApplyColdCoreOpeningBurn(); // 첫 행동 전에 살아 있는 양 진영에 원래 화상 부여
         ApplyDesertTrackerOpening(); // 첫 실제 진영 행동 전에 가장 낮은 현재 체력 적 표식
+        ApplyWatchPodLensOpeningMark(); // 첫 실제 진영 행동 전에 임의의 살아 있는 적에게 두 적 턴 표식 부여
         ApplyDesertOpeningAllyEffects(); // 실제 개막 회복과 두 적 턴 회피를 선제 공격 전에 적용
         ApplyOpeningCorrosion(); // 선제 공격 전에 실제 생존 적에게 실금석의 마법 저항 약화 적용
         ApplyOpeningStethoscopeMark(); // 기존 첫 턴 준비 중 최대 현재 체력 적에게 청진기 표식 적용
@@ -636,6 +639,21 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         var target = enemyUnits.Where(enemy => enemy is { Team: BattleTeam.Enemy, IsDead: false }).OrderBy(enemy => enemy.CurrentHealth).FirstOrDefault(); // 현재 체력 최저와 동일 수치의 원래 배치 순서
         target?.ApplyTacticalPublicMark(relic.EffectValue, relic.StatusDuration, null); // 실제 세 적 턴의 기존 공명 표식과 면역 처리
     } // 최저 현재 체력 생존 적 고르기 종료
+    private void ApplyWatchPodLensOpeningMark() // 감시 포드 렌즈의 실제 전투 개막 표식
+    { // 현재 유물과 원본의 유효 표식 검사 시작
+        var lens = openingRelics?.FindEffect(RelicEffectType.WatchPodLensOpeningMark); // 탐사에서 실제 보유한 개막 유물 조회
+        if (lens == null || lens.EffectValue <= 0 || lens.StatusDuration <= 0) // 유효한 수치와 적 턴 기간이 있는 원본인지 확인
+        { // 미보유 또는 무효 원본 적용 제외 시작
+            return; // 현재 전투의 상태와 원래 무작위 분포 유지
+        } // 미보유 또는 무효 원본 적용 제외 종료
+        var candidates = enemyUnits.Where(enemy => enemy is { Team: BattleTeam.Enemy, IsDead: false }).Distinct().ToList(); // 재판정 없이 고를 실제 생존 적의 고유 후보
+        if (candidates.Count > 0) // 생존 후보가 실제로 있는지 확인
+        { // 균등 선택과 기존 공명 표식의 적용 시작
+            var target = candidates[UnityEngine.Random.Range(0, candidates.Count)]; // 현재의 각 고유 생존 적이 같은 확률로 선택되는 한 번의 추첨
+            target.ApplyTacticalPublicMark(lens.EffectValue, lens.StatusDuration, null); // 일반 공명 표식의 기존 면역과 적 턴 기준 지속 유지
+        } // 균등 선택과 기존 공명 표식의 적용 종료
+    } // 현재 유물과 원본의 유효 표식 검사 종료
+
     private void ApplyDesertOpeningAllyEffects() // 마른 오아시스와 모래폭풍 병의 실제 개막 효과
     { // 첫 진영 행동 전에 영향을 받을 아군 확인 시작
         var oasis = openingRelics?.FindEffect(RelicEffectType.DryOasisHeartOpeningHealAndMental); // 현재 체력 회복 원본과 독립 정신 비용
@@ -1901,6 +1919,36 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         firstAttackBonusOwner = card.OwnerUnit; // 현재 공격의 실제 카드 소유자 저장
         pendingFirstAttackBonus = openingRelics?.FindEffect(RelicEffectType.AmbushBugAntennaFirstTurnFirstAttackDamage)?.EffectValue ?? 0; // 등록된 첫 타격 가산 원본 확인
     } // 첫 아군 공격 가산 준비 종료
+
+    internal bool ResolveHeatSeekerBlindOverride(CardInstance card, BattleUnitRuntime target, bool preview = false) // 첫 실제 실명 아군 공격의 대상별 명중 보정 조회
+    { // 실제 카드 공격 범위와 살아 있는 적 확인 시작
+        if (disposed || !IsPlayerTurn || IsBattleEnded || HasPendingBossPhaseTransition || // 진행 중인 실제 아군 공격에서만 검사
+            card?.EffectType != CardEffectType.Damage || card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } source || // 현재 정상 사용 카드와 살아 있는 공격자 확인
+            target is not { Team: BattleTeam.Enemy, IsDead: false } || !registeredUnits.Contains(source) || !registeredUnits.Contains(target)) // 실제 전투에 참가한 살아 있는 상대 확인
+        { // 실제 빗나감조차 판정할 수 없는 요청 제외 시작
+            return false; // 유물이나 실제 공격의 소모 상태 유지
+        } // 실제 빗나감조차 판정할 수 없는 요청 제외 종료
+        if (heatSeekerAttack == card) // 같은 원본 공격의 여러 대상 또는 반복 타격 여부 확인
+        { // 현재 원본의 같은 명중 규칙 반환 시작
+            return true; // 같은 범위의 실제 다른 적 명중에도 실명만 제외
+        } // 현재 원본의 같은 명중 규칙 반환 종료
+        if (heatSeekerAttackUsed || source.GetStatusEffect(BattleStatusEffectType.Blind) is not { IsExpired: false, EffectiveValue: > 0 } || // 아직 사용하지 않은 활성 실명 공격의 조건 확인
+            openingRelics?.FindEffect(RelicEffectType.HeatSeekerIgnoreFirstBlind) == null) // 현재 보유한 열원 탐색기의 실제 효과 확인
+        { // 적용하지 않는 일반 공격 처리 시작
+            return false; // 정상 명중 감소와 회피 및 방향 감각 규칙 유지
+        } // 적용하지 않는 일반 공격 처리 종료
+        if (!preview) // 실제 첫 유효한 명중 시도와 순수 미리 보기 구분
+        { // 명중 결과 전에 전투 한 번의 범위 잠금 시작
+            heatSeekerAttackUsed = true; // 빗나가더라도 두 번째 공격에서는 유물 재사용 없음
+            heatSeekerAttack = card; // 원래 실제 공격만 이어지는 모든 대상 판단에 같은 보정 사용
+        } // 명중 결과 전에 전투 한 번의 범위 잠금 종료
+        return true; // 실제 공격 또는 미리 보기에서 같은 실명 감소 제외 반환
+    } // 실제 카드 공격 범위와 살아 있는 적 확인 종료
+
+    internal void EndHeatSeekerAttack() // 현재 카드의 실명 무시 범위 종료
+    { // 카드를 사용한 뒤 다음 공격을 새로 구분하는 처리 시작
+        heatSeekerAttack = null; // 같은 물리 카드가 다시 돌아와도 이전 사용 보호 종료
+    } // 카드를 사용한 뒤 다음 공격을 새로 구분하는 처리 종료
 
     internal int ResolveFirstAllyAttackBonus(BattleUnitRuntime source, bool preview) // 미사용 예고와 선언한 카드의 첫 실제 명중 구분
     { // 최초 아군 공격 기회 처리 시작

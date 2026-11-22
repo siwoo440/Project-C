@@ -28,6 +28,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int pendingCardSuitRound; // 사용 카드를 정산하기 시작한 아군 라운드
     private bool usedFirstCardDrawBonus; // 이번 전투 최초 카드 드로우 증가 사용 기록
     private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
+    private RelicData armedTurretShell; // 사용을 마친 방패가 준비한 다음 아군 공격 한 번
+    private RelicData currentTurretShell; // 현재 해당 공격의 첫 실제 명중에만 쓸 감전 시도
+    private readonly HashSet<BattleUnitRuntime> syringeHealedTargets = new HashSet<BattleUnitRuntime>(); // 한 카드에서 최초 양수 회복이 있었던 파티원
     private int bandageBonus; // 현재 카드의 원래 회복 대상별 추가량
     private bool usedFirstCupHealingBonus; // 전투에서 실제 회복으로 성수 마개를 사용한 여부
     private int cupHealingBonusForCurrentCard; // 먼저 성공한 성배 카드의 모든 회복 대상에게 주는 가산량
@@ -869,7 +872,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 충돌 처리 종료
         finally // 충돌 처리 종료에 예약 드로우 정리 보장
         { // 카드 정산 범위 정리 시작
+            turnRuntime.EndHeatSeekerAttack(); // 실제 원본 공격이 끝나면 같은 실물의 다음 사용은 별도의 명중 범위
             turnRuntime.EndFirstAllyAttack(); // 전부 빗나간 최초 공격도 이번 카드 종료에 남은 가산 해제
+            currentTurretShell = null; // 이전 공격 전체가 놓친 감전 기회도 원래 공격 정산에서 종료
             turnRuntime.EndCardResolution(); // 비워진 손패 자리에 처치 보상 지급
         } // 카드 정산 범위 정리 종료
     } // 카드 정산 범위 종료
@@ -880,6 +885,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 사용 전에 버림 실패 처리 시작
             return; // 행동력 회복과 카드 사용 이벤트 및 원본 소모 없음
         } // 사용 전에 버림 실패 처리 종료
+        BeginTurretAttack(cardInstance); // 완료한 방패의 감전을 실제 다음 공격에만 이전
+        syringeHealedTargets.Clear(); // 새 원래 카드마다 생존 회복자 확률 시도 기록 초기화
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
         cupHealingBonusForCurrentCard = 0; // 현재 성배 카드와 이전 사용의 가산량 분리
         bool damagesAndHeals = cardInstance.TargetType == CardTargetType.EnemyAndAlly; // 직접 피해와 지정 회복을 함께 처리하는 카드 확인
@@ -2435,7 +2442,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
 
     private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit, int? additionalBase = null, (int Percent, int Paid, int Round) echoPlan = default) // 원본 또는 반향 공격의 한 타격 적용
     { // 타격 판정 시작
-        if (!BattleHitChance.Roll(cardInstance.OwnerUnit, targetUnit)) // 실명 상태의 공격 명중 확인
+        bool ignoreBlind = echoPlan.Percent == 0 && turnRuntime.ResolveHeatSeekerBlindOverride(cardInstance, targetUnit); // 원래 실제 공격 범위에서만 첫 실명 공격의 기존 불이익 제외
+        if (!BattleHitChance.RollWithBlindOverride(cardInstance.OwnerUnit, targetUnit, ignoreBlind)) // 기존 회피와 방향 감각을 유지한 실제 공격 명중 판단
         { // 카드 공격 빗나감 처리 시작
             if (echoPlan.Percent == 0) // 준비한 반향과 다른 원래 공격의 빗나감 확인
             { // 공허 붕괴의 원본 실패 비용 시작
@@ -2505,6 +2513,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중 대상의 생존 보호 제거 종료
         int penetration = cardInstance.SourceData.WandRule == WandCardRule.ArcaneSurge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 이번 비전 쇄도가 무시할 현재 마법 저항 비율
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true, magicalResistancePenetrationPercent: penetration, directCardType: cardInstance.CardType); // 원본 카드 계열과 저항 관통을 전달한 직접 타격
+        ApplyTurretShock(cardInstance, targetUnit); // 명중한 원래 피해 경로 뒤 첫 생존 적의 감전 판정
         ApplyVoidCollapseFailureCost(cardInstance, damageResult.WasTargetDefeated && targetUnit.IsDead); // 이번 원래 타격에 실제로 쓰러진 적인지 판별한 실패 비용 처리
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
         { // 마력 흡수 회복 시작
@@ -2552,7 +2561,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             TryRollWandHitStatus(cardInstance, targetUnit)) // 대상과 설정이 유효한 명중 상태만 실제 확률 확인
         { // 지팡이 명중 상태 부여 시작
             appliedStatus = cardInstance.StatusEffectType; // 원본이 지정한 감전과 기절 및 일반 지팡이 상태 종류 확인
-            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 기존 상태 면역과 중첩 및 발생자 전달
+            statusResult = appliedStatus == BattleStatusEffectType.Stagger && cardInstance.SourceData.CardId == "CRD_SHEET_FROST_PRISON" // 시트에 행동력 감소가 있는 실제 서리 감옥 명중 상태
+                ? targetUnit.ApplyFrostPrisonActionLoss(cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit) // 단일 네이티브 경직과 해당 상태의 원본 출처
+                : BattleSupplyRelics.ApplyDirectHitStatus(targetUnit, cardInstance.OwnerUnit, ref appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 다른 지팡이 및 유효 기계 출혈 치환의 기존 면역과 피드백
             if (appliedStatus == BattleStatusEffectType.ActionSpeedDown && statusResult is (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked)) // 실제 명중으로 적의 속도가 느려졌는지 확인
             { // 확정된 적 행동 순서 갱신 시작
                 enemyActions.RefreshActionOrder(); // 같은 행동과 대상 및 원래 속도 난수를 보존한 순서 변경
@@ -2724,14 +2735,77 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             cupBonus = usedFirstCupHealingBonus ? cupHealingBonusForCurrentCard : BattleSupplyRelics.Find(RelicEffectType.FirstCupHealingBonus)?.EffectValue ?? 0; // 최초 후보 또는 현재 활성 카드에만 가산량 설정
         } // 성배 회복 가산 종료
         int amount = (int)Math.Min(int.MaxValue, (long)healing + cupBonus); // 받는 회복 보정 이전에 직접 가산을 합산
+        var syringe = hasInjuredAllyTarget && card.OwnerUnit.Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.ScrapSyringeHealingTrade) : null; // 실제 아군 카드 회복에서만 보유 주사기 확인
+        amount = BoostSyringeHealing(amount, syringe); // 직접 회복 보너스 이후 기존 받는 회복 앞에서 독립 스무 퍼센트 가산
         int restored = target?.RestoreHealth(amount, card.OwnerUnit) ?? 0; // 받는 회복 보정과 체력 상한이 적용된 실제 회복량 확인
         if (cupBonus > 0 && restored > 0) // 부상 아군에게 실제 양의 성배 회복이 적용됐는지 확인
         { // 전투당 첫 성수 마개 회복 확정 시작
             usedFirstCupHealingBonus = true; // 같은 전투의 다른 카드에 대한 추가 발동 차단
             cupHealingBonusForCurrentCard = cupBonus; // 이 카드의 남은 부상 아군에게도 같은 가산 적용
         } // 전투당 첫 성수 마개 회복 확정 종료
+        ApplySyringeWeakness(card, target, restored, syringe); // 기존 회복 처리 뒤 실제 체력 증가가 있는 대상의 주사기 부작용 판정
         return restored; // 실제 카드 체력 회복량 반환
     } // 실제 카드 회복 종료
+    private void ArmTurretAfterShield(CardInstance card) // 실제 방패 카드 완료의 감전 준비
+    { // 원래 방패 카드와 실제 시전자 확인 시작
+        if (card.CardType == CardType.Shield && card.OwnerUnit.Team == BattleTeam.Ally) // 완료한 아군 방패의 실제 속성 확인
+        { // 다음 공격 한 번 준비 시작
+            armedTurretShell = BattleSupplyRelics.Find(RelicEffectType.LeakageTurretCasingShieldAttackShock); // 연속 방패 사용에도 같은 기회 하나만 유지
+        } // 다음 공격 한 번 준비 종료
+    } // 원래 방패 카드와 실제 시전자 확인 종료
+
+    private void BeginTurretAttack(CardInstance card) // 현재 실제 카드 행동에 이전 방패 준비 전달
+    { // 순서가 확정된 이번 공격 검사 시작
+        if (card.EffectType == CardEffectType.Damage && card.OwnerUnit is { Team: BattleTeam.Ally, IsDead: false }) // 실제 양쪽 공격과 지원 카드의 원래 선택 구분
+        { // 이전 방패의 공격 기회 정산 시작
+            currentTurretShell = armedTurretShell; // 이번 공격의 첫 실제 적 명중에 사용할 한 번의 기회
+            armedTurretShell = null; // 빗나가도 다른 공격으로 준비가 넘어가지 않도록 즉시 소비
+        } // 이전 방패의 공격 기회 정산 종료
+    } // 순서가 확정된 이번 공격 검사 종료
+
+    private void ApplyTurretShock(CardInstance card, BattleUnitRuntime target) // 이 공격에서 직접 명중한 첫 적의 감전 처리
+    { // 현재 공격의 실제 첫 표적 검사 시작
+        if (currentTurretShell == null || target?.Team != BattleTeam.Enemy) // 이미 소비됐거나 원래 적에게 직접 명중하지 않은 경우 확인
+        { // 감전 대상 제외 시작
+            return; // 같은 공격의 후속 타격과 아군 효과 제외
+        } // 감전 대상 제외 종료
+        var shell = currentTurretShell; // 이번 실제 첫 적 접촉의 원래 감전 자료
+        currentTurretShell = null; // 기존 체력 피해나 상태 신호 재진입 전에 첫 접촉 처리 완료
+        if (target.IsDead || target.HasStatusImmunity || card.OwnerUnit.IsDead || turnRuntime.IsBattleEnded || turnRuntime.HasPendingBossPhaseTransition) // 상태를 받을 수 없는 원래 첫 접촉 대상 확인
+        { // 무효 첫 명중 감전 처리 시작
+            return; // 첫 대상 외 적에게 기회를 전달하거나 난수를 소비하지 않음
+        } // 무효 첫 명중 감전 처리 종료
+        int chance = BattleSupplyRelics.GetShockApplicationChance(card.OwnerUnit, target, BattleStatusEffectType.Shock, shell.TriggerChancePercent); // 기존 구리선의 아군 확률 감전 보정 사용
+        if (RollTradeRelicChance(chance)) // 원본 확률과 실제 이번 한 번의 판정 확인
+        { // 네이티브 감전 부여 시작
+            var applied = target.ApplyStatusEffect(BattleStatusEffectType.Shock, shell.EffectValue, shell.StatusDuration, shell.StatusMaximumStacks, card.OwnerUnit); // 기존 원본 수치와 두 적 턴 감전 처리
+            FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.Shock, applied); // 실제 생존 적의 상태 아이콘과 피드백 표시
+        } // 네이티브 감전 부여 종료
+    } // 현재 공격의 실제 첫 표적 검사 종료
+
+    private static int BoostSyringeHealing(int amount, RelicData syringe) // 원래 받는 회복 이전의 주사기 카드 보정
+    { // 정수 범위와 기존 반올림의 원래 처리 시작
+        return amount > 0 && syringe?.EffectValue > 0 ? BattleUnitRuntime.ApplyPercentage(amount, syringe.EffectValue) : amount; // 유효한 직접 카드 시도에만 독립 스무 퍼센트 증가
+    } // 정수 범위와 기존 반올림의 원래 처리 종료
+
+    private void ApplySyringeWeakness(CardInstance card, BattleUnitRuntime target, int restored, RelicData syringe) // 실제 순회에서 처음 양수 회복을 얻은 아군의 비용
+    { // 정상 받는 회복 및 생존 면역 확인 시작
+        if (syringe == null || restored <= 0 || target is not { Team: BattleTeam.Ally, IsDead: false } || target.HasStatusImmunity || !syringeHealedTargets.Add(target)) // 실제 회복과 원래 부작용 대상 및 카드별 한 번 확인
+        { // 무효 카드 부작용 처리 시작
+            return; // 일반 회복과 실제로 오르지 않은 체력에 부작용 굴림 없음
+        } // 무효 카드 부작용 처리 종료
+        if (RollTradeRelicChance(syringe.TriggerChancePercent)) // 각 실제 아군에게 별도의 원본 스무 퍼센트 굴림
+        { // 기존 일반 공격력 약화 부여 시작
+            var applied = target.ApplyStatusEffect(BattleStatusEffectType.AttackPowerDown, 1, syringe.StatusDuration, syringe.StatusMaximumStacks, card.OwnerUnit); // 시전 턴부터 지속하는 네이티브 공격력 한 점 감소
+            FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.AttackPowerDown, applied); // 실제 치유 대상에만 새 약화의 기존 피드백 표시
+        } // 기존 일반 공격력 약화 부여 종료
+    } // 정상 받는 회복 및 생존 면역 확인 종료
+
+    private static bool RollTradeRelicChance(int chance) // 두 독립 유물의 원래 정수 확률 판정
+    { // 원본 발동 성공 범위 검사 시작
+        return chance >= 100 || chance > 0 && UnityEngine.Random.Range(0, 100) < chance; // 실제 부작용과 감전에만 각각 한 번 쓰는 기존 Unity 난수
+    } // 원본 발동 성공 범위 검사 종료
+
     private int ApplyLandedFlatCardDamage(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 아군 카드의 직접 적 피해 가산
     { // 직접 명중 유물 확인 시작
         var owner = card.OwnerUnit; // 이번 실제 카드 타격의 소유자
@@ -2911,6 +2985,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 usedCardsThisTurn.Add(card); // 현재 턴의 사용 완료만 복제 선택 후보로 저장
             } // 현재 실제 카드 등록 종료
         } // 복제 주문의 유효한 이번 턴 사용 내역 갱신 종료
+        ArmTurretAfterShield(card); // 필수 선택과 실제 사용을 끝낸 아군 방패 원본만 다음 공격 준비
         if (sameTurn && card.CardType == CardType.Cup && card.OwnerUnit is { Team: BattleTeam.Ally, IsDead: false } cupOwner) // 필수 선택을 마친 성배의 실제 생존 사용자 확인
         { // 검은 예배포의 성배 정산 시작
             int block = BattleSupplyRelics.Find(RelicEffectType.ChapelClothChaliceBlock)?.EffectValue ?? 0; // 보유한 검은 예배포의 원본 방어도 조회
@@ -2984,6 +3059,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             preparedSwordDamage: preparedSwordDamage, // 정비 보너스가 남아 있는 검 피해
             applyTargetBonus: (hit, damage) => ApplyDirectHitRelics(card, hit, damage), // 태양 연속 공격의 기존 명중 유물
             applyFlatTargetBonus: (hit, damage) => ApplyLandedFlatCardDamage(card, hit, damage)); // 치명타 뒤 한 번 제한의 직접 타격 가산
+        if (target != null && !missed) // 추가 타격이 직접 명중한 적 확인
+        { // 현재 공격의 실제 추가 적중 처리 시작
+            ApplyTurretShock(card, target); // 원래 공격이 모두 빗나갔다면 실제 첫 연쇄 적중에서 같은 기회 정산
+        } // 현재 공격의 실제 추가 적중 처리 종료
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ActionPointDown) // 적의 행동력 감소 상태 표시
+                    { // 행동력 감소 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 전투의 실제 상태 설명과 같은 문구
+                    } // 행동력 감소 도감 설명 종료
                     else if (effect == BattleStatusEffectType.GoldenLureAttackPercentDown) // 금빛 미끼의 실제 직접 공격 약화
                     { // 미끼 상태의 원본 수치 안내 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 10); // 전투 상태의 원래 십 퍼센트 감소 정보

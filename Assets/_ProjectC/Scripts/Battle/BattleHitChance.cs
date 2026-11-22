@@ -3,12 +3,17 @@ using UnityEngine; // 전투 무작위 판정 사용
 public static class BattleHitChance // 공격 명중 여부 계산
 { // 명중 판정 시작
     public static int GetPercent(BattleUnitRuntime attacker, BattleUnitRuntime target = null) // 실명과 대상 회피를 반영한 공격 명중률
+    { // 기존 명중과 예측의 기본 함수 시작
+        return GetPercentWithBlindOverride(attacker, target, false); // 원래 타격에서는 실명도 실제 판단에 포함
+    } // 기존 명중과 예측의 기본 함수 종료
+
+    internal static int GetPercentWithBlindOverride(BattleUnitRuntime attacker, BattleUnitRuntime target, bool ignoreBlind) // 원래 모든 명중 보정과 적용 가능한 실명 무시
     { // 명중률 조회 시작
         if (attacker == null || attacker.IsDead) // 공격자 생존 확인
         { // 공격 불가 처리 시작
             return 0; // 명중률 없음 반환
         } // 공격 불가 처리 종료
-        BattleStatusEffectInstance blind = attacker.GetStatusEffect(BattleStatusEffectType.Blind); // 공격자의 실명 상태 조회
+        BattleStatusEffectInstance blind = ignoreBlind ? null : attacker.GetStatusEffect(BattleStatusEffectType.Blind); // 같은 공격의 실명 감소만 제외하고 다른 명중 계산 유지
         int penalty = blind == null ? 0 : Math.Min(100, blind.EffectiveValue); // 실명 명중률 감소 범위 보정
         bool canEvade = target?.GetStatusEffect(BattleStatusEffectType.Fear) == null; // 기존 공포와 회피 가능 상태 확인
         int evasion = canEvade ? Math.Min(100, target?.GetStatusEffect(BattleStatusEffectType.Evasion)?.EffectiveValue ?? 0) : 0; // 회피 가능한 대상의 기존 회피율
@@ -39,12 +44,17 @@ public static class BattleHitChance // 공격 명중 여부 계산
         return roll < GetPercent(attacker, target); // 명중률과 동일한 경계 판정
     } // 명중 계산 종료
     public static bool Roll(BattleUnitRuntime attacker, BattleUnitRuntime target = null) // 공격 명중 무작위 판정
+    { // 원래 별도 공격의 명중률 적용 시작
+        return RollWithBlindOverride(attacker, target, false); // 고유 공격 범위의 면제 없이 기본 판정 사용
+    } // 원래 별도 공격의 명중률 적용 종료
+
+    internal static bool RollWithBlindOverride(BattleUnitRuntime attacker, BattleUnitRuntime target, bool ignoreBlind) // 같은 실제 명중 판정에서 적용 가능한 실명 제외
     { // 명중 굴림 시작
         if (attacker == null || attacker.IsDead) // 공격자 생존 확인
         { // 공격 불가 처리 시작
             return false; // 공격 불가 반환
         } // 공격 불가 처리 종료
-        int hitChance = GetPercent(attacker, target); // 실명과 방향 감각을 반영한 아군 공격 명중률
+        int hitChance = GetPercentWithBlindOverride(attacker, target, ignoreBlind); // 원래 회피와 방향 감각을 보존한 실제 명중률 조회
         return hitChance == 100 || UnityEngine.Random.Range(0, 100) < hitChance; // 확정 명중 이외의 공격만 무작위 판정
     } // 명중 굴림 종료
 } // 명중 판정 종료

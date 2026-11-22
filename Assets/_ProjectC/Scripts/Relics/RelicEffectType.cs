@@ -225,4 +225,12 @@ public enum RelicEffectType // 유물 효과 종류
     RustedScrewBundleMechanicalDamageReduction, // 기계형 적의 직접 공격 피해 감소
     BrokenLensCapMarkedAccuracy, // 표식이 있는 적에 대한 실제 명중률 증가
     BlackoutRecordChipBunkerTrapReduction, // 실제 벙커 이벤트 함정 피해 경감
+    WatchPodLensOpeningMark, // 개막 시 무작위 생존 적에게 표식 부여
+    LeakageCoilShockedWandDamage, // 활성 감전 적에 직접 들어가는 지팡이 추가 피해
+    CompressionPincerHandleReducedActionDamage, // 활성 행동력 감소가 있는 적에 대한 피해 가산
+    HeatSeekerIgnoreFirstBlind, // 실명 아군의 첫 실제 공격에서 실명 명중 저하 제외
+    ConveyorToothMechanicalBleedConversion, // 기계형 적 대상 출혈의 방어 감소 변환
+    LeakageTurretCasingShieldAttackShock, // 방패 사용 뒤 다음 공격에 예약한 감전
+    ScrapSyringeHealingTrade, // 실제 회복 카드의 추가 체력 회복과 약화 위험
+    MechanicalBugShellAreaReduction, // 적의 실제 직접 광역 피해 경감
 }

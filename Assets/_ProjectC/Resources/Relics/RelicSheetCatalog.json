@@ -2577,7 +2577,7 @@
     {
       "sourceRow": 236,
       "name": "감시 포드 렌즈",
-      "description": "전투 시작 시 무작위 적 1명 표식(2턴)",
+      "description": "전투 시작에 살아 있는 적 한 명을 무작위로 골라 두 적 턴 동안 표식을 부여한다.",
       "buyMin": 242,
       "buyMax": 278,
       "buyVariance": 36,
@@ -2588,7 +2588,7 @@
     {
       "sourceRow": 237,
       "name": "누전 코일",
-      "description": "감전 상태 적에게 지팡이 피해 +4",
+      "description": "감전이 활성인 적에게 아군의 지팡이 카드가 직접 명중할 때 피해가 4 증가한다.",
       "buyMin": 259,
       "buyMax": 302,
       "buyVariance": 43,
@@ -2599,7 +2599,7 @@
     {
       "sourceRow": 238,
       "name": "압착 집게 손잡이",
-      "description": "행동력 감소 상태 적에게 주는 피해 +10%",
+      "description": "행동력 감소 또는 서리 감옥의 행동 취소가 활성인 적에게 아군 카드가 직접 주는 피해가 10% 증가한다.",
       "buyMin": 276,
       "buyMax": 312,
       "buyVariance": 36,
@@ -2610,7 +2610,7 @@
     {
       "sourceRow": 239,
       "name": "열원 탐색기",
-      "description": "실명 상태여도 첫 공격 명중률 감소 무시",
+      "description": "전투 중 처음으로 실명 상태의 아군이 실제 공격할 때 해당 공격의 실명 명중률 감소를 무시한다.",
       "buyMin": 293,
       "buyMax": 336,
       "buyVariance": 43,
@@ -2621,7 +2621,7 @@
     {
       "sourceRow": 240,
       "name": "컨베이어 톱니",
-      "description": "기계형 적에게 출혈 대신 방어력 -2 (2턴) 부여 확률 +20%",
+      "description": "기계형 적에게 출혈을 부여하는 타격은 대신 두 적 턴 동안 물리 방어를 2 낮춘다. 원래 출혈 적용 확률에 20%p를 더한다.",
       "buyMin": 310,
       "buyMax": 346,
       "buyVariance": 36,
@@ -2632,7 +2632,7 @@
     {
       "sourceRow": 241,
       "name": "누전 포탑 탄피",
-      "description": "방패 카드 사용 후 다음 공격에 감전(2턴) 20% 추가",
+      "description": "방패 카드 사용을 마치면 다음 공격에서 처음 명중한 생존 적을 20% 확률로 두 적 턴 동안 감전시킨다.",
       "buyMin": 327,
       "buyMax": 370,
       "buyVariance": 43,
@@ -2643,7 +2643,7 @@
     {
       "sourceRow": 242,
       "name": "스크랩 주사기",
-      "description": "회복 카드 효과 +20%, 대상에게 약화(1턴) 20%",
+      "description": "아군 회복 카드의 체력 회복량을 20% 높인다. 카드로 실제 회복한 대상의 공격력을 20% 확률로 한 아군 턴 동안 1 낮춘다.",
       "buyMin": 194,
       "buyMax": 230,
       "buyVariance": 36,
@@ -2654,7 +2654,7 @@
     {
       "sourceRow": 243,
       "name": "기계벌레 껍질",
-      "description": "광역 피해 -10%",
+      "description": "아군이 적의 직접 광역 공격으로 받을 피해를 10% 줄인다.",
       "buyMin": 211,
       "buyMax": 254,
       "buyVariance": 43,
