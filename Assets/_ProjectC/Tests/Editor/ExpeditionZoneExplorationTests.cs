@@ -68,6 +68,15 @@ public sealed class ExpeditionZoneExplorationTests // 실제 지역 룸 콘텐�
             CollectionAssert.AreEquivalent(walls, Cells(layers["Wall"])); // 시드 결정적 벽 위치 보존
             CollectionAssert.AreEquivalent(edges, Cells(layers["WallEdges"])); // 이동 경계의 원래 모서리 관계 유지
             Assert.IsTrue(walls.All(cell => layers["Wall"].GetColliderType(cell) == Tile.ColliderType.Grid)); // 벽 변형 모두 같은 전체 충돌
+            Sprite[] wallSprites = walls.Select(cell => layers["Wall"].GetSprite(cell)).Distinct().ToArray(); // 런타임에서 잘라 만든 벽 원화 종류
+            foreach (Sprite sprite in wallSprites) // 실제 지도에서 사용 중인 각 벽 변형 순회
+            { // 벽 한 칸의 사각형 모양 검증 시작
+                var corners = new List<Vector2>(); // 스프라이트가 보관한 물리 외곽선 꼭짓점
+                Assert.AreEqual(1, sprite.GetPhysicsShapeCount(), sprite.name); // 벽 하나에 한 사각형 외곽선 확인
+                Assert.AreEqual(4, sprite.GetPhysicsShape(0, corners), sprite.name); // 픽셀 검출 없이 네 꼭짓점 사용 확인
+                Assert.That(corners.Max(point => point.x) - corners.Min(point => point.x), Is.EqualTo(1f).Within(0.001f), sprite.name); // 한 격자의 실제 가로 충돌 범위 확인
+                Assert.That(corners.Max(point => point.y) - corners.Min(point => point.y), Is.EqualTo(1f).Within(0.001f), sprite.name); // 한 격자의 실제 세로 충돌 범위 확인
+            } // 벽 한 칸의 사각형 모양 검증 종료
             Assert.IsTrue(floors.All(cell => layers["Floor"].GetColliderType(cell) == Tile.ColliderType.None)); // 바닥 변형 모두 기본 통과 속성
             view.Build(ExplorationMapGenerator.Generate(14, seed, 1), ExpeditionZoneId.ScorchedRavine); // 같은 지역과 시드로 복원
             Assert.AreSame(now, layers["Floor"].GetTile<Tile>(floors[0])); // 같은 지역에 이미 준비한 타일 객체 재사용

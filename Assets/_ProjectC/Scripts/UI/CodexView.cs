@@ -366,21 +366,49 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         detail.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.82f); // 상세 화면 뒤 어두운 배경 설정
         RectTransform panel = PreparationUi.CreatePanel("Panel", detail, new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f)); // 원화와 설명을 담을 상세 패널 생성
         LobbyUiArt.Apply(panel.GetComponent<Image>(), "FormationPanel"); // 기존 패널 디자인 적용
-        TMP_Text heading = PreparationUi.CreateText("Name", detail, entry.Name, 36f); // 항목 상세 이름 생성
-        PreparationUi.Place(heading.rectTransform, new Vector2(0.5f, 0.75f), Vector2.zero, new Vector2(800f, 70f)); // 상세 이름 위치 설정
-        TMP_Text description = PreparationUi.CreateText("Description", detail, string.IsNullOrWhiteSpace(entry.Description) ? "등록된 설명이 없습니다." : entry.Description, 26f); // 실제 항목 설명 생성
-        PreparationUi.Stretch(description.rectTransform, entry.HasArtwork ? new Vector2(0.5f, 0.34f) : new Vector2(0.25f, 0.34f), new Vector2(0.77f, 0.68f)); // 이미지 유무에 맞춘 설명 위치 설정
-        if (entry.HasArtwork) // 원화 또는 상태 아이콘을 표시하는 항목 확인
-        { // 상세 이미지 준비 시작
-            RectTransform area = PreparationUi.CreatePanel("Artwork", detail, new Vector2(0.23f, 0.34f), new Vector2(0.48f, 0.68f)); // 상세 원화의 표시 영역 생성
-            Image artwork = area.GetComponent<Image>(); // 상세 원화 표시 요소 조회
-            artwork.color = Color.white; // 기존 그림의 색상 유지
+        Vector2 titleAnchor = new Vector2(0.5f, 0.75f); // 제목판의 위쪽 중앙 기준점
+        RectTransform nameplate = CreateDetailBackdrop(detail, "Nameplate", titleAnchor, titleAnchor, 2f); // 금테 이름판 생성
+        TMP_Text heading = PreparationUi.CreateText("Name", detail, entry.Name, 36f); // 항목 상세 이름
+        const float titlePadding = 96f; // 양쪽 테두리와 제목 사이의 총 여백
+        float titleWidth = Mathf.Clamp(Mathf.Ceil(heading.preferredWidth) + titlePadding, 400f, 760f); // 현재 언어의 글자 폭에 맞춘 이름판
+        PreparationUi.Place(nameplate, titleAnchor, Vector2.zero, new Vector2(titleWidth, 100f)); // 이름판의 폭과 고정 높이
+        PreparationUi.Place(heading.rectTransform, titleAnchor, Vector2.zero, new Vector2(titleWidth - titlePadding, 64f)); // 이름판 안쪽 제목 여백
+        float descriptionLeft = entry.HasArtwork ? 0.49f : 0.218f; // 원화 유무에 따른 설명 시작점
+        RectTransform descriptionPanel = CreateDetailBackdrop(detail, "DescriptionPanel", new Vector2(descriptionLeft, 0.315f), new Vector2(0.782f, 0.695f), 2.5f); // 오른쪽 설명 배경
+        TMP_Text description = PreparationUi.CreateText("Description", detail, string.IsNullOrWhiteSpace(entry.Description) ? "등록된 설명이 없습니다." : entry.Description, 26f); // 등록 설명과 자동 글자 크기
+        InsetDetailContent(description.rectTransform, descriptionPanel, new Vector2(26f, 22f)); // 테두리 안쪽의 설명 여백
+        if (entry.HasArtwork) // 실제 원화가 있는 항목 확인
+        { // 상세 이미지 배치 시작
+            RectTransform artworkFrame = CreateDetailBackdrop(detail, "ArtworkFrame", new Vector2(0.218f, 0.315f), new Vector2(0.477f, 0.695f), 3.5f); // 왼쪽 원화 액자
+            RectTransform area = PreparationUi.CreatePanel("Artwork", detail, artworkFrame.anchorMin, artworkFrame.anchorMax); // 상세 원화 표시 영역
+            InsetDetailContent(area, artworkFrame, new Vector2(22f, 22f)); // 액자 안쪽의 원화 여백
+            Image artwork = area.GetComponent<Image>(); // 상세 원화 표시 요소
+            artwork.color = Color.white; // 원본 이미지 색상 유지
             artwork.preserveAspect = true; // 원본 이미지 비율 유지
-            artwork.enabled = false; // 원화가 준비되기 전 빈 이미지 감춤
-            StartCoroutine(ShowArtwork(entry, artwork)); // 이 상세 창에서만 원화 비동기 로드
-        } // 상세 이미지 준비 종료
+            artwork.raycastTarget = false; // 원화의 입력 가로채기 방지
+            artwork.enabled = false; // 로드 전 빈 이미지 숨김
+            StartCoroutine(ShowArtwork(entry, artwork)); // 상세 원화 비동기 로드
+        } // 상세 이미지 배치 종료
         PreparationUi.CreateButton("CloseButton", detail, "닫기", new Vector2(0.5f, 0.25f), Vector2.zero, new Vector2(200f, 70f), () => CloseDetail(detail)); // 상세 화면 닫기 버튼 생성
     } // 상세 화면 표시 종료
+    private static RectTransform CreateDetailBackdrop(RectTransform detail, string name, Vector2 minimum, Vector2 maximum, float borderScale) // 도감 상세 배경 생성
+    { // 상세 배경 생성 시작
+        RectTransform area = PreparationUi.CreatePanel(name, detail, minimum, maximum); // 배경의 위치와 크기
+        Image backdrop = area.GetComponent<Image>(); // 배경 스프라이트 표시 요소
+        backdrop.sprite = Resources.Load<Sprite>("UI/Lobby/CodexDetail" + name); // 영역별 제작 배경
+        backdrop.enabled = backdrop.sprite != null; // 리소스 누락 시 기본 패널 표시
+        backdrop.color = Color.white; // 제작 배경 원본 색상
+        backdrop.type = Image.Type.Sliced; // 해상도에 따른 모서리 변형 방지
+        backdrop.pixelsPerUnitMultiplier = borderScale; // 테두리의 화면 두께 조정
+        backdrop.raycastTarget = false; // 배경의 입력 가로채기 방지
+        return area; // 패딩 기준 배경 영역
+    } // 상세 배경 생성 종료
+    private static void InsetDetailContent(RectTransform content, RectTransform backdrop, Vector2 padding) // 상세 배경 안쪽 콘텐츠 배치
+    { // 콘텐츠 여백 적용 시작
+        PreparationUi.Stretch(content, backdrop.anchorMin, backdrop.anchorMax); // 배경과 같은 배치 기준
+        content.offsetMin = padding; // 왼쪽과 아래쪽 안쪽 여백
+        content.offsetMax = -padding; // 오른쪽과 위쪽 안쪽 여백
+    } // 콘텐츠 여백 적용 종료
     private static IEnumerator ShowArtwork(CodexEntry entry, Image artwork) // 상세 화면 한 곳에 요청 결과 표시
     { // 상세 원화 조회 시작
         ResourceRequest request = entry.RequestFullArtwork(); // 선택한 항목의 단일 원화 요청

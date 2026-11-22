@@ -111,6 +111,16 @@ public sealed class CodexViewTests // 도감 분류와 목록 검증
         Assert.IsNotNull(thumb); // 원화가 있는 유물의 독립 썸네일 확인
         Assert.LessOrEqual(Mathf.Max(thumb.texture.width, thumb.texture.height), 128); // 작은 별도 텍스처의 실제 임포트 크기 확인
         tail.GetComponent<Button>().onClick.Invoke(); // 스크롤 뒤 마지막 실제 항목 상세 열기
+        foreach (string part in new[] { "Nameplate", "ArtworkFrame", "DescriptionPanel" }) // 상세 배경 세 영역 순회
+        { // 상세 배경 검사 시작
+            Transform backdrop = view.transform.Find("Detail/" + part); // 상세 화면의 배경 영역 조회
+            Assert.IsNotNull(backdrop, part); // 지정한 위치의 독립 배경 확인
+            Image backdropImage = backdrop.GetComponent<Image>(); // 배경 스프라이트 표시 요소 조회
+            Assert.IsNotNull(backdropImage.sprite, part); // 실제 배경 이미지 연결 확인
+            Assert.AreEqual("CodexDetail" + part, backdropImage.sprite.name, part); // 영역별 고유 배경 확인
+            Assert.AreEqual(Image.Type.Sliced, backdropImage.type, part); // 해상도 변경 시 테두리 형상 보존 확인
+            Assert.IsFalse(backdropImage.raycastTarget, part); // 꾸밈 이미지의 입력 가로채기 방지 확인
+        } // 상세 배경 검사 종료
         Assert.AreEqual(lastRelic.Name, view.transform.Find("Detail/Name").GetComponent<TMP_Text>().text); // 재사용한 버튼의 최신 이름 확인
         Assert.AreEqual(lastRelic.Description, view.transform.Find("Detail/Description").GetComponent<TMP_Text>().text); // 재사용한 버튼의 최신 설명 확인
         Image detailArtwork = view.transform.Find("Detail/Artwork").GetComponent<Image>(); // 선택 상세의 별도 원화 표시 조회

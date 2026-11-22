@@ -1,7 +1,19 @@
 fileFormatVersion: 2
 guid: c74e4934d7385b10986209511763cd5c
 TextureImporter:
-  internalIDToNameTable: []
+  internalIDToNameTable:
+  - first:
+      213: 5754671048937133314
+    second: WallVariants_0
+  - first:
+      213: 4854062293177622306
+    second: WallVariants_1
+  - first:
+      213: -104323862833179628
+    second: WallVariants_2
+  - first:
+      213: 4862546226602529877
+    second: WallVariants_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -43,18 +55,18 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 0
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 192
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
   spriteTessellationDetail: -1
-  textureType: 0
+  textureType: 8
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -95,7 +107,111 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: WallVariants_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fdcb2d4571f5502af73a1e4731550fe
+      internalID: 5754671048937133314
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_1
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 435d17f00e785f22a75a1046d1c04415
+      internalID: 4854062293177622306
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_2
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe8d5dffde3b5414b8fc0c0c58ff0a13
+      internalID: -104323862833179628
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_3
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 437b3c07bc8f5455b397648c8eb746a3
+      internalID: 4862546226602529877
+      vertices: []
+      indices:
+      edges: []
+      weights: []
     outline: []
     customData:
     physicsShape: []
@@ -109,7 +225,11 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      WallVariants_0: 5754671048937133314
+      WallVariants_1: 4854062293177622306
+      WallVariants_2: -104323862833179628
+      WallVariants_3: 4862546226602529877
   mipmapLimitGroupName:
   pSDRemoveMatte: 0
   userData:
