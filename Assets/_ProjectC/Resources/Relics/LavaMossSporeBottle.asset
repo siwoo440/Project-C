@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: LavaMossSporeBottle
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_LAVA_MOSS_SPORE_BOTTLE
+  displayName: 용암 이끼 포자병
+  description: "실제 아군 턴이 세 번 시작될 때마다 현재 체력이 가장 낮은 부상 아군 한 명의 체력을 4 회복한다."
+  icon: {fileID: 21300000, guid: 4fba6d0b53bb5ac3afd0cb4dc79f2872, type: 3}
+  rarity: 0
+  triggerType: 3
+  effectType: 256
+  targetType: 9
+  triggerChancePercent: 100
+  effectValue: 4
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 3
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

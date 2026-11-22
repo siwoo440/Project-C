@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: CharredStoneCord
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_CHARRED_STONE_CORD
+  displayName: 그을린 돌끈
+  description: "아군이 화상으로 받는 피해를 1 줄인다."
+  icon: {fileID: 21300000, guid: f77da684c67d5f92a707474faa576647, type: 3}
+  rarity: 0
+  triggerType: 59
+  effectType: 253
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 14
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

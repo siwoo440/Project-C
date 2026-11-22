@@ -103,13 +103,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         ApplyActionOrderNumbers(); // 행동 순서를 실제 실행 목록과 예고에 동시에 반영
         StateChanged?.Invoke(); // 원래 예정 행동 데이터에 대한 화면 갱신 알림
     } // 현재 예정 행동 정렬 종료
-    private (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 개별 아군의 예정 피격 전 보호 상태 계산
-    { // 보호 순서 검사 시작
-        int block = target.CurrentBlock; // 현재 대상의 실제 방어도
-        bool preparation = true; // 첫 피해 적용 전 방어 준비 확인
-        bool interception = true; // 지정 대상의 첫 직접 공격 경감 확인
-        bool nullification = true; // 지정 대상의 첫 양수 피해 무효 확인
-        bool illusionAvailable = true; // 지정 대상의 첫 적격 명중까지 보존할 환영
+    private (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion, bool Basalt) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 실제 대상의 예정 피격 전 개인 및 공용 보호 확인
+    { // 개인 보호 또는 실제 공유 최초 보호 예고 시작
+        if (target.DamageRelicBattle?.GetBlackBasaltHitDamageReduction() > 0) // 아직 실제 첫 양수 직격의 공용 경감이 남았는지 확인
+        { // 실제 전체 피격 순서의 공용 반영 시작
+            return GetSharedDefenseBeforeAttack(action, target); // 각 이미 예정된 아군의 소모까지 순서대로 예측
+        } // 실제 전체 피격 순서의 공용 반영 종료
+        var defense = (Block: target.CurrentBlock, Preparation: true, Interception: true, Nullification: true, Illusion: true); // 보유한 공용 효과가 없는 대상의 기존 예고 상태
         foreach (BattleEnemyAction candidate in plannedActions) // 남은 적 행동 순서대로 예고 확인
         { // 앞선 공격 검사 시작
             if (candidate == action) // 이번 예고의 실제 순서 도달 확인
@@ -120,16 +120,54 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 피해 미포함 처리 시작
                 continue; // 다음 공격 확인
             } // 피해 미포함 처리 종료
-            var preview = candidate.PreviewDamageBeforeShare(target, block, preparation, interception, nullification, illusionAvailable, out var illusion); // 이전 타격의 방어 결과와 환영 소모 예측
-            int areaBlock = candidate.GetStormguardAreaBlock(target, candidate.AttackAmount, block); // 이전 실제 광역 명중의 사전 방어도가 남을 경우 확인
-            block = (int)Math.Clamp((long)block + areaBlock + preview.PreparedBlock - preview.AbsorbedDamage, 0L, int.MaxValue); // 올바른 공격 순서의 추가 방어와 흡수까지 포함한 남은 방어도
-            preparation &= preview.WasDamageNullified; // 실제 무효화된 공격에서만 방어 준비 보존
-            interception = false; // 앞선 양수 직접 공격의 위험 차단 소모 반영
-            nullification &= !preview.WasDamageNullified; // 실제 무효화 이후의 보호 소모 반영
-            illusionAvailable &= illusion == null; // 처음으로 경감에 기여하는 순서 뒤 환영 제외
+            defense = AdvancePreviewDefense(candidate, target, defense, false, out _); // 기존 순서의 보유 대상별 방어와 이전 무효 및 환영을 순수 반영
         } // 앞선 공격 검사 종료
-        return (block, preparation, interception, nullification, illusionAvailable); // 이번 대상에 남은 순서별 방어와 환영 반환
-    } // 보호 순서 검사 종료
+        return (defense.Block, defense.Preparation, defense.Interception, defense.Nullification, defense.Illusion, false); // 남은 개인 방어와 이미 없는 공용 기회 반환
+    } // 개인 보호 또는 실제 공유 최초 보호 예고 종료
+
+    private (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion, bool Basalt) GetSharedDefenseBeforeAttack(BattleEnemyAction current, BattleUnitRuntime currentTarget) // 실제 아군 전체 피격에서 파티 공용 첫 직격 순서
+    { // 각 생존 아군의 독립 예고와 아직 남은 파티 공용 기회 추적 시작
+        bool basalt = true; // 실제 게임의 한 번 소모를 바꾸지 않는 독립 예고 상태
+        var states = new Dictionary<BattleUnitRuntime, (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion)>(); // 현재 남은 적의 여러 피격 대상별 보호 데이터
+        foreach (var candidate in plannedActions) // 원래 실제 적 행동의 계획 순서 확인
+        { // 동일한 적의 개별 피격 대상 확인 시작
+            if (candidate == executingAction) // 현재 타격을 실제로 이미 처리하고 있는지 확인
+            { // 현재 실제 결과가 반영되는 대상 생략 시작
+                continue; // 이미 피해 처리 중인 같은 행동을 예고에서 중복 계산하지 않음
+            } // 현재 실제 결과가 반영되는 대상 생략 종료
+            IReadOnlyList<BattleUnitRuntime> targets = candidate.IsAreaAttack ? candidate.AreaTargets : new[] { candidate.Target }; // 실제 광역의 배치 순서와 원래 단일 대상
+            foreach (var target in targets) // 현재 예정 행동의 기존 대상별 피격 순서
+            { // 원래 해당 아군의 남은 보호 확인 시작
+                if (target == null) // 이번 예정 공격에서 대상이 없는 경우 확인
+                { // 피격 대상 없는 예정 처리 생략 시작
+                    continue; // 다음 실제 유효 아군으로 이동
+                } // 피격 대상 없는 예정 처리 생략 종료
+                if (!states.TryGetValue(target, out var defense)) // 앞선 공격에서 아직 진행하지 않은 현재 대상 확인
+                { // 원래 현재 아군의 개인 보호 상태로 시작
+                    defense = (target.CurrentBlock, true, true, true, true); // 실제로 지금 남아 있는 개인 방어도와 이전 보호 기회 초기값
+                } // 원래 현재 아군의 개인 보호 상태로 종료
+                if (candidate == current && target == currentTarget) // 현재 예고에서 요청한 정확한 예정 피격 도착
+                { // 현재 대상에 남아 있는 실제 원래 보호 상태 반환 시작
+                    return (defense.Block, defense.Preparation, defense.Interception, defense.Nullification, defense.Illusion, basalt); // 처음 가능한 기존 양수 적중만 현무암 효과 예고
+                } // 현재 대상에 남아 있는 실제 원래 보호 상태 반환 종료
+                if (CanPreviewAttackImpact(candidate, target)) // 빗나감과 취소가 아닌 앞쪽 양수 타격만 상태 변경 확인
+                { // 같은 대상의 실제 예정 보호 소모 시뮬레이션 시작
+                    states[target] = AdvancePreviewDefense(candidate, target, defense, basalt, out bool basaltUsed); // 이전 예정 피격의 실제 양수 피해 및 기존 보호 반영
+                    basalt &= !basaltUsed; // 앞에서 공용 보호가 적용된 뒤 같은 조우의 나머지 대상에서 예고 제외
+                } // 같은 대상의 실제 예정 보호 소모 시뮬레이션 종료
+            } // 원래 해당 아군의 남은 보호 확인 종료
+        } // 동일한 적의 개별 피격 대상 확인 종료
+        return (currentTarget.CurrentBlock, true, true, true, true, basalt); // 아직 계획에 맞는 유효 공격이 없는 현재 실제 보호 기본값
+    } // 각 생존 아군의 독립 예고와 아직 남은 파티 공용 기회 추적 종료
+
+    private static (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion) AdvancePreviewDefense( // 실제 예고의 공통 방어도·상태 변화 한 건
+        BattleEnemyAction candidate, BattleUnitRuntime target, (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion) state, bool basalt, out bool basaltUsed) // 현재 개인 방어와 공용 보호 값 전달
+    { // 현재 피해의 원래 공용 보호 및 남은 상태 계산 시작
+        var preview = candidate.PreviewDamageBeforeShare(target, state.Block, state.Preparation, state.Interception, state.Nullification, state.Illusion, basalt, out var illusion, out basaltUsed); // 같은 실제 피해 경감의 결과와 상태 소비 예측
+        int areaBlock = candidate.GetStormguardAreaBlock(target, candidate.AttackAmount, state.Block); // 원래 광역의 전투 전 추가 방어도 확인
+        int block = (int)Math.Clamp((long)state.Block + areaBlock + preview.PreparedBlock - preview.AbsorbedDamage, 0L, int.MaxValue); // 같은 방어도 적용 및 흡수 뒤 다음 피격용 수치
+        return (block, state.Preparation && preview.WasDamageNullified, false, state.Nullification && !preview.WasDamageNullified, state.Illusion && illusion == null); // 이전 기존 상태의 무효와 환영 및 준비 처리 보존
+    } // 현재 피해의 원래 공용 보호 및 남은 상태 계산 종료
     private static bool CanPreviewAttackImpact(BattleEnemyAction action, BattleUnitRuntime target) // 지정 대상에게 명중 가능한 직접 공격 확인
     { // 유효 명중 예고 시작
         return action.IsPositiveDirectAttack && action.HitsTarget(target) && BattleHitChance.GetPercent(action.Actor, target) > 0; // 광역 포함 실제 대상과 양수 명중률 확인
