@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetParry
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_PARRY
+  displayName: "흘려내기"
+  description: "자신이 방어도 6을 얻는다. 다음 적 턴이 끝날 때까지 자신의 회피율이 35%p 증가한다."
+  artwork: {fileID: 21300000, guid: a354ee7a22aa58699978a442ebc140da, type: 3}
+  cardType: 4
+  targetType: 0
+  apCost: 2
+  effectType: 2
+  damageType: 0
+  effectValue: 35
+  secondaryEffectValue: 6
+  followUpEffect: 1
+  mentalChangeValue: 0
+  statusEffectType: 18
+  statusDuration: 1
+  statusMaximumStacks: 1

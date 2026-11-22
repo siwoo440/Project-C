@@ -320,6 +320,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 74bc4e9c8bf550f4b6f8ede1fd14aca4, type: 2}
   - {fileID: 11400000, guid: 640dd577e3a9563aa82ac5c33117d7be, type: 2}
   - {fileID: 11400000, guid: efe164af85fd5fd687052b5055138f2e, type: 2}
+  - {fileID: 11400000, guid: 28fd339c5a7d5858ae5c7d7984f15fc8, type: 2}
+  - {fileID: 11400000, guid: 2d909a5c63145e1885c85fb1270aabd5, type: 2}
+  - {fileID: 11400000, guid: f8b623a0d9c65ef3b0036377d230d0bf, type: 2}
   relics:
   - {fileID: 11400000, guid: cec1f3a823e63e8448c2f157b7c29f5f, type: 2}
   - {fileID: 11400000, guid: 79860748c75407742b43320a0dce0cee, type: 2}

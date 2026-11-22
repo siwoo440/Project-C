@@ -257,6 +257,33 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOCK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 28fd339c5a7d5858ae5c7d7984f15fc8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PARRY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 2d909a5c63145e1885c85fb1270aabd5, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PUSH_BLOCK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: f8b623a0d9c65ef3b0036377d230d0bf, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_RAISE_SHIELD
     offerType: 0
     price: 0
