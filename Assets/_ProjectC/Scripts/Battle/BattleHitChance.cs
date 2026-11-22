@@ -23,7 +23,9 @@ public static class BattleHitChance // 공격 명중 여부 계산
         int poisonPenalty = attacker.Team == BattleTeam.Enemy && attacker.GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false } // 실제 적 공격자의 현재 활성 중독 확인
             ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.WineStainPoisonAccuracyLoss)?.EffectValue ?? 0, 0, 100) // 실제 보유한 포도주 얼룩의 고정 퍼센트포인트 조회
             : 0; // 중독 없는 적과 아군의 기존 명중 보정 유지
-        return Math.Max(0, 100 - penalty - evasion - disorientation - poisonPenalty); // 기존 회피와 실명 및 중독을 합한 실제 공격 명중률
+        var accuracy = attacker.GetStatusEffect(BattleStatusEffectType.BattlefieldMapAccuracyUp); // 공격자의 현재 지도 명중 강화 조회
+        int mapAccuracyBonus = accuracy is { IsExpired: false } ? Math.Clamp(accuracy.EffectiveValue, 0, 100) : 0; // 실제 활성 지도 강화의 정수 퍼센트포인트
+        return Math.Clamp(100 + mapAccuracyBonus - penalty - evasion - disorientation - poisonPenalty, 0, 100); // 기존 모든 감소와 명중 가산을 합한 백분율
     } // 명중률 조회 종료
     public static bool Hits(BattleUnitRuntime attacker, int roll, BattleUnitRuntime target = null) // 공격자와 대상의 지정 난수 판정
     { // 명중 계산 시작

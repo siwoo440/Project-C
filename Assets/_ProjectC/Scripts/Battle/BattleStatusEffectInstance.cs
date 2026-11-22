@@ -154,6 +154,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "피의 맹세"; // 피의 맹세 표시
             case BattleStatusEffectType.Fear: // 공포 종류
                 return "공포"; // 공포 표시
+            case BattleStatusEffectType.BattlefieldMapAccuracyUp: // 전장 지도의 아군 명중 강화
+                return "명중률 증가"; // 실제 아군 명중 강화 이름
             case BattleStatusEffectType.FinishingStance: // 마무리 자세 종류
                 return "마무리 자세"; // 마무리 자세 표시
             case BattleStatusEffectType.HealingReceivedDown: // 회복량 감소 종류
@@ -486,6 +488,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
                 return "취약"; // 취약 아이콘의 대체 글자
+            case BattleStatusEffectType.BattlefieldMapAccuracyUp: // 전장 지도의 아군 명중 강화
+                return "명중+"; // 아군 명중률 증가 축약
             case BattleStatusEffectType.SandQueenSummonAttackGrow: // 실제 전투 중 소환만 누적한 강화 상태
                 return "명령+"; // 현재 강화의 이름과 세부 수치
             case BattleStatusEffectType.DistributionAttackUp: // 분배 공격 강화 표시 약칭
@@ -558,6 +562,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"진영 턴 종료에 피해 {effectiveValue}, 화상 수치 1 감소"; // 화상 설명 반환
             case BattleStatusEffectType.Blind: // 실명 종류
                 return $"공격 명중률 {effectiveValue}%p 감소"; // 실명 설명 반환
+            case BattleStatusEffectType.BattlefieldMapAccuracyUp: // 전장 지도의 아군 명중 강화
+                return $"공격 명중률 {effectiveValue}%p 증가"; // 실제 명중률 가산 안내
             case BattleStatusEffectType.Evasion: // 회피 종류
                 return $"적 공격 회피율 {effectiveValue}%p 증가 · 적 턴 종료에 지속 감소"; // 회피 설명 반환
             case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류

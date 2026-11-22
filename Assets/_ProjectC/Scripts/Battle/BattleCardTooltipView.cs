@@ -230,6 +230,11 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return $"다음 아군 턴 최대·현재 행동력 +{cardInstance.EffectValue}"; // 실제 다음 턴에 지급할 현재 행동력 및 최대치
             case PentacleCardRule.SeizeOpportunity: // 다른 무료 카드도 포함한 실제 팀의 첫 카드 여부
                 return $"이번 턴 첫 사용 카드라면 행동력 +{cardInstance.EffectValue}"; // 이 원본이 첫 실제 아군 카드일 때만 받을 환급 안내
+            case PentacleCardRule.SecretVault: // 현재 행동력과 다음 기본 드로우의 서로 다른 시점
+                return $"행동력 +{cardInstance.EffectValue} · 다음 아군 턴 기본 드로우 -1장"; // 추가 드로우와 분리한 금고 대가 안내
+            case PentacleCardRule.CompoundEffect: // 이 카드 사용 뒤 이번 턴의 행동력 지급마다 붙는 수치
+                return $"이번 아군 턴 동안 행동력을 얻을 때마다 +{cardInstance.EffectValue}"; // 기존 행동력 지급에 붙는 복리 안내
+            case PentacleCardRule.PayThePrice: // 시전자의 고정 실체력 비용과 공용 회복
             case PentacleCardRule.Ritual: // 실체력을 지불하는 자기 대상 의식 확인
                 return $"시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue} · 행동력 +{cardInstance.EffectValue}"; // 현재 실제 체력 대가와 공용 행동력 증가
             case PentacleCardRule.FusionOfPower: // 아군과 적을 동시에 처리하는 일반 광역 효과

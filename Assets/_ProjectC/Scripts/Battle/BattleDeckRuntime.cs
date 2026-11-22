@@ -339,6 +339,25 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 선택 처리 성공 반환
     } // 선택 드로우 종료
+    internal bool CanTakeSelectedDrawCard(CardInstance choice) // 현재 뽑을 더미의 생존 소유자 카드 확인
+    { // 정확한 카드 위치 판정 시작
+        return IsDrawable(choice) && drawPile.Contains(choice); // 소유자의 생존과 실제 뽑을 더미의 원래 실물 확인
+    } // 정확한 카드 위치 판정 종료
+
+    internal bool TryPlayAndTakeDrawCard(CardInstance played, CardInstance choice) // 정상 카드 사용 후 실제 덱 카드 하나를 손패로 이동
+    { // 사용과 선택을 같은 정산에서 처리 시작
+        if (!CanTakeSelectedDrawCard(choice) || played == null || !hand.Remove(played)) // 현재 선택 위치와 실제로 손패에 있던 원래 사용 카드 확인
+        { // 실제 카드 영역에 손대지 않은 실패 시작
+            return false; // 뽑거나 버리지 않은 원래 덱 보존
+        } // 실제 카드 영역에 손대지 않은 실패 종료
+        drawPile.Remove(choice); // 선택한 실물만 현재 더미에서 제거
+        hand.Add(choice); // 사용 카드가 비운 자리로 소유자와 강화가 같은 실물 이동
+        PlacePlayedCard(played); // 기존 사용 위치와 정상 제외 규칙 적용
+        EnsureValidState(); // 변경된 두 실물의 위치와 손패 상한 확인
+        StateChanged?.Invoke(); // 완료된 실제 카드 영역을 표시하는 한 번의 갱신
+        return true; // 선택 범위와 영역의 정상 사용 완료
+    } // 사용과 선택을 같은 정산에서 처리 종료
+
     internal bool TryMoveDrawCardToHand(CardInstance choice) // 뽑을 더미의 지정 실물 카드를 손패로 옮기는 유물 선택
     { // 원본 카드 이동 시작
         if (hand.Count >= MaxHandSize || !IsDrawable(choice) || !drawPile.Remove(choice)) // 정상 손패 여유와 현재 유효한 실물 카드 존재 확인
@@ -497,6 +516,28 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 전략 카드의 새로운 기본 비용과 사용 손패 반영
         return true; // 실제 사용과 보관의 함께 완료
     } // 현재 소유 카드와 목적 실물 확인 종료
+
+    internal bool TryPlayAndTransformHandCard(CardInstance played, CardInstance chosen, IReadOnlyList<CardData> replacements) // 실제 일반 손패 한 장의 전투 한정 희귀 변환
+    { // 원래 두 실물과 등록 희귀 카드 검증 시작
+        if (played == null || played == chosen || !hand.Contains(played) || !IsDrawable(chosen) || !hand.Contains(chosen) || replacements.Count == 0) // 둘의 실제 손패 배치와 가능한 카드 확인
+        { // 무효 대상의 원래 위치 보존 시작
+            return false; // 원래 카드와 덱 난수 소비 없음
+        } // 무효 대상의 원래 위치 보존 종료
+        CardData replacement = replacements[random.Next(replacements.Count)]; // 확정된 정상 사용에만 실제 희귀 후보 균등 추첨
+        var transformed = CardInstance.Create(replacement, chosen.OwnerUnit, cards.Count, 0); // 선택 원본의 소유자와 등록된 희귀 카드의 고유 비용 생성
+        ApplyCurrentRelicDiscounts(transformed); // 현재 전투의 공용 비용을 실제 새 카드에 적용
+        hand.Remove(played); // 사용 카드가 차지한 손패 자리 해제
+        int handIndex = hand.IndexOf(chosen); // 변환할 실물의 화면 위치 기억
+        ClearHandExitEffects(chosen); // 바뀌는 카드의 첫 유지와 비용 예약 정리
+        historicCopies.Remove(chosen); // 이미 전투 생성 실물이었던 원본의 종료 추적 해제
+        hand[handIndex] = transformed; // 실제 손패 예전 자리에 희귀 카드 한 장 배치
+        cards[cards.IndexOf(chosen)] = transformed; // 다시 뽑거나 회수할 수 있는 기존 실물을 새 카드로 교체
+        historicCopies.Add(transformed); // 전투가 끝날 때만 제거할 현재 변환 실물 등록
+        PlacePlayedCard(played); // 연금술 자체의 원래 정상 버림 및 제외 규칙 정산
+        EnsureValidState(); // 완료된 손패와 전투 영역에 동일 카드 중복 없음 확인
+        StateChanged?.Invoke(); // 완료된 실제 변환을 한 번만 손패에 반영
+        return true; // 원래 사용과 다른 실물의 변환 완료
+    } // 원래 두 실물과 등록 희귀 카드 검증 종료
 
     internal bool TryPlayAndGenerateCard(CardInstance played, CardData template) // 실제 등록한 일반 원본의 전투 한정 카드 생성
     { // 생성의 원래 시전자와 현재 손패 승인 확인 시작
