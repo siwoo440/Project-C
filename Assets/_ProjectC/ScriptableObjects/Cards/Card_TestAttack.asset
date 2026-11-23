@@ -20,4 +20,5 @@ MonoBehaviour:
   targetType: 3
   apCost: 1
   effectType: 0
+  damageType: 1
   effectValue: 10

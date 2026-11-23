@@ -11,10 +11,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
     private Button endTurnButton; // 플레이어 턴 종료 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
+    private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
     private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private CardInstance selectedCard; // 현재 선택 카드
+    private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
@@ -70,6 +72,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         sharedActionPoints = null; // 공용 행동력 참조 제거
         turnRuntime = null; // 전투 턴 관리자 참조 제거
         selectedCard = null; // 선택 카드 제거
+        HideTooltip(); // 카드 툴팁 숨김
         Refresh(); // 빈 손패 화면 표시
     } // 덱 연결 해제 종료
     private void EnsureVisualStructure() // 손패 내부 UI 준비
@@ -130,6 +133,16 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         layoutGroup.childControlHeight = false; // 카드 높이 자동 제어 해제
         layoutGroup.childForceExpandWidth = false; // 카드 너비 확장 해제
         layoutGroup.childForceExpandHeight = false; // 카드 높이 확장 해제
+        GameObject tooltipObject = new GameObject("CardTooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleCardTooltipView)); // 카드 툴팁 오브젝트 생성
+        tooltipObject.transform.SetParent(transform, false); // 카드 툴팁 부모 연결
+        RectTransform tooltipRect = tooltipObject.GetComponent<RectTransform>(); // 카드 툴팁 RectTransform 조회
+        tooltipRect.anchorMin = new Vector2(0.5f, 0.5f); // 카드 툴팁 최소 앵커 설정
+        tooltipRect.anchorMax = new Vector2(0.5f, 0.5f); // 카드 툴팁 최대 앵커 설정
+        tooltipRect.pivot = new Vector2(0.5f, 0.5f); // 카드 툴팁 중앙 피벗 설정
+        tooltipRect.anchoredPosition = new Vector2(0f, 18f); // 카드 툴팁 카드 영역 내부 위치 설정
+        tooltipRect.sizeDelta = new Vector2(420f, 145f); // 카드 툴팁 크기 설정
+        tooltipView = tooltipObject.GetComponent<BattleCardTooltipView>(); // 카드 툴팁 화면 조회
+        tooltipView.Hide(); // 카드 툴팁 시작 숨김
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
     } // 화면 구조 준비 종료
     private void Refresh() // 손패 화면 갱신
@@ -162,6 +175,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         BattleCardView cardView = cardObject.GetComponent<BattleCardView>(); // 카드 화면 컴포넌트 조회
         cardView.Bind(cardInstance); // 카드 인스턴스 화면 연결
         cardView.Clicked += HandleCardViewClicked; // 카드 클릭 이벤트 등록
+        cardView.HoverEntered += HandleCardHoverEntered; // 카드 마우스 진입 이벤트 등록
+        cardView.HoverExited += HandleCardHoverExited; // 카드 마우스 이탈 이벤트 등록
         return cardView; // 생성 카드 화면 반환
     } // 카드 화면 생성 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
@@ -207,10 +222,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
                 continue; // 다음 카드 화면 이동
             } // 제거된 화면 처리 종료
             cardView.Clicked -= HandleCardViewClicked; // 카드 클릭 이벤트 해제
+            cardView.HoverEntered -= HandleCardHoverEntered; // 카드 마우스 진입 이벤트 해제
+            cardView.HoverExited -= HandleCardHoverExited; // 카드 마우스 이탈 이벤트 해제
             cardView.gameObject.SetActive(false); // 카드 화면 즉시 숨김
             Destroy(cardView.gameObject); // 카드 화면 오브젝트 제거
         } // 카드 화면 제거 종료
         spawnedCardViews.Clear(); // 생성 카드 화면 목록 비우기
+        HideTooltip(); // 카드 툴팁 숨김
     } // 카드 화면 제거 종료
     private void HandleCardViewClicked(BattleCardView cardView) // 카드 화면 클릭 처리
     { // 카드 클릭 처리 시작
@@ -220,6 +238,31 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 잘못된 화면 처리 종료
         CardClicked?.Invoke(cardView.RuntimeCard); // 손패 카드 클릭 이벤트 알림
     } // 카드 클릭 처리 종료
+    private void HandleCardHoverEntered(BattleCardView cardView) // 카드 마우스 진입 처리
+    { // 마우스 진입 처리 시작
+        if (cardView == null || cardView.RuntimeCard == null || tooltipView == null) // 카드와 툴팁 연결 확인
+        { // 마우스 진입 불가 처리 시작
+            return; // 마우스 진입 처리 중단
+        } // 마우스 진입 불가 처리 종료
+        hoveredCardView = cardView; // 현재 마우스 진입 카드 저장
+        tooltipView.Show(cardView.RuntimeCard); // 카드 상세 툴팁 표시
+    } // 마우스 진입 처리 종료
+    private void HandleCardHoverExited(BattleCardView cardView) // 카드 마우스 이탈 처리
+    { // 마우스 이탈 처리 시작
+        if (cardView != hoveredCardView) // 현재 마우스 진입 카드 확인
+        { // 다른 카드 처리 시작
+            return; // 마우스 이탈 처리 중단
+        } // 다른 카드 처리 종료
+        HideTooltip(); // 카드 상세 툴팁 숨김
+    } // 마우스 이탈 처리 종료
+    private void HideTooltip() // 카드 툴팁 숨김
+    { // 툴팁 숨김 시작
+        hoveredCardView = null; // 현재 마우스 진입 카드 제거
+        if (tooltipView != null) // 카드 툴팁 존재 확인
+        { // 카드 툴팁 처리 시작
+            tooltipView.Hide(); // 카드 툴팁 오브젝트 숨김
+        } // 카드 툴팁 처리 종료
+    } // 툴팁 숨김 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
         Refresh(); // 손패 화면 자동 갱신
@@ -233,6 +276,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     { // 턴 변경 처리 시작
         RefreshTurnStatus(); // 라운드와 턴 상태 갱신
         RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+        if (turnRuntime == null || !turnRuntime.IsPlayerTurn) // 플레이어 턴 종료 확인
+        { // 툴팁 정리 시작
+            HideTooltip(); // 카드 툴팁 숨김
+        } // 툴팁 정리 종료
     } // 턴 변경 처리 종료
     private void HandleEndTurnClicked() // 턴 종료 버튼 클릭 처리
     { // 턴 종료 클릭 처리 시작

@@ -19,9 +19,15 @@ MonoBehaviour:
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
   - card: {fileID: 11400000, guid: 7054b026670f0804eb7a78ac1fc37f5d, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
-  - card: {fileID: 11400000, guid: 7054b026670f0804eb7a78ac1fc37f5d, type: 2}
+  - card: {fileID: 11400000, guid: e06e1a0be0f348f18478bcffebad3029, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
-  - card: {fileID: 11400000, guid: 7054b026670f0804eb7a78ac1fc37f5d, type: 2}
+  - card: {fileID: 11400000, guid: e06e1a0be0f348f18478bcffebad3029, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
-  - card: {fileID: 11400000, guid: 7054b026670f0804eb7a78ac1fc37f5d, type: 2}
+  - card: {fileID: 11400000, guid: c7dce35128cc475984db362e7bc66889, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: c7dce35128cc475984db362e7bc66889, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: f4ef8103e4dd42488d22b9c6c9c9e317, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: f4ef8103e4dd42488d22b9c6c9c9e317, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
