@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetGuardSwitch
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_GUARD_SWITCH
+  displayName: "가드 전환"
+  description: "방어도 5를 얻고 카드 1장을 뽑는다."
+  artwork: {fileID: 21300000, guid: edf3f0bc91705ae09a8f5935c46b1303, type: 3}
+  cardType: 4
+  targetType: 0
+  apCost: 1
+  effectType: 9
+  damageType: 0
+  effectValue: 5
+  secondaryEffectValue: 1
+  followUpEffect: 4
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

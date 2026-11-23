@@ -411,9 +411,18 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
-        int reduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
+        int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
+        int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType) : 0; // 적 직접 피해의 방패 상태 감소량
+        int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction); // 방어도 흡수 전 모든 감소량 합산
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
+    private int GetShieldCardReduction(int damage, BattleDamageType type) // 직접 피해에 적용할 저항 자세와 충격 흡수 수치 계산
+    { // 방패 피해 경감 계산 시작
+        int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
+        int adjusted = (int)((long)damage * (100 - resistance) / 100); // 일반 저항이 적용된 피해에 추가 비율 계산 및 내림
+        int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 다음 충격 흡수의 고정 피해 감소
+        return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
+    } // 방패 피해 경감 계산 종료
     public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null, bool enemyDirectAttack = false) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인

@@ -374,10 +374,82 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BODY_GUARD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: d28be49a58bd5e268c7fec831a068f37, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_DEFENSIVE_LINE
     offerType: 0
     price: 0
     card: {fileID: 11400000, guid: f3d5ac137107442abe56e077f21a89fa, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SHOCK_ABSORPTION
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: e2780622f1ff5cb8be2724d454ddb19e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DEFENSE_ORDER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a6aabd59372d5b8b918de53b9deb8640, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_STURDY_STANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 605c21632eda5f9096f6e0ea5c98d892, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SHIELD_BASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 247de63878e751c1800d41c832b02290, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GUARD_SWITCH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 35cb485c745e5561a7f6b6abfc454831, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HOLD_BACK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ec157c8c22405b46838ab71031f89b32, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RESISTANCE_STANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 49df78c9b04057c5890ebe524e4d368e, type: 2}
     cardOwner: {fileID: 0}
     chooseCardOwner: 1
     rewardOnly: 1

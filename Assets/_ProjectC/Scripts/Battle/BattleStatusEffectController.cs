@@ -131,22 +131,29 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             if (ally != null) // 아군 존재 확인
             { // 준비 제거 시작
                 ally.RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 사용하지 않은 방어 준비 만료
-                BattleStatusEffectInstance evasion = ally.GetStatusEffect(BattleStatusEffectType.Evasion); // 방금 끝난 적 턴에 적용된 회피 확인
-                if (evasion != null) // 회피가 남은 아군 확인
-                { // 회피 기간 처리 시작
-                    evasion.AdvanceDuration(); // 적이 모두 행동한 뒤 남은 기간 한 턴 감소
-                    if (evasion.IsExpired) // 두 번째 적 턴 종료 확인
-                    { // 기간 만료 시작
-                        ally.RemoveStatusEffect(BattleStatusEffectType.Evasion); // 만료된 회피 제거
-                    } // 기간 만료 종료
-                    else // 남은 기간 표시
-                    { // 아이콘 갱신 시작
-                        ally.NotifyStatusEffectsChanged(); // 회피 아이콘의 남은 턴 변경 알림
-                    } // 아이콘 갱신 종료
-                } // 회피 기간 처리 종료
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.Evasion); // 이 적 턴에 적용된 회피의 기간 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.ShockAbsorption); // 지정 적 턴의 충격 흡수 기간 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.ResistanceStance); // 지정 적 턴의 저항 태세 기간 차감
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료
+    private static void AdvanceEnemyTurnDefense(BattleUnitRuntime ally, BattleStatusEffectType type) // 적 공격을 받는 방어 상태의 남은 기간 계산
+    { // 방어 지속 시간 처리 시작
+        var effect = ally.GetStatusEffect(type); // 해당 방어 상태 조회
+        if (effect == null) // 남은 방어 상태가 있는지 확인
+        { // 미적용 상태 처리 시작
+            return; // 갱신할 상태 없음
+        } // 미적용 상태 처리 종료
+        effect.AdvanceDuration(); // 적이 모두 행동한 뒤 한 턴 감소
+        if (effect.IsExpired) // 마지막 적 턴이 끝났는지 확인
+        { // 방어 상태 만료 처리 시작
+            ally.RemoveStatusEffect(type); // 기간이 지난 방어 상태 제거
+        } // 방어 상태 만료 처리 종료
+        else // 남은 방어 기간 표시
+        { // 상태 화면 갱신 시작
+            ally.NotifyStatusEffectsChanged(); // 아이콘의 남은 턴 표시 갱신
+        } // 상태 화면 갱신 종료
+    } // 방어 지속 시간 처리 종료
     private void ProcessEndUnits(IReadOnlyList<BattleUnitRuntime> units, int round) // 진영의 턴 종료 상태 처리
     { // 종료 상태 일괄 처리 시작
         foreach (BattleUnitRuntime unit in units) // 진영 유닛 순회

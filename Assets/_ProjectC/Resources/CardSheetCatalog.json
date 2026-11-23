@@ -655,7 +655,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 대신 다음 피해 1회 받음",
+      "description": "자신을 제외한 아군 하나를 선택한다. 그 아군이 적에게 받는 다음 직접 타격 1회를 대신 받는다. 대신 받을 때까지 유지된다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "몸으로 막기.png"
@@ -677,7 +677,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "이번 턴 받는 피해 -5",
+      "description": "다음 적 턴이 끝날 때까지 자신이 받는 직접 피해를 타격마다 최대 5 줄인다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "충격 흡수.png"
@@ -688,7 +688,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 방어력 +2 (2턴)",
+      "description": "아군 하나의 물리 방어력이 2턴 동안 2 증가한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "수비 명령.png"
@@ -699,7 +699,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "자신 방어력 +3 (2턴), 행동력 -1",
+      "description": "행동력을 추가로 1 소모하고, 2턴 동안 자신의 물리 방어력이 3 증가한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "견고한 자세.png"
@@ -710,7 +710,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 5 피해, 행동력 -1 20%",
+      "description": "적 하나에게 물리 피해 5를 준다. 명중하면 20% 확률로 그 적의 다음 행동 1회를 취소한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "방패 밀치기.png"
@@ -721,7 +721,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "방어도 +5, 카드 1장 드로우",
+      "description": "방어도 5를 얻고 카드 1장을 뽑는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "가드 전환.png"
@@ -732,7 +732,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "적 1명 공격력 -2 (2턴)",
+      "description": "적 하나가 직접 공격으로 주는 피해가 적 2턴 동안 2 감소한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "막아 세우기.png"
@@ -743,7 +743,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "저항력 +15% (2턴)",
+      "description": "적 2턴 동안 자신이 받는 마법 피해가 방어도에 닿기 전에 15% 감소한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "저항 태세.png"

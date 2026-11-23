@@ -294,6 +294,10 @@ public sealed class BattleCardDragHandler :
             return false;
         }
 
+        if (card.SourceData.ShieldRule == ShieldCardRule.BodyGuard) // 시전자 밖의 동료를 선택하는 방패 카드 확인
+        { // 실제 드롭 보호 대상 검사 시작
+            return targetUnit.Team == BattleTeam.Ally && targetUnit != card.OwnerUnit; // 다른 생존 아군 한 명에게만 적용
+        } // 실제 드롭 보호 대상 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.BloodTrail || card.SourceData.SwordRule == SwordCardRule.BloodBackflow) // 출혈 대상을 요구하는 검 확인
         { // 추적 드롭 검사 시작
             return targetUnit.Team == BattleTeam.Enemy && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) != null; // 실제 출혈이 남은 적의 위치만 허용
