@@ -52,14 +52,14 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
             curveCeiling = Mathf.Min(bounds.yMax - 24f, panelBottom - 8f); // 라운드 패널 바로 아래 높이 제한 적용
         } // 라운드 패널 높이 계산 종료
     } // 화살표 준비 종료
-    public void AddArrow(RectTransform actorIcon, RectTransform targetPortrait, bool special, bool focused) // 행동 아이콘과 대상 연결
+    public void AddArrow(RectTransform actorIcon, RectTransform targetHead, bool special, bool focused) // 행동 아이콘과 대상의 머리 영역 연결
     { // 화살표 연결 시작
-        if (actorIcon == null || targetPortrait == null) // 실제 적과 대상의 화면 확인
+        if (actorIcon == null || targetHead == null) // 실제 적과 대상의 머리 영역 확인
         { // 연결 불가 처리 시작
             return; // 화살표 추가 중단
         } // 연결 불가 처리 종료
         Vector3 actorWorld = actorIcon.TransformPoint(new Vector3(actorIcon.rect.xMin, actorIcon.rect.center.y, 0f)); // 적 행동 아이콘 왼쪽 가장자리 위치
-        Vector3 targetWorld = targetPortrait.TransformPoint(new Vector3(0f, targetPortrait.rect.yMax - targetPortrait.rect.height * 0.12f, 0f)); // 대상 캐릭터 머리 위치
+        Vector3 targetWorld = targetHead.TransformPoint(targetHead.rect.center); // 투명한 머리 선택 상자의 실제 중심
         Vector2 start = rectTransform.InverseTransformPoint(actorWorld); // 화살표 화면 기준 적 위치
         Vector2 end = rectTransform.InverseTransformPoint(targetWorld); // 화살표 화면 기준 대상 위치
         Rect bounds = rectTransform.rect; // 실제 전투 화면 경계
@@ -69,8 +69,10 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
         start.y = Mathf.Clamp(start.y, bounds.yMin + margin, ceiling - 12f); // 시작점 세로 화면 경계 제한
         end.x = Mathf.Clamp(end.x, bounds.xMin + margin, bounds.xMax - margin); // 종료점 가로 화면 경계 제한
         end.y = Mathf.Clamp(end.y, bounds.yMin + margin, ceiling - 12f); // 종료점 세로 화면 경계 제한
-        float minimumPeak = Mathf.Max(start.y, end.y) + 2f; // 양쪽 끝점보다 위쪽의 최소 곡선 높이
-        float peak = Mathf.Clamp(ceiling - 6f - pending.Count % 4 * 10f, minimumPeak, ceiling - 2f); // 라운드 패널 아래의 실제 곡선 최고점
+        float highestEnd = Mathf.Max(start.y, end.y); // 두 조준 지점 중 높은 곳
+        float rise = Mathf.Clamp(Mathf.Abs(start.x - end.x) * 0.2f, 28f, 152f); // 짧은 화살표는 낮게 두는 거리별 높이
+        float layerOffset = pending.Count % 4 * 10f; // 겹친 행동 화살표의 순번별 세로 간격
+        float peak = Mathf.Clamp(Mathf.Min(highestEnd + rise, ceiling - 6f) - layerOffset, highestEnd + 2f, ceiling - 2f); // 화면 위쪽을 넘지 않는 실제 곡선 높이
         float controlHeight = peak + Mathf.Sqrt((peak - start.y) * (peak - end.y)); // 최고점 높이를 지키는 이차 곡선 제어점
         Vector2 control = new Vector2((start.x + end.x) * 0.5f, controlHeight); // 지정한 최고점의 완만한 곡선 제어점 계산
         Color arrowColor = special ? new Color(1f, 0.55f, 0.12f, focused ? 1f : 0.9f) : new Color(1f, 0.2f, 0.2f, focused ? 1f : 0.85f); // 특수 행동과 일반 행동 색상
@@ -135,13 +137,22 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
     } // 곡선 위치 계산 종료
     private static void AddCurveMesh(VertexHelper mesh, Arrow arrow, float thickness, float headSize, Color color) // 곡선과 화살촉 도형 추가
     { // 곡선 화살표 도형 생성 시작
-        const int segments = 20; // 매끄러운 곡선을 위한 선 분할 수
-        Vector2 previous = arrow.Start; // 첫 선분의 시작점 저장
-        for (int index = 1; index <= segments; index++) // 곡선의 각 선분 순회
+        int segments = Mathf.Clamp(Mathf.CeilToInt(Vector2.Distance(arrow.Start, arrow.End) / 24f), 12, 48); // 실제 길이에 맞춘 곡선 분할 수
+        int firstPair = mesh.currentVertCount; // 이 곡선의 첫 꼭짓점 쌍
+        for (int index = 0; index <= segments; index++) // 곡선의 각 지점 순회
         { // 곡선 선분 생성 시작
-            Vector2 current = Evaluate(arrow, index / (float)segments); // 현재 곡선 선분의 종료점 계산
-            AddLineMesh(mesh, previous, current, thickness, color); // 현재 곡선 선분 추가
-            previous = current; // 다음 선분의 시작점 저장
+            float progress = index / (float)segments; // 시작점에서 현재 지점까지의 비율
+            Vector2 point = Evaluate(arrow, progress); // 실제 곡선 지점의 중앙
+            Vector2 tangent = Vector2.Lerp(arrow.Control - arrow.Start, arrow.End - arrow.Control, progress).normalized; // 현재 곡선의 접선 방향
+            Vector2 half = new Vector2(-tangent.y, tangent.x) * (thickness * 0.5f); // 접선에 직각인 선의 반쪽 폭
+            AddVertex(mesh, point - half, color); // 곡선 몸체의 왼쪽 꼭짓점
+            AddVertex(mesh, point + half, color); // 곡선 몸체의 오른쪽 꼭짓점
+            int pair = firstPair + index * 2; // 현재 지점의 첫 꼭짓점 번호
+            if (index > 0) // 이전 꼭짓점 쌍이 있는지 확인
+            { // 이어진 선분 도형 생성 시작
+                mesh.AddTriangle(pair - 2, pair - 1, pair + 1); // 틈 없이 붙는 첫 삼각형
+                mesh.AddTriangle(pair - 2, pair + 1, pair); // 이전 선분과 끝점을 공유하는 두 번째 삼각형
+            } // 이어진 선분 도형 생성 종료
         } // 곡선 선분 생성 종료
         Vector2 direction = (arrow.End - arrow.Control).normalized; // 대상에 닿는 곡선 방향 계산
         Vector2 side = new Vector2(-direction.y, direction.x); // 화살촉의 가로 방향 계산
@@ -152,18 +163,6 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
         AddVertex(mesh, arrow.End, color); // 화살촉 끝 꼭짓점
         mesh.AddTriangle(first, first + 1, first + 2); // 화살촉 삼각형 추가
     } // 곡선 화살표 도형 생성 종료
-    private static void AddLineMesh(VertexHelper mesh, Vector2 start, Vector2 end, float thickness, Color color) // 곡선의 한 선분 도형 추가
-    { // 선분 도형 생성 시작
-        Vector2 direction = (end - start).normalized; // 선분 방향 계산
-        Vector2 half = new Vector2(-direction.y, direction.x) * (thickness * 0.5f); // 선분의 절반 너비 계산
-        int first = mesh.currentVertCount; // 선분 첫 꼭짓점 순번
-        AddVertex(mesh, start - half, color); // 선 시작 왼쪽 꼭짓점
-        AddVertex(mesh, start + half, color); // 선 시작 오른쪽 꼭짓점
-        AddVertex(mesh, end + half, color); // 선 끝 오른쪽 꼭짓점
-        AddVertex(mesh, end - half, color); // 선 끝 왼쪽 꼭짓점
-        mesh.AddTriangle(first, first + 1, first + 2); // 선분의 첫 삼각형 추가
-        mesh.AddTriangle(first, first + 2, first + 3); // 선분의 두 번째 삼각형 추가
-    } // 선분 도형 생성 종료
     private static void AddVertex(VertexHelper mesh, Vector2 position, Color color) // 색상 있는 도형 꼭짓점 추가
     { // 도형 꼭짓점 생성 시작
         UIVertex vertex = UIVertex.simpleVert; // 기본 UI 꼭짓점 생성

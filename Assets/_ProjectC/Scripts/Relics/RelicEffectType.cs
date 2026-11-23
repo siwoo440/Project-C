@@ -249,4 +249,12 @@ public enum RelicEffectType // 유물 효과 종류
     CentralLockdownProtocolActionLoss, // 중앙 봉쇄 프로토콜의 실제 전투 효과
     SpecimenPreservationCapsuleBattleEndRecovery, // 실험체 보존 캡슐의 실제 전투 효과
     FaultyAiDecisionRandomCardCost, // 불량 AI의 판단식의 실제 전투 효과
+    ReactorHeartShardBurnOrShockDamage, // 원자로 심장편의 전투 효과
+    HangarSealBossOpeningDamageReduction, // 격납고 봉인장치의 전투 효과
+    ScrapyardCrownEnemyDefeatBlock, // 폐기장 왕관의 전투 효과
+    LastSafetyLampMentalRecovery, // 마지막 안전등의 전투 효과
+    CharredStoneCordBurnDamageReduction, // 그을린 돌끈의 전투 효과
+    BlackBasaltShardFirstHitDamageReduction, // 검은 현무암 조각의 전투 효과
+    AshStainedGlovesBurningSwordDamage, // 재 묻은 장갑의 전투 효과
+    LavaMossSporeBottlePeriodicHealing, // 용암 이끼 포자병의 전투 효과
 }

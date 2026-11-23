@@ -841,19 +841,20 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         damageAmount = alliedDirectAttack ? ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out _) : damageAmount; // 표식을 소비하지 않는 실제 직접 타격 보정 예고
         if (alliedDirectAttack) // 방어도 적용 전 실제 아군 카드 피해 예고의 조건
         { // 가산 기회를 소모하지 않는 순수 예고 시작
-            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, directCardType ?? BattleCardDamageContext.GetPendingCardType(sourceUnit, this), preview: true, out _, out _); // 실제 카드 계열과 같은 공유 가산을 예고에 적용하며 상태나 피해 문맥은 유지
+            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, directCardType ?? BattleCardDamageContext.GetPendingCardType(sourceUnit, this), directCardAttack: true, preview: true, out _, out _); // 명시한 직접 카드의 피해 예고에서 상태나 피해 문맥 유지
         } // 가산 기회를 소모하지 않는 순수 예고 종료
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 현재 위험 차단과 저항 관통을 공용 피해 예고에 전달
     } // 기본 피해 예고 종료
     internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, bool enemyAreaAttack = false, bool applyDamageNullification = true, int magicalResistancePenetrationPercent = 0) // 기존 보호와 실제 마법 저항 관통을 반영한 피해 예고
     { // 기존 피해 예고 시작
-        return PreviewDamageWithParty(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception, null, out _, out _, enemyAreaAttack, applyDamageNullification, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 기존 피해 예고의 파티 분배와 실제 마법 저항 관통 전달
+        return PreviewDamageWithParty(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception, null, out _, out _, out _, enemyAreaAttack, applyDamageNullification, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 순수 예고에서 파티 분배와 마법 관통 및 공용 현무암 판단
     } // 기존 피해 예고 종료
 
-    internal BattleDamageResult PreviewDamageWithParty(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, IReadOnlyList<BattleUnitRuntime> party, out PainDistributionPlan distribution, out BattleStatusEffectInstance illusion, bool enemyAreaAttack = false, bool applyDamageNullification = true, int magicalResistancePenetrationPercent = 0, bool applyPreparation = true, bool applyIllusion = true) // 파티 분산과 일회성 보호 및 원래 대상의 방어도 및 실제 저항 관통 계산
+    internal BattleDamageResult PreviewDamageWithParty(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, IReadOnlyList<BattleUnitRuntime> party, out PainDistributionPlan distribution, out BattleStatusEffectInstance illusion, out bool basaltUsed, bool enemyAreaAttack = false, bool applyDamageNullification = true, int magicalResistancePenetrationPercent = 0, bool applyPreparation = true, bool applyIllusion = true, bool applyBasalt = true) // 전투 저항 관통과 파티 분담 및 일회성 보호의 순수 예고
     { // 피해와 파티 분산 예상 계산 시작
         distribution = null; // 무효 피해 및 단독 피격의 기본 분배 없음
         illusion = null; // 이번 피해에서 사용할 환영 보호의 기본값
+        basaltUsed = false; // 기존 무효 또는 양수 직격이 없는 예고의 파티 경감 미소모
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
@@ -870,8 +871,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(vulnerableDamage, damageType, PhysicalDefense, MagicalResistance, corrosion, magicalResistancePenetrationPercent); // 실제 피해와 예고에 같은 저항 수치 관통과 실금석 처리 전달
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
+        var hostileBattle = enemyDirectAttack && Team == BattleTeam.Ally && sourceUnit is { Team: BattleTeam.Enemy, IsDead: false } && // 양쪽 실제 적 직접 타격의 원본과 생존 상태 확인
+            sourceUnit.DamageRelicBattle == DamageRelicBattle ? DamageRelicBattle : null; // 같은 출전 전투에 연결된 실제 피해만 유효
+        int hangar = hostileBattle?.GetHangarOpeningDamageReduction() ?? 0; // 같은 보스 조우의 완료된 실제 적 차례 기반 경감
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
-            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack, sourceUnit) // 기존 방패 보호와 성역 및 실제 적 광역 피해 경감을 한 번에 적용
+            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack, sourceUnit, hangar) // 방패와 성역 및 광역 보호의 기존 비율에 보스 개시 보호 합산
             : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage); // 일반 및 지속 피해의 성역 경감량
         int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction() + GetMechanicalDirectDamageReduction(sourceUnit, enemyDirectAttack)); // 기계형 직접 공격 감소를 포함한 공용 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
@@ -884,6 +888,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             illusion = protection; // 명중 정산에서만 지울 실제 상태 참조
             reduction += Math.Min(protection.EffectiveValue, damageResult.FinalDamage - reduction); // 남은 양수 피해를 넘지 않는 고정 감소
         } // 전투 상태를 바꾸지 않는 환영 경감 계산 종료
+        int basalt = applyBasalt && damageResult.FinalDamage > reduction ? hostileBattle?.GetBlackBasaltHitDamageReduction() ?? 0 : 0; // 기존 보호 뒤 양수로 남은 유효 적 직격의 공용 기회
+        basaltUsed = basalt > 0; // 예고에서 상태 변경 없이 최초 적격 피격의 기회 표시
+        reduction += Math.Min(basalt, Math.Max(0, damageResult.FinalDamage - reduction)); // 남은 양수 피해 이하의 고정 감소를 실제 방어도와 분담 앞에 적용
         if (enemyDirectAttack && party != null) // 현재 적의 직접 타격에 파티 분산을 사용할 수 있는지 확인
         { // 방어도 이전 피해 분배 시작
             distribution = PainDistributionPlan.Create(this, party, Math.Max(0, damageResult.FinalDamage - reduction)); // 경감 뒤 원래 방어도 적용 전의 파티 전체 몫
@@ -921,7 +928,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return Math.Max(0, ApplySanctuaryDamageReduction(damage) - GetLowHealthDamageReduction()); // 성역 비율 뒤 저체력 고정 감소와 영 하한 적용
     } // 방어도 없는 피해 경감 종료
 
-    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack, BattleUnitRuntime source) // 방패와 실제 적 광역의 미리 보기 및 직접 피해 경감 계산
+    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack, BattleUnitRuntime source, int hangar) // 실제 적 직접 타격의 기존 비율과 격납고 개시 보호
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
         int protection = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.GuardianCircle)); // 수호의 원 피해 경감률
@@ -935,7 +942,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             ? Math.Clamp(battle.DamageRelicInventory?.FindEffect(RelicEffectType.MechanicalBugShellAreaReduction)?.EffectValue ?? 0, 0, 100) : 0; // 원본 유물의 광역 피해 경감 비율과 최대 범위
         int adjusted = (int)((decimal)damage * (100 - resistance) * (100 - protection) * (100 - interception) // 기존 마법 저항과 수호 및 위험 차단 비율
             * (100 - focus) * (100 - spread) * (100 - fortify) * (100 - eternalShield) * (100 - eternalResistance) // 집중·분산과 요새화 및 영원의 방패 비율
-            * (100 - SanctuaryReductionPercent) * ((100m - shell) / 100m) / 1_000_000_000_000_000_000m); // 성역과 기계벌레 껍질을 포함한 전체 비율 곱의 마지막 한 번 내림
+            * (100 - SanctuaryReductionPercent) * ((100m - shell) / 100m) * ((100m - hangar) / 100m) / 1_000_000_000_000_000_000m); // 기존 비율과 격납고 보스 보호를 함께 계산한 실제 한 번 내림
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
@@ -975,7 +982,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool usedSandBone = false; // 이번 직접 카드 타격이 실제 가산을 받은 상태
         if (!wandEcho && (alliedDirectAttack || BattleCardDamageContext.IsPendingHit(sourceUnit, this))) // 원본 직접 카드와 태양의 별도 타격만 포함하고 반향 제외
         { // 실제 방어 전 출혈 추가 피해 계산 시작
-            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, directCardType ?? BattleCardDamageContext.GetPendingCardType(sourceUnit, this), preview: false, out usedSandBone, out usedMaintenance); // 명시된 원본 계열 우선과 기존 카드 문맥의 보조 조회
+            damageAmount = ApplyAlliedDirectRelicDamage(damageAmount, damageType, sourceUnit, directCardType ?? BattleCardDamageContext.GetPendingCardType(sourceUnit, this), directCardAttack: alliedDirectAttack, preview: false, out usedSandBone, out usedMaintenance); // 실제 원본 카드 공격과 주변 문맥의 독립 피해 구분
         } // 실제 방어 전 출혈 추가 피해 계산 종료
         if (damageAmount <= 0) // 예약 가산을 포함해도 적용할 유효 양수 피해가 없는 경우
         { // 최종 무효 피해 처리 시작
@@ -985,7 +992,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
         bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
         var distributionParty = !linked && !guardianSurvival && sourceUnit?.Team == BattleTeam.Enemy ? party : null; // 단일 연결과 기존 수호자 전환에서 파티 분산 제외
-        BattleDamageResult damageResult = PreviewDamageWithParty(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack, true, distributionParty, out var distribution, out var illusion, enemyAreaAttack, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 실제 파티 분배와 방어도 및 해당 마법 타격의 저항 관통 전달
+        BattleDamageResult damageResult = PreviewDamageWithParty(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack, true, distributionParty, out var distribution, out var illusion, out bool basaltUsed, enemyAreaAttack, magicalResistancePenetrationPercent: magicalResistancePenetrationPercent); // 방어와 마법 관통 및 최초 공용 차감의 실제 피격 후보 계산
         if (wandEcho) // 실제 생성된 반향 피해의 원본 결과 확인
         { // 공용 피해 신호의 반향 표시 시작
             damageResult = damageResult.WithWandEcho(); // 방어 및 사망과 무효 결과에도 남는 반향 출처
@@ -1040,6 +1047,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
                 return guarded; // 원래 아군에게 피해와 방어도 소모 없는 실제 수호자 결과 반환
             } // 수호자 피해 전환 종료
         } // 실제 수호자 대체 피격 종료
+        if (basaltUsed) // 수호 전환이 끝난 실제 피격 대상의 공용 경감 사용 확인
+        { // 원래 방어도·피해 알림보다 먼저 기회 소모 시작
+            DamageRelicBattle?.ConsumeBlackBasaltHit(); // 자신의 경감만으로 영이 되거나 방어도에 모두 흡수되더라도 실제 유효한 한 번 소모
+        } // 원래 방어도·피해 알림보다 먼저 기회 소모 종료
         if (consumeInterception) // 전환되지 않은 실제 피격의 위험 차단 소모 확인
         { // 위험 차단 소모 시작
             RemoveStatusEffect(BattleStatusEffectType.DangerInterception); // 실제 맞은 아군의 위험 차단 소모
@@ -1183,7 +1194,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return (int)Math.Min(int.MaxValue, (long)amount + (mark?.EffectiveValue ?? 0) + curtain); // 양쪽 독립 가산과 원래 정수 피해 상한 적용
     } // 아군 직접 피해 가산 종료
 
-    private int ApplyAlliedDirectRelicDamage(int amount, BattleDamageType damageType, BattleUnitRuntime source, CardType? directCardType, bool preview, out bool usedSandBone, out BattleStatusEffectInstance usedMaintenance) // 원본 카드 계열의 예고와 실제가 공유하는 방어 전 직접 아군 피해
+    private int ApplyAlliedDirectRelicDamage(int amount, BattleDamageType damageType, BattleUnitRuntime source, CardType? directCardType, bool directCardAttack, bool preview, out bool usedSandBone, out BattleStatusEffectInstance usedMaintenance) // 직접 카드 공격 여부와 원래 카드 계열을 구별하는 방어 전 공유 보정
     { // 원본 카드의 활성 전투와 양쪽 생존 확인 시작
         usedMaintenance = null; // 유효한 원래 직접 피해에서만 소비할 상태 기본값
         usedSandBone = false; // 아직 소모할 혈흔 대상 가산이 없는 기본값
@@ -1194,6 +1205,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 전투 상태 및 진영 조건을 벗어난 가산 제외 종료
         amount = ApplyCompressionPincerDamage(amount); // 활성 행동력 감소의 양수 직접 카드 원본 피해를 예고와 실제에 공통 적용
         amount = ApplySecurityEnforcerBadgeDamage(amount); // 기절과 행동력 감소의 실제 직접 피해 가산
+        bool burning = directCardAttack && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }; // 이 직접 공격이 맞힌 실제 적의 현재 활성 화상
+        if (directCardAttack && amount > 0 && (burning || GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false })) // 기존 타격과 두 상태 중 하나의 실제 활성 조건
+        { // 방어 전 원자로 심장편의 한 번 비율 계산
+            int percent = Math.Max(0, battle.DamageRelicInventory?.FindEffect(RelicEffectType.ReactorHeartShardBurnOrShockDamage)?.EffectValue ?? 0); // 이번 교전의 실제 심장편에 적힌 피해 증가율
+            amount = (int)Math.Min(int.MaxValue, (long)amount * (100L + percent) / 100L); // 양쪽 상태를 한 번에 확인한 기존 비율 내림과 정수 상한
+        } // 방어 전 원자로 심장편의 한 번 비율 계산 종료
         int antenna = battle.ResolveFirstAllyAttackBonus(source, preview); // 동일한 최초 카드의 첫 확인 피해 또는 순수 예고
         int sandBone = amount > 0 ? battle.GetSandBoneDamageBonus(source, this) : 0; // 실제 양수 직접 카드의 기존 출혈 가산 조건
         usedSandBone = sandBone > 0; // 방어도나 체력 손실 뒤 확정할 출혈 가산 기록
@@ -1204,7 +1221,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             ? DamageRelicBattle?.DamageRelicInventory?.FindEffect(RelicEffectType.RuinedSunGlyphChaliceBurnDamage)?.EffectValue ?? 0 : 0; // 실제 보유한 태양문양의 원본 고정 가산량
         int leakage = directCardType == CardType.Wand && GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false } // 직접 지팡이 타격의 정확한 계열과 현재 적 감전 상태 확인
             ? Math.Max(0, battle.DamageRelicInventory?.FindEffect(RelicEffectType.LeakageCoilShockedWandDamage)?.EffectValue ?? 0) : 0; // 현재 보유한 누전 코일의 독립 방어 전 고정 가산
-        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens + sunGlyph + leakage + (usedMaintenance?.EffectiveValue ?? 0)); // 같은 직접 타격에 참여하는 원본 고정 가산 합계
+        int gloves = burning && directCardType == CardType.Sword // 현재 화상 적을 명중한 원본 검 카드의 정확한 계열
+            ? Math.Max(0, battle.DamageRelicInventory?.FindEffect(RelicEffectType.AshStainedGlovesBurningSwordDamage)?.EffectValue ?? 0) : 0; // 앞선 원자로 비율과 독립인 실제 장갑 고정 피해
+        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens + sunGlyph + leakage + gloves + (usedMaintenance?.EffectiveValue ?? 0)); // 기존 고정 가산과 이번 직접 검 타격의 두 점 합계
         int strap = (long)CurrentHealth * 2 <= MaxHealth ? BattleSupplyRelics.Find(RelicEffectType.RuinedLeatherStrapLowHealthEnemyDamage)?.EffectValue ?? 0 : 0; // 타격 직전 실제 최대 체력 절반 이하에서만 비율 증가
         return strap > 0 && flatDamage > 0 ? (int)Math.Min(int.MaxValue, (long)flatDamage * (100L + strap) / 100L) : flatDamage; // 원본 양수 비율을 반올림 없이 방어 이전 정수로 내림
     } // 원본 카드의 활성 전투와 양쪽 생존 확인 종료

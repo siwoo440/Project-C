@@ -114,7 +114,9 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
         var battle = target.DamageRelicBattle; // 피해 상태의 실제 조우 확인
         int trade = amount > 0 && target.Team == BattleTeam.Ally && battle is { IsBattleEnded: false, HasPendingBossPhaseTransition: false } // 진행 중인 전투에서 양수 상태가 실제 발생한 아군 확인
             ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.SaltLeatherFragmentPeriodicTrade)?.EffectValue ?? 0 : 0; // 같은 유물 원본의 하나뿐인 보정량
-        int adjustment = type == BattleStatusEffectType.Burn ? trade : -trade; // 화상은 추가하고 출혈은 감소하는 원본 정의
+        int cord = type == BattleStatusEffectType.Burn && amount > 0 && target.Team == BattleTeam.Ally && battle is { IsBattleEnded: false } // 실제 진행 중의 아군 화상 원본 양수만 확인
+            ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.CharredStoneCordBurnDamageReduction)?.EffectValue ?? 0 : 0; // 같은 조우의 그을린 돌끈이 뺄 고정 양
+        long adjustment = type == BattleStatusEffectType.Burn ? (long)trade - cord : -trade; // 소금가죽의 실제 화상·출혈 보정과 독립 화상 고정 감소
         return (int)System.Math.Clamp((long)amount + previousAdjustment + adjustment, 0L, int.MaxValue); // 원래 유물 보정과 합친 영 하한과 정수 상한
     } // 소금가죽 지속 피해 보정 종료
 

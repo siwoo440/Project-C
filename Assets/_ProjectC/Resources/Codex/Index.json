@@ -1711,6 +1711,54 @@
       "artworkKey": "600d7b92e3f655b5852d9b07a19f8e47"
     },
     {
+      "category": 3,
+      "name": "원자로 심장편",
+      "description": "화상이나 감전이 활성인 적에게 아군 카드가 직접 주는 피해가 15% 증가한다. 두 상태가 함께 있어도 한 번만 적용된다.",
+      "artworkKey": "53a47e17f152598d9d51596396572927"
+    },
+    {
+      "category": 3,
+      "name": "격납고 봉인장치",
+      "description": "보스전에서 적이 실제로 두 턴을 끝낼 때까지 모든 아군이 받는 적 전투 피해를 20% 줄인다.",
+      "artworkKey": "cfbe71bde37057208ca2a204f37c247c"
+    },
+    {
+      "category": 3,
+      "name": "폐기장 왕관",
+      "description": "적이 실제로 전투불능이 될 때마다 무작위 생존 아군 한 명이 방어도 6을 얻는다.",
+      "artworkKey": "20262596314d58a6951e43748f20f196"
+    },
+    {
+      "category": 3,
+      "name": "마지막 안전등",
+      "description": "전투당 한 번, 정신력이 실제로 0에 도달한 생존 아군의 정신력을 10 회복한다.",
+      "artworkKey": "a64c81208a3054ec967d60502e32db0d"
+    },
+    {
+      "category": 3,
+      "name": "그을린 돌끈",
+      "description": "아군이 화상으로 받는 피해를 1 줄인다.",
+      "artworkKey": "f77da684c67d5f92a707474faa576647"
+    },
+    {
+      "category": 3,
+      "name": "검은 현무암 조각",
+      "description": "전투당 한 번, 아군이 받는 첫 양수 직접 적 타격의 피해를 방어도 적용 전에 3 줄인다.",
+      "artworkKey": "82f6d8708bae5ad1a257efee619f7202"
+    },
+    {
+      "category": 3,
+      "name": "재 묻은 장갑",
+      "description": "화상이 활성인 적에게 아군의 검 카드가 직접 명중하면 피해가 2 증가한다.",
+      "artworkKey": "1bc7778383db5c7f8bfcbf6e9909b5ae"
+    },
+    {
+      "category": 3,
+      "name": "용암 이끼 포자병",
+      "description": "실제 아군 턴이 세 번 시작될 때마다 현재 체력이 가장 낮은 부상 아군 한 명의 체력을 4 회복한다.",
+      "artworkKey": "4fba6d0b53bb5ac3afd0cb4dc79f2872"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

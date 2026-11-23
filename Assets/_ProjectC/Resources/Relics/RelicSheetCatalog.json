@@ -2852,7 +2852,7 @@
     {
       "sourceRow": 261,
       "name": "원자로 심장편",
-      "description": "화상 또는 감전 상태 적에게 피해 +15%",
+      "description": "화상이나 감전이 활성인 적에게 아군 카드가 직접 주는 피해가 15% 증가한다. 두 상태가 함께 있어도 한 번만 적용된다.",
       "buyMin": 217,
       "buyMax": 260,
       "buyVariance": 43,
@@ -2863,7 +2863,7 @@
     {
       "sourceRow": 262,
       "name": "격납고 봉인장치",
-      "description": "보스전 첫 2턴 받는 피해 -20%",
+      "description": "보스전에서 적이 실제로 두 턴을 끝낼 때까지 모든 아군이 받는 적 전투 피해를 20% 줄인다.",
       "buyMin": 234,
       "buyMax": 270,
       "buyVariance": 36,
@@ -2874,7 +2874,7 @@
     {
       "sourceRow": 263,
       "name": "폐기장 왕관",
-      "description": "적이 사망할 때마다 무작위 아군 방어도 +6",
+      "description": "적이 실제로 전투불능이 될 때마다 무작위 생존 아군 한 명이 방어도 6을 얻는다.",
       "buyMin": 251,
       "buyMax": 294,
       "buyVariance": 43,
@@ -2885,7 +2885,7 @@
     {
       "sourceRow": 264,
       "name": "마지막 안전등",
-      "description": "아군 정신력 0 이하가 될 때 1회 정신력 10 회복",
+      "description": "전투당 한 번, 정신력이 실제로 0에 도달한 생존 아군의 정신력을 10 회복한다.",
       "buyMin": 268,
       "buyMax": 304,
       "buyVariance": 36,
@@ -2896,7 +2896,7 @@
     {
       "sourceRow": 265,
       "name": "그을린 돌끈",
-      "description": "화상 피해 -1",
+      "description": "아군이 화상으로 받는 피해를 1 줄인다.",
       "buyMin": 285,
       "buyMax": 328,
       "buyVariance": 43,
@@ -2907,7 +2907,7 @@
     {
       "sourceRow": 266,
       "name": "검은 현무암 조각",
-      "description": "첫 피격 피해 -3",
+      "description": "전투당 한 번, 아군이 받는 첫 양수 직접 적 타격의 피해를 방어도 적용 전에 3 줄인다.",
       "buyMin": 302,
       "buyMax": 338,
       "buyVariance": 36,
@@ -2918,7 +2918,7 @@
     {
       "sourceRow": 267,
       "name": "재 묻은 장갑",
-      "description": "화상 상태 적에게 검 카드 피해 +2",
+      "description": "화상이 활성인 적에게 아군의 검 카드가 직접 명중하면 피해가 2 증가한다.",
       "buyMin": 319,
       "buyMax": 362,
       "buyVariance": 43,
@@ -2929,7 +2929,7 @@
     {
       "sourceRow": 268,
       "name": "용암 이끼 포자병",
-      "description": "3턴마다 아군 1명 체력 4 회복",
+      "description": "실제 아군 턴이 세 번 시작될 때마다 현재 체력이 가장 낮은 부상 아군 한 명의 체력을 4 회복한다.",
       "buyMin": 186,
       "buyMax": 222,
       "buyVariance": 36,
