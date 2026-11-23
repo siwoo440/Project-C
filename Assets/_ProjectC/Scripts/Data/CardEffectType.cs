@@ -6,5 +6,6 @@ public enum CardEffectType // 카드 효과 종류
     RemoveDebuffs, // 디버프 전체 해제 효과
     ChangeMental, // 정신력 직접 변화 효과
     RedirectAttackAndDefend, // 적 공격 유도와 방어 효과
-    ProtectAttackTarget // 공격 예고 대상 보호 효과
+    ProtectAttackTarget, // 공격 예고 대상 보호 효과
+    ChooseDraw // 덱 위 카드 선택 드로우 효과
 } // 열거형 종료

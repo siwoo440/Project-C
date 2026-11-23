@@ -1,0 +1,78 @@
+using System; // 선택 완료 알림 사용
+using System.Collections.Generic; // 선택 후보 목록 사용
+using TMPro; // 한글 카드 설명 사용
+using UnityEngine; // 유니티 화면 객체 사용
+using UnityEngine.UI; // 버튼과 이미지 사용
+public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로우 화면
+{ // 선택 화면 시작
+    public static BattleDrawChoiceView Show(Transform parent, IReadOnlyList<CardInstance> cards, Action<CardInstance> selected) // 선택 화면 생성
+    { // 화면 생성 시작
+        GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Image)); // 화면 가림막 생성
+        RectTransform rootRect = root.GetComponent<RectTransform>(); // 가림막 영역 조회
+        rootRect.SetParent(parent, false); // 전투 화면에 연결
+        rootRect.anchorMin = Vector2.zero; // 가림막 시작점 설정
+        rootRect.anchorMax = Vector2.one; // 가림막 끝점 설정
+        rootRect.offsetMin = Vector2.zero; // 가림막 시작 여백 제거
+        rootRect.offsetMax = Vector2.zero; // 가림막 끝 여백 제거
+        root.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.82f); // 가림막 색상 설정
+        BattleDrawChoiceView view = root.AddComponent<BattleDrawChoiceView>(); // 선택 화면 컴포넌트 추가
+        TMP_Text title = CreateText("Title", rootRect, "가져올 카드 한 장 선택", 26f); // 선택 화면 제목 생성
+        title.rectTransform.anchoredPosition = new Vector2(0f, 190f); // 제목 위치 설정
+        title.rectTransform.sizeDelta = new Vector2(500f, 50f); // 제목 크기 설정
+        for (int index = 0; index < cards.Count; index++) // 선택 후보 순회
+        { // 후보 화면 생성 시작
+            CardInstance card = cards[index]; // 현재 후보 카드 조회
+            RectTransform buttonRect = CreateRect("Choice_" + index, rootRect); // 후보 버튼 영역 생성
+            buttonRect.anchoredPosition = new Vector2((index - (cards.Count - 1) * 0.5f) * 230f, -15f); // 후보 버튼 위치 설정
+            buttonRect.sizeDelta = new Vector2(210f, 310f); // 후보 버튼 크기 설정
+            Image background = buttonRect.gameObject.AddComponent<Image>(); // 후보 버튼 배경 생성
+            background.color = new Color(0.16f, 0.19f, 0.27f, 1f); // 후보 버튼 배경 색상 설정
+            Button button = buttonRect.gameObject.AddComponent<Button>(); // 후보 선택 버튼 추가
+            button.targetGraphic = background; // 선택 버튼 배경 연결
+            RectTransform artRect = CreateRect("Artwork", buttonRect); // 후보 일러스트 영역 생성
+            artRect.anchoredPosition = new Vector2(0f, 80f); // 후보 일러스트 위치 설정
+            artRect.sizeDelta = new Vector2(170f, 110f); // 후보 일러스트 크기 설정
+            Image art = artRect.gameObject.AddComponent<Image>(); // 후보 일러스트 추가
+            art.sprite = card.Artwork; // 카드 일러스트 연결
+            art.preserveAspect = true; // 일러스트 비율 유지
+            art.raycastTarget = false; // 버튼 입력 방해 방지
+            art.enabled = card.Artwork != null; // 일러스트가 있을 때만 표시
+            TMP_Text label = CreateText("Details", buttonRect, $"{card.DisplayName}\n{card.OwnerUnit.DisplayName} · AP {card.ApCost}\n\n{card.SourceData.Description}", 18f); // 카드 이름과 설명 표시
+            label.rectTransform.anchoredPosition = new Vector2(0f, -65f); // 카드 설명 위치 설정
+            label.rectTransform.sizeDelta = new Vector2(185f, 150f); // 카드 설명 크기 설정
+            button.onClick.AddListener(() => view.Select(card, selected)); // 후보 선택 동작 연결
+        } // 후보 화면 생성 종료
+        return view; // 생성 화면 반환
+    } // 화면 생성 종료
+    public void Close() // 선택 화면 닫기
+    { // 화면 닫기 시작
+        gameObject.SetActive(false); // 화면 즉시 숨기기
+        Destroy(gameObject); // 화면 객체 제거
+    } // 화면 닫기 종료
+    private void Select(CardInstance card, Action<CardInstance> selected) // 후보 카드 선택
+    { // 후보 선택 시작
+        Close(); // 선택 화면 닫기
+        selected?.Invoke(card); // 선택 카드 전달
+    } // 후보 선택 종료
+    private static RectTransform CreateRect(string objectName, Transform parent) // 화면 영역 생성
+    { // 영역 생성 시작
+        GameObject item = new GameObject(objectName, typeof(RectTransform)); // 화면 객체 생성
+        RectTransform rect = item.GetComponent<RectTransform>(); // 화면 영역 조회
+        rect.SetParent(parent, false); // 부모 화면 연결
+        return rect; // 생성 영역 반환
+    } // 영역 생성 종료
+    private static TMP_Text CreateText(string objectName, Transform parent, string value, float size) // 화면 문자 생성
+    { // 문자 생성 시작
+        RectTransform rect = CreateRect(objectName, parent); // 문자 영역 생성
+        TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>(); // 문자 컴포넌트 추가
+        text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 글꼴 적용
+        text.text = value; // 표시 문구 설정
+        text.fontSize = size; // 글자 크기 설정
+        text.enableAutoSizing = true; // 긴 문구 크기 자동 조정
+        text.fontSizeMin = 12f; // 최소 글자 크기 설정
+        text.fontSizeMax = size; // 최대 글자 크기 설정
+        text.alignment = TextAlignmentOptions.Center; // 가운데 정렬 설정
+        text.raycastTarget = false; // 버튼 입력 방해 방지
+        return text; // 생성 문자 반환
+    } // 문자 생성 종료
+} // 선택 화면 종료
