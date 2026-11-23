@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 운명
   description: "임시 능력치 · 기획 역할: 확률 결과 재굴림"
   role: 3
-  portrait: {fileID: 0}
+  portrait: {fileID: 8681216051463347634, guid: e631c116a32fc3e47970e8ff01424203, type: 3}
   maxHealth: 90
   physicalDefense: 2
   magicalResistance: 4

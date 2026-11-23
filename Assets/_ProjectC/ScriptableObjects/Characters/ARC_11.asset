@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 정의
   description: "임시 능력치 · 기획 역할: 예고 피해 분담"
   role: 1
-  portrait: {fileID: 0}
+  portrait: {fileID: -3018955907442241085, guid: b6e2dae8902f3a648911ea358c9b4efe, type: 3}
   maxHealth: 122
   physicalDefense: 5
   magicalResistance: 4
