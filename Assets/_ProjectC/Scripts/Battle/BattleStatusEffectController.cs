@@ -15,6 +15,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
         statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
         turnRuntime.PhaseStarted += HandlePhaseStarted; // 진영 턴 시작 이벤트 등록
+        turnRuntime.PhaseEnded += HandlePhaseEnded; // 진영 턴 종료 이벤트 등록
     } // 생성자 종료
     private void HandlePhaseStarted(BattleTurnPhase phase, int round) // 진영 턴 시작 처리
     { // 턴 시작 처리 시작
@@ -31,6 +32,20 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             ProcessUnits(enemyUnits, round); // 적 상태 이상 발동
         } // 적 상태 처리 종료
     } // 턴 시작 처리 종료
+    private void HandlePhaseEnded(BattleTurnPhase phase, int round) // 진영 턴 종료 처리
+    { // 턴 종료 처리 시작
+        if (disposed || phase != BattleTurnPhase.EnemyTurn) // 적 턴 종료 여부 확인
+        { // 준비 유지 처리 시작
+            return; // 방어 준비 정리 중단
+        } // 준비 유지 처리 종료
+        foreach (BattleUnitRuntime ally in allyUnits) // 아군 유닛 순회
+        { // 준비 만료 처리 시작
+            if (ally != null) // 아군 존재 확인
+            { // 준비 제거 시작
+                ally.RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 사용하지 않은 방어 준비 만료
+            } // 준비 제거 종료
+        } // 준비 만료 처리 종료
+    } // 턴 종료 처리 종료
     private void ProcessUnits(IReadOnlyList<BattleUnitRuntime> units, int round) // 진영 상태 이상 일괄 처리
     { // 일괄 처리 시작
         for (int unitIndex = 0; unitIndex < units.Count; unitIndex++) // 유닛 목록 순회
@@ -59,5 +74,6 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
         } // 중복 해제 처리 종료
         disposed = true; // 연결 해제 상태 저장
         turnRuntime.PhaseStarted -= HandlePhaseStarted; // 진영 턴 시작 이벤트 해제
+        turnRuntime.PhaseEnded -= HandlePhaseEnded; // 진영 턴 종료 이벤트 해제
     } // 연결 해제 종료
 } // 클래스 종료

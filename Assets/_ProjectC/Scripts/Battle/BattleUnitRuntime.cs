@@ -260,13 +260,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         statusEffects.Clear(); // 상태 이상 목록 초기화
         StatusEffectsChanged?.Invoke(this); // 상태 이상 제거 알림
     } // 전체 상태 제거 종료
-    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType) // 예상 피해 계산
+    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 예상 피해 계산
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
         } // 사망 유닛 처리 종료
-        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력 포함 피해 계산
+        BattleStatusEffectInstance preparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit); // 해당 공격의 방어 준비 조회
+        int bonusDefense = preparation == null ? 0 : preparation.EffectiveValue; // 임시 방어 수치 계산
+        BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense + bonusDefense, MagicalResistance + bonusDefense); // 준비 효과 포함 피해 계산
         int expectedAppliedDamage = Mathf.Min(CurrentHealth, damageResult.FinalDamage); // 남은 체력 기준 실제 피해 계산
         return damageResult.WithAppliedDamage(expectedAppliedDamage); // 예상 체력 피해 포함 결과 반환
     } // 예상 피해 계산 종료
@@ -276,7 +278,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 무효 처리 시작
             return BattleDamageResult.Empty(damageType); // 적용 피해 없음
         } // 무효 처리 종료
-        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType); // 최종 피해 계산
+        bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
+        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit); // 최종 피해 계산
+        if (consumePreparation) // 방어 준비 발동 확인
+        { // 준비 소모 시작
+            RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 발동한 방어 준비 제거
+        } // 준비 소모 종료
         CurrentHealth = Mathf.Max(0, CurrentHealth - damageResult.AppliedDamage); // 현재 체력 감소
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
@@ -295,6 +302,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 사망 알림 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
+    private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
+    { // 준비 적용 확인 시작
+        if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy || (damageType != BattleDamageType.Physical && damageType != BattleDamageType.Magical)) // 적의 물리·마법 공격 확인
+        { // 준비 미적용 처리 시작
+            return null; // 준비 효과 없음 반환
+        } // 준비 미적용 처리 종료
+        return GetStatusEffect(BattleStatusEffectType.GuardPreparation); // 현재 방어 준비 반환
+    } // 준비 적용 확인 종료
     public int RestoreHealth(int healAmount, BattleUnitRuntime sourceUnit = null) // 체력 회복 처리
     { // 체력 회복 시작
         if (healAmount <= 0 || IsDead || CurrentHealth >= MaxHealth) // 무효 회복 확인
