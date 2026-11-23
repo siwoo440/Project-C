@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78157e9e12ea63844a3dcd195b63b2bf, type: 3}
+  m_Name: Party_Test
+  m_EditorClassIdentifier: Assembly-CSharp::PartyData
+  partyId: PTY_TEST
+  displayName: Test Party
+  members:
+  - {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
