@@ -895,6 +895,54 @@
       "artworkKey": "0975cf7cce24550aa347bcd14d9b442a"
     },
     {
+      "category": 3,
+      "name": "낡은 성수 마개",
+      "description": "전투에서 처음 사용하는 성배 체력 회복 카드의 각 직접 회복량을 3 높인다.",
+      "artworkKey": "a059193134105e85aa7e05cd7366bf03"
+    },
+    {
+      "category": 3,
+      "name": "흔들리는 펜촉",
+      "description": "펜타클 카드 사용이 완료될 때마다 15% 확률로 카드 한 장을 추가로 뽑는다.",
+      "artworkKey": "1dce6b7602ca522d92bb5349dabbb74b"
+    },
+    {
+      "category": 3,
+      "name": "꺼진 등불 심지",
+      "description": "은신 상태인 아군이 공격을 받을 때 회피율을 5%p 높인다.",
+      "artworkKey": "fa05660b6ded54e1b21df626ca4b419d"
+    },
+    {
+      "category": 3,
+      "name": "흠집 난 주사위",
+      "description": "전투 시작에 무작위 생존 아군에게 첫 아군 턴 공격력 1 또는 방어도 3을 준다.",
+      "artworkKey": "3548e25b99a6541697f096ffd08bebc8"
+    },
+    {
+      "category": 3,
+      "name": "손때 묻은 동전줄",
+      "description": "상점의 공통 할인율을 5%p 높인다.",
+      "artworkKey": "7d5ce2a92edb54b2af2cb5c2b266e8fc"
+    },
+    {
+      "category": 3,
+      "name": "갈라진 지도핀",
+      "description": "미완료 이벤트 방마다 10% 확률로 비축품 회수 선택지를 한 개 추가한다. 비축품을 회수하면 골드 10을 얻는다.",
+      "artworkKey": "1ae46c58614b5e5b90ce67f0f94ef153"
+    },
+    {
+      "category": 3,
+      "name": "어두운 피리구멍",
+      "description": "공포 상태인 적에게 카드로 직접 명중할 때마다 피해가 2 증가한다.",
+      "artworkKey": "e2f5fa2c2dd05e1592b1b9259305d183"
+    },
+    {
+      "category": 3,
+      "name": "녹슨 회로핀",
+      "description": "전투에서 기계형 적에게 처음 카드로 직접 명중하면 피해가 4 증가한다.",
+      "artworkKey": "75f4ed8fd1f45012a5b582c66f648d1d"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

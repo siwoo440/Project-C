@@ -242,6 +242,15 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
+        if (ShouldOfferMapPinChoice(ExplorationSessionManager.Instance, currentRuntimeEventId)) // 아직 해결하지 않은 방의 고정 추가 선택 확인
+        { // 지도핀 보상 추가 시작
+            var change = new ExplorationEventResourceChange(); // 기존 이벤트의 자원 보상 형식
+            change.Initialize(10, 0, 0, 0); // 탐사 비축품에서 골드 열 개 지급
+            var bonus = new ExplorationEventChoiceData(); // 일반 선택과 분리한 지도핀 보상 원본
+            bonus.Initialize("지도핀이 가리킨 비축품 회수 · 골드 +10", "지도핀이 표시한 비축품을 회수했습니다.", change); // 보상과 결과의 실제 전투 밖 문구
+            CreateChoiceButton(bonus.ChoiceText, () => CommitDataChoice(choices.Count, bonus)); // 일반 사건 확정 흐름에 네 번째 선택 연결
+        } // 지도핀 보상 추가 종료
+
         if (choiceButtons.Count == 0)
         {
             CreateCloseButton("[닫기]"); // 버튼이 없으면 닫기 버튼 생성
@@ -311,21 +320,32 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         CommitDataChoice(choiceIndex); // 일반 이벤트의 데이터 행동 처리
     } // 선택 분기 종료
 
-    private void CommitDataChoice(int choiceIndex) // 데이터 기반 선택 결과 반영
-    { // 데이터 행동 시작
-        choiceCommitted = true; // 선택 완료 상태 저장
+    private static bool ShouldOfferMapPinChoice(ExplorationSessionManager session, string roomId) // 기존 방에 한 번만 주어질 결정적인 추가 선택
+    { // 지도핀의 방별 판정 시작
+        var relic = RelicRunManager.Instance?.Inventory.FindEffect(RelicEffectType.ExtraEventRewardChoice); // 현재 보유한 갈라진 지도핀 조회
+        if (relic == null || session == null || !session.HasCurrentFloorSeed || string.IsNullOrEmpty(roomId) || session.IsEventResolved(roomId)) // 보유와 미완료 탐사의 방 식별값 확인
+        { // 잘못된 방의 추첨 제외 시작
+            return false; // 조건 없는 보상 선택 제외
+        } // 잘못된 방의 추첨 제외 종료
+        int seed = ExplorationTreasureRewardService.BuildStableHash($"mapPin|{session.CurrentFloorSeed}|{roomId}"); // 다시 열거나 복원해도 같은 독립 방별 시드
+        return new System.Random(seed).Next(100) < relic.TriggerChancePercent; // 시트 비율의 고정 선택지 판정
+    } // 지도핀의 방별 판정 종료
 
-        ExplorationEventChoiceData choiceData =
-            currentEventData.Choices[choiceIndex]; // 선택한 선택지 조회
+    private void CommitDataChoice(int choiceIndex, ExplorationEventChoiceData choiceData = null) // 기본 또는 별도 원본의 실제 선택 결과 반영
+    { // 데이터 행동 시작
+        var sessionManager = ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
+        if (choiceCommitted || sessionManager.IsEventResolved(currentRuntimeEventId)) // 같은 방의 중복 보상 확정 차단
+        { // 이미 반영된 선택 제외 시작
+            return; // 처리한 방의 추가 보상 차단
+        } // 이미 반영된 선택 제외 종료
+        choiceCommitted = true; // 선택 완료 상태 저장
+        choiceData ??= currentEventData.Choices[choiceIndex]; // 일반 행동의 원래 선택지 조회
 
         string resultText =
             ResolveChoice(
                 currentRuntimeEventId,
                 choiceIndex,
                 choiceData); // 선택 결과 계산
-
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
         sessionManager.MarkEventResolved(currentRuntimeEventId); // 현재 이벤트 처리 완료 기록
         if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 이벤트 결과 자동 저장 확인

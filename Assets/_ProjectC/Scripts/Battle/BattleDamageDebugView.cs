@@ -12,7 +12,7 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
     private readonly StringBuilder calculationText =
         new StringBuilder(); // 계산식 문자열 저장소
 
-    private bool debugEnabled = true; // 디버그 화면 사용 여부
+    private bool debugEnabled; // F6 입력 전 기본 숨김 상태
     private Vector2 scrollPosition; // 계산식 스크롤 위치
     private GUIStyle headerLabelStyle; // 제목 표시 스타일
     private GUIStyle bodyLabelStyle; // 본문 표시 스타일
@@ -187,9 +187,7 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
 
     private void OnGUI() // 왼쪽 아래 피해 계산 창 출력
     {
-        if (!debugEnabled ||
-            SceneManager.GetActiveScene().name != BattleSceneName ||
-            calculationText.Length == 0)
+        if (!debugEnabled || SceneManager.GetActiveScene().name != BattleSceneName) // 단축키로 켠 전투 화면에서만 표시
         {
             return;
         }
@@ -230,7 +228,7 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
                 scrollPosition); // 광역 카드 계산식 스크롤 시작
 
         GUILayout.Label(
-            calculationText.ToString(),
+            calculationText.Length == 0 ? "아직 기록된 피해 계산이 없습니다." : calculationText.ToString(), // 카드 사용 전의 빈 기록 안내와 실제 계산식
             bodyLabelStyle); // 계산식 출력
 
         GUILayout.EndScrollView(); // 계산식 스크롤 종료

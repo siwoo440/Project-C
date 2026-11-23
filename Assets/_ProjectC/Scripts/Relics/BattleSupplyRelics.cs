@@ -6,6 +6,7 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
     private const int RepeatHitGoal = 3; // 전투 수첩 보너스에 필요한 같은 적 명중 횟수
     private int lastBlackHeartRound; // 검은 심장핀의 마지막 아군 라운드
     private bool usedGlassMarble; // 이번 전투 유리 구슬의 사용 여부
+    private bool usedFirstMechanicalHitBonus; // 이번 전투 첫 기계형 직접 명중의 회로핀 사용 여부
     private bool usedBlackDustVial; // 이번 전투의 활성 약화 명중에 가루병 사용 여부
     private BattleUnitRuntime repeatedHitTarget; // 전투 수첩에 마지막으로 기록한 적
     private int consecutiveTargetHits; // 같은 적에게 연속으로 명중한 횟수
@@ -30,6 +31,16 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         } // 첫 적 명중 발동 종료
         bonus += card.CardType == CardType.Wand && card.EffectType == CardEffectType.Damage ? Find(RelicEffectType.WandDirectHitBonus)?.EffectValue ?? 0 : 0; // 지팡이 피해 카드의 각 명중에 수정못 가산
         bonus += target.GetStatusEffect(BattleStatusEffectType.Blind) != null ? Find(RelicEffectType.BlindTargetDirectDamage)?.EffectValue ?? 0 : 0; // 실제 실명 상태인 적에게 안경 렌즈 가산
+        bonus += target.GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false } ? Find(RelicEffectType.FearTargetDirectDamage)?.EffectValue ?? 0 : 0; // 현재 공포가 활성인 적의 실제 타격마다 피리구멍 가산
+        if (!usedFirstMechanicalHitBonus && target.EnemySource?.IsMechanical == true) // 전투에서 아직 가산을 쓰지 않은 기계형 적의 직접 명중 확인
+        { // 회로핀의 첫 기계형 명중 시작
+            int circuit = Find(RelicEffectType.FirstMechanicalDirectHitBonus)?.EffectValue ?? 0; // 보유한 회로핀의 실제 가산 피해량 조회
+            if (circuit > 0) // 회로핀이 실제로 주는 양의 피해 확인
+            { // 첫 기계형 명중 가산 시작
+                usedFirstMechanicalHitBonus = true; // 같은 전투의 다음 실제 명중에서 중복 지급 방지
+                bonus += circuit; // 방어와 방어도 적용 전 회로핀 피해 가산
+            } // 첫 기계형 명중 가산 종료
+        } // 회로핀의 첫 기계형 명중 종료
         bonus += GetRepeatTargetHitBonus(target); // 전투 수첩의 연속 명중 기록 및 예약 피해 가산
         var dust = !usedBlackDustVial ? Find(RelicEffectType.FirstDebuffedTargetHitDamage) : null; // 처음 유효한 명중의 검은 가루병 조회
         if (dust != null && target.StatusEffects.Any(static effect => effect.IsDebuff && !effect.IsExpired)) // 적에게 남아 있는 실제 활성 약화 확인

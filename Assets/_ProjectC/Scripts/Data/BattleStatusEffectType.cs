@@ -63,5 +63,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Renewal = 60, // 아군의 실제 턴이 끝날 때 지정 체력 회복
     SanctuaryWard = 61, // 적 턴을 기준으로 받는 피해 비율 경감
     FearResistance = 62, // 적 턴을 기준으로 아군의 공포 확률 저항
-    DelayedHealing = 63 // 다음 아군 턴 시작 한 번의 별도 체력 회복
+    DelayedHealing = 63, // 다음 아군 턴 시작 한 번의 별도 체력 회복
+    Stealth = 64 // 실제 전투에서 은신 중인 상태
 } // 열거형 종료

@@ -113,4 +113,12 @@ public enum RelicEffectType // 유물 효과 종류
     LowMentalCardHealing, // 저정신력 시전자의 직접 체력 회복 가산
     FirstDebuffedTargetHitDamage, // 약화 적의 첫 직접 명중 피해 가산
     FirstBattleSwordDamage, // 처음 사용한 검 피해 카드의 첫 명중 피해 가산
+    FirstCupHealingBonus, // 첫 성배 체력 회복 카드의 추가 회복량
+    PentacleResolvedChanceDraw, // 펜타클 사용 완료에 따른 확률 드로우
+    StealthEvasionBonus, // 은신 상태 아군의 실제 회피율 증가
+    OpeningRandomAllyBoost, // 전투 시작의 무작위 아군 공격력 또는 방어도 지급
+    AdditionalShopDiscount, // 기존 공통 할인에 더하는 상점 할인율
+    ExtraEventRewardChoice, // 확률에 맞는 이벤트 방의 추가 보상 선택지
+    FearTargetDirectDamage, // 공포 적에 대한 직접 카드 명중 피해 증가
+    FirstMechanicalDirectHitBonus, // 처음 기계형 적을 직접 명중한 카드 피해 증가
 }

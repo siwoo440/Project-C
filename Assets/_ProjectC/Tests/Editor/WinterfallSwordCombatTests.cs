@@ -48,8 +48,12 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         } // 선제 검사 환경 종료
         internal static Fight WithEnemySources(IEnumerable<EnemyData> enemies, params string[] ids) // 서로 다른 적 원본과 실제 게임 카드를 쓰는 독립 전투 구성
         { // 적 분류 검사 환경 생성 시작
-            return new Fight(CreateView, CreateView, LoadCards(ids), enemySources: enemies); // 실제 차례와 원본 정보를 유지한 전투 생성
+            return WithSources(enemies, LoadCards(ids)); // 실제 카드 원본을 조회해 공통 전투 생성 경로 호출
         } // 적 분류 검사 환경 생성 종료
+        internal static Fight WithSources(IEnumerable<EnemyData> enemies, CardData[] cards) // 실제 적 원본과 독립 비교 카드를 받는 전투 구성
+        { // 자료 기반 전투 생성 시작
+            return new Fight(CreateView, CreateView, cards, enemySources: enemies); // 실제 차례와 두 종류 원본을 반영한 전투 생성
+        } // 자료 기반 전투 생성 종료
         private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards, bool enemyFirst = false, IEnumerable<EnemyData> enemySources = null) // 임의의 적 원본을 지원하는 공통 전투 구성
         { // 전투 구성 시작
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회

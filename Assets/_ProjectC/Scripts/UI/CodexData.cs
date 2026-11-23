@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.Stealth) // 독립 은신 상태 도감 항목
+                    { // 은신 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 0); // 상태 원본의 고유 표시 문구
+                    } // 은신 설명 종료
                     else if (effect == BattleStatusEffectType.SanctuaryWard || effect == BattleStatusEffectType.FearResistance || effect == BattleStatusEffectType.DelayedHealing) // 성역과 공포 저항 및 예약 회복 조회
                     { // 신규 성배 상태 설명 시작
                         int amount = effect == BattleStatusEffectType.SanctuaryWard ? 10 : effect == BattleStatusEffectType.FearResistance ? 30 : 6; // 각 성배 카드의 실제 상태 수치

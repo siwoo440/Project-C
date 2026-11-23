@@ -1323,7 +1323,7 @@
     {
       "sourceRow": 122,
       "name": "낡은 성수 마개",
-      "description": "성배 카드 첫 사용 시 체력 3 추가 회복",
+      "description": "전투에서 처음 사용하는 성배 체력 회복 카드의 각 직접 회복량을 3 높인다.",
       "buyMin": 254,
       "buyMax": 290,
       "buyVariance": 36,
@@ -1334,7 +1334,7 @@
     {
       "sourceRow": 123,
       "name": "흔들리는 펜촉",
-      "description": "펜타클 카드 사용 시 15% 확률로 카드 1장 드로우",
+      "description": "펜타클 카드 사용이 완료될 때마다 15% 확률로 카드 한 장을 추가로 뽑는다.",
       "buyMin": 271,
       "buyMax": 314,
       "buyVariance": 43,
@@ -1345,7 +1345,7 @@
     {
       "sourceRow": 124,
       "name": "꺼진 등불 심지",
-      "description": "은신 상태 아군 회피율 +5%",
+      "description": "은신 상태인 아군이 공격을 받을 때 회피율을 5%p 높인다.",
       "buyMin": 288,
       "buyMax": 324,
       "buyVariance": 36,
@@ -1356,7 +1356,7 @@
     {
       "sourceRow": 125,
       "name": "흠집 난 주사위",
-      "description": "전투 시작 시 무작위 아군 공격력 +1 또는 방어도 +3",
+      "description": "전투 시작에 무작위 생존 아군에게 첫 아군 턴 공격력 1 또는 방어도 3을 준다.",
       "buyMin": 305,
       "buyMax": 348,
       "buyVariance": 43,
@@ -1367,7 +1367,7 @@
     {
       "sourceRow": 126,
       "name": "손때 묻은 동전줄",
-      "description": "상점 가격 -5%",
+      "description": "상점의 공통 할인율을 5%p 높인다.",
       "buyMin": 322,
       "buyMax": 358,
       "buyVariance": 36,
@@ -1378,7 +1378,7 @@
     {
       "sourceRow": 127,
       "name": "갈라진 지도핀",
-      "description": "이벤트 방 보상 선택지 1개 추가 확률 +10%",
+      "description": "미완료 이벤트 방마다 10% 확률로 비축품 회수 선택지를 한 개 추가한다. 비축품을 회수하면 골드 10을 얻는다.",
       "buyMin": 189,
       "buyMax": 232,
       "buyVariance": 43,
@@ -1389,7 +1389,7 @@
     {
       "sourceRow": 128,
       "name": "어두운 피리구멍",
-      "description": "공포 상태 적에게 주는 피해 +2",
+      "description": "공포 상태인 적에게 카드로 직접 명중할 때마다 피해가 2 증가한다.",
       "buyMin": 206,
       "buyMax": 242,
       "buyVariance": 36,
@@ -1400,7 +1400,7 @@
     {
       "sourceRow": 129,
       "name": "녹슨 회로핀",
-      "description": "기계형 적에게 첫 피해 +4",
+      "description": "전투에서 기계형 적에게 처음 카드로 직접 명중하면 피해가 4 증가한다.",
       "buyMin": 223,
       "buyMax": 266,
       "buyVariance": 43,

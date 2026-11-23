@@ -18,21 +18,27 @@ public sealed class BattleTutorialViewTests // 전투 안내 화면 검사
         Assert.IsTrue(overlay.gameObject.activeSelf); // 안내 화면 표시 확인
         Assert.IsTrue(overlay.GetComponent<Image>().raycastTarget); // 설명 중 실제 전투 레이캐스트 차단 확인
         Image panelBackground = overlay.Find("Panel").GetComponent<Image>(); // 공통 안내 배경 조회
-        Assert.AreEqual(1f, panelBackground.color.a); // 완전히 불투명한 예시 패널 확인
-        Assert.AreEqual(panelBackground.color.r, panelBackground.color.g); // 회색 배경의 빨강과 초록 값 확인
-        Assert.AreEqual(panelBackground.color.g, panelBackground.color.b); // 회색 배경의 초록과 파랑 값 확인
+        Assert.IsNotNull(panelBackground.sprite); // 제작한 전투 안내 배경 원본 확인
+        Assert.AreEqual("TutorialPanel", panelBackground.sprite.name); // 공통 실제 배경의 이름 확인
+        Assert.AreEqual(Image.Type.Sliced, panelBackground.type); // 화면 크기에 맞춰 금속 모서리 보존 확인
         Assert.IsTrue(panelBackground.raycastTarget); // 예시 영역에서 뒤 전투 입력 차단 확인
         RectTransform nextRect = overlay.Find("Panel/NextButton").GetComponent<RectTransform>(); // 확인 버튼 위치 조회
-        RectTransform skipRect = overlay.Find("Panel/SkipButton").GetComponent<RectTransform>(); // 건너뛰기 버튼 위치 조회
-        Assert.Less(nextRect.anchorMin.x, skipRect.anchorMin.x); // 확인 오른쪽의 건너뛰기 배치 확인
-        Assert.AreEqual(nextRect.anchorMin.y, skipRect.anchorMin.y); // 두 버튼의 같은 높이 확인
+        RectTransform previousRect = overlay.Find("Panel/PreviousPage").GetComponent<RectTransform>(); // 이전 버튼 위치 조회
+        RectTransform closeRect = overlay.Find("Panel/SkipButton").GetComponent<RectTransform>(); // 즉시 닫기 위치 조회
+        Assert.Less(previousRect.anchorMin.x, nextRect.anchorMin.x); // 이전과 다음 버튼의 왼쪽·오른쪽 배치 확인
+        Assert.AreEqual(nextRect.anchorMin.y, previousRect.anchorMin.y); // 하단 두 버튼의 동일한 높이 확인
+        Assert.AreEqual(Vector2.one, closeRect.anchorMin); // 안내 패널 우측 상단 기준 확인
+        Assert.AreEqual("X", closeRect.GetComponentInChildren<TMP_Text>().text); // 닫기 버튼 표시 확인
+        Assert.IsNull(overlay.Find("Panel/NextPage")); // 중복 이동 버튼 제거 확인
+        Assert.AreEqual(3, overlay.Find("Panel").GetComponentsInChildren<Button>().Length); // 전체 버튼 세 개 확인
         RawImage preview = overlay.Find("Panel/Preview/ExampleImage").GetComponent<RawImage>(); // 실제 전투 예시 이미지 조회
         Assert.IsNotNull(preview.texture); // 왼쪽 실제 전투 예시 이미지 확인
         Assert.Less(preview.rectTransform.parent.GetComponent<RectTransform>().anchorMax.x, overlay.Find("Panel/Title").GetComponent<RectTransform>().anchorMin.x); // 예시 이미지와 오른쪽 설명 배치 확인
         Assert.IsTrue(overlay.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("카드")); // 첫 안내 한국어 설명 확인
         overlay.Find("Panel/NextButton").GetComponent<Button>().onClick.Invoke(); // 다음 안내 버튼 클릭
         Assert.AreEqual(BattleTutorialStep.PlayCard, progress.Step); // 실제 카드 사용 대기 단계 확인
-        Assert.IsFalse(overlay.Find("Panel/NextPage").GetComponent<Button>().interactable); // 실제 카드 사용 전 페이지 건너뛰기 차단
+        Assert.AreEqual("다음", nextRect.GetComponentInChildren<TMP_Text>().text); // 실습 페이지에서도 하단 다음 문구 유지
+        Assert.IsFalse(progress.CanAdvance); // 실제 카드 사용 전 페이지 건너뛰기 차단
         Assert.IsTrue(overlay.Find("Panel/NextButton").GetComponent<Button>().interactable); // 예시를 접는 확인 버튼 활성화
         overlay.Find("Panel/NextButton").GetComponent<Button>().onClick.Invoke(); // 실제 카드 사용을 위한 예시 접기
         Assert.IsFalse(overlay.gameObject.activeSelf); // 카드와 대상 위의 화면 및 입력막 제거
@@ -44,6 +50,21 @@ public sealed class BattleTutorialViewTests // 전투 안내 화면 검사
         Assert.IsFalse(overlay.gameObject.activeSelf); // 안내 화면 숨김 확인
         view.transform.Find("ReplayButton").GetComponent<Button>().onClick.Invoke(); // 전투 안내 다시 보기 클릭
         Assert.AreEqual(BattleTutorialStep.Overview, progress.Step); // 처음부터 다시 보기 확인
+        progress.OnCardUsed(); // 이번 검사에서 먼저 카드 사용 완료
+        progress.OnPhaseStarted(BattleTurnPhase.EnemyTurn); // 실제 적 턴 시작 전달
+        progress.OnPhaseStarted(BattleTurnPhase.PlayerTurn); // 실제 적 턴 종료 전달
+        var next = nextRect.GetComponent<Button>(); // 하단의 유일한 다음 버튼
+        var label = nextRect.GetComponentInChildren<TMP_Text>(); // 현재 다음 또는 완료 문구
+        for (int index = 1; index < progress.PageCount; index++) // 시작부터 마지막 전까지 페이지 표기 확인
+        { // 다음 버튼으로 모든 설명 순회 시작
+            Assert.AreEqual(index, progress.PageNumber); // 미리 실습해도 중간 장의 실제 접근 확인
+            Assert.AreEqual("다음", label.text); // 마지막 전까지 다음 버튼 유지 확인
+            next.onClick.Invoke(); // 실제 버튼을 한 번 눌러 한 장 이동
+        } // 순차 이동 확인 종료
+        Assert.AreEqual(progress.PageCount, progress.PageNumber); // 마지막 번호와 실제 페이지 수 일치 확인
+        Assert.AreEqual("완료", label.text); // 전투 마지막 장의 완료 버튼 문구 확인
+        next.onClick.Invoke(); // 실제 마지막 장의 완료 클릭
+        Assert.IsFalse(overlay.gameObject.activeSelf); // 완료 후 전투 튜토리얼 종료 확인
         Object.DestroyImmediate(canvasObject); // 임시 화면 제거
     } // 화면 동작 검사 종료
     private sealed class MemoryTutorialStore : ISettingsStore // 안내 화면 검사용 저장소

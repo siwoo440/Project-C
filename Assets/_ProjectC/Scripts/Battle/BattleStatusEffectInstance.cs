@@ -212,6 +212,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "성역"; // 게임에 표시되는 성역 문구
             case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
                 return "공포 저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.Stealth: // 은신 상태 확인
+                return "은신"; // 현재 화면의 은신 설명
             case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
                 return "다음 턴 회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
@@ -350,6 +352,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "성역"; // 게임에 표시되는 성역 문구
             case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
                 return "공포저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.Stealth: // 은신 상태 확인
+                return "은신"; // 현재 화면의 은신 설명
             case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
                 return "예약회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
@@ -488,6 +492,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"받는 피해 {effectiveValue}% 감소"; // 게임에 표시되는 성역 문구
             case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
                 return $"공포 적용을 {effectiveValue}% 확률로 저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.Stealth: // 은신 상태 확인
+                return "은신 중. 장착한 유물에 따라 회피율이 증가합니다."; // 현재 화면의 은신 설명
             case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
                 return $"다음 아군 턴 시작에 체력 {effectiveValue} 회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
