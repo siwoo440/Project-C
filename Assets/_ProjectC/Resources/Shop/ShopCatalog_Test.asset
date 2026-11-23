@@ -176,6 +176,51 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HEAL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c31c71002e4549c2a2bd617d9aa41ddc, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_REVITALIZE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 72f021354b004c3f82ddbe4e27257684, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_HEALING_WAVE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 7197a059fc2c4fc4be0561b4d3d4576c, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PRAYER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ed47c1ec79254f3c987847709817bc28, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PROTECTIVE_CUP
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 0f8f5ec462894e5db6f3d2e9d8208834, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: SHOP_RLC_CERULLION_BADGE
     offerType: 1
     price: 230
