@@ -21,6 +21,11 @@ public sealed class BattleEnemyRedirectTests // 적 공격 유도 기능 테스�
         Assert.AreEqual(2, runtime.PrepareActions()); // 두 적 행동 준비 확인
         int notifications = 0; // 행동 변경 알림 횟수
         runtime.StateChanged += () => notifications++; // 행동 변경 알림 감시
+        Assert.IsFalse(runtime.CanRedirectAttack(attacker, outsider)); // 외부 아군 대상 사전 판정 확인
+        Assert.IsFalse(runtime.CanRedirectAttack(statusEnemy, guard)); // 상태 행동 사전 판정 확인
+        Assert.IsFalse(runtime.CanRedirectAttack(attacker, first)); // 이미 공격받는 대상 사전 판정 확인
+        Assert.IsTrue(runtime.CanRedirectAttack(attacker, guard)); // 유효 공격 사전 판정 확인
+        Assert.AreEqual(0, notifications); // 사전 판정의 행동 변경 없음 확인
         Assert.IsFalse(runtime.TryRedirectAttack(attacker, outsider)); // 외부 아군 대상 차단 확인
         Assert.IsFalse(runtime.TryRedirectAttack(statusEnemy, guard)); // 상태 효과 유도 차단 확인
         Assert.IsFalse(runtime.TryRedirectAttack(attacker, first)); // 동일 대상 변경 차단 확인

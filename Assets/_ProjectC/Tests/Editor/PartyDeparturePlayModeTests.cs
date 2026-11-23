@@ -159,7 +159,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
-    public IEnumerator EmperorCard_RedirectsAttackAndRaisesDefense() // 황제 전용 카드 실제 사용 확인
+    public IEnumerator EmperorCard_RedirectsAttackAndGainsBlock() // 황제 전용 카드 실제 사용 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
@@ -221,7 +221,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             } // 적 화면 발견 종료
         } // 대상 화면 검색 종료
         Assert.IsNotNull(enemyView); // 적 화면 존재 확인
-        int previousDefense = emperor.PhysicalDefense; // 황제 기존 방어력 저장
+        int previousBlock = emperor.CurrentBlock; // 황제 기존 방어도 저장
         int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
         emperorCard.OnPointerClick(null); // 전용 카드 선택
         foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 아군 화면 순회
@@ -233,14 +233,18 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             } // 잘못된 대상 선택 종료
         } // 잘못된 대상 확인 종료
         Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
+        Assert.IsTrue(battle.EnemyActionRuntime.TryRedirectAttack(enemy, emperor)); // 이미 황제가 대상인 공격 준비
+        enemyView.OnPointerClick(null); // 이미 황제를 공격하는 적 선택
+        Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 변경 불가 대상의 행동력 유지 확인
+        Assert.IsTrue(battle.EnemyActionRuntime.TryRedirectAttack(enemy, battle.AllyUnits[0])); // 유효한 유도 대상으로 복원
         enemyView.OnPointerClick(null); // 공격 중인 적 선택
-        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && emperor.PhysicalDefense == previousDefense;) // 카드 연출과 효과 대기
+        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && emperor.CurrentBlock == previousBlock;) // 카드 연출과 효과 대기
         { // 카드 효과 대기 시작
             yield return null; // 다음 프레임 대기
         } // 카드 효과 대기 종료
         Assert.AreSame(emperor, battle.EnemyActionRuntime.FindAction(enemy).Target); // 황제에게 공격 유도 확인
-        Assert.AreEqual(previousDefense + 3, emperor.PhysicalDefense); // 임시 방어력 증가 확인
-        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        Assert.AreEqual(previousBlock + 3, emperor.CurrentBlock); // 임시 방어도 획득 확인
+        Assert.AreEqual(previousPoints - 2, battle.SharedActionPoints.CurrentActionPoints); // 임시 행동력 비용 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정

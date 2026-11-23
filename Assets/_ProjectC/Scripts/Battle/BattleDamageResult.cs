@@ -7,6 +7,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
     public int FinalDamage { get; } // 약점 포함 최종 피해 조회
     public int AppliedDamage { get; } // 실제 체력 피해 조회
     public int AbsorbedDamage { get; } // 방어도 흡수 피해 조회
+    public int PreparedBlock { get; } // 공격 직전 준비로 획득할 방어도
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public bool IsWeakness { get; } // 약점 적중 여부 조회
     public float WeaknessMultiplier { get; } // 약점 피해 배율 조회
@@ -43,7 +44,8 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         BattleDamageType damageType,
         bool isWeakness,
         float weaknessMultiplier, // 약점 피해 배율 전달
-        int absorbedDamage = 0) // 방어도 흡수량 포함 결과 생성
+        int absorbedDamage = 0, // 방어도 흡수량 전달
+        int preparedBlock = 0) // 준비 방어도 포함 결과 생성
     {
         RawDamage = rawDamage; // 원본 피해 저장
         DefenseValue = defenseValue; // 적용 방어값 저장
@@ -51,6 +53,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         FinalDamage = finalDamage; // 최종 피해 저장
         AppliedDamage = appliedDamage; // 실제 피해 저장
         AbsorbedDamage = absorbedDamage; // 방어도 흡수량 저장
+        PreparedBlock = preparedBlock; // 준비 방어도 저장
         ReducedDamage =
             rawDamage > defenseAdjustedDamage
                 ? rawDamage - defenseAdjustedDamage
@@ -96,12 +99,13 @@ public readonly struct BattleDamageResult // 피해 계산 결과
             DamageType,
             IsWeakness,
             WeaknessMultiplier, // 약점 배율 유지
-            AbsorbedDamage); // 기존 흡수량 유지 결과 반환
+            AbsorbedDamage, // 기존 흡수량 유지
+            PreparedBlock); // 기존 준비 방어도 유지 결과 반환
     }
-    public BattleDamageResult WithBlock(int block, int currentHealth) // 방어도와 체력 반영 결과 생성
+    public BattleDamageResult WithBlock(int block, int currentHealth, int preparedBlock = 0) // 방어도와 체력 반영 결과 생성
     { // 방어도 반영 시작
         int absorbed = System.Math.Min(System.Math.Max(0, block), FinalDamage); // 실제 흡수량 계산
         int applied = System.Math.Min(System.Math.Max(0, currentHealth), FinalDamage - absorbed); // 실제 체력 피해 계산
-        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed); // 흡수량 포함 결과 반환
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed, preparedBlock); // 흡수량과 준비 방어도 포함 결과 반환
     } // 방어도 반영 종료
 }

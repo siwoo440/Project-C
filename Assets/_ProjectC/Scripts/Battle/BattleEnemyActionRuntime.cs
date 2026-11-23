@@ -73,7 +73,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 첫 공격 처리 시작
                 return true; // 앞선 공격 없음 반환
             } // 첫 공격 처리 종료
-            if (candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.DamageType != BattleDamageType.None && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
+            if (candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
             { // 앞선 공격 처리 시작
                 return false; // 방어 준비 선행 소모 반환
             } // 앞선 공격 처리 종료
@@ -91,7 +91,8 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             } // 결과 반환 종료
             if (candidate != executingAction && candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
             { // 방어도 소모 예측 시작
-                block -= candidate.PreviewDamageWithBlock(block).AbsorbedDamage; // 앞선 공격의 예상 흡수량 차감
+                BattleDamageResult preview = candidate.PreviewDamageWithBlock(block); // 앞선 공격의 준비와 흡수 결과 계산
+                block = block + preview.PreparedBlock - preview.AbsorbedDamage; // 준비 획득과 흡수 후 예상 방어도 계산
             } // 방어도 소모 예측 종료
         } // 앞선 공격 검사 종료
         return block; // 공격 전 예상 방어도 반환
@@ -128,17 +129,22 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return actionResult; // 행동 실행 결과 반환
     } // 행동 실행 종료
-    public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
-    { // 공격 유도 시작
+    public bool CanRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 유도 가능 확인
+    { // 유도 가능 확인 시작
         if (disposed || enemyUnit == null || targetUnit == null || targetUnit.IsDead || targetUnit.Team != BattleTeam.Ally || !ContainsUnit(allyUnits, targetUnit)) // 대상과 관리자 유효성 확인
         { // 유도 불가 처리 시작
             return false; // 유도 실패 반환
         } // 유도 불가 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 해당 적의 예정 행동 조회
-        if (action == null || action == executingAction || !action.IsExecutable || action.ActionType != EnemyActionType.Attack || action.Target == targetUnit) // 유도 가능한 단일 공격 확인
+        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.Target != targetUnit; // 유도 가능한 단일 공격 판정 반환
+    } // 유도 가능 확인 종료
+    public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
+    { // 공격 유도 시작
+        if (!CanRedirectAttack(enemyUnit, targetUnit)) // 유도 가능 여부 확인
         { // 잘못된 공격 처리 시작
             return false; // 유도 실패 반환
         } // 잘못된 공격 처리 종료
+        BattleEnemyAction action = FindAction(enemyUnit); // 유도할 예정 행동 조회
         if (!action.ChangeTarget(targetUnit)) // 공격 대상 변경 시도
         { // 변경 실패 처리 시작
             return false; // 유도 실패 반환

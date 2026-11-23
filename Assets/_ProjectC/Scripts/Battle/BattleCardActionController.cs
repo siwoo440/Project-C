@@ -333,8 +333,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 보호 불가 대상 처리 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도 카드 확인
         { // 공격 유도 대상 확인 시작
-            BattleEnemyAction action = enemyActions.FindAction(targetUnit); // 선택 적의 예정 행동 조회
-            if (targetUnit.Team != BattleTeam.Enemy || action == null || !action.IsExecutable || action.ActionType != EnemyActionType.Attack) // 예정 공격 존재 확인
+            if (targetUnit.Team != BattleTeam.Enemy || !enemyActions.CanRedirectAttack(targetUnit, cardInstance.OwnerUnit)) // 실제 공격 유도 가능 여부 확인
             { // 공격 유도 불가 처리 시작
                 return false; // 선택 불가 반환
             } // 공격 유도 불가 처리 종료
@@ -457,10 +456,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 여사제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도와 방어 효과 확인
         { // 황제 전용 효과 시작
-            enemyActions.TryRedirectAttack(targetUnit, cardInstance.OwnerUnit); // 선택 적의 공격을 소유자에게 유도
-            BattleStatusEffectApplyResult defenseResult = cardInstance.OwnerUnit.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 소유자 물리 방어력 증가
-            FindUnitView(cardInstance.OwnerUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseUp, defenseResult); // 방어 효과 적용 결과 표시
-            return defenseResult == BattleStatusEffectApplyResult.Applied || defenseResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 실제 방어 효과 수치 반환
+            if (!enemyActions.TryRedirectAttack(targetUnit, cardInstance.OwnerUnit)) // 선택 적의 공격 유도 확인
+            { // 유도 실패 처리 시작
+                return 0; // 방어도 미획득 반환
+            } // 유도 실패 처리 종료
+            return cardInstance.OwnerUnit.GainBlock(cardInstance.EffectValue); // 소유자의 실제 방어도 획득량 반환
         } // 황제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
