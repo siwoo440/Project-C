@@ -13,7 +13,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public string DisplayName { get; } // 유닛 표시 이름
     public BattleTeam Team { get; } // 유닛 진영
     public Sprite Portrait { get; } // 유닛 초상화
-    public int MaxHealth { get; } // 최대 체력
+    public int MaxHealth { get; private set; } // 유물 효과 적용 가능한 최대 체력
     public int BasePhysicalDefense { get; } // 기본 물리 방어력
     public int BaseMagicalResistance { get; } // 기본 마법 저항력
     public int PhysicalDefense => CalculateDefense(BasePhysicalDefense, BattleStatusEffectType.PhysicalDefenseUp, BattleStatusEffectType.PhysicalDefenseDown); // 현재 물리 방어력
@@ -85,6 +85,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
         return true; // 저장 체력 적용 성공 반환
     } // 저장 체력 적용 종료
+    public int ModifyMaxHealth(int delta) // 유물 효과용 최대 체력 변경
+    {
+        if (delta == 0) // 최대 체력 변화량 확인
+        {
+            return 0; // 변화 없음 반환
+        }
+
+        int previousMaxHealth = MaxHealth; // 변경 전 최대 체력 저장
+        MaxHealth = Mathf.Max(1, MaxHealth + delta); // 최소 일 이상 최대 체력 변경
+        CurrentHealth = Mathf.Min(CurrentHealth, MaxHealth); // 감소 시 현재 체력 상한 보정
+        int appliedDelta = MaxHealth - previousMaxHealth; // 실제 최대 체력 변화량 계산
+        if (appliedDelta != 0) // 실제 변화 여부 확인
+        {
+            HealthChanged?.Invoke(this); // 최대 체력 포함 UI 갱신 알림
+        }
+        return appliedDelta; // 실제 최대 체력 변화량 반환
+    }
     public bool ApplyPersistentMental(int currentMental) // Scene 간 저장 정신력 적용
     { // 저장 정신력 적용 시작
         if (Team != BattleTeam.Ally) // 아군 여부 확인
