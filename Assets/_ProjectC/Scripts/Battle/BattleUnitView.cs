@@ -21,6 +21,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
+    private Outline targetOutline; // 선택 가능 대상 윤곽선
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     private BattleMentalView mentalView; // 정신력 표시 화면
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
@@ -41,6 +42,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.MentalChanged += HandleMentalChanged; // 정신력 변화 이벤트 등록
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
         EnsureMotionView(); // 유닛 움직임 화면 준비
+        EnsureTargetOutline(); // 대상 선택 윤곽선 준비
         EnsureStatusEffectView(); // 상태 이상 화면 준비
         EnsureMentalView(); // 정신력 화면 준비
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
@@ -63,6 +65,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
         mentalView?.Unbind(); // 정신력 화면 연결 해제
         RuntimeUnit = null; // 런타임 참조 제거
+        if (targetOutline != null) // 대상 윤곽선 존재 확인
+        { // 대상 윤곽선 초기화 시작
+            targetOutline.enabled = false; // 기존 선택 강조 해제
+        } // 대상 윤곽선 초기화 종료
         ResetMotion(); // 유닛 움직임 복구
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
         { // 행동 예고 숨김 시작
@@ -163,12 +169,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 행동 예고 표시 종료
     public void SetTargetable(bool targetable) // 대상 선택 가능 표시
     { // 대상 표시 시작
-        if (teamFrameImage == null || RuntimeUnit == null) // 화면 연결 상태 확인
+        if (targetOutline == null || RuntimeUnit == null) // 화면 연결 상태 확인
         { // 연결 없음 처리 시작
             return; // 대상 표시 중단
         } // 연결 없음 처리 종료
-        Color teamColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 기본 진영 색상 계산
-        teamFrameImage.color = targetable ? Color.yellow : teamColor; // 대상 가능 색상 적용
+        targetOutline.enabled = targetable; // 선택 가능 대상 윤곽선 적용
     } // 대상 표시 종료
     public void OnPointerClick(PointerEventData eventData) // 유닛 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
@@ -197,14 +202,14 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             Sprite battleArt = RuntimeUnit.CharacterSource != null ? RuntimeUnit.CharacterSource.BattleIllustration : null; // 아군 전투 전용 그림 조회
             Sprite displayArt = battleArt != null ? battleArt : RuntimeUnit.Portrait; // 전용 그림 또는 기존 초상화 선택
             portraitImage.sprite = displayArt; // 유닛 그림 적용
-            portraitImage.preserveAspect = battleArt != null; // 전용 그림 원본 비율 유지
+            portraitImage.preserveAspect = displayArt != null; // 그림 원본 비율 유지
             portraitImage.enabled = true; // 초상화 또는 임시 표시 활성화
             Color placeholderColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 진영별 임시 초상화 색상 계산
             portraitImage.color = displayArt != null ? Color.white : new Color(placeholderColor.r, placeholderColor.g, placeholderColor.b, 0.45f); // 원본 또는 임시 초상화 색상 적용
         } // 초상화 적용 종료
         if (teamFrameImage != null) // 진영 테두리 존재 확인
         { // 진영 색상 적용 시작
-            teamFrameImage.color = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 진영별 색상 적용
+            teamFrameImage.color = Color.clear; // 클릭 영역 배경 투명 적용
         } // 진영 색상 적용 종료
     } // 고정 정보 적용 종료
     private void RefreshHealth() // 체력 표시 갱신
@@ -347,6 +352,22 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RectTransform portraitRect = portraitImage == null ? null : portraitImage.rectTransform; // 초상화 사각형 조회
         motionView.Initialize(portraitRect); // 움직임 대상 초상화 연결
     } // 움직임 준비 종료
+    private void EnsureTargetOutline() // 선택 가능 대상 윤곽선 준비
+    { // 윤곽선 준비 시작
+        if (portraitImage == null) // 캐릭터 그림 존재 확인
+        { // 그림 누락 처리 시작
+            return; // 윤곽선 준비 중단
+        } // 그림 누락 처리 종료
+        targetOutline = portraitImage.GetComponent<Outline>(); // 기존 윤곽선 조회
+        if (targetOutline == null) // 윤곽선 누락 확인
+        { // 윤곽선 추가 시작
+            targetOutline = portraitImage.gameObject.AddComponent<Outline>(); // 그림 윤곽선 추가
+        } // 윤곽선 추가 종료
+        targetOutline.effectColor = Color.yellow; // 선택 가능 윤곽선 색상 적용
+        targetOutline.effectDistance = new Vector2(3f, -3f); // 윤곽선 두께 적용
+        targetOutline.useGraphicAlpha = true; // 그림 투명도 기준 윤곽선 적용
+        targetOutline.enabled = false; // 기본 윤곽선 숨김
+    } // 윤곽선 준비 종료
     private void EnsureStatusEffectView() // 상태 이상 화면 준비
     { // 상태 화면 준비 시작
         if (statusEffectView != null) // 기존 상태 화면 확인
