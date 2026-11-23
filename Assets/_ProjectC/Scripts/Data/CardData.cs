@@ -20,6 +20,10 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [Min(0)] // 카드 효과값 최소값
     [SerializeField] private int effectValue = 10; // 카드 효과 수치
 
+    [Header("정신력 규칙")] // 정신력 규칙 구역
+    [Range(-100, 100)] // 정신력 변화값 범위
+    [SerializeField] private int mentalChangeValue; // 정신력 직접 변화값
+
     [Header("상태 이상 규칙")] // 상태 이상 규칙 구역
     [SerializeField] private BattleStatusEffectType statusEffectType; // 적용 상태 이상 종류
     [Min(1)] // 지속 횟수 최소값
@@ -37,6 +41,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
     public int EffectValue => effectValue; // 카드 효과 수치 조회
+    public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public int StatusDuration => statusDuration; // 상태 이상 지속 횟수 조회
     public int StatusMaximumStacks => statusMaximumStacks; // 상태 이상 최대 중첩 조회

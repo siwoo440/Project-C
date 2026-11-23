@@ -19,6 +19,11 @@ MonoBehaviour:
   maxHealth: 42
   physicalDefense: 2
   magicalResistance: 3
+  initialMental: 50
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
   actionType: 2
   basicAttackPower: 0
   damageType: 0

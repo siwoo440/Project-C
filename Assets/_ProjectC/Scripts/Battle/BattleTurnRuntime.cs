@@ -19,6 +19,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool CanEscape => !disposed && BattleType == BattleType.Normal && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 현재 도주 가능 여부
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
+    public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
     public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType) // 턴 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
@@ -54,6 +55,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 종료 불가 처리 시작
             return false; // 턴 종료 실패 반환
         } // 종료 불가 처리 종료
+        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 종료 알림
         CurrentPhase = BattleTurnPhase.EnemyTurn; // 적 턴 설정
         PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
@@ -68,6 +70,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 완료 불가 처리 시작
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
+        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 적 턴 종료 알림
         CurrentRound++; // 다음 라운드 증가
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 시작 알림

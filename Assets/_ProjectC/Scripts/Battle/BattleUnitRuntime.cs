@@ -4,6 +4,11 @@ using UnityEngine; // 유니티 자료형 사용
 public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
 { // 클래스 시작
     private readonly List<BattleStatusEffectInstance> statusEffects = new List<BattleStatusEffectInstance>(); // 현재 상태 이상 목록
+    private readonly BattleMentalRuntime mentalRuntime; // 개별 정신력 런타임
+    private readonly int awakeningDamagePercent; // 각성 피해 변화율
+    private readonly int awakeningHealingPercent; // 각성 회복 변화율
+    private readonly int collapseDamagePercent; // 붕괴 피해 변화율
+    private readonly int collapseHealingPercent; // 붕괴 회복 변화율
     public string UnitId { get; } // 유닛 고유 ID
     public string DisplayName { get; } // 유닛 표시 이름
     public BattleTeam Team { get; } // 유닛 진영
@@ -19,6 +24,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
     public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
+    public int CurrentMental => mentalRuntime.CurrentMental; // 현재 정신력
+    public BattleMentalState MentalState => mentalRuntime.CurrentState; // 현재 정신 상태
+    public int MentalRemainingTurns => mentalRuntime.RemainingTurns; // 특수 상태 남은 턴
     public CharacterData CharacterSource { get; } // 아군 원본 데이터
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
@@ -26,7 +34,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
-    private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
+    public event Action<BattleUnitRuntime, BattleMentalChangeResult> MentalChanged; // 정신력 변화 이벤트
+    private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, int initialMental, int awakeningDamageRate, int awakeningHealingRate, int collapseDamageRate, int collapseHealingRate, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
     { // 생성자 시작
         UnitId = unitId; // 유닛 ID 저장
         DisplayName = displayName; // 표시 이름 저장
@@ -35,6 +44,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         MaxHealth = Mathf.Max(1, maxHealth); // 최소 최대 체력 보정
         BasePhysicalDefense = Mathf.Max(0, physicalDefense); // 기본 물리 방어력 보정
         BaseMagicalResistance = Mathf.Max(0, magicalResistance); // 기본 마법 저항력 보정
+        mentalRuntime = new BattleMentalRuntime(initialMental); // 정신력 런타임 생성
+        mentalRuntime.Changed += HandleMentalChanged; // 정신력 변화 이벤트 등록
+        awakeningDamagePercent = Mathf.Clamp(awakeningDamageRate, -100, 100); // 각성 피해 변화율 보정
+        awakeningHealingPercent = Mathf.Clamp(awakeningHealingRate, -100, 100); // 각성 회복 변화율 보정
+        collapseDamagePercent = Mathf.Clamp(collapseDamageRate, -100, 100); // 붕괴 피해 변화율 보정
+        collapseHealingPercent = Mathf.Clamp(collapseHealingRate, -100, 100); // 붕괴 회복 변화율 보정
         CurrentHealth = MaxHealth; // 현재 체력 초기화
         IsDead = false; // 생존 상태 초기화
         CharacterSource = characterSource; // 아군 원본 저장
@@ -46,7 +61,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 누락 처리 시작
             throw new ArgumentNullException(nameof(characterData)); // 잘못된 인수 예외
         } // 누락 처리 종료
-        return new BattleUnitRuntime(characterData.CharacterId, characterData.DisplayName, BattleTeam.Ally, characterData.Portrait, characterData.MaxHealth, characterData.PhysicalDefense, characterData.MagicalResistance, characterData, null); // 아군 상태 반환
+        return new BattleUnitRuntime(characterData.CharacterId, characterData.DisplayName, BattleTeam.Ally, characterData.Portrait, characterData.MaxHealth, characterData.PhysicalDefense, characterData.MagicalResistance, characterData.InitialMental, characterData.AwakeningDamagePercent, characterData.AwakeningHealingPercent, characterData.CollapseDamagePercent, characterData.CollapseHealingPercent, characterData, null); // 아군 상태 반환
     } // 아군 생성 종료
     public static BattleUnitRuntime CreateEnemy(EnemyData enemyData) // 적 런타임 생성
     { // 적 생성 시작
@@ -54,7 +69,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 누락 처리 시작
             throw new ArgumentNullException(nameof(enemyData)); // 잘못된 인수 예외
         } // 누락 처리 종료
-        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, null, enemyData); // 적 상태 반환
+        return new BattleUnitRuntime(enemyData.EnemyId, enemyData.DisplayName, BattleTeam.Enemy, enemyData.Portrait, enemyData.MaxHealth, enemyData.PhysicalDefense, enemyData.MagicalResistance, enemyData.InitialMental, enemyData.AwakeningDamagePercent, enemyData.AwakeningHealingPercent, enemyData.CollapseDamagePercent, enemyData.CollapseHealingPercent, null, enemyData); // 적 상태 반환
     } // 적 생성 종료
     public bool ApplyPersistentHealth(int currentHealth) // Scene 간 저장 체력 적용
     { // 저장 체력 적용 시작
@@ -66,7 +81,49 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
         return true; // 저장 체력 적용 성공 반환
     } // 저장 체력 적용 종료
-    public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 적용
+    public bool ApplyPersistentMental(int currentMental) // Scene 간 저장 정신력 적용
+    { // 저장 정신력 적용 시작
+        if (Team != BattleTeam.Ally) // 아군 여부 확인
+        { // 적용 불가 처리 시작
+            return false; // 저장 정신력 적용 실패 반환
+        } // 적용 불가 처리 종료
+        return mentalRuntime.ApplyPersistentMental(currentMental); // 저장 정신력 적용 결과 반환
+    } // 저장 정신력 적용 종료
+    public BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason) // 정신력 증감 적용
+    { // 정신력 증감 시작
+        if (IsDead) // 사망 상태 확인
+        { // 사망 상태 처리 시작
+            return BattleMentalChangeResult.NoChange(CurrentMental, MentalState, MentalRemainingTurns, delta, reason); // 변화 없음 반환
+        } // 사망 상태 처리 종료
+        return mentalRuntime.ChangeMental(delta, reason); // 정신력 변화 결과 반환
+    } // 정신력 증감 종료
+    public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
+    { // 변경 가능 확인 시작
+        return !IsDead && mentalRuntime.CanChangeMental(delta); // 생존 상태 포함 가능 여부 반환
+    } // 변경 가능 확인 종료
+    public BattleMentalChangeResult AdvanceMentalStateTurn() // 정신 특수 상태 턴 진행
+    { // 상태 턴 진행 시작
+        return mentalRuntime.AdvanceStateTurn(); // 상태 턴 진행 결과 반환
+    } // 상태 턴 진행 종료
+    public BattleMentalChangeResult ResolveMentalStateAtBattleEnd() // 전투 종료 정신 상태 해제
+    { // 전투 종료 해제 시작
+        return mentalRuntime.ResolveAtBattleEnd(); // 정신 상태 해제 결과 반환
+    } // 전투 종료 해제 종료
+    public void ResetMentalTurnLimits() // 정신력 턴 제한 초기화
+    { // 제한 초기화 시작
+        mentalRuntime.ResetTurnLimits(); // 정신력 원인별 횟수 초기화
+    } // 제한 초기화 종료
+    public int ModifyOutgoingDamage(int baseDamage) // 정신 상태 기반 피해량 계산
+    { // 피해량 계산 시작
+        int changePercent = MentalState == BattleMentalState.Awakening ? awakeningDamagePercent : MentalState == BattleMentalState.Collapse ? collapseDamagePercent : 0; // 현재 상태 피해 변화율 선택
+        return ApplyPercentage(baseDamage, changePercent); // 보정 피해량 반환
+    } // 피해량 계산 종료
+    public int ModifyOutgoingHealing(int baseHealing) // 정신 상태 기반 회복량 계산
+    { // 회복량 계산 시작
+        int changePercent = MentalState == BattleMentalState.Awakening ? awakeningHealingPercent : MentalState == BattleMentalState.Collapse ? collapseHealingPercent : 0; // 현재 상태 회복 변화율 선택
+        return ApplyPercentage(baseHealing, changePercent); // 보정 회복량 반환
+    } // 회복량 계산 종료
+    public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit = null) // 상태 이상 적용
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || value <= 0 || duration <= 0 || maximumStacks <= 0) // 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -81,10 +138,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 신규 상태 처리 시작
             statusEffects.Add(new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 신규 상태 이상 추가
             StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
+            ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
             return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
         } // 신규 상태 처리 종료
         existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
+        ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
         return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
     public bool RemoveStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 제거
@@ -188,7 +247,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int expectedAppliedDamage = Mathf.Min(CurrentHealth, damageResult.FinalDamage); // 남은 체력 기준 실제 피해 계산
         return damageResult.WithAppliedDamage(expectedAppliedDamage); // 예상 체력 피해 포함 결과 반환
     } // 예상 피해 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType) // 피해 처리
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null) // 피해 처리
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -201,6 +260,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 처리 시작
             IsDead = true; // 사망 상태 저장
         } // 사망 처리 종료
+        ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
         DamageTaken?.Invoke(this, damageResult); // 피해 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
         if (diedNow) // 신규 사망 확인
@@ -210,7 +270,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 사망 알림 종료
         return damageResult; // 피해 계산 결과 반환
     } // 피해 처리 종료
-    public int RestoreHealth(int healAmount) // 체력 회복 처리
+    public int RestoreHealth(int healAmount, BattleUnitRuntime sourceUnit = null) // 체력 회복 처리
     { // 체력 회복 시작
         if (healAmount <= 0 || IsDead || CurrentHealth >= MaxHealth) // 무효 회복 확인
         { // 무효 회복 처리 시작
@@ -219,8 +279,54 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
         CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + healAmount); // 현재 체력 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
+        ChangeMental(1, BattleMentalChangeReason.HealingReceived); // 회복 정신력 증가 적용
         HealthRestored?.Invoke(this, appliedHealing); // 회복 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
         return appliedHealing; // 실제 회복량 반환
     } // 체력 회복 종료
+    private void ApplyDamageMental(int appliedDamage, bool diedNow, BattleUnitRuntime sourceUnit) // 피해 정신력 변화 적용
+    { // 피해 정신력 처리 시작
+        if (appliedDamage <= 0) // 실제 피해 확인
+        { // 피해 없음 처리 시작
+            return; // 정신력 처리 중단
+        } // 피해 없음 처리 종료
+        if (sourceUnit != null && sourceUnit != this && !sourceUnit.IsDead) // 공격자 존재 확인
+        { // 공격자 정신력 처리 시작
+            sourceUnit.ChangeMental(1, BattleMentalChangeReason.DealDamage); // 피해 가함 정신력 증가
+            if (diedNow) // 처치 여부 확인
+            { // 처치 정신력 처리 시작
+                sourceUnit.ChangeMental(5, BattleMentalChangeReason.DefeatEnemy); // 적 처치 정신력 증가
+            } // 처치 정신력 처리 종료
+        } // 공격자 정신력 처리 종료
+        if (diedNow) // 사망 대상 확인
+        { // 사망 대상 처리 시작
+            return; // 피격 정신력 처리 중단
+        } // 사망 대상 처리 종료
+        ChangeMental(-1, BattleMentalChangeReason.ReceiveDamage); // 피격 정신력 감소
+        if (appliedDamage * 10 >= MaxHealth) // 최대 체력 십 퍼센트 피해 확인
+        { // 큰 피해 처리 시작
+            ChangeMental(-5, BattleMentalChangeReason.HeavyDamage); // 큰 피해 추가 감소
+        } // 큰 피해 처리 종료
+    } // 피해 정신력 처리 종료
+    private void ApplyDisruptMental(BattleStatusEffectType effectType, BattleUnitRuntime sourceUnit) // 교란 정신력 변화 적용
+    { // 교란 정신력 처리 시작
+        if (effectType != BattleStatusEffectType.Disrupt) // 교란 상태 확인
+        { // 교란 아님 처리 시작
+            return; // 정신력 처리 중단
+        } // 교란 아님 처리 종료
+        ChangeMental(-4, BattleMentalChangeReason.DisruptReceived); // 교란 대상 정신력 감소
+        if (sourceUnit != null && sourceUnit != this && !sourceUnit.IsDead) // 교란 적용자 확인
+        { // 교란 적용자 처리 시작
+            sourceUnit.ChangeMental(2, BattleMentalChangeReason.DisruptInflicted); // 교란 가함 정신력 증가
+        } // 교란 적용자 처리 종료
+    } // 교란 정신력 처리 종료
+    private void HandleMentalChanged(BattleMentalChangeResult changeResult) // 정신력 변화 전달
+    { // 정신력 변화 전달 시작
+        MentalChanged?.Invoke(this, changeResult); // 유닛 포함 정신력 변화 알림
+    } // 정신력 변화 전달 종료
+    private static int ApplyPercentage(int baseAmount, int changePercent) // 비율 기반 수치 계산
+    { // 비율 계산 시작
+        int safeBaseAmount = Mathf.Max(0, baseAmount); // 음수 원본 수치 보정
+        return Mathf.Max(0, Mathf.RoundToInt(safeBaseAmount * (100 + changePercent) / 100f)); // 반올림 보정 수치 반환
+    } // 비율 계산 종료
 } // 클래스 종료

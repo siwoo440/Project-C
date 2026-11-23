@@ -18,6 +18,15 @@ public sealed class CharacterData : ScriptableObject // 캐릭터 원본 데이�
     [SerializeField] private int magicalResistance; // 마법 저항력
     [Range(0, 100)] // 정신력 입력 범위
     [SerializeField] private int initialMental = 50; // 초기 정신력
+    [Header("정신 특수 상태 효과")] // 정신 특수 상태 효과 구역
+    [Range(-100, 100)] // 각성 피해 변화율 범위
+    [SerializeField] private int awakeningDamagePercent = 10; // 각성 피해 변화율
+    [Range(-100, 100)] // 각성 회복 변화율 범위
+    [SerializeField] private int awakeningHealingPercent = 10; // 각성 회복 변화율
+    [Range(-100, 100)] // 붕괴 피해 변화율 범위
+    [SerializeField] private int collapseDamagePercent = -10; // 붕괴 피해 변화율
+    [Range(-100, 100)] // 붕괴 회복 변화율 범위
+    [SerializeField] private int collapseHealingPercent = -10; // 붕괴 회복 변화율
     public string CharacterId => characterId; // 캐릭터 ID 조회
     public string DisplayName => displayName; // 캐릭터 이름 조회
     public string Description => description; // 캐릭터 설명 조회
@@ -27,4 +36,8 @@ public sealed class CharacterData : ScriptableObject // 캐릭터 원본 데이�
     public int PhysicalDefense => physicalDefense; // 물리 방어력 조회
     public int MagicalResistance => magicalResistance; // 마법 저항력 조회
     public int InitialMental => initialMental; // 초기 정신력 조회
+    public int AwakeningDamagePercent => awakeningDamagePercent; // 각성 피해 변화율 조회
+    public int AwakeningHealingPercent => awakeningHealingPercent; // 각성 회복 변화율 조회
+    public int CollapseDamagePercent => collapseDamagePercent; // 붕괴 피해 변화율 조회
+    public int CollapseHealingPercent => collapseHealingPercent; // 붕괴 회복 변화율 조회
 } // 클래스 종료
