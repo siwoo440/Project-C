@@ -33,6 +33,7 @@ public sealed class BattleDrawChoiceViewTests // 카드 선택 화면 테스트
         CardInstance[] cards = { CardInstance.Create(source, unit, 0, 0), CardInstance.Create(source, unit, 1, 0), CardInstance.Create(source, unit, 2, 0) }; // 서로 다른 후보 세 장 생성
         selectedCard = null; // 선택 결과 초기화
         BattleDrawChoiceView view = BattleDrawChoiceView.Show(canvas.transform, cards, RecordSelection); // 후보 선택 화면 생성
+        Assert.IsNull(view.transform.Find("RelicNameplate")); // 일반 카드 효과의 선택창에 유물 명패 미생성 확인
         Transform nextObject = view.transform.Find("NextPage"); // 다음 페이지 버튼 조회
         Assert.IsNotNull(nextObject); // 다음 페이지 버튼 존재 확인
         Transform previousObject = view.transform.Find("PreviousPage"); // 이전 페이지 버튼 조회
@@ -68,7 +69,13 @@ public sealed class BattleDrawChoiceViewTests // 카드 선택 화면 테스트
             CardInstance shortCard = CardInstance.Create(original, unit, 0, 0); // 현재 기본 카드 설명 후보 생성
             CardInstance longCard = CardInstance.Create(expanded, unit, 1, 0); // 긴 설명을 가진 후보 생성
             CardInstance chosen = null; // 선택으로 전달된 후보 기록
-            BattleDrawChoiceView view = BattleDrawChoiceView.Show(canvas.transform, new[] { shortCard, longCard }, card => chosen = card, cancelled: () => Assert.Fail("카드 선택 대신 취소 호출")); // 실제 공용 선택창 열기
+            BattleDrawChoiceView view = BattleDrawChoiceView.Show( // 실제 명패가 있는 선택창 열기
+                canvas.transform, // 독립 시험 캔버스
+                new[] { shortCard, longCard }, // 길이가 다른 원래 두 후보
+                card => chosen = card, // 선택된 카드 확인 동작
+                titleText: "가져올 카드 선택", // 중앙 패널 안 제목
+                cancelled: () => Assert.Fail("카드 선택 대신 취소 호출"), // 선택 중 잘못된 취소 검사
+                relicName: "서고 먼지갈피"); // 중앙 패널 위 이름
             yield return null; // TMP 및 스크롤 적용 프레임 대기
             Canvas.ForceUpdateCanvases(); // 실제 레이아웃 적용
 
@@ -79,6 +86,13 @@ public sealed class BattleDrawChoiceViewTests // 카드 선택 화면 테스트
             Assert.Less(scrim.color.a, 1f); // 가림막 뒤 전투 화면의 은은한 표시 확인
             Assert.IsTrue(scrim.raycastTarget); // 다른 전투 조작의 모달 입력 차단 확인
             Assert.IsNotNull(view.transform.Find("Panel").GetComponent<Image>().sprite); // 가림막과 분리된 금속 패널 원화 확인
+            RectTransform frame = (RectTransform)view.transform.Find("Panel"); // 중앙 패널의 영역 조회
+            RectTransform plate = (RectTransform)view.transform.Find("RelicNameplate"); // 패널 밖의 실제 유물 명패 조회
+            Assert.IsNotNull(plate.GetComponent<Image>().sprite); // 이미지 생성 명패가 실제 스프라이트로 연결됐는지 확인
+            Assert.IsFalse(plate.GetComponent<Image>().raycastTarget); // 명패가 선택 입력을 막지 않는지 확인
+            Assert.Greater(plate.anchoredPosition.y - plate.rect.height / 2f, frame.rect.height / 2f); // 명패가 프레임 밖 위에 놓였는지 확인
+            Assert.AreEqual("서고 먼지갈피", plate.Find("RelicName").GetComponent<TMP_Text>().text); // 유물 이름의 전용 위치 확인
+            Assert.AreEqual("가져올 카드 선택", view.transform.Find("Title").GetComponent<TMP_Text>().text); // 프레임 안의 분리된 선택 안내 확인
             Assert.IsNotNull(view.transform.Find("CancelChoice").GetComponent<Button>()); // 기존 최상위 직접 취소 버튼 유지 확인
             Transform shortChoice = view.transform.Find("Choice_0"); // 짧은 설명 후보 조회
             Transform longChoice = view.transform.Find("Choice_1"); // 긴 설명 후보 조회

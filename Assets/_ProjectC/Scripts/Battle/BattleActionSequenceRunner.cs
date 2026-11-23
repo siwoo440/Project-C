@@ -179,6 +179,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 effectType == CardEffectType.ProtectAttackTarget || // 공격 예고 보호 지원 연출
                 effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
                 effectType == CardEffectType.ReviveAlly || // 전투불능 아군 부활 지원 연출
+                effectType == CardEffectType.PentacleUtility || // 방어와 회복 및 비용 선택을 쓰는 펜타클 지원 연출
                 effectType == CardEffectType.Heal ||
                 effectType == CardEffectType.RemoveDebuffs ||
                 effectType == CardEffectType.RemoveOneDebuff || // 디버프 하나 해제 지원 연출

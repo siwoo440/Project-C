@@ -47,6 +47,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 임시 카드 안내 표시 시작
             effectDetail += " · 전투 임시 · 사용 후 제외"; // 원본 효과 뒤에 생성 카드의 실제 수명과 제외 안내
         } // 임시 카드 안내 표시 종료
+        if (cardInstance.EnchantmentPercent > 0) // 해당 실제 손패 카드에 아직 남은 한 번의 강화 확인
+        { // 기존 효과 상세에 강화 안내 추가 시작
+            effectDetail += $" · 다음 실제 사용 효과 +{cardInstance.EnchantmentPercent}%"; // 현재 원본 실물 카드에만 적용되는 전투 강화 표시
+        } // 기존 효과 상세에 강화 안내 추가 종료
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
@@ -193,6 +197,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.WheelOfFate) // 전액 행동력과 다른 손패 제외인 실제 변동 비용 확인
+        { // 수레바퀴 상세 수치 표시 시작
+            return $"회복 X × {cardInstance.EffectValue} · 다른 손패 X장 제외"; // 실제 선택 필요 수와 원본 회복 배수 안내
+        } // 수레바퀴 상세 수치 표시 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.Contract) // 실제 회복될 현재 행동력과 생존 체력 비용 확인
+        { // 계약 상세 수치 표시 시작
+            return $"행동력 +{cardInstance.EffectValue} · 시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue}"; // 정상 화면의 실제 두 자원 변화 설명
+        } // 계약 상세 수치 표시 종료
         if (cardInstance.StatusEffectType == BattleStatusEffectType.ResurrectionSeed) // 부활의 씨앗의 체력 비율과 기간 확인
         { // 부활 씨앗 상세 표시 시작
             return $"적 턴 {cardInstance.StatusDuration}회 동안 · 전투불능 시 체력 {cardInstance.EffectValue}%로 한 번 부활"; // 실제 부활 비율과 사용 한계 안내

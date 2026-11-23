@@ -27,6 +27,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private ShieldCardRule shieldRule; // 방패 카드의 개별 전투 규칙
     [SerializeField] private CupCardRule cupRule; // 성배 카드의 개별 전투 규칙
     [SerializeField] private WandCardRule wandRule; // 지팡이 카드의 가변 피해 규칙
+    [SerializeField] private PentacleCardRule pentacleRule; // 펜타클 카드의 독립 전투 자원 규칙
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
     [SerializeField, Min(0)] private int randomDamageHighValue; // 선택적으로 굴리는 두 번째 기본 피해 수치
     [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
@@ -64,7 +65,8 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardTargetType TargetType => targetType; // 카드 대상 조회
     public int ApCost => apCost; // 카드 AP 비용 조회
     public bool SpendsAllActionPoints => swordRule == SwordCardRule.Finisher || CupRule == CupCardRule.GrailMiracle || // 검 처형과 성배의 기존 전액 행동력 비용 확인
-        WandRule is WandCardRule.ManaRelease or WandCardRule.ArcaneLiberationRite; // 실제 사용 순간의 남은 행동력을 지불하는 지팡이 카드 확인
+        WandRule is WandCardRule.ManaRelease or WandCardRule.ArcaneLiberationRite || // 가변 행동력으로 정산하는 두 지팡이 카드 확인
+        PentacleRule == PentacleCardRule.WheelOfFate; // 현재 실제 행동력으로 지불하는 펜타클 확인
     public int AdditionalActionPointCost => Mathf.Max(0, additionalActionPointCost); // 카드 설명에서 지정한 별도 행동력 대가 조회
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
@@ -74,6 +76,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public ShieldCardRule ShieldRule => shieldRule; // 방패 카드 추가 규칙 조회
     public CupCardRule CupRule => cupRule; // 성배 카드 추가 규칙 조회
     public WandCardRule WandRule => wandRule; // 기존 고정 카드와 가변 지팡이의 데이터 조회
+    public PentacleCardRule PentacleRule => pentacleRule; // 펜타클 카드의 실제 원본 정산 규칙
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
     public int RandomDamageHighValue => randomDamageHighValue; // 무작위 피해의 높은 기본값 조회
     public bool HasRandomDamage => effectType == CardEffectType.Damage && randomDamageHighValue > effectValue; // 특정 카드에 설정한 두 피해 여부

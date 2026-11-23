@@ -2861,6 +2861,54 @@
       "name": "공허 붕괴",
       "description": "지정 적에게 마법 피해 45를 준다. 이 공격으로 적을 처치하지 못하면 자신의 정신력이 10 감소한다.",
       "artworkKey": "a3ac39042d495018b54b30aa431ca39e"
+    },
+    {
+      "category": 7,
+      "name": "황금 동전",
+      "description": "현재 행동력을 1 회복한다. 최대 행동력을 넘지 않는다.",
+      "artworkKey": "a68c56622b9251ee982b37c1c123edc7"
+    },
+    {
+      "category": 7,
+      "name": "집중",
+      "description": "이번 아군 턴의 공용 손패에 카드 한 장을 즉시 뽑는다.",
+      "artworkKey": "308198fb12bd5e5eaefa57ec6509d3f9"
+    },
+    {
+      "category": 7,
+      "name": "전술 교환",
+      "description": "손패에서 다른 카드 두 장을 골라 버리고 보충 카드 두 장을 뽑는다.",
+      "artworkKey": "7dced9221d5d5307b995caf93fd054d1"
+    },
+    {
+      "category": 7,
+      "name": "강화 주문",
+      "description": "손패에서 다른 카드 한 장을 고른다. 그 카드의 다음 실제 사용에서 기본 효과 수치가 50% 증가한다.",
+      "artworkKey": "6bb88bc9bbce59ae879a144e9d01b375"
+    },
+    {
+      "category": 7,
+      "name": "효율적 사용",
+      "description": "이번 아군 턴 동안 아군 카드의 기본 행동력 비용을 1 낮춘다. 현재 행동력을 모두 지불하는 X 비용과 별도 필수 비용은 그대로다.",
+      "artworkKey": "2904f35acc0f58e39ac082ef0f5fd9a4"
+    },
+    {
+      "category": 7,
+      "name": "고대의 룬",
+      "description": "아군 공용 손패에 카드 두 장을 즉시 뽑는다.",
+      "artworkKey": "917c7e46c8c55f948555abea9fe6c598"
+    },
+    {
+      "category": 7,
+      "name": "운명의 바퀴",
+      "description": "현재 행동력 수만큼 손패의 다른 카드를 선택한다. 행동력을 모두 지불하고 고른 카드를 이번 전투에서 제외한 뒤, 생존 아군 전체의 체력을 지불한 행동력마다 3 회복한다.",
+      "artworkKey": "eb9f917ce51054f6a530befe37109135"
+    },
+    {
+      "category": 7,
+      "name": "계약",
+      "description": "시전자의 체력을 10 지불하고 현재 행동력을 3 회복한다. 체력은 최소 1 남아야 한다.",
+      "artworkKey": "5a805eed2beb5795b77183c0bb2521c9"
     }
   ]
 }

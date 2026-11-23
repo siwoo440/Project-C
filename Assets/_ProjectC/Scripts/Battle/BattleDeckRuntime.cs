@@ -123,7 +123,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         int handSpace = MaxHandSize - HandCount; // 실제로 새 카드가 들어갈 수 있는 손패 여유
         return handSpace > 0 && HasDrawableCards ? DrawCards(Math.Min(requestedCount, handSpace)) : 0; // 초과 버림 없이 가능한 카드만 드로우
     } // 제한 드로우 종료
-    public bool TryPlayAndDraw(CardInstance playedCard, int requestedCount, out int drawnCount) // 사용 카드를 제외하고 드로우
+    public bool TryPlayAndDraw(CardInstance playedCard, int requestedCount, out int drawnCount, bool limitToHandCapacity = false, CardInstance preferOtherThanFirst = null, CardInstance preferOtherThanSecond = null) // 사용 원본 제외와 보충 카드 우선순위를 허용한 드로우
     { // 사용과 드로우 처리 시작
         drawnCount = 0; // 실제 드로우 수 초기화
         if (playedCard == null || !hand.Remove(playedCard)) // 사용 카드의 손패 위치 확인
@@ -132,7 +132,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 사용 불가 처리 종료
         try // 사용 카드 위치 복구 보장
         { // 드로우 처리 시작
-            drawnCount = DrawCardsCore(Math.Max(0, requestedCount), out _, 0, out _); // 기본 턴 집계가 없는 카드 효과 드로우
+            int count = limitToHandCapacity ? Math.Min(requestedCount, MaxHandSize - HandCount) : requestedCount; // 사용 카드 이동 뒤 실제 손패 여유 내의 선택적 드로우 제한
+            drawnCount = DrawCardsCore(Math.Max(0, count), out _, 0, out _, preferOtherThanFirst, preferOtherThanSecond); // 상한 정책을 반영한 기존 독립 카드 드로우
         } // 드로우 처리 종료
         finally // 사용한 카드 이동 보장
         { // 사용 카드 이동 시작
@@ -142,7 +143,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 사용과 드로우 결과 알림
         return true; // 사용 성공 반환
     } // 사용과 드로우 처리 종료
-    private int DrawCardsCore(int requestedCount, out int processedCount, int baseDrawLimit, out int baseDrawnCount) // 카드 영역 변경과 원래 기본 시도 안의 실제 도착 집계
+    private int DrawCardsCore(int requestedCount, out int processedCount, int baseDrawLimit, out int baseDrawnCount, CardInstance preferOtherThanFirst = null, CardInstance preferOtherThanSecond = null) // 원래 드로우와 우선 후보의 정상 손패 도착 집계
     { // 공통 드로우 시작
         int drawnCount = 0; // 실제 드로우 수 초기화
         baseDrawnCount = 0; // 실제 기본 드로우 수 초기화
@@ -150,7 +151,11 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         List<CardInstance> discardedCards = new List<CardInstance>(); // 같은 요청의 재순환에서 제외할 카드 목록
         while (processedCount < requestedCount) // 요청 수까지 반복
         { // 반복 드로우 시작
-            int topIndex = FindTopDrawableIndex(); // 사망 소유자를 건너뛴 맨 위 카드 조회
+            int topIndex = FindPreferredDrawableIndex(preferOtherThanFirst, preferOtherThanSecond); // 보충 후보를 우선 선택하는 기존 드로우 순서 조회
+            if (topIndex < 0) // 우선 후보가 없거나 일반 드로우인지 확인
+            { // 자연 덱 위 카드의 기본 조회 시작
+                topIndex = FindTopDrawableIndex(); // 기존 우선순위의 맨 위 생존 카드 조회
+            } // 자연 덱 위 카드의 기본 조회 종료
             if (topIndex < 0 && RefillDrawPile()) // 드로우 가능 카드 부족 시 버린 더미 재구성
             { // 재구성 카드 확인 시작
                 topIndex = FindTopDrawableIndex(); // 재구성 후 유효 카드 재조회
@@ -344,6 +349,35 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 선택으로 바뀐 실제 덱과 손패 알림
         return true; // 실제 원본 카드 이동 성공
     } // 원본 카드 이동 종료
+    internal bool TrySpendAndExcludeHandPayment(CardInstance playedCard, IReadOnlyList<CardInstance> selectedCards, BattleActionPointRuntime points, int cost) // 가변 행동력과 정확한 실물 손패 제외의 한 번 결제
+    { // 실물 손패 결제 시작
+        if (cost <= 0 || points.CurrentActionPoints != cost || selectedCards == null || selectedCards.Count != cost || !hand.Contains(playedCard)) // 현재 행동력과 선택 수 및 원본 손패 위치 확인
+        { // 지불할 수 없는 요청 처리 시작
+            return false; // 어떤 카드도 움직이기 전 전체 결제 거절
+        } // 지불할 수 없는 요청 처리 종료
+        var distinct = new HashSet<CardInstance>(); // 같은 실제 카드의 반복 결제를 검증할 목록
+        foreach (var card in selectedCards) // 선택한 모든 실물 손패 카드 일괄 재검사
+        { // 카드 비용 후보 확인 시작
+            if (card == null || card == playedCard || !hand.Contains(card) || !distinct.Add(card)) // 다른 원본과 실제 현재 손패 및 유일 후보 확인
+            { // 무효 카드 비용 처리 시작
+                return false; // 첫 번째 무효에서 변경 없이 전체 결제 거절
+            } // 무효 카드 비용 처리 종료
+        } // 카드 비용 후보 확인 종료
+        foreach (var card in selectedCards) // 확인한 카드의 입력 순서에 따른 전체 영역 이동
+        { // 전투 한정 제외 처리 시작
+            hand.Remove(card); // 진짜 손패에서 이번 비용 카드 제거
+            ForgetOpeningRetention(card); // 손패를 떠난 카드의 기존 개막 유지 해제
+            excludedPile.Add(card); // 원본 저장 덱과 별개인 현재 전투의 실제 제외 더미에 이동
+        } // 전투 한정 제외 처리 종료
+        EnsureValidState(); // 어떤 이벤트도 보내기 전 실물 카드 영역의 일관성 확인
+        points.Spend(cost); // 중간 알림 없이 확인한 현재 행동력 전액을 이미 이동한 카드 비용과 함께 정산
+        foreach (var card in selectedCards) // 모든 카드와 행동력이 지급된 뒤 실제 제외 이벤트 전달
+        { // 원래 제외 유물 신호 처리 시작
+            CardExcluded?.Invoke(card, false); // 실제 전투 제외이며 휘발 손패가 아닌 원래 효과 전달
+        } // 원래 제외 유물 신호 처리 종료
+        StateChanged?.Invoke(); // 일괄 이동이 끝난 실제 손패 상태 알림
+        return true; // 가변 행동력과 카드 제외의 전체 결제 완료
+    } // 실물 손패 결제 종료
     public bool TryDiscardDrawTop(CardInstance choice) // 뽑을 더미 맨 위 카드 버리기
     { // 맨 위 카드 버리기 시작
         int topIndex = FindTopDrawableIndex(); // 사망 카드를 제외한 맨 위 위치 조회
@@ -509,6 +543,34 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             pendingHandDiscard = previous; // 바깥 버림 대상 복구
         } // 대상 복구 종료
     } // 버림 판정 종료
+    internal bool TrySpendAndDiscardHandPair(CardInstance source, CardInstance first, CardInstance second, BattleActionPointRuntime points, int cost) // 두 실물 손패와 행동력의 원래 버림 결제
+    { // 원본 및 고른 두 장의 버림 거래 확인 시작
+        if (!HasDiscardablePair(source, first, second) || !points.CanSpend(cost) || // 원본과 실제 다른 두 장 및 공용 행동력 확인
+            IsHandDiscardPrevented(first) || IsHandDiscardPrevented(second) || !HasDiscardablePair(source, first, second) || !points.CanSpend(cost)) // 기존 버림 보호 이벤트 뒤에도 유효한 두 장과 지불 확인
+        { // 한쪽이라도 실제 버림이 불가능한 결제 거절 시작
+            return false; // 행동력과 두 장의 물리 손패를 함께 보존
+        } // 한쪽이라도 실제 버림이 불가능한 결제 거절 종료
+        MoveHandCardToDiscard(first); // 첫 실물의 버림과 개막 유지 해제 처리
+        MoveHandCardToDiscard(second); // 두 번째 실물도 같은 그룹에서 실제 버림
+        points.Spend(cost); // 중간 알림 없이 앞서 확인한 실제 행동력 결제
+        EnsureValidState(); // 두 실물 카드가 단일 위치를 가졌는지 확인
+        StateChanged?.Invoke(); // 모두 이동한 손패를 한 번 알림
+        return true; // 실제 두 장 버림과 행동력 전부 정산됨
+    } // 원본 및 고른 두 장의 버림 거래 확인 종료
+
+    private bool HasDiscardablePair(CardInstance source, CardInstance first, CardInstance second) // 전술 교환의 현재 물리 손패 검증
+    { // 세 실물 카드의 현재 위치 확인 시작
+        return source != null && first != null && second != null && source != first && source != second && first != second && // 원본과 다른 서로 다른 두 실물 확인
+            hand.Contains(source) && hand.Contains(first) && hand.Contains(second); // 세 카드의 현재 물리 손패 위치 확인
+    } // 세 실물 카드의 현재 위치 확인 종료
+
+    private void MoveHandCardToDiscard(CardInstance card) // 일반 선택과 전술 교환의 실제 버림 이동
+    { // 원본 사용과 다른 손패 버림 처리 시작
+        hand.Remove(card); // 원래 물리 손패에서 제거
+        ForgetOpeningRetention(card); // 손패를 떠나는 원래 실물의 개막 유지 해제
+        discardPile.Add(card); // 사용 제외를 피한 별도 효과 버림 더미 이동
+    } // 원본 사용과 다른 손패 버림 처리 종료
+
     public bool DiscardCard(CardInstance cardInstance) // 카드 효과 또는 수동 선택으로 손패 버리기
     { // 효과 버림 시작
         if (cardInstance == null || !hand.Contains(cardInstance)) // 실제 버릴 카드 확인
@@ -517,9 +579,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 유효 대상 없음 종료
         if (!IsHandDiscardPrevented(cardInstance)) // 실제 효과 버림 확인
         { // 손패 이동 시작
-            hand.Remove(cardInstance); // 원래 손패에서 제거
-            ForgetOpeningRetention(cardInstance); // 실제 수동 및 효과 버림으로 개시 유지 해제
-            discardPile.Add(cardInstance); // 사용과 구분해 버림 더미에 추가
+            MoveHandCardToDiscard(cardInstance); // 일반 효과 버림과 전술 교환의 같은 카드 이동 규칙 사용
             EnsureValidState(); // 이동 뒤 카드 영역 확인
             StateChanged?.Invoke(); // 손패 변경 알림
         } // 손패 이동 종료
@@ -551,6 +611,11 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 전투 제외 종료
         discardPile.Add(card); // 일반 사용은 버림 더미에 보관
     } // 사용 위치 처리 종료
+    internal void NotifyCardCostsChanged() // 현재 손패의 실제 비용과 카드 사용 가능 상태 갱신
+    { // 카드 비용 새로고침 시작
+        StateChanged?.Invoke(); // 기존 덱 갱신 구독자에게 비용 변경 알림
+    } // 카드 비용 새로고침 종료
+
     internal void SetRelicApDiscount(int amount) // 현재 턴의 모든 카드 비용 갱신
     { // 유물 할인 시작
         if (amount == relicApDiscount) // 현재 표시와 같은 할인 확인
@@ -665,23 +730,48 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 전체 카드 검사 종료
         return hand.Count <= MaxHandSize; // 최대 손패 범위 결과 반환
     } // 상태 검사 종료
-    private bool RefillDrawPile() // 버린 카드 더미 재구성
+    private int FindPreferredDrawableIndex(CardInstance deferredFirst, CardInstance deferredSecond) // 전술 교환이 방금 버린 두 장 이전의 다른 후보 조회
+    { // 다른 드로우 후보의 원래 덱과 버림 더미 비교 시작
+        if (deferredFirst == null) // 보통 드로우의 변경 없는 기존 순서 확인
+        { // 우선 후보가 아닌 경우 시작
+            return -1; // 정상 원래 덱 검색으로 들어갈 값 반환
+        } // 우선 후보가 아닌 경우 종료
+        int index = FindTopDrawableIndex(deferredFirst, deferredSecond); // 아직 뽑을 더미에 남은 우선 후보 조회
+        return index >= 0 || !RefillDrawPile(deferredFirst, deferredSecond) ? index : FindTopDrawableIndex(deferredFirst, deferredSecond); // 다른 가능한 카드를 먼저 재구성하거나 기존 후보 사용
+    } // 다른 드로우 후보의 원래 덱과 버림 더미 비교 종료
+
+    private bool RefillDrawPile(CardInstance deferredFirst = null, CardInstance deferredSecond = null) // 정상 버림 더미와 보충 우선 후보의 재구성
     { // 카드 더미 재구성 시작
         if (CountDrawable(discardPile) < 1) // 버린 더미의 생존 소유자 카드 확인
         { // 버린 카드 없음 처리 시작
             return false; // 재구성 실패 반환
         } // 버린 카드 없음 처리 종료
         List<CardInstance> recycled = new List<CardInstance>(discardPile); // 재구성할 버린 카드 복사
+        if (deferredFirst != null) // 보충할 다른 후보를 다시 섞는 전술 교환 확인
+        { // 방금 버린 두 카드와 다른 실제 후보 추리기 시작
+            recycled.RemoveAll(card => card == deferredFirst || card == deferredSecond); // 두 보류 실물을 제외한 기존 버림 카드만 조회
+            if (CountDrawable(recycled) == 0) // 보류하지 않은 후보 가운데 생존 소유자 카드 확인
+            { // 다른 보충 후보가 없는 경우 시작
+                return false; // 일반 재구성 전 원래 더미 유지
+            } // 다른 보충 후보가 없는 경우 종료
+        } // 방금 버린 두 카드와 다른 실제 후보 추리기 종료
         ShuffleList(recycled); // 재구성 카드 순서 섞기
         drawPile.InsertRange(0, recycled); // 기존 사망 카드 아래에 재구성 카드 배치
-        discardPile.Clear(); // 버린 카드 더미 비우기
+        if (deferredFirst == null) // 일반 재구성에서 버린 더미 전부 이동 확인
+        { // 원래 버림 더미 전체 정리 시작
+            discardPile.Clear(); // 모든 카드가 실제 뽑을 더미로 옮겨진 버림 목록 비우기
+        } // 원래 버림 더미 전체 정리 종료
+        else // 방금 버린 두 카드가 잠시 후보에서 제외된 경우
+        { // 일부 재구성된 카드만 버림 더미에서 제거 시작
+            discardPile.RemoveAll(recycled.Contains); // 두 보류 실물의 기존 버림 위치 유지
+        } // 일부 재구성된 카드만 버림 더미에서 제거 종료
         return true; // 재구성 성공 반환
     } // 카드 더미 재구성 종료
-    private int FindTopDrawableIndex() // 사망 카드를 제외한 맨 위 카드 위치 조회
+    private int FindTopDrawableIndex(CardInstance deferredFirst = null, CardInstance deferredSecond = null) // 보류 및 사망 소유자를 제외한 실제 맨 위 카드 조회
     { // 맨 위 유효 카드 검색 시작
         for (int index = drawPile.Count - 1; index >= 0; index--) // 덱 맨 위부터 순회
         { // 덱 카드 확인 시작
-            if (IsDrawable(drawPile[index])) // 카드 소유자 생존 여부 확인
+            if (drawPile[index] != deferredFirst && drawPile[index] != deferredSecond && IsDrawable(drawPile[index])) // 보류하지 않은 실물과 카드 소유자 생존 확인
             { // 유효 카드 반환 시작
                 return index; // 맨 위 유효 카드 위치 반환
             } // 유효 카드 반환 종료

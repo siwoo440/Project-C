@@ -56,6 +56,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> AllyDefeatReady; // 사망 알림을 마친 아군의 유물 부활 정산
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
+    internal int EfficientUseApDiscount { get; set; } // 현재 아군 턴의 펜타클 기본 행동력 할인
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
