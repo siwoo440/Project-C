@@ -4,7 +4,6 @@ using UnityEngine; // 유니티 기본 기능 사용
 
 public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결과와 아군 상태 보관
 {
-
     private readonly Dictionary<string, int> savedAllyHealth =
         new Dictionary<string, int>(); // 아군별 저장 체력 목록
 
@@ -348,6 +347,55 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                GetLivingAllyCount() <= 0; // 출전 파티 전원 사망 판정
     }
 
+    public bool RestoreRecoveredAlly(
+        CharacterData characterData,
+        int healthPercent) // 회복 설비 완료 캐릭터의 사망 상태 해제
+    {
+        if (characterData == null ||
+            string.IsNullOrWhiteSpace(characterData.CharacterId))
+        {
+            return false;
+        }
+
+        InitializeMemberState(
+            characterData); // 회복 대상 저장 상태 보장
+
+        string unitId =
+            characterData.CharacterId; // 회복 대상 ID 저장
+
+        if (savedAllyHealth[unitId] > 0)
+        {
+            return false; // 이미 생존 상태인 캐릭터 복구 차단
+        }
+
+        int safeHealthPercent =
+            Mathf.Clamp(
+                healthPercent,
+                1,
+                100); // 회복 완료 체력 비율 범위 보정
+
+        int recoveredHealth =
+            Mathf.Max(
+                1,
+                Mathf.CeilToInt(
+                    characterData.MaxHealth *
+                    safeHealthPercent /
+                    100f)); // 회복 완료 HP 계산
+
+        savedAllyHealth[unitId] =
+            recoveredHealth; // 회복 완료 체력 저장
+
+        PartyStateChanged?.Invoke(); // 탐사 파티 상태 UI 갱신
+
+        Debug.Log(
+            $"[BattleResultManager][Day53] 회복 완료 상태 반영 - " +
+            $"{characterData.DisplayName} / " +
+            $"HP {recoveredHealth}/{characterData.MaxHealth} / " +
+            $"정신 {savedAllyMental[unitId]}"); // 회복 완료 결과 로그
+
+        return true;
+    }
+
     public void ResetSavedPartyState() // 저장 아군 상태 전체 초기화
     {
         savedAllyHealth.Clear(); // 저장 아군 체력 비우기
@@ -422,7 +470,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                 unitId); // 기존 사망 횟수 조회
 
         allyDeathCounts[unitId] =
-            previousDeathCount + 1; // 탐사 런 사망 횟수 증가
+            previousDeathCount + 1; // 탐사 런 아군별 사망 횟수 증가
     }
 
     private void OnDestroy() // 결과 관리자 제거 처리
