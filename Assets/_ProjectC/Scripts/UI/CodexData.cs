@@ -167,6 +167,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ArcaneWard || effect == BattleStatusEffectType.MagicAttackPowerUp || effect == BattleStatusEffectType.Shock) // 새 지팡이 상태의 실제 도감 등록
+                    { // 상태의 시트 수치 전달 시작
+                        int amount = effect == BattleStatusEffectType.ArcaneWard ? 6 : effect == BattleStatusEffectType.MagicAttackPowerUp ? 5 : 1; // 각 상태에 적용되는 원본 카드 수치
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 전투와 도감의 실제 상태 설명 일치
+                    } // 상태의 시트 수치 전달 종료
                     else if (effect == BattleStatusEffectType.StethoscopeMark) // 신규 청진기 원본의 도감 분류
                     { // 명칭과 표시 설명 준비
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 실제 청진기 표식의 독립 설명

@@ -183,6 +183,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int changePercent = MentalState == BattleMentalState.Awakening ? awakeningDamagePercent : MentalState == BattleMentalState.Collapse ? collapseDamagePercent : 0; // 현재 상태 피해 변화율 선택
         return ApplyPercentage(baseDamage, changePercent); // 보정 피해량 반환
     } // 피해량 계산 종료
+    internal int ModifyCardOutgoingDamage(int baseDamage, BattleDamageType damageType) // 실제 마법 카드 피해의 전용 공격력과 기존 정신 상태 보정
+    { // 카드별 마법 공격력 처리 시작
+        var amplification = damageType == BattleDamageType.Magical ? FindStatusEffect(BattleStatusEffectType.MagicAttackPowerUp) : null; // 마법 카드에 남아 있는 실제 증폭 상태만 확인
+        int bonus = amplification is { IsExpired: false } ? amplification.EffectiveValue : 0; // 만료되지 않은 마법 전용 공격력의 정수 가산량
+        int adjusted = (int)Math.Clamp((long)baseDamage + bonus, 0L, int.MaxValue); // 원래 공격에 더해도 기존 정수 최대값과 영 한계 보존
+        return ModifyOutgoingDamage(adjusted); // 모든 카드의 기존 정신 상태 기반 피해 계산 재사용
+    } // 카드별 마법 공격력 처리 종료
     public int ModifyOutgoingHealing(int baseHealing) // 정신 상태 기반 회복량 계산
     { // 회복량 계산 시작
         int changePercent = MentalState == BattleMentalState.Awakening ? awakeningHealingPercent : MentalState == BattleMentalState.Collapse ? collapseHealingPercent : 0; // 현재 상태 회복 변화율 선택
@@ -509,7 +516,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int charge = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.ChargeDefenseDown) : 0; // 돌진의 물리 방어 감소량 확인
         var crystal = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? FindStatusEffect(BattleStatusEffectType.CrystalMarkDefenseDown) : null; // 일반 물리 방어 약화와 독립인 결정눈 상태 조회
         int crystalLoss = crystal is { IsExpired: false } ? crystal.EffectiveValue : 0; // 아직 활성인 표식 연계 방어 감소량
-        return (int)Math.Clamp((long)baseDefense + increasedDefense - decreasedDefense - charge - crystalLoss, 0L, int.MaxValue); // 두 방어 약화와 기존 본래 방어를 합친 정수 범위 결과
+        var ward = increaseType == BattleStatusEffectType.MagicalResistanceUp ? FindStatusEffect(BattleStatusEffectType.ArcaneWard) : null; // 마법 저항 계산에서만 실제 마력 보호막 상태 확인
+        int wardBonus = ward is { IsExpired: false } ? ward.EffectiveValue : 0; // 활성 중인 정수 저항 증가량
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss, 0L, int.MaxValue); // 기존 약화와 플랫 저항의 합을 한 번만 영 하한으로 제한
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작

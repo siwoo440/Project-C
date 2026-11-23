@@ -38,7 +38,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public string PatternDisplayName { get; } // 패턴 행동 이름 조회
     public int PatternIndex { get; } // 현재 패턴 순번 조회
     public int PatternCount { get; } // 전체 패턴 수 조회
-    public int ActionSpeed { get; } // 결정된 행동 속도 조회
+    private readonly int rolledActionSpeed; // 같은 계획에서 한 번 굴린 적 행동의 기준 속도
+    private int CurrentSpeedPenalty => Actor.GetStatusEffect(BattleStatusEffectType.ActionSpeedDown) is { IsExpired: false } slow ? slow.EffectiveValue : 0; // 정리 전 만료 상태를 제외한 실제 속도 약화
+    public int ActionSpeed => Math.Max(1, rolledActionSpeed - CurrentSpeedPenalty); // 이미 결정한 행동의 실제 속도와 예고에서 같은 값 사용
     public int CreationOrder { get; } // 행동 생성 순서 조회
     public int ActionOrder { get; private set; } // 최종 행동 순번 조회
 
@@ -112,7 +114,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
         PatternIndex = Math.Max(1, patternIndex); // 보정된 현재 패턴 순번 저장
         PatternCount = Math.Max(PatternIndex, patternCount); // 보정된 전체 패턴 수 저장
-        ActionSpeed = Math.Max(1, actionSpeed); // 보정된 행동 속도 저장
+        rolledActionSpeed = Math.Max(1, actionSpeed); // 상태와 별개로 처음 굴린 기준 행동 속도 저장
         CreationOrder = Math.Max(0, creationOrder); // 보정된 생성 순서 저장
         statusChancePercent = Math.Max(0, Math.Min(100, additionalStatusChancePercent)); // 상태 부여 확률 범위 보정
         statusValue = Math.Max(1, additionalStatusValue); // 상태 효과 수치 범위 보정

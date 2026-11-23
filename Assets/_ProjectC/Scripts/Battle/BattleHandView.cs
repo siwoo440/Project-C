@@ -508,7 +508,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         bool visible = !interactionLocked && BattleDisplaySettings.ShowTooltip(GraphicsAudioSettingsRuntime.Current, true, BattleDisplaySettings.IsTooltipKeyPressed()); // 설정과 임시 키를 반영한 상세 표시 여부
         if (visible && !tooltipView.gameObject.activeSelf) // 상세 표시 필요 확인
         { // 카드 상세 표시 시작
-            tooltipView.Show(hoveredCardView.RuntimeCard); // 현재 카드의 상세 정보 표시
+            tooltipView.Show(hoveredCardView.RuntimeCard, sharedActionPoints?.CurrentActionPoints); // 실제 가용 행동력을 포함한 현재 카드 상세 표시
         } // 카드 상세 표시 종료
         else if (!visible && tooltipView.gameObject.activeSelf) // 상세 숨김 필요 확인
         { // 카드 상세 숨김 시작
@@ -625,6 +625,11 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     { // 행동력 변경 처리 시작
         RefreshActionPointStatus(); // 행동력 수량 표시 갱신
         RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+        var hoveredCard = hoveredCardView?.RuntimeCard; // 가변 기본 피해를 갱신할 현재 손패 카드
+        if (tooltipView != null && tooltipView.gameObject.activeSelf && hoveredCard?.SourceData.WandRule == WandCardRule.ManaRelease) // 기존에 열려 있는 마력 해방 상세 확인
+        { // 현재 행동력 미리보기 갱신 시작
+            tooltipView.Show(hoveredCard, sharedActionPoints?.CurrentActionPoints); // 정산 전 실제 가용 행동력으로 표시 수치 갱신
+        } // 현재 행동력 미리보기 갱신 종료
     } // 행동력 변경 처리 종료
     private void HandleTurnStateChanged() // 전투 턴 변경 처리
     { // 턴 변경 처리 시작

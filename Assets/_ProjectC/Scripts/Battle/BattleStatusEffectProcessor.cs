@@ -20,6 +20,16 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 제거 상태 제외 시작
                 continue; // 다음 상태 이동
             } // 제거 상태 제외 종료
+            if (statusEffect.EffectType == BattleStatusEffectType.Shock) // 적의 다음 실제 진영 시작에 한 번 발동하는 감전 확인
+            { // 감전의 안전한 충격과 소모 시작
+                if (runtimeUnit.Team == BattleTeam.Enemy && !statusEffect.IsExpired && runtimeUnit.RemoveStatusEffectInstance(statusEffect)) // 실제 적 턴 시작과 처리 전 상태 제거 확인
+                { // 감전 효과 적용 시작
+                    statusStateChanged = true; // 선택된 감전 상태의 화면 제거 알림 예약
+                    int applied = runtimeUnit.TakeUnblockedDamage(statusEffect.EffectiveValue, BattleDamageType.None, null); // 직접 카드나 추가 상태 부여 없이 방어도를 우회하는 체력 피해
+                    processResults.Add(CreateResult(statusEffect, round, applied, statusEffect.RemainingTurns, 0, true, BattleStatusEffectRemovalReason.DurationExpired)); // 소모된 감전의 실제 피해와 지속 종료 기록
+                } // 감전 효과 적용 종료
+                continue; // 같은 상태의 일반 시작 처리와 중복 발동 방지
+            } // 감전의 안전한 충격과 소모 종료
             if (statusEffect.EffectType == BattleStatusEffectType.DelayedHealing) // 진영 시작 때 소모되는 생명수의 예약 회복 확인
             { // 예약 효과 소모 및 회복 시작
                 if (runtimeUnit.Team == BattleTeam.Ally && runtimeUnit.RemoveStatusEffectInstance(statusEffect)) // 실제 아군 턴의 생존 대상과 예약 제거 확인
@@ -122,6 +132,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 반사의 성채 일반 지속 처리 제외 시작
                 continue; // 다음 아군 턴 전에 반사 지급과 함께 제거
             } // 반사의 성채 일반 지속 처리 제외 종료
+            if (effect.EffectType == BattleStatusEffectType.ArcaneWard) // 아군 마력 보호막의 적 턴 전용 지속 규칙 확인
+            { // 일반 아군 턴 정리에서 마력 보호막 제외 시작
+                continue; // 적이 공격을 마친 뒤 한 번만 기간 차감
+            } // 일반 아군 턴 정리에서 마력 보호막 제외 종료
             if (effect.EffectType == BattleStatusEffectType.ResurrectionSeed) // 적 턴 종료에서만 차감하는 씨앗 상태 확인
             { // 일반 부활 씨앗 기간 처리 제외 시작
                 continue; // 아군 턴 정리에서는 씨앗 기간 유지

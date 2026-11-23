@@ -26,6 +26,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private SwordCardRule swordRule; // 검 카드의 추가 공격 규칙
     [SerializeField] private ShieldCardRule shieldRule; // 방패 카드의 개별 전투 규칙
     [SerializeField] private CupCardRule cupRule; // 성배 카드의 개별 전투 규칙
+    [SerializeField] private WandCardRule wandRule; // 지팡이 카드의 가변 피해 규칙
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
     [SerializeField, Min(0)] private int randomDamageHighValue; // 선택적으로 굴리는 두 번째 기본 피해 수치
     [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
@@ -45,6 +46,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [Header("상태 이상 규칙")]
     [SerializeField] private BattleStatusEffectType statusEffectType; // 적용 상태 이상 종류
     [SerializeField] private BattleStatusEffectType statusRemovedByHealing; // 체력 회복 전에 제거할 상태
+    [SerializeField] private bool applyWandHitStatus; // 명중한 생존 적에게 원본 상태를 부여하는 지팡이 공격 표시
     [SerializeField] private bool isCorrosionStatus; // 이 카드가 실제 부여하는 상태의 명시적인 침식 계열 표시
     [SerializeField, Range(-1, 100)] private int optionalBlindChancePercent = -1; // 음수의 미설정과 명시 실명 확률의 구분
     [Min(1)]
@@ -60,7 +62,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardTag CardTags => cardTags == CardTag.None ? InferDefaultTags() : cardTags; // 카드 태그 조회
     public CardTargetType TargetType => targetType; // 카드 대상 조회
     public int ApCost => apCost; // 카드 AP 비용 조회
-    public bool SpendsAllActionPoints => swordRule == SwordCardRule.Finisher || CupRule == CupCardRule.GrailMiracle; // 실제 사용 순간의 남은 행동력을 모두 지불하는 카드 여부
+    public bool SpendsAllActionPoints => swordRule == SwordCardRule.Finisher || CupRule == CupCardRule.GrailMiracle || WandRule == WandCardRule.ManaRelease; // 실제 사용 순간의 남은 행동력을 모두 지불하는 카드 여부
     public int AdditionalActionPointCost => Mathf.Max(0, additionalActionPointCost); // 카드 설명에서 지정한 별도 행동력 대가 조회
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
@@ -69,6 +71,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public SwordCardRule SwordRule => swordRule; // 검 카드 추가 규칙 조회
     public ShieldCardRule ShieldRule => shieldRule; // 방패 카드 추가 규칙 조회
     public CupCardRule CupRule => cupRule; // 성배 카드 추가 규칙 조회
+    public WandCardRule WandRule => wandRule; // 기존 고정 카드와 가변 지팡이의 데이터 조회
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
     public int RandomDamageHighValue => randomDamageHighValue; // 무작위 피해의 높은 기본값 조회
     public bool HasRandomDamage => effectType == CardEffectType.Damage && randomDamageHighValue > effectValue; // 특정 카드에 설정한 두 피해 여부
@@ -77,6 +80,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public BattleStatusEffectType StatusRemovedByHealing => statusRemovedByHealing; // 회복과 함께 제거할 상태 조회
+    public bool ApplyWandHitStatus => applyWandHitStatus; // 명시한 지팡이 명중 상태 부여 규칙
     public bool IsCorrosionStatus => isCorrosionStatus; // 원본에 명시된 침식 계열 상태 여부
     public int OptionalBlindChancePercent => Mathf.Clamp(optionalBlindChancePercent, -1, 100); // 보정된 명시 실명 확률 또는 일반 처리 값
     public int StatusDuration => statusDuration; // 상태 이상 지속 횟수 조회

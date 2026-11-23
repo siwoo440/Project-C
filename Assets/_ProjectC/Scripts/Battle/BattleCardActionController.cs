@@ -151,7 +151,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             ExecuteCard(selectedCard, CollectValidTargets(selectedCard, allyUnitViews)); // 전체 유효 아군에게 카드 사용
             return; // 카드 클릭 처리 종료
         } // 전체 아군 처리 종료
-        if (selectedCard.TargetType == CardTargetType.AllEnemies) // 전체 적 대상 확인
+        if (selectedCard.TargetType is CardTargetType.AllEnemies or CardTargetType.RandomTwoEnemies) // 자동으로 전체 또는 무작위 적을 정하는 카드 확인
         { // 전체 적 처리 시작
             ExecuteCard(selectedCard, CollectValidTargets(selectedCard, enemyUnitViews)); // 전체 유효 적에게 카드 사용
             return; // 카드 클릭 처리 종료
@@ -342,6 +342,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        if (cardInstance.TargetType == CardTargetType.RandomTwoEnemies) // 사용을 확정한 카드의 명시적 무작위 적 대상 확인
+        { // 실제 확정 대상 뽑기 시작
+            targetUnits = PickDistinctRandomEnemies(targetUnits); // 현재 유효한 생존 후보만 최대 두 명 확정
+            targetViews = CollectUnitViews(targetUnits); // 확정한 각 적의 화면에만 실제 연출 연결
+        } // 실제 확정 대상 뽑기 종료
         int healthCost = cardInstance.SourceData.CupRule == CupCardRule.MartyrsLight // 순교자의 빛의 시전자 체력 한 점 규칙 확인
             ? cardInstance.OwnerUnit.CurrentHealth - 1 // 생존 하한까지의 실제 체력 비용 계산
             : SwordCardCombat.HasUpfrontHealthCost(cardInstance) ? cardInstance.SourceData.SecondaryEffectValue : 0; // 기존 고정 체력 비용과 일반 카드 구분
@@ -872,12 +877,28 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             case CardTargetType.AllAllies: // 전체 아군 대상 종류
                 return targetUnit.Team == BattleTeam.Ally; // 아군 여부 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상 종류
+            case CardTargetType.RandomTwoEnemies: // 서로 다른 생존 적을 최대 두 명 고르는 대상 종류
             case CardTargetType.AllEnemies: // 전체 적 대상 종류
                 return targetUnit.Team == BattleTeam.Enemy; // 적 여부 반환
             default: // 알 수 없는 대상 종류
                 return false; // 잘못된 대상 반환
         } // 대상 분기 종료
     } // 대상 검사 종료
+    private static IReadOnlyList<BattleUnitRuntime> PickDistinctRandomEnemies(IReadOnlyList<BattleUnitRuntime> candidates) // 무작위 전격의 서로 다른 최대 두 대상 선택
+    { // 두 명의 무작위 적 선택 시작
+        if (candidates.Count <= 2) // 두 명 이하로 모든 후보가 결과에 확정되는 경우 확인
+        { // 확정된 적 모두 사용 시작
+            return candidates; // 같은 적 반복이나 불필요한 난수 소비 없는 기존 순서 보존
+        } // 확정된 적 모두 사용 종료
+        int first = RelicRandomCardTarget.PickIndex(candidates.Count, count => UnityEngine.Random.Range(0, count)); // 기존 무작위 대상 유물 규칙을 지키는 첫 후보 위치
+        int second = RelicRandomCardTarget.PickIndex(candidates.Count - 1, count => UnityEngine.Random.Range(0, count)); // 첫 후보를 제외한 나머지 후보 위치 선택
+        if (second >= first) // 첫 후보의 자리를 건너뛸 위치 확인
+        { // 두 번째 실제 후보 위치 보정 시작
+            second++; // 누락된 첫 후보를 넘어 원래 후보 목록의 위치 복원
+        } // 두 번째 실제 후보 위치 보정 종료
+        return new[] { candidates[first], candidates[second] }; // 두 번의 명중 판정을 받을 서로 다른 생존 적 확정
+    } // 두 명의 무작위 적 선택 종료
+
     private bool HasIncomingAttack(BattleUnitRuntime allyUnit) // 예정 공격 대상 여부 확인
     { // 공격 예고 확인 시작
         foreach (BattleEnemyAction action in enemyActions.PlannedActions) // 예정 적 행동 순회
@@ -1193,7 +1214,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 선택 실명 미적용 종료
             BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 일반 상태와 명시 침식 상태의 실제 결과 적용
             ApplyCrystalMarkDefenseLoss(cardInstance, targetUnit, cardInstance.StatusEffectType, applyResult); // 명시한 실제 카드 표식의 적 방어 감소
-            bool includesCastTurn = cardInstance.StatusEffectType is BattleStatusEffectType.SwordSaintStance or BattleStatusEffectType.MiracleEcho; // 시전 턴부터 기간을 세는 두 강화 확인
+            bool includesCastTurn = cardInstance.StatusEffectType is BattleStatusEffectType.SwordSaintStance or BattleStatusEffectType.MiracleEcho or BattleStatusEffectType.MagicAttackPowerUp; // 실제 시전 턴부터 기간을 셀 강화 확인
             if (includesCastTurn && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 실제 신규 적용 또는 갱신 확인
             { // 시전 턴부터 차감 시작
                 targetUnit.GetStatusEffect(cardInstance.StatusEffectType).ConsumeDurationDecreaseSkip(); // 시전 턴 종료 때 새 강화의 기간 감소
@@ -1390,7 +1411,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
         } // 약화 대상 추가 피해 종료
         baseDamage = SwordCardCombat.ApplyAttackStances(cardInstance, targetUnit, baseDamage); // 타격 순간의 검 강화와 마무리 체력 조건 적용
-        int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
+        int modifiedDamage = cardInstance.OwnerUnit.ModifyCardOutgoingDamage(baseDamage, cardInstance.DamageType); // 마법 카드의 공격력 증폭과 기존 정신 상태 적용
         modifiedDamage = SwordCardCombat.RollCritical(cardInstance, targetUnit, modifiedDamage, out bool critical); // 현재 피격 대상의 활성 약화를 포함한 치명타 확률 적용
         if (critical) // 치명타 발동 확인
         { // 치명타 표시 시작
@@ -1434,6 +1455,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.Blind, result); // 명중 후 실명 결과 표시
         } // 명중 후 선택 실명 처리 종료
         var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, supplyRelics, out var statusResult); // 실제 명중과 보유 구슬을 반영한 후속 상태 확인
+        if (cardInstance.CardType == CardType.Wand && cardInstance.SourceData.ApplyWandHitStatus && !hasAuthoredBlind && !targetUnit.IsDead && targetUnit.Team == BattleTeam.Enemy && // 피해가 명중한 생존 적과 명시된 지팡이 효과 확인
+            cardInstance.StatusEffectType != BattleStatusEffectType.None && cardInstance.SourceData.SecondaryEffectValue > 0) // 별도 확률 효과와 중복되지 않는 유효한 상태 종류 및 수치 확인
+        { // 지팡이 명중 상태 부여 시작
+            appliedStatus = cardInstance.StatusEffectType; // 원본이 지정한 감전과 기절 및 일반 지팡이 상태 종류 확인
+            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 기존 상태 면역과 중첩 및 발생자 전달
+            if (appliedStatus == BattleStatusEffectType.ActionSpeedDown && statusResult is (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked)) // 실제 명중으로 적의 속도가 느려졌는지 확인
+            { // 확정된 적 행동 순서 갱신 시작
+                enemyActions.RefreshActionOrder(); // 같은 행동과 대상 및 원래 속도 난수를 보존한 순서 변경
+            } // 확정된 적 행동 순서 갱신 종료
+        } // 지팡이 명중 상태 부여 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.ShieldBash && !targetUnit.IsDead && supplyRelics.RollOptionalStatus(targetUnit, cardInstance.SourceData.SecondaryEffectValue)) // 방패 밀치기의 명중 후 행동 제한 확률 확인
         { // 방패로 적 행동 밀어내기 시작
             appliedStatus = BattleStatusEffectType.Stagger; // 적만 사용하는 다음 행동 취소 상태 선택

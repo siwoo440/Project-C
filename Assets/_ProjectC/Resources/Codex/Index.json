@@ -2291,6 +2291,54 @@
       "name": "빛의 대심판",
       "description": "생존 적 전체에게 마법 피해 25를 주고 생존 아군 전체를 각각 체력 15만큼 회복한다.",
       "artworkKey": "9c7d7e8a21b659f8a1cc7650ff63082e"
+    },
+    {
+      "category": 7,
+      "name": "얼음 화살",
+      "description": "지정 적에게 마법 피해 6을 준다. 명중하면 다음 적 턴 동안 행동 속도를 1 낮춘다.",
+      "artworkKey": "2492b5eb515a50a0bf54a1fad3582d8d"
+    },
+    {
+      "category": 7,
+      "name": "전격",
+      "description": "생존 적 중 서로 다른 두 명을 무작위로 골라 각각 마법 피해 7을 준다. 적이 하나면 한 번 공격한다.",
+      "artworkKey": "035107954fb15b99abc9b50e3236c5d2"
+    },
+    {
+      "category": 7,
+      "name": "마력 보호막",
+      "description": "생존 아군 하나의 마법 저항력 수치를 다음 적 턴 동안 6 높인다.",
+      "artworkKey": "5883a09ce94e5e838a98b96671e2755c"
+    },
+    {
+      "category": 7,
+      "name": "빙결",
+      "description": "지정 적에게 한 적 턴 동안 행동 불가 상태를 부여한다.",
+      "artworkKey": "1f581a791b1c5514a250ad0c6cb4cea9"
+    },
+    {
+      "category": 7,
+      "name": "마력 증폭",
+      "description": "생존 아군 각각의 마법 카드 공격력을 5 높인다. 시전한 턴부터 아군 턴 두 번 동안 적용된다.",
+      "artworkKey": "21d47787e8955964997e0d4d1d8b388b"
+    },
+    {
+      "category": 7,
+      "name": "번개 폭풍",
+      "description": "생존 적 전체에게 마법 피해 8을 준다. 명중한 생존 적은 다음 적 턴 시작에 감전 피해 1을 받는다.",
+      "artworkKey": "a846a167d9305f839fa6c3864a7cb998"
+    },
+    {
+      "category": 7,
+      "name": "운석 낙하",
+      "description": "생존 적 전체에게 마법 피해 20을 준다. 명중한 생존 적에게 한 적 턴 동안 기절을 부여한다.",
+      "artworkKey": "a7edc5b28bf252cb98a736f3f6110666"
+    },
+    {
+      "category": 7,
+      "name": "마력 해방",
+      "description": "현재 행동력을 모두 지불하고 지정 적에게 지불한 행동력마다 마법 피해 7을 준다.",
+      "artworkKey": "4ed4434c958c5825ad1d2e8515e53b24"
     }
   ]
 }

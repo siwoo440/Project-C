@@ -90,11 +90,19 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
-        plannedActions.Sort(CompareActionOrder); // 속도와 배치 순서 기준 정렬
-        ApplyActionOrderNumbers(); // 최종 행동 순번 지정
-        StateChanged?.Invoke(); // 예정 행동 변경 알림
+        RefreshActionOrder(); // 새 계획을 기존 행동 순서와 같은 비교 규칙으로 정렬
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
+    internal void RefreshActionOrder() // 이미 선택된 대상과 패턴을 유지하면서 행동 순서만 갱신
+    { // 현재 예정 행동 정렬 시작
+        if (disposed) // 전투 밖의 오래된 예정 행동 갱신 차단
+        { // 해제 상태 처리 시작
+            return; // 해제된 화면의 예정 행동 변경 생략
+        } // 해제 상태 처리 종료
+        plannedActions.Sort(CompareActionOrder); // 현재 속도와 기존 배치 순서 기준 정렬
+        ApplyActionOrderNumbers(); // 행동 순서를 실제 실행 목록과 예고에 동시에 반영
+        StateChanged?.Invoke(); // 원래 예정 행동 데이터에 대한 화면 갱신 알림
+    } // 현재 예정 행동 정렬 종료
     private (int Block, bool Preparation, bool Interception, bool Nullification) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 개별 아군의 예정 피격 전 보호 상태 계산
     { // 보호 순서 검사 시작
         int block = target.CurrentBlock; // 현재 대상의 실제 방어도
@@ -461,7 +469,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 패턴 대상 없음 처리 시작
                 return null; // 행동 생성 실패 반환
             } // 패턴 대상 없음 처리 종료
-            int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed, enemyUnit); // 패턴 행동 속도 결정
+            int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed); // 패턴 행동 속도 결정
             return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue, null, patternData.MentalChangeOnHit); // 순차 패턴과 공격 후 상태 및 정신력 변화 전달
         } // 패턴 행동 생성 종료
         if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
@@ -473,7 +481,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         { // 대상 없음 처리 시작
             return null; // 행동 생성 실패 반환
         } // 대상 없음 처리 종료
-        int actionSpeed = RollActionSpeed(enemyData.MinimumActionSpeed, enemyData.MaximumActionSpeed, enemyUnit); // 이번 턴 행동 속도 결정
+        int actionSpeed = RollActionSpeed(enemyData.MinimumActionSpeed, enemyData.MaximumActionSpeed); // 이번 턴 행동 속도 결정
         int actionAmount = enemyData.ActionType == EnemyActionType.Attack ? enemyData.BasicAttackPower : enemyData.StatusEffectValue; // 행동 종류별 수치 결정
         string actionDisplayName = GetLegacyActionDisplayName(enemyData); // 호환 행동 이름 계산
         return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, enemyData.TargetRule, actionDisplayName, 1, 1, actionSpeed, creationOrder); // 호환 예정 행동 반환
@@ -596,12 +604,11 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 상태 이름 처리 종료
         return enemyData.ActionType == EnemyActionType.Attack ? "기본 공격" : "행동 없음"; // 공격 또는 빈 행동 이름 반환
     } // 호환 이름 조회 종료
-    private int RollActionSpeed(int minimumSpeed, int maximumSpeed, BattleUnitRuntime enemy) // 적 행동 속도 결정
+    private int RollActionSpeed(int minimumSpeed, int maximumSpeed) // 적 행동의 원래 속도 한 번 결정
     { // 속도 결정 시작
         int safeMinimumSpeed = Math.Max(1, minimumSpeed); // 최소 행동 속도 보정
         int safeMaximumSpeed = Math.Max(safeMinimumSpeed, maximumSpeed); // 최대 행동 속도 보정
-        int penalty = enemy.GetStatusEffect(BattleStatusEffectType.ActionSpeedDown)?.EffectiveValue ?? 0; // 현재 적의 속도 약화량
-        return Math.Max(1, random.Next(safeMinimumSpeed, safeMaximumSpeed + 1) - penalty); // 추첨 속도에 약화를 반영하고 최저 속도 유지
+        return random.Next(safeMinimumSpeed, safeMaximumSpeed + 1); // 원래 계획 속도의 한 번만 굴리는 난수
     } // 속도 결정 종료
     private static int CompareActionOrder(BattleEnemyAction leftAction, BattleEnemyAction rightAction) // 적 행동 순서 비교
     { // 행동 비교 시작
