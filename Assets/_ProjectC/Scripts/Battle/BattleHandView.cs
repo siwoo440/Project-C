@@ -306,6 +306,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 정리 후보 없음 처리 시작
             return false; // 덱 순서 정리 카드 사용 차단
         } // 정리 후보 없음 처리 종료
+        if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.DrawThenDiscard && !runtimeDeck.HasDrawableCards && runtimeDeck.HandCount <= 1) // 드로우와 사용 후 남을 손패 확인
+        { // 버릴 손패 없음 처리 시작
+            return false; // 드로우 후 버리기 카드 사용 차단
+        } // 버릴 손패 없음 처리 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack && !turnRuntime.HasOtherLivingAlly(cardInstance.OwnerUnit)) // 보호할 생존 동료 확인
         { // 보호 대상 없음 처리 시작
             return false; // 동료 보호 카드 사용 차단

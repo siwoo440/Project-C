@@ -77,6 +77,10 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/TowerShatter"; // 탑의 광역 방어도 파괴 카드 경로 반환
             case "ARC_17": // 별 캐릭터
                 return "StarterCards/StarHealing"; // 별 카드 경로 반환
+            case "ARC_18": // 달 캐릭터
+                return "StarterCards/MoonHandChoice"; // 달의 드로우와 손패 정리 카드 경로 반환
+            case "ARC_19": // 태양 캐릭터
+                return "StarterCards/SunChain"; // 태양의 서로 다른 적 연속 공격 카드 경로 반환
             default: // 전용 카드 미구현 캐릭터
                 return null; // 공용 카드 사용 반환
         } // 식별자 분기 종료
