@@ -35,7 +35,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
     internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && !SourceData.SpendsAllActionPoints && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
     internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인
-        SourceData.PentacleRule == PentacleCardRule.SecureSupplies || // 사용한 시전자에게 실제 기본 방어도를 부여하는 보급 확보
+        SourceData.PentacleRule is PentacleCardRule.SecureSupplies or PentacleCardRule.Redistribution || // 보급 확보와 재분배의 실제 기본 방어도 확인
         EffectType == CardEffectType.ApplyStatusEffect && CardType == CardType.Shield && StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(StatusEffectType); // 방패 카드의 양의 상태 효과 확인
     private bool HasFriendlyTarget => TargetType is CardTargetType.Self or CardTargetType.SingleAlly or CardTargetType.AllAllies; // 본인과 일반 아군 대상 확인
     private bool HasAuthoredDefense => HasFriendlyTarget && HasDefensivePrimaryEffect || // 아군에게 주는 기본 방어 효과 확인

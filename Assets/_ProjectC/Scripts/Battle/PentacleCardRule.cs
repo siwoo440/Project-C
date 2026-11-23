@@ -33,5 +33,13 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     RuneAmplification, // 지정 아군의 시간제 강화 연장
     TemporaryContract, // 시전자 체력 지불과 두 장 드로우
     GambleMove, // 행동력 회복 또는 직접 정신력 비용의 단일 판정
-    MechanicalCalculation // 현재 아군 턴의 펜타클 기본 비용 감소
+    MechanicalCalculation, // 현재 아군 턴의 펜타클 기본 비용 감소
+    BattlefieldMap, // 적의 표식과 아군의 명중률 강화
+    SecretVault, // 행동력 회복과 다음 턴의 기본 드로우 감소
+    RuneSeal, // 적의 강화 해제와 마법 저항 감소
+    Redistribution, // 생존 아군 체력 균등 분배와 방어도 증가
+    PayThePrice, // 정해진 체력 지불과 행동력 회복
+    Alchemy, // 일반 손패 카드의 전투 중 희귀 변환
+    CompoundEffect, // 현재 턴 행동력 회복의 추가량
+    FateManipulation // 선택한 실제 뽑기 더미 카드의 손패 이동
 } // 직렬화 규칙 종료

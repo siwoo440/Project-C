@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.BattlefieldMapAccuracyUp) // 전장 지도의 실제 명중률 강화
+                    { // 전장 지도 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 10); // 실제 카드의 기본 명중률 증가 안내
+                    } // 전장 지도 상태 설명 종료
                     else if (effect == BattleStatusEffectType.SandQueenSummonAttackGrow) // 실제 소환 때마다 높아지는 전투 공격력
                     { // 명령패의 전투 상태와 도감 연결 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번의 실제 소환에 대한 공격력 상승량

@@ -44,6 +44,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
     private List<(BattleUnitRuntime Caster, int Amount)> nextPlayerTurnActionPointLosses; // 다음 아군 턴에 차감할 명시 요청과 실제 원본 시전자
     private int pendingEmergencyActionPoints; // 다음 실제 아군 턴에만 지급할 예비 자금의 누적 행동력
+    private int pendingSecretVaultDrawReduction; // 다음 실제 아군 턴 기본 손패에서만 차감할 금고 사용 합계
     private int lastCompletedCardRound; // 아군 전체의 실제 원본 사용이 마지막으로 완료된 라운드
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private bool openingTemporaryCardChecked; // 첫 아군 손패의 단추 생성 기회 처리 여부
@@ -314,6 +315,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 종료 불가 처리 종료
         CleanupPlayerTurn(); // 일반 손패와 남은 행동력 정리
         NotifyPhaseEnded(); // 플레이어 턴 종료 알림
+        sharedActionPoints.ClearCompoundGainBonus(); // 적 턴에 들어가기 전에 끝난 아군 턴의 복리 회수
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
@@ -351,6 +353,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         HasPendingBossPhaseTransition = false; // 전환 예약 해제
         CleanupPlayerTurn(); // 일반 종료와 동일한 손패와 행동력 정리
         NotifyPhaseEnded(); // 아군 턴 종료 효과 한 번 처리
+        sharedActionPoints.ClearCompoundGainBonus(); // 적 차례를 건너뛰는 실제 아군 턴 경계에서도 복리 회수
         if (IsBattleEnded) // 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 확정된 전투 결과 유지
@@ -430,6 +433,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void ClearEconomyReservations() // 전투가 끝난 경우의 소유자 룬 예약과 예비 자금 초기화
     { // 전투 한정 자원 정리 시작
         pendingEmergencyActionPoints = 0; // 사용하지 않고 전투가 끝난 다음 행동력 제거
+        pendingSecretVaultDrawReduction = 0; // 새 교전에 남기지 않을 금고의 기본 손패 대가 제거
+        sharedActionPoints.ClearCompoundGainBonus(); // 종료된 실제 아군 턴의 복리 즉시 회수
         nextPlayerTurnActionPointLosses = null; // 끝난 교전의 미집행 행동력 감소와 대상 해제
         SetWindWornCrownDiscount(0); // 전투가 끝나거나 해제된 실제 아군의 사막 비용 자격 회수
         SetMechanicalCalculationDiscount(0); // 실제 전투 종료 후 소유자에 남은 기계식 계산 해제
@@ -1133,6 +1138,16 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         pendingEmergencyActionPoints = 0; // 공용 행동력 알림과 이후 아군 턴 전에 이미 쓴 예약 초기화
         sharedActionPoints.AddTurnCapacity(amount); // 원래 상한의 이번 턴 한정 임시 증가 및 현재 행동력 지급
     } // 이번 아군 턴의 예비 자금 처리 종료
+    internal void QueueSecretVaultDrawReduction() // 완료한 금고 한 장의 다음 기본 드로우 대가 등록
+    { // 같은 전투의 금고 횟수 누적 시작
+        pendingSecretVaultDrawReduction = (int)Math.Min(int.MaxValue, (long)pendingSecretVaultDrawReduction + 1); // 여러 실제 사용 횟수를 정수 범위까지 누적
+    } // 같은 전투의 금고 횟수 누적 종료
+    private int ConsumeSecretVaultBaseDraw(int count) // 다음 실제 아군 턴의 원래 기본 드로우만 차감
+    { // 한 번의 누적 기본 드로우 차감 시작
+        int reducedCount = (int)Math.Max(0L, (long)count - pendingSecretVaultDrawReduction); // 기본 장수를 영 아래로 내리지 않는 차감
+        pendingSecretVaultDrawReduction = 0; // 독립 드로우 예약이나 이후 턴으로 남은 차감 이월 차단
+        return reducedCount; // 기본 드로우에만 반영한 실제 요청 장수
+    } // 한 번의 누적 기본 드로우 차감 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
         ApplyQueuedPlayerTurnActionPointLosses(); // 기본 회복에 이어 이전 명시 감소와 실제 시전 대상의 유물 피해
@@ -1163,7 +1178,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 턴 드로우 전 자석 처리 시작
             runtimeDeck.TryRecoverRandomDiscardOnce(); // 가능한 경우 기존 버린 카드 한 장 회수
         } // 턴 드로우 전 자석 처리 종료
-        LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(count, additionalDraw, out int basicDrawn); // 손패 상한과 예약을 유지하면서 실제 기본 도착 집계
+        LastDrawnCardCount = runtimeDeck.DrawForPlayerTurn(ConsumeSecretVaultBaseDraw(count), additionalDraw, out int basicDrawn); // 금고 차감은 기본 장수에만 적용하고 독립 추가와 예약 드로우 보존
         ApplyBaseDrawBlock(basicDrawn); // 먼저 지급된 실제 기본 드로우의 은빛 톱니 조건 적용
         if (CurrentRound != 1 || openingRelics == null) // 첫 아군 손패 처리 여부 확인
         { // 일반 아군 턴 처리 시작

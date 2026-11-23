@@ -131,6 +131,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
         return true; // 저장 체력 적용 성공 반환
     } // 저장 체력 적용 종료
+    internal void NotifyRedistributedHealth() // 파티 체력 재분배 뒤 변경된 화면 갱신
+    { // 재분배 표시 신호 시작
+        HealthChanged?.Invoke(this); // 실제 회복과 피해를 거치지 않는 체력 변경 알림
+    } // 재분배 표시 신호 종료
+
     internal int Revive(int healthPercent) // 사망 아군의 전투 체력 복구
     { // 부활 처리 시작
         if (Team != BattleTeam.Ally || !IsDead || healthPercent <= 0) // 부활 가능한 전투불능 아군과 체력 비율 확인

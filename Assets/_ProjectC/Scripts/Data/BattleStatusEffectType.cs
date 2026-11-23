@@ -90,5 +90,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     DistributionAttackUp = 87, // 전투가 지속되는 동안 분배 대상의 공격력 증가
     DistributionPhysicalDefenseDown = 88, // 전투가 지속되는 동안 분배 대상의 물리 방어 감소
     ToolMaintenanceAttackUp = 89, // 같은 아군의 다음 실제 직접 명중을 기다리는 피해 증가
-    SandQueenSummonAttackGrow = 90 // 실제 적 소환 완료에 따른 전투 지속 누적 공격력 증가
+    SandQueenSummonAttackGrow = 90, // 실제 적 소환 완료에 따른 전투 지속 누적 공격력 증가
+    BattlefieldMapAccuracyUp = 91 // 두 아군 턴의 전장 지도 명중률 증가
 } // 열거형 종료

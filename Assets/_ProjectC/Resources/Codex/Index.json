@@ -3245,6 +3245,54 @@
       "name": "기계식 계산",
       "description": "이번 아군 턴 동안 펜타클 카드의 일반 기본 행동력 비용을 1 낮춘다.",
       "artworkKey": "1af8f5832b335c52be3c5aa9260d359a"
+    },
+    {
+      "category": 7,
+      "name": "전장 지도",
+      "description": "생존 적 전체에 표식을 한 적 턴 동안 부여한다. 생존 아군 전체의 명중률을 두 아군 턴 동안 10%p 높인다.",
+      "artworkKey": "90ac2deb126155108f69283079e659bb"
+    },
+    {
+      "category": 7,
+      "name": "비밀 금고",
+      "description": "행동력 2를 얻는다. 다음 아군 턴에 기본 드로우가 1장 줄어든다.",
+      "artworkKey": "5896eaccd4f25b82b5956790f2a4e827"
+    },
+    {
+      "category": 7,
+      "name": "룬 봉인",
+      "description": "선택한 적의 제거 가능한 강화 하나를 해제한다. 두 적 턴 동안 마법 저항력을 10 낮춘다.",
+      "artworkKey": "21b3434b8d04527f93f0743e86069699"
+    },
+    {
+      "category": 7,
+      "name": "재분배",
+      "description": "생존 아군의 체력 총합을 유지하며 각자의 최대 체력 범위에서 고르게 나눈다. 생존 아군 모두 방어도를 6 얻는다.",
+      "artworkKey": "995610a8139954d58d9d0d2929d6a2ed"
+    },
+    {
+      "category": 7,
+      "name": "대가 지불",
+      "description": "시전자의 체력을 12 지불하고 행동력 4를 얻는다. 시전자의 체력은 최소 1 남아야 한다.",
+      "artworkKey": "3692f526a7e25b5b93bcc085f4bb75f5"
+    },
+    {
+      "category": 7,
+      "name": "연금술",
+      "description": "다른 일반 손패 카드 한 장을 골라 이번 전투 동안 같은 계열의 무작위 희귀 카드로 바꾼다. 카드 소유자는 유지된다.",
+      "artworkKey": "119c0e32877d507699f83c2dfb4f99cd"
+    },
+    {
+      "category": 7,
+      "name": "복리 효과",
+      "description": "이번 아군 턴에 행동력을 얻을 때마다 행동력을 1 더 얻는다.",
+      "artworkKey": "ffd4eec24e585107ae6ec3849830176e"
+    },
+    {
+      "category": 7,
+      "name": "운명 조작",
+      "description": "뽑을 카드 더미에서 한 장을 골라 현재 소유자와 강화 상태 그대로 손패로 가져온다.",
+      "artworkKey": "e00fa50da45f5d049cdeaf1db961a331"
     }
   ]
 }

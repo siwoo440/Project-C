@@ -2558,7 +2558,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 전체 표식(1턴), 아군 전체 명중률 +10% (2턴)",
+      "description": "생존 적 전체에 표식을 한 적 턴 동안 부여한다. 생존 아군 전체의 명중률을 두 아군 턴 동안 10%p 높인다.",
       "area": "전체",
       "targets": "적/아군",
       "imageFileName": "전장 지도.png"
@@ -2569,7 +2569,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "코스트 +2, 다음 턴 드로우 -1",
+      "description": "행동력 2를 얻는다. 다음 아군 턴에 기본 드로우가 1장 줄어든다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "비밀 금고.png"
@@ -2580,7 +2580,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 1명 버프 1개 제거, 저항력 -10% (2턴)",
+      "description": "선택한 적의 제거 가능한 강화 하나를 해제한다. 두 적 턴 동안 마법 저항력을 10 낮춘다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "룬 봉인.png"
@@ -2591,7 +2591,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 체력을 평균화하고 방어도 +6",
+      "description": "생존 아군의 체력 총합을 유지하며 각자의 최대 체력 범위에서 고르게 나눈다. 생존 아군 모두 방어도를 6 얻는다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "재분배.png"
@@ -2602,7 +2602,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "체력 -12, 코스트 +4",
+      "description": "시전자의 체력을 12 지불하고 행동력 4를 얻는다. 시전자의 체력은 최소 1 남아야 한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "대가 지불.png"
@@ -2613,7 +2613,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "손패 일반 카드 1장을 희귀 카드로 변환",
+      "description": "다른 일반 손패 카드 한 장을 골라 이번 전투 동안 같은 계열의 무작위 희귀 카드로 바꾼다. 카드 소유자는 유지된다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "연금술.png"
@@ -2624,7 +2624,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "이번 턴 얻는 코스트 +1씩 추가",
+      "description": "이번 아군 턴에 행동력을 얻을 때마다 행동력을 1 더 얻는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "복리 효과.png"
@@ -2635,7 +2635,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "덱에서 카드 1장을 선택해 손패로 가져온다",
+      "description": "뽑을 카드 더미에서 한 장을 골라 현재 소유자와 강화 상태 그대로 손패로 가져온다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "운명 조작.png"

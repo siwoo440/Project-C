@@ -508,6 +508,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             PentacleCardRule.ExchangeProposal => 1, // 먼저 다른 손패 한 장을 버리는 교환 제안
             PentacleCardRule.StrategicStorage => 1, // 보관할 다른 손패 한 장의 실제 선택
             PentacleCardRule.HandSorting => 1, // 카드 한 장 이상을 직접 완료해야 하는 손패 정리
+            PentacleCardRule.Alchemy or PentacleCardRule.FateManipulation => 1, // 다른 일반 손패나 현재 뽑을 더미 실물 한 장의 명시 선택
             _ => 0 // 즉시 사용하거나 각자 별도 입력을 하는 다른 카드
         } : 0; // 다른 종류 카드의 기존 사용 경로
     } // 실제 원본 효과와 고를 장수 구분 종료
@@ -538,6 +539,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 입력할 카드 종류별 원래 표시 시작
             PentacleCardRule.CardCopy => "이번 턴에 사용한 카드 선택", // 완료한 사용 기록의 실제 후보 안내
             PentacleCardRule.EnchantCard => "강화할 다른 카드 선택", // 다음 효과가 강화될 실제 손패 안내
+            PentacleCardRule.Alchemy => "연금술로 바꿀 일반 카드 선택", // 손패에서 희귀로 변환할 일반 실물 안내
+            PentacleCardRule.FateManipulation => "뽑을 더미에서 가져올 카드 선택", // 현재 덱의 카드 목록에서 옮길 실물 안내
             PentacleCardRule.ExchangeProposal => "버릴 다른 카드 한 장 선택", // 교환 제안의 필수 한 장 안내
             PentacleCardRule.StrategicStorage => "다음 턴까지 보관할 다른 카드 선택", // 실제 이월할 다른 물리 손패 안내
             PentacleCardRule.HandSorting => firstTacticalDiscard == null ? "교체할 카드 최대 두 장 선택" : secondSortingDiscard == null ? "한 장 선택 · 더 고르거나 완료" : "두 장 선택 · 완료", // 확인 또는 추가 선택이 가능한 현재 손패 정리 단계
@@ -556,6 +559,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         IReadOnlyList<CardInstance> possible = source.SourceData.PentacleRule switch // 현재 선택에서 참조할 실제 카드 영역
         { // 원본에 맞춘 후보 영역 구분 시작
             PentacleCardRule.CardCopy => usedCardsThisTurn, // 실제 이번 턴의 원래 사용 기록 반환
+            PentacleCardRule.FateManipulation => runtimeDeck.PrepareDrawChoices(runtimeDeck.DrawPileCount, recycleDiscard: false), // 현재 뽑을 더미 전체를 원래 위쪽부터 조회
             PentacleCardRule.HandSorting when secondSortingDiscard != null => Array.Empty<CardInstance>(), // 두 장을 이미 골랐으면 확인과 취소만 노출
             _ => runtimeDeck.Hand // 다른 일반 선택은 물리 손패만 조회
         }; // 원본에 맞춘 후보 영역 구분 종료
@@ -580,6 +584,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 후보 선택 종류 확인 시작
             PentacleCardRule.CardCopy => usedCardsRound == turnRuntime.CurrentRound && usedCardsThisTurn.Contains(candidate), // 이번 턴의 실제 완료 이력에 같은 실물 확인
             PentacleCardRule.StrategicStorage => runtimeDeck.CanStoreHandCard(candidate), // 생존 사용자의 휘발하지 않는 다른 실물만 보관
+            PentacleCardRule.Alchemy => ContainsHandCard(candidate) && GetAlchemyCandidates(candidate).Count > 0, // 손패의 생존 소유자 일반 카드와 현재 희귀 후보 확인
+            PentacleCardRule.FateManipulation => runtimeDeck.CanTakeSelectedDrawCard(candidate), // 가상 카드나 버린 카드 대신 현재 덱에 남은 실물 확인
             _ => ContainsHandCard(candidate) // 기존 다른 실물의 정상 손패 확인
         }; // 후보 선택 종류 확인 종료
     } // 원본과 다른 실물 조건 확인 종료
@@ -777,7 +783,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 실제 체력 대가 지불 시작
             if (!cardInstance.OwnerUnit.TrySpendHealth(healthCost)) // 방어도를 우회한 생존 체력 비용의 실제 지불 확인
             { // 체력 비용 지불 실패 시작
-                sharedActionPoints.Gain(cost); // 지불 상태 변경으로 취소된 사용의 행동력 복원
+                sharedActionPoints.RestoreUncommittedSpend(cost); // 지불 상태 변경으로 취소된 사용의 원래 행동력 복원
                 CancelSelection(); // 지불할 수 없는 카드와 대상 선택 정리
                 return; // 효과나 카드 이동 시작 방지
             } // 체력 비용 지불 실패 종료
@@ -915,6 +921,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
             appliedDefense = totalAppliedAmount > 0; // 실제 공용 방어도 분배 성공 확인
         } // 효과 적용 종료
+        else if (cardInstance.SourceData.PentacleRule == PentacleCardRule.BattlefieldMap) // 양 진영에 다른 상태를 주는 전장 지도 확인
+        { // 전장 지도 광역 지원 처리 시작
+            totalAppliedAmount = ApplyBattlefieldMap(cardInstance); // 적 표식과 아군 명중 강화의 한 번 처리
+        } // 전장 지도 광역 지원 처리 종료
+        else if (cardInstance.SourceData.PentacleRule == PentacleCardRule.Redistribution) // 살아 있는 파티 체력을 평준화하는 재분배 확인
+        { // 실제 파티 재분배 처리 시작
+            totalAppliedAmount = BattleHealthRedistribution.Apply(CollectValidTargets(cardInstance, allyUnitViews), cardInstance.EffectValue); // 실제 전체 체력 보존과 개별 방어도 지급
+            appliedDefense = defensiveCard && totalAppliedAmount > 0; // 기존 방어 카드 연계에 실제 방어도 획득 전달
+        } // 실제 파티 재분배 처리 종료
         else if (cardInstance.SourceData.PentacleRule == PentacleCardRule.FusionOfPower) // 힘의 융합은 현재 살아 있는 두 진영에 한 번씩 적용
         { // 원본 혼합 광역 효과 정산 시작
             totalAppliedAmount = ApplyFusionOfPower(cardInstance); // 시전 이후에도 살아 있는 아군과 적의 원래 효과 정산
@@ -970,9 +985,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             if (turnRuntime.IsPlayerTurn && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition &&
-                cardInstance.SourceData.PentacleRule is (PentacleCardRule.ResourceCycle or PentacleCardRule.StrategicStorage)) // 같은 실제 턴에서 회수 또는 보관의 목적 실물이 이탈했는지 확인
+                cardInstance.SourceData.PentacleRule is (PentacleCardRule.ResourceCycle or PentacleCardRule.StrategicStorage or PentacleCardRule.Alchemy or PentacleCardRule.FateManipulation)) // 같은 실제 턴에서 선택 대상이 원래 영역을 이탈한 늦은 취소 확인
             { // 실제 영역 변경이 없는 늦은 취소 처리 시작
-                sharedActionPoints.Gain(paidActionPoints); // 현재 턴의 실제 두 영역 카드 결제만 환불
+                sharedActionPoints.RestoreUncommittedSpend(paidActionPoints); // 두 영역을 바꾸지 못한 카드의 원래 결제만 복원
             } // 실제 영역 변경이 없는 늦은 취소 처리 종료
             else // 원래 다른 카드에서 실제 이동 오류 확인
             { // 기존 카드 이동 오류 보고 시작
@@ -1049,7 +1064,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         return card.SourceData.PentacleRule switch // 카드별 정식 보유 자원 정산
         { // 펜타클 자원 효과 선택 시작
             PentacleCardRule.GoldenCoin => sharedActionPoints.Gain(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 현재 공용 최대치 안에서 원본 행동력 한 점 회복
-            PentacleCardRule.Ritual or PentacleCardRule.PickUpCoin => sharedActionPoints.Gain(card.EffectValue), // 의식의 실체력 비용과 동전의 전투 제외를 완료한 뒤 현재 행동력 회복
+            PentacleCardRule.Ritual or PentacleCardRule.PickUpCoin or PentacleCardRule.PayThePrice => sharedActionPoints.Gain(card.EffectValue), // 실제 체력 지불 또는 동전 제외 뒤 현재 행동력 회복
+            PentacleCardRule.SecretVault => ResolveSecretVault(card), // 카드 비용 지불 뒤 현재 행동력 지급과 다음 기본 드로우 차감
+            PentacleCardRule.CompoundEffect => sharedActionPoints.AddCompoundGainBonus(card.EffectValue), // 이번 아군 턴의 이후 양수 지급에 복리 한 건 누적
             PentacleCardRule.EfficientUse => turnRuntime.SetEfficientUseDiscount(CardInstance.ApplyEnchantment(card.SourceData.EffectValue, card.EnchantmentPercent)), // 실제 현재 아군 턴의 기존 기본 비용 한 점 할인 갱신
             PentacleCardRule.RuneRecording => turnRuntime.SetRuneRecordingDiscount(card.OwnerUnit, card.EffectValue), // 방금 실제로 시전한 소유자의 다음 양수 일반 카드 비용 예약
             PentacleCardRule.EmergencyFunds => turnRuntime.QueueEmergencyActionPoints(card.EffectValue), // 이번 아군 턴과 분리할 다음 실제 행동력 예약
@@ -1060,6 +1077,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             _ => 0 // 드로우와 선택 및 다른 자원 처리 규칙의 후속 정산 없음
         }; // 펜타클 자원 효과 선택 종료
     } // 실제 원본 펜타클 지원 확인 종료
+
+    private int ResolveSecretVault(CardInstance card) // 성공한 금고의 현재 지급과 다음 아군 턴의 기본 손패 부담
+    { // 금고의 두 자원 변화 처리 시작
+        turnRuntime.QueueSecretVaultDrawReduction(); // 행동력 알림 이전 다음 실제 아군 턴의 기본 드로우 한 장 차감 예약
+        return sharedActionPoints.Gain(card.EffectValue); // 정상 카드 비용 지불 뒤 공유 상한 안의 원본 행동력 회복
+    } // 금고의 두 자원 변화 처리 종료
 
     private int ApplyGambleMove(CardInstance card) // 실제 도박수의 한 번 확률과 시전자 정신력 비용
     { // 이번 재화 성공 또는 실패 결과의 선택 시작
@@ -1124,6 +1147,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 다른 카드를 남기며 원래 사용 위치 처리 시작
             return runtimeDeck.TryPlayAndStoreCard(card, pentacleHandCards[0], turnRuntime.CurrentRound, card.EffectValue); // 확정한 다른 실물과 이번 아군 턴에만 예약
         } // 다른 카드를 남기며 원래 사용 위치 처리 종료
+        if (card.SourceData.PentacleRule == PentacleCardRule.Alchemy) // 일반 손패 하나를 희귀로 바꾸는 실제 원본 확인
+        { // 손패 변환 정산 시작
+            CardInstance selected = pentacleHandCards[0]; // 실제 확인한 다른 손패 실물
+            return runtimeDeck.TryPlayAndTransformHandCard(card, selected, GetAlchemyCandidates(selected)); // 소유자를 보존한 전투 전용 변환 한 번
+        } // 손패 변환 정산 종료
+        if (card.SourceData.PentacleRule == PentacleCardRule.FateManipulation) // 현재 뽑을 더미에서 선택한 실제 원본 확인
+        { // 같은 카드 실물 이동 시작
+            return runtimeDeck.TryPlayAndTakeDrawCard(card, pentacleHandCards[0]); // 뽑기나 복사 처리 없이 사용 자리에 선택한 카드 이동
+        } // 같은 카드 실물 이동 종료
         if (card.SourceData.PentacleRule is (PentacleCardRule.ExchangeProposal or PentacleCardRule.HandSorting)) // 실제로 고른 물리 손패를 버린 두 지원 카드 확인
         { // 기존 일반 드로우의 정상 섞기 및 정산 시작
             int draw = card.SourceData.PentacleRule == PentacleCardRule.ExchangeProposal ? card.EffectValue : pentacleHandCards.Count; // 교환 제안의 두 장과 손패 정리의 고른 수만큼 지정
@@ -1731,6 +1763,27 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         return unitViews; // 대상 화면 목록 반환
     } // 대상 화면 생성 종료
     internal static List<CardData> GetImprovisationCandidates(CardData source) // 저장에 연결한 실제 일반 시트 카드의 즉흥 생성 후보
+    { // 즉흥 조달의 실제 희귀도 범위 시작
+        return GetSheetGenerationCandidates(source, "일반"); // 기존 일반 희귀도와 전체 호환 속성 유지
+    } // 즉흥 조달의 실제 희귀도 범위 종료
+
+    private static List<CardData> GetAlchemyCandidates(CardInstance selected) // 일반 실물의 소유자와 같은 속성 희귀 후보 조회
+    { // 변환 전 실제 원본을 검증하는 처리 시작
+        CardData source = selected.SourceData; // 손패의 실제 개별 카드 원본
+        if (selected.OwnerUnit.IsDead || !HasSheetCardRarity(CardSheetCatalog.Load(), source, "일반")) // 생존 소유자의 원래 일반 카드인지 확인
+        { // 변환할 수 없는 실물 처리 시작
+            return new List<CardData>(); // 원본과 일치하는 희귀 후보 없음
+        } // 변환할 수 없는 실물 처리 종료
+        return GetSheetGenerationCandidates(source, "희귀", source.CardType); // 선택된 소유자에게 맞는 같은 속성의 등록 희귀 카드 조회
+    } // 변환 전 실제 원본을 검증하는 처리 종료
+
+    private static bool HasSheetCardRarity(CardSheetCatalog sheet, CardData card, string rarity) // 저장 카드의 원본 식별자와 실제 시트 희귀도 확인
+    { // 카드 분류 조회 시작
+        return !string.IsNullOrEmpty(card.CardId) && card.CardId.StartsWith("CRD_SHEET_", StringComparison.Ordinal) && // 별개 아르카나와 게임 기본 카드의 분류 오인 방지
+            sheet?.FindByName(card.DisplayName)?.Rarity == rarity; // 원래 출시 기획에 등록된 실제 카드 희귀도 비교
+    } // 카드 분류 조회 종료
+
+    private static List<CardData> GetSheetGenerationCandidates(CardData source, string rarity, CardType? compatibleType = null) // 실제 저장 원본으로 공통 생성 후보 구성
     { // 읽을 수 있는 두 실제 원본 카탈로그 조회 시작
         var sheet = CardSheetCatalog.Load(); // 원래 카드의 시트 희귀도 조회
         var catalog = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 출시에 등록된 실제 카드 자료 조회
@@ -1743,8 +1796,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         foreach (var candidate in catalog.Cards) // 저장 및 보상에 등록한 실제 원본 순회
         { // 현재 사용 가능한 일반 시트 원본 여부 확인 시작
             if (candidate == null || !IsSupportedEffect(candidate.EffectType) || candidate.EffectType == CardEffectType.Unplayable || candidate.CardId == source?.CardId || // 사용 불가 원본과 동일 즉흥 조달의 재생성 제외
-                string.IsNullOrEmpty(candidate.CardId) || !candidate.CardId.StartsWith("CRD_SHEET_", StringComparison.Ordinal) || // 원래 시트 카드의 등록된 실제 식별자 확인
-                sheet.FindByName(candidate.DisplayName)?.Rarity != "일반" || !included.Add(candidate.CardId)) // 시트 원본의 정확한 희귀도와 중복 없는 후보 확인
+                compatibleType.HasValue && candidate.CardType != compatibleType.Value || // 속성이 제한된 변환의 동일 속성만 인정
+                !HasSheetCardRarity(sheet, candidate, rarity) || !included.Add(candidate.CardId)) // 원본 시트 희귀도와 중복 없는 실제 후보 확인
             { // 불합격과 중복 카드 제외 시작
                 continue; // 다음 실제 저장 카탈로그 원본으로 진행
             } // 불합격과 중복 카드 제외 종료
@@ -1815,6 +1868,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             case ShieldCardRule.EternalShield: // 영원의 방패 복합 경감 규칙
                 return ShieldCardCombat.ApplyEternalShield(cardInstance, targetUnit, FindUnitView(targetUnit)); // 생존 아군에게 직접 피해 감소와 마법 저항 적용
         } // 복합 방패 효과 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.RuneSeal) // 선택한 적 한 명의 강화와 저항 처리 확인
+        { // 기존 단일 적 선택의 실제 룬 봉인 처리 시작
+            return ApplyRuneSeal(cardInstance, targetUnit); // 고른 생존 적의 강화 해제와 독립 저항 감소
+        } // 기존 단일 적 선택의 실제 룬 봉인 처리 종료
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.TacticalMark) // 적 하나의 기존 활성 표식을 부여하는 실제 전술 카드 확인
         { // 적의 원래 상태 및 시계 처리 시작
             int value = cardInstance.SourceData.EffectValue; // 원본 전술 표식의 정규 기준 수치
@@ -2536,6 +2593,47 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 카드 실명 확률 검사 시작
         return value > 0 && !target.IsDead && card.SourceData.OptionalBlindChancePercent >= 0 && supplyRelics.RollAuthoredBlind(target, card.SourceData.OptionalBlindChancePercent, card.OwnerUnit); // 명시 실명과 실제 아군 출처의 기존 선택 확률 판정
     } // 카드 실명 확률 검사 종료
+    private long ApplyBattlefieldMap(CardInstance card) // 전장 지도의 적 표식과 아군 명중 강화
+    { // 두 진영의 실제 효과 처리 시작
+        long applied = 0; // 성공한 개별 상태 적용 횟수
+        foreach (var foe in CollectValidTargets(card, enemyUnitViews)) // 실제 남아 있는 적 전체
+        { // 적 턴에 만료되는 표식 부여 시작
+            var mark = foe.ApplyTacticalPublicMark(card.EffectValue, 1, card.OwnerUnit); // 기존 공명 표식과 한 적 턴의 실제 시계
+            FindUnitView(foe)?.ShowStatusApplyFeedback(BattleStatusEffectType.PublicMark, mark); // 기존 면역과 성공 결과 화면 표시
+            ApplyCrystalMarkDefenseLoss(card, foe, BattleStatusEffectType.PublicMark, mark); // 정상 표식의 기존 결정눈 연계 처리
+            applied += mark is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? 1 : 0; // 실제 성공한 적의 상태만 합산
+        } // 적 턴에 만료되는 표식 부여 종료
+        foreach (var view in allyUnitViews) // 적 대상 입력과 별개인 아군의 전체 화면 목록
+        { // 기존 상태를 받을 생존 아군 처리 시작
+            if (view?.RuntimeUnit is { Team: BattleTeam.Ally, IsDead: false } ally) // 쓰러진 아군을 제외한 현재 생존자 확인
+            { // 개별 명중률 증가 적용 시작
+                var accuracy = ally.ApplyStatusEffect(BattleStatusEffectType.BattlefieldMapAccuracyUp, card.SourceData.SecondaryEffectValue, card.StatusDuration, 1, card.OwnerUnit); // 원본 명중 보정과 두 실제 아군 턴
+                view.ShowStatusApplyFeedback(BattleStatusEffectType.BattlefieldMapAccuracyUp, accuracy); // 현재 생존 아군의 실제 명중 상태 표시
+                applied += accuracy is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? 1 : 0; // 실제 성공한 아군의 상태만 합산
+            } // 개별 명중률 증가 적용 종료
+        } // 기존 상태를 받을 생존 아군 처리 종료
+        return applied; // 양 진영의 성공한 실제 상태 수
+    } // 두 진영의 실제 효과 처리 종료
+
+    private int ApplyRuneSeal(CardInstance card, BattleUnitRuntime target) // 강화 하나의 해제와 독립 마법 저항 저하
+    { // 실제 적의 두 룬 봉인 효과 시작
+        if (target is not { Team: BattleTeam.Enemy, IsDead: false }) // 선택 뒤에도 남아 있는 실제 적 확인
+        { // 대상 상실 처리 시작
+            return 0; // 쓰러지거나 사라진 대상에 상태 없음
+        } // 대상 상실 처리 종료
+        var view = FindUnitView(target); // 고른 적의 기존 전투 화면
+        var buff = target.FirstRemovableBuff(activeOnly: true); // 원래 부여 순서의 첫 활성 해제 가능 강화
+        bool removed = target.RemoveStatusEffectInstance(buff); // 똑같은 종류 대신 실제 선택한 상태 인스턴스 제거
+        if (removed) // 실제 제거 여부 확인
+        { // 원래 강화 상태와 피드백 갱신 시작
+            target.NotifyStatusEffectsChanged(); // 기존 화면의 강화 해제 알림
+            view?.ShowStatusFeedback(buff.DisplayName + " 해제", false); // 실제 해제한 강화 이름 표시
+        } // 원래 강화 상태와 피드백 갱신 종료
+        var resistance = target.ApplyStatusEffect(BattleStatusEffectType.MagicalResistanceDown, card.EffectValue, card.StatusDuration, 1, card.OwnerUnit); // 해제 여부와 별개인 기존 저항 감소와 면역 처리
+        view?.ShowStatusApplyFeedback(BattleStatusEffectType.MagicalResistanceDown, resistance); // 고른 적의 실제 저항 감소 결과 표시
+        return (removed ? 1 : 0) + (resistance is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? 1 : 0); // 제거와 저하의 실제 성공 횟수
+    } // 실제 적의 두 룬 봉인 효과 종료
+
     private void ApplyCrystalMarkDefenseLoss(CardInstance card, BattleUnitRuntime target, BattleStatusEffectType type, BattleStatusEffectApplyResult result) // 카드 표식 성공으로 실제 적 방어도 약화 처리
     { // 결정눈 표식의 성공 여부 검사 시작
         if (result is not (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked) || target.IsDead || target.Team != BattleTeam.Enemy || // 아군 카드의 생존 적에 대한 성공한 상태 확인

@@ -2,6 +2,7 @@ using System; // 기본 이벤트 기능 사용
 public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
 { // 클래스 시작
     private int turnCapacityAdjustment; // 이번 아군 턴 한정의 행동력 상한 변화
+    private int compoundGainBonus; // 이번 실제 아군 턴의 양수 행동력 지급당 복리 합산
     public int MaxActionPoints { get; private set; } // 현재 턴의 최대 공용 행동력
     public int CurrentActionPoints { get; private set; } // 현재 공용 행동력
     public event Action StateChanged; // 행동력 상태 변경 이벤트
@@ -71,9 +72,28 @@ public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
         StateChanged?.Invoke(); // 행동력 상태 변경 알림
         return true; // 행동력 지불 성공 반환
     } // 행동력 지불 종료
-    public int Gain(int amount) // 최대값을 넘지 않는 공용 행동력 회복
-    { // 행동력 회복 시작
-        int gained = Math.Min(Math.Max(0, amount), MaxActionPoints - CurrentActionPoints); // 실제 회복 가능한 양 계산
+    internal int AddCompoundGainBonus(int amount) // 이번 실제 아군 턴에 새 복리 효과를 누적
+    { // 원본 복리 수치 누적 시작
+        int added = Math.Clamp(amount, 0, int.MaxValue - compoundGainBonus); // 양수 원본과 정수 범위까지 누적
+        compoundGainBonus += added; // 다음 양수 회복에 함께 적용할 이번 턴의 실제 수치
+        return added; // 새로 활성화된 복리 효과 수치
+    } // 원본 복리 수치 누적 종료
+    internal void ClearCompoundGainBonus() // 실제 아군 턴과 전투의 복리 효과 종료
+    { // 복리 효과 초기화 시작
+        compoundGainBonus = 0; // 이후 지급에서 끝난 아군 턴의 효과 제거
+    } // 복리 효과 초기화 종료
+    public int Gain(int amount) // 실제 양수 공용 행동력 지급에 복리 합산
+    { // 실제 행동력 회복 요청 시작
+        long requested = amount > 0 ? (long)amount + compoundGainBonus : 0L; // 원래 양수 지급과 이번 턴 복리를 한 번 합산
+        return GainWithinCapacity(requested); // 한 번의 실제 변화와 원래 상한 적용
+    } // 실제 행동력 회복 요청 종료
+    internal int RestoreUncommittedSpend(int amount) // 무효 원본 카드의 잠정 결제만 취소
+    { // 실패한 거래의 임시 행동력 복구 시작
+        return GainWithinCapacity(amount); // 실제로 결제한 행동력 한도에서 그대로 되돌림
+    } // 실패한 거래의 임시 행동력 복구 종료
+    private int GainWithinCapacity(long amount) // 현재 최대값 아래의 공용 행동력 적용
+    { // 상한이 있는 행동력 갱신 시작
+        int gained = (int)Math.Clamp(amount, 0L, MaxActionPoints - CurrentActionPoints); // 정수 넘침 없이 실제 남은 상한만 적용
         if (gained > 0) // 회복 여유 확인
         { // 행동력 갱신 시작
             CurrentActionPoints += gained; // 실제 회복량 반영
