@@ -19,6 +19,8 @@ public static class LobbySaveService // 거점 상태 저장 서비스
         public int affinity; // 저장 호감도
         public FacilityState[] facilities; // 저장 설비 목록
         public CharacterState[] characters; // 저장 캐릭터 목록
+        public int presetVersion; // 편성 저장 형식 버전
+        public PartyPresetSnapshot presets; // 저장된 네 개의 편성 정보
     } // 저장 정보 종료
     [Serializable] // 설비 직렬화 지정
     private sealed class FacilityState // 설비 저장 정보
@@ -91,7 +93,9 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             experience = progression.CurrentExperience, // 성장 경험치 설정
             affinity = affinity.Affinity, // 호감도 설정
             facilities = facilityStates.ToArray(), // 설비 상태 설정
-            characters = characterStates.ToArray() // 캐릭터 상태 설정
+            characters = characterStates.ToArray(), // 캐릭터 상태 설정
+            presetVersion = 1, // 편성 저장 형식 버전 설정
+            presets = PartyPresetStore.Capture() // 현재 네 개의 편성 상태 설정
         }; // 거점 저장 정보 설정 종료
         if (!IsValid(data, roster)) // 저장 상태의 유효성 확인
         { // 잘못된 상태 처리 시작
@@ -222,6 +226,7 @@ public static class LobbySaveService // 거점 상태 저장 서비스
                     recovery.RestoreRecoveryState(character, state.recovery); // 남은 회복 횟수 복원
                 } // 회복 복원 종료
             } // 캐릭터 복원 종료
+            PartyPresetStore.Restore(data.presetVersion == 0 ? null : data.presets, roster); // 이전 형식 또는 검증된 편성 복원
             return true; // 복원 성공 반환
         } // 복원 처리 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
@@ -236,6 +241,12 @@ public static class LobbySaveService // 거점 상태 저장 서비스
         { // 필수 정보 오류 시작
             return false; // 유효하지 않은 저장 반환
         } // 필수 정보 오류 종료
+        bool legacyPresets = data.presetVersion == 0 && (data.presets == null || data.presets.entries == null); // 편성 정보가 없는 이전 저장 확인
+        bool currentPresets = data.presetVersion == 1 && data.presets != null && data.presets.entries != null && PartyPresetStore.IsValid(data.presets, roster); // 현재 형식 편성 정보 검증
+        if (!legacyPresets && !currentPresets) // 이전 또는 현재 형식 편성 유효성 확인
+        { // 편성 정보 오류 처리 시작
+            return false; // 잘못된 편성 저장 차단
+        } // 편성 정보 오류 처리 종료
         if (data.gold < 0 || data.screw < 0 || data.ironPlate < 0 || data.wire < 0 || data.level < 1 || data.level > 100000 || data.experience < 0 || data.experience >= 20L + (data.level - 1L) * 10L || data.affinity < 0) // 숫자 범위 확인
         { // 숫자 오류 시작
             return false; // 유효하지 않은 저장 반환

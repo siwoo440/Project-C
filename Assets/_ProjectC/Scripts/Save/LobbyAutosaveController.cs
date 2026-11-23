@@ -30,6 +30,7 @@ public sealed class LobbyAutosaveController : MonoBehaviour // 거점 상태 자
         affinity.AffinityChanged += MarkDirty; // 호감도 변경 감시
         result.PartyStateChanged += MarkDirty; // 캐릭터 상태 변경 감시
         recovery.RecoveryStateChanged += MarkDirty; // 회복 상태 변경 감시
+        PartyPresetStore.Changed += MarkDirty; // 편성 변경 감시
         dirty = true; // 거점 진입 상태 저장 예약
     } // 자동 저장 초기화 종료
     private void OnFacilityChanged(FacilityType type, int level) // 설비 변경 수신
@@ -54,6 +55,7 @@ public sealed class LobbyAutosaveController : MonoBehaviour // 거점 상태 자
     } // 자동 저장 처리 종료
     private void OnDestroy() // 저장 이벤트 연결 해제
     { // 이벤트 해제 시작
+        PartyPresetStore.Changed -= MarkDirty; // 편성 변경 감시 해제
         if (resources != null) // 자원 관리자 존재 확인
         { // 자원 연결 해제 시작
             resources.ResourcesChanged -= MarkDirty; // 자원 감시 해제

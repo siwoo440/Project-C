@@ -53,6 +53,7 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         CharacterProgressionManager.Instance?.ResetProgress(); // 이전 게임 성장 초기화
         CharacterAffinityManager.Instance?.ResetAffinity(); // 이전 게임 호감도 초기화
         CharacterRecoveryManager.Instance?.ResetRecoveryState(); // 이전 게임 회복 상태 초기화
+        PartyPresetStore.Reset(); // 이전 게임 편성 초기화
         BattleResultManager.Instance?.DiscardPendingResult(); // 이전 전투 결과 제거
         BattleResultManager.Instance?.ResetSavedPartyState(); // 이전 게임 파티 상태 초기화
         ResetRunState(); // 이전 탐사 회차 상태 정리

@@ -14,6 +14,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private readonly List<Button> characterButtons = new List<Button>(); // 캐릭터 선택 버튼 목록
     private readonly Image[] slotImages = new Image[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이미지
     private readonly TMP_Text[] slotNames = new TMP_Text[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이름
+    private readonly Button[] presetButtons = new Button[PartyPresetStore.PresetCount]; // 네 개의 편성 선택 버튼
     private TMP_Text detailName; // 선택 캐릭터 상세 이름
     private TMP_Text detailStats; // 선택 캐릭터 상세 능력치
     private TMP_Text detailDescription; // 선택 캐릭터 상세 설명
@@ -43,7 +44,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         view.Build(); // 캐릭터 목록과 네 칸 구성
         view.recovery.RecoveryStateChanged += view.Refresh; // 회복 변경 시 화면 갱신
         view.results.PartyStateChanged += view.Refresh; // 전투 상태 변경 시 화면 갱신
-        view.Refresh(); // 초기 편성 상태 표시
+        view.LoadPreset(PartyPresetStore.Selected); // 저장된 선택 편성 표시
         return view; // 생성 편성 화면 반환
     } // 편성 화면 열기 종료
     private void Build() // 새 편성 화면 배치
@@ -54,9 +55,10 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         BuildCharacterList(); // 왼쪽 캐릭터 목록 생성
         BuildSlots(); // 가운데 네 편성 칸 생성
         BuildDetails(); // 오른쪽 캐릭터 정보 생성
-        for (int index = 0; index < 4; index++) // 네 개의 편성 선택 영역 순회
+        for (int index = 0; index < PartyPresetStore.PresetCount; index++) // 네 개의 편성 선택 영역 순회
         { // 편성 선택 버튼 배치 시작
-            PreparationUi.CreateButton("Preset_" + index, transform, "편성 #" + (index + 1), new Vector2(0.36f + index * 0.105f, 0.15f), Vector2.zero, new Vector2(180f, 62f), null); // 편성 선택 버튼 배치
+            int presetIndex = index; // 버튼별 편성 번호 보관
+            presetButtons[index] = PreparationUi.CreateButton("Preset_" + index, transform, "편성 #" + (index + 1), new Vector2(0.36f + index * 0.105f, 0.15f), Vector2.zero, new Vector2(180f, 62f), () => LoadPreset(presetIndex)); // 편성 선택 버튼 배치
         } // 편성 선택 버튼 배치 종료
         message = PreparationUi.CreateText("Message", transform, "출전할 캐릭터를 선택하세요.", 22f); // 편성 안내 문구 생성
         PreparationUi.Place(message.rectTransform, new Vector2(0.53f, 0.075f), Vector2.zero, new Vector2(900f, 58f)); // 편성 안내 위치 설정
@@ -178,16 +180,40 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             return; // 선택 전환 중단
         } // 캐릭터 누락 처리 종료
         focused = character; // 상세 정보 대상 변경
+        bool changed; // 편성 변경 여부 준비
         if (Contains(character)) // 이미 선택한 캐릭터 확인
         { // 캐릭터 선택 해제 시작
-            selection.TryRemove(character); // 현재 파티에서 캐릭터 제거
+            changed = selection.TryRemove(character); // 현재 파티에서 캐릭터 제거
         } // 캐릭터 선택 해제 종료
         else // 아직 선택하지 않은 캐릭터 확인
         { // 캐릭터 선택 시작
-            selection.TryAdd(character); // 출전 규칙에 맞는 캐릭터 추가
+            changed = selection.TryAdd(character); // 출전 규칙에 맞는 캐릭터 추가
         } // 캐릭터 선택 종료
+        if (changed) // 실제 편성 변경 확인
+        { // 변경 편성 저장 시작
+            PartyPresetStore.SetMembers(PartyPresetStore.Selected, selection.Members); // 현재 편성의 캐릭터 저장
+        } // 변경 편성 저장 종료
         Refresh(); // 선택과 상세 정보 갱신
     } // 캐릭터 선택 전환 종료
+    private void LoadPreset(int index) // 선택한 편성 불러오기
+    { // 편성 불러오기 시작
+        if (!PartyPresetStore.Select(index)) // 편성 번호 유효성 확인
+        { // 잘못된 편성 처리 시작
+            return; // 편성 전환 중단
+        } // 잘못된 편성 처리 종료
+        PartySelection restored = new PartySelection(status); // 저장 편성 복원용 파티 생성
+        foreach (string id in PartyPresetStore.GetMembers(index)) // 저장된 캐릭터 식별자 순회
+        { // 저장 캐릭터 복원 시작
+            CharacterData character = PartyPresetStore.FindCharacter(roster, id); // 캐릭터 원본 조회
+            if (character != null) // 원본 캐릭터 존재 확인
+            { // 캐릭터 편성 복원 시작
+                restored.TryRestoreMember(character); // 출전 제한 상태를 유지한 편성 복원
+            } // 캐릭터 편성 복원 종료
+        } // 저장 캐릭터 복원 종료
+        selection = restored; // 복원된 파티 선택 적용
+        focused = selection.Members.Count > 0 ? selection.Members[0] : null; // 첫 캐릭터 상세 정보 선택
+        Refresh(); // 편성 전환 상태 표시
+    } // 편성 불러오기 종료
     private bool Contains(CharacterData character) // 현재 파티 선택 여부 확인
     { // 선택 여부 확인 시작
         foreach (CharacterData member in selection.Members) // 선택 파티 순회
@@ -219,8 +245,14 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             slotImages[index].sprite = character != null ? character.BattleIllustration != null ? character.BattleIllustration : character.Portrait : null; // 실제 캐릭터 일러스트 표시
             slotImages[index].enabled = character != null && slotImages[index].sprite != null; // 캐릭터 그림 존재 시 표시
         } // 편성 칸 표시 종료
-        startButton.interactable = selection.Validate().CanDeploy; // 출전 가능 파티에만 탐사 허용
-        message.text = selection.Members.Count == 0 ? "출전할 캐릭터를 선택하세요." : "선택한 캐릭터  " + selection.Members.Count + "/" + PartyData.MaxPartySize; // 현재 편성 인원 안내
+        bool canDeploy = selection.Validate().CanDeploy; // 현재 편성의 출전 가능 여부 확인
+        startButton.interactable = canDeploy; // 출전 가능 파티에만 탐사 허용
+        message.text = selection.Members.Count == 0 ? "출전할 캐릭터를 선택하세요." : canDeploy ? "선택한 캐릭터  " + selection.Members.Count + "/" + PartyData.MaxPartySize : "출전할 수 없는 캐릭터가 포함되어 있습니다."; // 현재 편성 상태 안내
+        for (int index = 0; index < presetButtons.Length; index++) // 전체 편성 선택 버튼 순회
+        { // 현재 편성 강조 시작
+            TMP_Text label = presetButtons[index].GetComponentInChildren<TMP_Text>(); // 편성 버튼 문구 조회
+            label.color = index == PartyPresetStore.Selected ? new Color(1f, 0.78f, 0.38f, 1f) : new Color(0.95f, 0.92f, 0.83f, 1f); // 선택 편성 문구 색상 구분
+        } // 현재 편성 강조 종료
         detailName.text = focused != null ? focused.DisplayName : "캐릭터 정보"; // 선택 캐릭터 이름 표시
         detailStats.text = focused != null ? "체력  " + focused.MaxHealth + "\n물리 방어  " + focused.PhysicalDefense + "\n마법 저항  " + focused.MagicalResistance + "\n정신력  " + focused.InitialMental : string.Empty; // 캐릭터 실제 능력치 표시
         detailDescription.text = focused != null ? DisplayDescription(focused.Description) : "왼쪽에서 캐릭터를 선택하세요."; // 캐릭터 역할 설명 표시

@@ -102,12 +102,16 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             System.IO.File.SetLastWriteTimeUtc(lobbyPath, System.DateTime.UtcNow.AddMinutes(-1)); // 거점 저장 시간 조정
             resources.ResetResources(); // 탐사 저장용 자원 초기화
             resources.AddResources(savedGold, 0, 0, 0); // 탐사 저장 골드 복구
+            CharacterData presetCharacter = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 저장할 편성 캐릭터 조회
+            Assert.IsTrue(PartyPresetStore.SetMembers(2, new[] { presetCharacter })); // 세 번째 편성 저장 상태 설정
+            Assert.IsTrue(PartyPresetStore.Select(2)); // 세 번째 편성 선택
             Assert.IsTrue(ExplorationSaveService.Save(path, savedPosition)); // 탐사 상태 저장
             SceneManager.LoadScene("10_MainMenu"); // 메인 메뉴 복귀
             yield return null; // 메뉴 초기화 대기
             session.ResetExploration(); // 기존 탐사 상태 제거
             RunDeckManager.Instance.ResetToSource(null); // 기존 회차 덱 제거
             PartyLoadoutRuntime.Clear(); // 기존 파티 편성 제거
+            PartyPresetStore.Reset(); // 기존 편성 선택 제거
             resources.ResetResources(); // 기존 골드 제거
             MainMenuController controller = Object.FindFirstObjectByType<MainMenuController>(); // 메뉴 관리자 조회
             typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, lobbyPath); // 독립 거점 경로 지정
@@ -135,6 +139,8 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Assert.AreEqual(savedSeed, session.CurrentFloorSeed); // 저장 시드 복원 확인
             Assert.Less(Vector3.Distance(savedPosition, player.transform.position), 0.1f); // 저장 위치 복원 확인
             Assert.AreEqual(savedGold, resources.Gold); // 저장 골드 복원 확인
+            Assert.AreEqual(2, PartyPresetStore.Selected); // 탐사 저장의 선택 편성 복원 확인
+            Assert.AreEqual("ARC_00", PartyPresetStore.GetMembers(2)[0]); // 탐사 저장의 편성 캐릭터 복원 확인
             Assert.IsTrue(session.IsEventResolved("resume-event-test")); // 이벤트 처리 상태 복원 확인
         } // 탐사 이어하기 검증 종료
         finally // 테스트 파일 정리
