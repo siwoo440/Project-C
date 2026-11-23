@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_05_PREPARE
   displayName: 안전 절차
   description: 아군 한 명이 다음 적 공격을 받기 직전 임시 방어도 3 획득. 적 턴 종료 시 소멸
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 0bbb659ab2f80ad4992bdd38bee7a704, type: 3}
   cardType: 4
   cardTags: 0
   targetType: 1

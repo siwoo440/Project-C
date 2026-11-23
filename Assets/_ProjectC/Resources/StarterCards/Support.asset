@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_TEMP_SUPPORT
   displayName: 임시 회복
   description: 아군 하나의 체력 8 회복
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: ab37df16a9e07c443b44f6862acc7c71, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1

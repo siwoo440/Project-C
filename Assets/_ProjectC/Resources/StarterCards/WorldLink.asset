@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_21_LINK
   displayName: 이어진 세계
   description: 아군 하나에게 방어도 3. 이번 턴 다른 동료 둘의 전용 카드 사용 시 체력 비율이 가장 낮은 다른 아군에게 방어도 3. (임시 효과)
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 0181ff2c0c49b4c44ac42813ad17b2c6, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1

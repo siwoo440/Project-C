@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_20_RESCUE
   displayName: 다시 일어설 때
   description: 아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 158f890f78852c2408113b1c25162eac, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1

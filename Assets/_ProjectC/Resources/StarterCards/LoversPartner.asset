@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_ARC_06_PARTNER
   displayName: 함께하는 선택
   description: 생존한 다른 아군 한 명을 파트너로 지정. 변경 시 이전 파트너의 사용 기록 초기화
-  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  artwork: {fileID: 21300000, guid: 7d0bcc46df0877b42b03c22c58b33fe1, type: 3}
   cardType: 2
   cardTags: 0
   targetType: 1
