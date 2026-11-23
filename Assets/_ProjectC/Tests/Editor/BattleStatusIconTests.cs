@@ -54,8 +54,9 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
         unit.ApplyStatusEffect(BattleStatusEffectType.BattlefieldResolve, 4, 1, int.MaxValue); // 다음 턴 방어 예약
         unit.ApplyStatusEffect(BattleStatusEffectType.BattlefieldResolve, 4, 1, int.MaxValue); // 두 번째 방어 예약
         unit.ApplyStatusEffect(BattleStatusEffectType.Poison, 1, 2, 3); // 제한 있는 일반 상태 적용
-        target.GetComponent<BattleStatusEffectTooltipView>().Show(unit); // 실제 상세 툴팁 표시
-        string text = target.transform.Find("StatusEffectTooltip/DetailText").GetComponent<TMP_Text>().text; // 표시된 실제 문구 조회
+        BattleStatusEffectTooltipView tooltip = target.GetComponent<BattleStatusEffectTooltipView>(); // 원래 상태 상세 화면과 소유 패널 조회
+        tooltip.Show(unit); // 실제 상세 툴팁 표시
+        string text = tooltip.PanelRect.Find("Viewport/DetailText").GetComponent<TMP_Text>().text; // 클리핑 영역 안의 실제 상세 문구 조회
         StringAssert.Contains("2중첩", text); // 예약 횟수 표시 확인
         StringAssert.DoesNotContain("2147483647", text); // 내부 숫자 노출 방지 확인
         StringAssert.Contains("1/3중첩", text); // 제한 있는 상태의 기존 표시 확인

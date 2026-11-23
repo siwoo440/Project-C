@@ -26,10 +26,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             SwordCardRule.TwinBladeFlurry => "타격마다 무작위 생존 적 하나", // 전체 적에서 하나씩 고르는 연타 범위
             _ => GetTargetLabel(cardInstance) // 일반 카드와 두 아군 선택의 대상 문구
         }; // 카드 대상 표시 완료
-        if (cardInstance.SourceData.WandRule == WandCardRule.ChainLightning) // 자체 시전 입력 뒤 실제 공격할 적 대상의 안내
-        { // 연쇄 번개 대상 문구 시작
-            targetLabel = "타격마다 무작위 생존 적 1명"; // 연속 타격의 실제 재선택 대상 문구
-        } // 연쇄 번개 대상 문구 종료
+        if (cardInstance.SourceData.WandRule is WandCardRule.ChainLightning or WandCardRule.FireDownpour) // 자체 시전 뒤 각 타격마다 실제 공격할 적 안내
+        { // 지팡이 무작위 연속 대상 문구 시작
+            targetLabel = "타격마다 무작위 생존 적 1명"; // 연쇄 번개와 화염 폭우의 실제 재선택 대상 문구
+        } // 지팡이 무작위 연속 대상 문구 종료
         if (cardInstance.SourceData.WandRule == WandCardRule.ShockTransfer) // 감전된 적만 첫 대상으로 고르는 원소 카드 확인
         { // 감전 전이의 대상 문구 표시 시작
             targetLabel = "감전된 적 1명"; // 실제 첫 피격 대상의 사용 조건 표시

@@ -15,6 +15,7 @@ public sealed class ExplorationHazardOverlayView : MonoBehaviour // 퇴색 위�
         Sprite squareSprite) // 현재 층 퇴색 방 표시 생성
     {
         Clear(); // 기존 오버레이 정리
+        Sprite fadeImage = ExplorationWorldArt.GetProp(ExplorationProp.Fade); // 퇴색 방 중심의 보랏빛 환기구 원화
 
         if (tilemapView == null ||
             hazardRooms == null ||
@@ -56,12 +57,18 @@ public sealed class ExplorationHazardOverlayView : MonoBehaviour // 퇴색 위�
                 GetOverlayColor(
                     hazardState.Level); // 위험도별 반투명 색상 조회
 
+            Vector2 roomCenter = tilemapView.GetWorldPosition(pair.Key); // 퇴색 방의 실제 중심 위치
+            Vector2 ventPosition = floorWorldPositions.Count > 0 ? floorWorldPositions[0] : roomCenter; // 방 중앙 근처의 실제 바닥 위치
             for (int index = 0;
                  index < floorWorldPositions.Count;
                  index++)
             {
                 Vector2 worldPosition =
                     floorWorldPositions[index]; // 현재 Floor 타일 World 위치 조회
+                if ((worldPosition - roomCenter).sqrMagnitude < (ventPosition - roomCenter).sqrMagnitude) // 현재 바닥이 방 중심에 더 가까운지 확인
+                { // 가운데 환기구 위치 갱신 시작
+                    ventPosition = worldPosition; // 가까운 바닥 중심 후보 저장
+                } // 가운데 환기구 위치 갱신 종료
 
                 GameObject tileOverlay =
                     new GameObject(
@@ -87,18 +94,26 @@ public sealed class ExplorationHazardOverlayView : MonoBehaviour // 퇴색 위�
                 SpriteRenderer spriteRenderer =
                     tileOverlay.GetComponent<SpriteRenderer>(); // 위험 Tile SpriteRenderer 조회
 
-                spriteRenderer.sprite =
-                    squareSprite; // 런타임 사각형 Sprite 재사용
-
-                spriteRenderer.color =
-                    overlayColor; // 위험도별 반투명 색상 적용
+                spriteRenderer.sprite = squareSprite; // 영역 전체의 퇴색 위험도를 나타내는 얇은 색층
+                spriteRenderer.color = fadeImage != null ? new Color(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a * 0.50f) : overlayColor; // 바닥 벽돌과 방 경계를 읽을 수 있는 투명도
 
                 spriteRenderer.sortingOrder = 2; // Floor보다 위, 이벤트·적보다 아래 표시
             }
 
+            if (fadeImage != null && floorWorldPositions.Count > 0) // 생성된 환기구 원화와 실제 바닥 위치 확인
+            { // 방 하나의 독립 환기구 표시 시작
+                var vent = new GameObject("FadeVent", typeof(SpriteRenderer)); // 방의 환경 위험을 알리는 월드 원화
+                vent.transform.SetParent(roomRoot.transform, false); // 방 정리와 함께 없어지는 환기구 위치
+                vent.transform.position = ventPosition; // 가장 가까운 실제 중앙 타일에 원화 표시
+                vent.transform.localScale = Vector3.one * 1.38f; // 바닥 무늬와 구분되는 환경 오브젝트 크기
+                var renderer = vent.GetComponent<SpriteRenderer>(); // 실제 투명 환기구 렌더러 조회
+                renderer.sprite = fadeImage; // 생성된 보라색 환기구 이미지 적용
+                renderer.sortingOrder = 3; // 색층 앞과 캐릭터 뒤로 배치
+            } // 방 하나의 독립 환기구 표시 종료
+
             CreateRoomMarker(
                 roomRoot.transform,
-                tilemapView.GetWorldPosition(pair.Key),
+                roomCenter, // 실제 방의 위험도 표시 기준 위치
                 hazardState.Level); // 방 중앙 위험도 표식 생성
         }
     }
@@ -168,7 +183,7 @@ public sealed class ExplorationHazardOverlayView : MonoBehaviour // 퇴색 위�
         markerObject.transform.position =
             new Vector3(
                 roomCenter.x,
-                roomCenter.y + 1.4f,
+                roomCenter.y + 1.8f, // 확대된 위험 환기구에 가리지 않는 안내 위치
                 -0.1f); // 방 중앙 위쪽에 표식 배치
 
         TextMesh markerText =

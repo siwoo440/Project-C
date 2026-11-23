@@ -84,6 +84,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             new Color(0.2f, 0.7f, 1f, 1f); // 플레이어 파란색 표시
 
         spriteRenderer.sortingOrder = 5; // 플레이어 표시 순서 지정
+        playerObject.AddComponent<ExplorationActorVisual>().Bind(spriteRenderer, ExplorationActorStyle.Hero); // 이동 방향을 따라 실제 주인공 원화 선택
 
         playerObject.transform.localScale =
             new Vector3(0.55f, 0.55f, 1f); // 플레이어 크기 지정

@@ -103,12 +103,13 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         ApplyActionOrderNumbers(); // 행동 순서를 실제 실행 목록과 예고에 동시에 반영
         StateChanged?.Invoke(); // 원래 예정 행동 데이터에 대한 화면 갱신 알림
     } // 현재 예정 행동 정렬 종료
-    private (int Block, bool Preparation, bool Interception, bool Nullification) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 개별 아군의 예정 피격 전 보호 상태 계산
+    private (int Block, bool Preparation, bool Interception, bool Nullification, bool Illusion) GetDefenseBeforeAttack(BattleEnemyAction action, BattleUnitRuntime target) // 개별 아군의 예정 피격 전 보호 상태 계산
     { // 보호 순서 검사 시작
         int block = target.CurrentBlock; // 현재 대상의 실제 방어도
         bool preparation = true; // 첫 피해 적용 전 방어 준비 확인
         bool interception = true; // 지정 대상의 첫 직접 공격 경감 확인
         bool nullification = true; // 지정 대상의 첫 양수 피해 무효 확인
+        bool illusionAvailable = true; // 지정 대상의 첫 적격 명중까지 보존할 환영
         foreach (BattleEnemyAction candidate in plannedActions) // 남은 적 행동 순서대로 예고 확인
         { // 앞선 공격 검사 시작
             if (candidate == action) // 이번 예고의 실제 순서 도달 확인
@@ -119,13 +120,14 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 피해 미포함 처리 시작
                 continue; // 다음 공격 확인
             } // 피해 미포함 처리 종료
-            var preview = candidate.PreviewDamageBeforeShare(target, block, preparation, interception, nullification); // 이전 타격의 대상별 방어 계산
+            var preview = candidate.PreviewDamageBeforeShare(target, block, preparation, interception, nullification, illusionAvailable, out var illusion); // 이전 타격의 방어 결과와 환영 소모 예측
             block += preview.PreparedBlock - preview.AbsorbedDamage; // 준비 방어와 흡수량을 반영한 잔여 방어도
             preparation &= preview.WasDamageNullified; // 실제 무효화된 공격에서만 방어 준비 보존
             interception = false; // 앞선 양수 직접 공격의 위험 차단 소모 반영
             nullification &= !preview.WasDamageNullified; // 실제 무효화 이후의 보호 소모 반영
+            illusionAvailable &= illusion == null; // 처음으로 경감에 기여하는 순서 뒤 환영 제외
         } // 앞선 공격 검사 종료
-        return (block, preparation, interception, nullification); // 이번 대상의 순서별 피해 보호 반환
+        return (block, preparation, interception, nullification, illusionAvailable); // 이번 대상에 남은 순서별 방어와 환영 반환
     } // 보호 순서 검사 종료
     private static bool CanPreviewAttackImpact(BattleEnemyAction action, BattleUnitRuntime target) // 지정 대상에게 명중 가능한 직접 공격 확인
     { // 유효 명중 예고 시작

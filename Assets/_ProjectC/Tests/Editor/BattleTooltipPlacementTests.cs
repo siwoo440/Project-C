@@ -26,7 +26,7 @@ public sealed class BattleTooltipPlacementTests // 상태 상세 화면 위치 �
         status.ShowTooltip(); // 실제 상태 상세 화면 표시
         yield return null; // 툴팁 위치 보정 프레임 대기
         Canvas.ForceUpdateCanvases(); // 보정된 화면 영역 갱신
-        RectTransform tooltip = unitObject.transform.Find("StatusEffectTooltip").GetComponent<RectTransform>(); // 실제 상태 상세 영역 조회
+        RectTransform tooltip = status.TooltipRect; // 원래 상태 화면의 실제 상세 영역 조회
         Vector3[] corners = new Vector3[4]; // 툴팁 화면 꼭짓점 저장 공간
         tooltip.GetWorldCorners(corners); // 실제 상태 상세 꼭짓점 조회
         RectTransform canvasRect = canvasObject.GetComponent<RectTransform>(); // 전체 화면 영역 조회

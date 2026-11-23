@@ -40,6 +40,12 @@ internal sealed class ExplorationDungeonTiles // 탐사 바닥·벽·장식의 �
         Color sharedTint = usesRegionalFloor || usesRegionalWall ? GetConnectedTileTint(zone) : Color.white; // 지역 원화에 맞는 공용 경계와 장식 색조
         wallEdges = regionalEdges.Length > 0 ? regionalEdges : LoadAtlas(sharedPath, "DungeonWallEdges", 47, Tile.ColliderType.None, sharedTint); // 실제 도안이나 공용 47가지의 이음 유지
         details = regionalDetails.Length > 0 ? regionalDetails : LoadAtlas(sharedPath, "DungeonDetails", 6, Tile.ColliderType.None, sharedTint); // 물리 충돌과 분리한 벽과 바닥 장식
+        float detailScale = ExplorationWorldArt.SizeMultiplier; // 캐릭터와 같은 장식 원화 확대 비율
+        Matrix4x4 detailTransform = Matrix4x4.Scale(new Vector3(detailScale, detailScale, 1f)); // 바닥과 벽의 단위 격자에 영향을 주지 않는 장식 그림 배율
+        foreach (Tile detail in details) // 벽등과 사슬 및 바닥 잔해의 공유 타일 순회
+        { // 물리 없는 장식 배율 적용 시작
+            detail.transform = detailTransform; // 현재 장식 중심 기준으로 원화만 두 배 확대
+        } // 물리 없는 장식 배율 적용 종료
     } // 타일 자료 준비 종료
 
     private static Color GetConnectedTileTint(ExpeditionZoneId? zone) // 공유되는 벽 연결 도안을 지역 재질에 맞추는 색

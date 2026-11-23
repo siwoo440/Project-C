@@ -368,8 +368,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 포인터 진입 처리 종료
     public void OnPointerExit(PointerEventData eventData) // 유닛 포인터 이탈 처리
     { // 포인터 이탈 처리 시작
-        statusTooltipHovered = false; // 현재 유닛 마우스 이탈 기록
-        RefreshStatusTooltip(); // 상태 상세 툴팁 숨김
+        RectTransform tooltip = statusEffectView?.TooltipRect; // 현재 유닛이 연 상태 상세 패널
+        statusTooltipHovered = eventData != null && tooltip != null && tooltip.gameObject.activeInHierarchy // 열려 있는 상세창과 실제 포인터 확인
+            && (RectTransformUtility.RectangleContainsScreenPoint(tooltip, eventData.position, eventData.enterEventCamera) // 포인터가 현재 상세창에 닿아 있는지 확인
+                || RectTransformUtility.RectangleContainsScreenPoint((RectTransform)transform, eventData.position, eventData.enterEventCamera)); // 상세에서 같은 유닛으로 돌아온 경우 확인
+        RefreshStatusTooltip(); // 두 영역을 모두 벗어났을 때 상세 숨김
     } // 포인터 이탈 처리 종료
     private void LateUpdate() // 상태 상세 키 입력 변화 감시
     { // 상태 상세 갱신 시작

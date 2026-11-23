@@ -278,6 +278,11 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             && hazard.HazardType == ExplorationHazardType.Fade; // 퇴색 위험 종류 확인
     } // 조우 위치 확인 종료
 
+    internal Vector3 SelectBattleReturnPosition(Vector3 playerPosition, Vector3 candidate) // 추격 중 접촉한 벽 앞의 전투 복귀 위치
+    { // 안전한 기존 탐사 복귀 위치 선택 시작
+        return tilemapView == null || tilemapView.CanUseBattleReturnPosition(playerPosition, candidate) ? candidate : playerPosition; // 실제 바닥을 벗어나는 복귀점은 접촉 직전 위치로 교체
+    } // 안전한 기존 탐사 복귀 위치 선택 종료
+
     public bool TryGetPlayerRoomCoordinate(
         out Vector2Int coordinate) // 플레이어가 실제로 서 있는 방 좌표 조회
     {
@@ -822,6 +827,10 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         encounterView.Initialize(
             data,
             runtimeEncounterId); // 조우 데이터와 런타임 ID 연결
+        string enemyId = data.Enemies.Count == 0 ? null : data.Enemies[0]?.EnemyId; // 조우 선두 적의 원본 외형 식별자
+        var style = enemyId is "ENM_WF_ASHHUNTER" or "ENM_WF_ASHMAGGOT" or "ENM_ZONE_FracturedEarth_NORMAL" or "ENM_ZONE_SubterraneanVault_NORMAL" ? ExplorationActorStyle.Beast : ExplorationActorStyle.Guardian; // 짐승형과 이족형의 실제 월드 스프라이트 선택
+        encounterObject.AddComponent<ExplorationActorVisual>().Bind(spriteRenderer, style); // 움직인 여덟 방향에 맞는 탐사 적 원화 연결
+        encounterObject.AddComponent<ExplorationEncounterPursuit>().Bind(tilemapView, data.BattleType); // 기존 접촉을 유지한 실제 시야와 바닥 추격 연결
 
         encounterObjects.Add(encounterObject); // 현재 층 조우 오브젝트 등록
 
@@ -871,7 +880,6 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         GameObject eventObject =
             new GameObject(
                 $"ExplorationEvent_{runtimeEventId}",
-                typeof(SpriteRenderer),
                 typeof(CircleCollider2D),
                 typeof(ExplorationEventView)); // 이벤트 오브젝트 생성
 
@@ -889,28 +897,27 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                 0.68f,
                 1f); // 이벤트 임시 표시 크기 설정
 
-        SpriteRenderer spriteRenderer =
-            eventObject.GetComponent<SpriteRenderer>(); // 이벤트 SpriteRenderer 조회
-
         bool hasFixedWorldSprite =
             data.WorldSprite != null; // 이벤트별 고정 맵 스프라이트 존재 여부 확인
 
-        spriteRenderer.sprite =
-            hasFixedWorldSprite
-                ? data.WorldSprite
-                : runtimeSquareSprite; // 고정 스프라이트 또는 임시 사각형 표시
+        var eventArt = new GameObject("WorldArt", typeof(SpriteRenderer)); // 사건의 상호작용 반경과 분리한 원화 객체
+        eventArt.transform.SetParent(eventObject.transform, false); // 사건 중심의 원래 표시 위치 연결
+        if (hasFixedWorldSprite) // 원래 리소스를 사용하는 개별 사건의 원화 확인
+        { // 고유 스프라이트 표시 확대 시작
+            eventArt.transform.localScale = new Vector3(ExplorationWorldArt.SizeMultiplier, ExplorationWorldArt.SizeMultiplier, 1f); // 트리거를 유지한 두 배의 고유 원화 크기
+        } // 고유 스프라이트 표시 확대 종료
 
-        spriteRenderer.color =
-            hasFixedWorldSprite
-                ? Color.white
-                : GetEventColor(); // 고정 스프라이트 원본 색상 또는 청록색 임시 표시
+        SpriteRenderer spriteRenderer = eventArt.GetComponent<SpriteRenderer>(); // 사건 원화 전용 렌더러 조회
+        Sprite eventImage = hasFixedWorldSprite ? data.WorldSprite : ExplorationWorldArt.GetProp(ExplorationProp.Event); // 고유 이벤트 원화를 우선한 공용 탐사 장치 이미지
+        spriteRenderer.sprite = eventImage ?? runtimeSquareSprite; // 이벤트 맵 표시의 실제 이미지 또는 기존 대체 통로
+        spriteRenderer.color = eventImage != null ? Color.white : GetEventColor(); // 생성한 원화의 본래 색과 기존 대체색 연결
 
         spriteRenderer.sortingOrder = 4; // 이벤트 표시 순서 지정
 
-        if (!hasFixedWorldSprite)
+        if (!hasFixedWorldSprite) // 고유 원화가 있는 사건의 기존 표시 유지
         {
             CreateEventQuestionMark(
-                eventObject.transform); // 임시 이벤트는 청록색 사각형 위 ? 표시
+                eventObject.transform, eventImage != null ? 0.74f * ExplorationWorldArt.SizeMultiplier : 0f); // 확대된 공용 원화 위의 개별 사건 표식
         }
 
         CircleCollider2D collider =
@@ -932,7 +939,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     }
 
     private static void CreateEventQuestionMark(
-        Transform eventTransform) // 임시 이벤트 물음표 표시 생성
+        Transform eventTransform, float verticalOffset) // 공용 사건 물음표 표시 생성
     {
         if (eventTransform == null)
         {
@@ -951,8 +958,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         questionObject.transform.localPosition =
             new Vector3(
                 0f,
-                0f,
-                -0.1f); // 사각형 중앙에 물음표 배치
+                verticalOffset, // 원화나 대체 표식에 맞는 세로 여백
+                -0.1f); // 현재 사건 앞으로 물음표 배치
 
         TextMesh questionText =
             questionObject.GetComponent<TextMesh>(); // 물음표 TextMesh 조회
@@ -1221,15 +1228,9 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         SpriteRenderer spriteRenderer =
             stairsObject.GetComponent<SpriteRenderer>(); // 계단 SpriteRenderer 조회
 
-        spriteRenderer.sprite =
-            runtimeSquareSprite; // 계단 임시 사각형 스프라이트 지정
-
-        spriteRenderer.color =
-            new Color(
-                1f,
-                0.85f,
-                0.15f,
-                1f); // 계단 노란색 표시
+        Sprite stairsImage = ExplorationWorldArt.GetProp(ExplorationProp.Stairs); // 아래층으로 이어지는 돌계단 이미지
+        spriteRenderer.sprite = stairsImage ?? runtimeSquareSprite; // 실제 계단 장식과 기존 비상 대체 표시
+        spriteRenderer.color = stairsImage != null ? Color.white : new Color(1f, 0.85f, 0.15f, 1f); // 실제 이미지 본래 색과 계단 대체색
 
         spriteRenderer.sortingOrder = 3; // 계단 표시 순서 지정
 

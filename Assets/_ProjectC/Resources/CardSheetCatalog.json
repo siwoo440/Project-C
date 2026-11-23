@@ -2019,7 +2019,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "무작위 적에게 5 피해를 6회, 화상(2턴) 25%",
+      "description": "타격마다 생존 적을 무작위로 골라 마법 피해 5를 최대 여섯 번 준다. 명중한 생존 적에게 각각 25% 확률로 화상 2를 두 턴 동안 부여한다.",
       "area": "무작위",
       "targets": "적",
       "imageFileName": "화염 폭우.png"
@@ -2030,7 +2030,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 전체에게 10 피해, 감전(2턴) 40%",
+      "description": "생존 적 전체에게 각각 마법 피해 10을 준다. 명중한 생존 적에게 40% 확률로 감전 1을 두 적 턴 동안 부여한다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "천둥 감옥.png"
@@ -2041,7 +2041,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "이번 턴 지팡이 카드 피해 +50%, 사용 후 정신력 -5",
+      "description": "이번 아군 턴 동안 자신의 지팡이 마법 공격 피해를 50% 높인다. 사용 후 자신의 정신력이 5 감소한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "마력 폭주.png"
@@ -2052,7 +2052,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적에게 16 피해, 버프 1개 제거",
+      "description": "지정 적에게 마법 피해 16을 준다. 유효하게 명중한 생존 적의 가장 오래된 제거 가능한 강화 한 개를 제거한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "공허의 손.png"
@@ -2063,7 +2063,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 전체 받는 피해 +10% (2턴)",
+      "description": "생존 적 전체가 받는 피해를 두 적 턴 동안 10% 높인다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "별빛 낙인.png"
@@ -2074,7 +2074,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "2",
-      "description": "아군 1명 회피율 +25% (2턴), 다음 피격 1회 피해 -5",
+      "description": "지정 아군의 회피율을 두 적 턴 동안 25%p 높이고, 다음 유효한 적 직접 피격 피해를 5 줄인다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "환영 분열.png"
@@ -2085,7 +2085,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 전체에게 12 피해, 자신에게 약화(1턴)",
+      "description": "생존 적 전체에 각각 마법 피해 12를 준다. 정산 뒤 이번 아군 턴 동안 자신의 공격력이 2 감소한다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "마력 역류.png"
@@ -2096,7 +2096,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적에게 X가 아닌 고정 24 피해, 저항력 무시 20%",
+      "description": "지정 적의 현재 마법 저항력 20%를 무시하고 마법 피해 24를 준다. 행동력 비용은 3이다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "비전 쇄도.png"

@@ -167,6 +167,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.WandOverload || effect == BattleStatusEffectType.IllusionHitReduction) // 지팡이의 두 새 강화 설명 확인
+                    { // 도감의 전투 수치 연결 시작
+                        int amount = effect == BattleStatusEffectType.WandOverload ? 50 : 5; // 해당 강화의 실제 시트 설정 수치
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 게임의 상태 설명과 같은 값 표시
+                    } // 지팡이 강화 설명 연결 종료
                     else if (effect == BattleStatusEffectType.DanceShoeDamageUp) // 실제 회피로 얻는 다음 공격 강화 확인
                     { // 무도화 상태의 도감 표시 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 2); // 실제 전투와 같은 고정 피해 값

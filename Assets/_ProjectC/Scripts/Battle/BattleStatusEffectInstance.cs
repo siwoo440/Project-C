@@ -14,7 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp; // 정해진 행동과 실제 피해 또는 다음 아군 턴을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction; // 정해진 행동과 실제 피해 또는 다음 아군 턴을 기다리는 상태
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -233,6 +233,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마력 보호막"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마력 증폭"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
+                return "마력 폭주"; // 실제 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
+                return "환영 피해 경감"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.DanceShoeDamageUp: // 회피 뒤 다음 공격 강화 종류 확인
                 return "무도화의 반격"; // 실제 전투 및 도감 표시
             case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
@@ -407,6 +411,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법저항+"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마법피해+"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
+                return "폭주"; // 실제 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
+                return "환영"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.DanceShoeDamageUp: // 회피 뒤 다음 공격 강화 종류 확인
                 return "반격+"; // 실제 전투 및 도감 표시
             case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
@@ -581,6 +589,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴까지 마법 저항력 수치 {effectiveValue} 증가"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return $"마법 카드 공격력 {effectiveValue} 증가"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
+                return $"이번 아군 턴의 지팡이 마법 공격 피해 {effectiveValue}% 증가"; // 실제 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
+                return $"다음 유효한 적 직접 피격 피해 {effectiveValue} 감소"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.DanceShoeDamageUp: // 회피 뒤 다음 공격 강화 종류 확인
                 return $"다음 유효한 직접 공격 피해 {effectiveValue} 증가"; // 실제 전투 및 도감 표시
             case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
