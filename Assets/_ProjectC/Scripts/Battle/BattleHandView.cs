@@ -7,6 +7,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
 { // 클래스 시작
     private readonly List<BattleCardView> spawnedCardViews = new List<BattleCardView>(); // 생성된 카드 화면 목록
     private readonly List<RectTransform> cardHitRegions = new List<RectTransform>(); // 카드별 독립 입력 영역 목록
+    private readonly HashSet<CardInstance> recoveredCards = new HashSet<CardInstance>(); // 버린 더미에서 직접 회수한 카드 목록
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
     private RectTransform handHitRoot; // 손패 입력 영역 배치
     private float lastLayoutWidth = -1f; // 최근 손패 배치 너비
@@ -79,6 +80,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         sharedActionPoints = actionPoints; // 새 공용 행동력 저장
         turnRuntime = battleTurn; // 새 전투 턴 관리자 저장
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
+        runtimeDeck.CardRecovered += HandleCardRecovered; // 카드 회수 출발 위치 기록
         sharedActionPoints.StateChanged += HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 등록
         turnRuntime.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         Refresh(); // 현재 덱 상태 표시
@@ -89,6 +91,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (runtimeDeck != null) // 기존 런타임 덱 확인
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
+            runtimeDeck.CardRecovered -= HandleCardRecovered; // 카드 회수 이벤트 해제
         } // 이벤트 해제 종료
         if (sharedActionPoints != null) // 기존 공용 행동력 확인
         { // 행동력 이벤트 해제 시작
@@ -102,6 +105,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         sharedActionPoints = null; // 공용 행동력 참조 제거
         turnRuntime = null; // 전투 턴 관리자 참조 제거
         selectedCard = null; // 선택 카드 제거
+        recoveredCards.Clear(); // 이전 덱 카드 회수 기록 정리
         HideTooltip(); // 카드 툴팁 숨김
         Refresh(); // 빈 손패 화면 표시
     } // 덱 연결 해제 종료
@@ -498,8 +502,48 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 툴팁 숨김 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
+        HashSet<CardInstance> previousCards = new HashSet<CardInstance>(); // 변경 전 손패 카드 목록
+        Dictionary<CardInstance, Vector2> removedPositions = new Dictionary<CardInstance, Vector2>(); // 버린 카드의 이전 화면 위치
+        HashSet<CardInstance> currentCards = new HashSet<CardInstance>(runtimeDeck.Hand); // 변경 후 실제 손패 목록
+        HashSet<CardInstance> discardedCards = new HashSet<CardInstance>(runtimeDeck.DiscardPile); // 변경 후 실제 버린 더미 목록
+        RectTransform root = transform as RectTransform; // 손패 기준 좌표 영역 조회
+        foreach (BattleCardView view in spawnedCardViews) // 변경 전 카드 화면 순회
+        { // 변경 전 카드 화면 확인 시작
+            if (view == null || view.RuntimeCard == null) // 카드 화면과 데이터 확인
+            { // 카드 누락 처리 시작
+                continue; // 다음 카드 화면 확인
+            } // 카드 누락 처리 종료
+            previousCards.Add(view.RuntimeCard); // 변경 전 손패 카드 기록
+            if (!currentCards.Contains(view.RuntimeCard) && discardedCards.Contains(view.RuntimeCard)) // 손패에서 버린 더미로 이동 확인
+            { // 버린 카드 위치 기록 시작
+                removedPositions[view.RuntimeCard] = root.InverseTransformPoint(view.transform.position); // 이전 카드의 손패 기준 위치 저장
+            } // 버린 카드 위치 기록 종료
+        } // 변경 전 카드 화면 확인 종료
         Refresh(); // 손패 화면 자동 갱신
+        Vector2 drawPosition = root.InverseTransformPoint(DrawPileAnchor.TransformPoint(DrawPileAnchor.rect.center)); // 실제 뽑기 더미 중앙 위치 조회
+        Vector2 discardPosition = root.InverseTransformPoint(DiscardPileAnchor.TransformPoint(DiscardPileAnchor.rect.center)); // 실제 버리기 더미 중앙 위치 조회
+        foreach (KeyValuePair<CardInstance, Vector2> removed in removedPositions) // 손패에서 버려진 카드 순회
+        { // 버리기 연출 생성 시작
+            BattleCardFlightView.Create(root, removed.Key, removed.Value, discardPosition, false, 0.8f); // 실제 카드의 묘지 방향 이동 연출
+        } // 버리기 연출 생성 종료
+        foreach (BattleCardView view in spawnedCardViews) // 변경 후 카드 화면 순회
+        { // 새 카드 뽑기 확인 시작
+            if (view != null && !previousCards.Contains(view.RuntimeCard)) // 새로 손패에 들어온 카드 확인
+            { // 새 카드 이동 연출 시작
+                Vector2 start = recoveredCards.Contains(view.RuntimeCard) ? discardPosition : drawPosition; // 회수와 일반 뽑기의 출발 더미 구분
+                Vector2 end = root.InverseTransformPoint(view.transform.position); // 실제 손패 카드 위치 조회
+                BattleCardFlightView.Create(root, view.RuntimeCard, start, end, !recoveredCards.Contains(view.RuntimeCard), view.transform.localScale.x); // 실제 카드의 손패 이동 연출
+            } // 새 카드 이동 연출 종료
+        } // 새 카드 뽑기 확인 종료
+        recoveredCards.Clear(); // 처리한 카드 회수 기록 정리
     } // 덱 상태 처리 종료
+    private void HandleCardRecovered(CardInstance card) // 직접 회수한 카드 기록
+    { // 카드 회수 기록 시작
+        if (card != null) // 유효 카드 확인
+        { // 유효 카드 기록 시작
+            recoveredCards.Add(card); // 버린 더미에서 회수한 카드 기록
+        } // 유효 카드 기록 종료
+    } // 카드 회수 기록 종료
     private void HandleActionPointStateChanged() // 공용 행동력 변경 처리
     { // 행동력 변경 처리 시작
         RefreshActionPointStatus(); // 행동력 수량 표시 갱신
@@ -737,6 +781,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (runtimeDeck != null) // 연결된 런타임 덱 확인
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
+            runtimeDeck.CardRecovered -= HandleCardRecovered; // 카드 회수 이벤트 해제
         } // 이벤트 해제 종료
         if (sharedActionPoints != null) // 연결된 공용 행동력 확인
         { // 행동력 이벤트 해제 시작
