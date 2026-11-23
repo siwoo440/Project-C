@@ -172,7 +172,7 @@ public static class ExpeditionZoneProgress // 현재 저장 슬롯의 고정 세
 
     internal static bool IsValidSnapshot(ExpeditionZoneProgressSnapshot snapshot) // 이전 거점 슬롯과 새 구역 기록을 모두 검사
     { // 구역 기록의 옵션 저장 검증 시작
-        if (snapshot == null) // 선택 필드가 없었던 기존 거점 저장 확인
+        if (IsUnrecordedSnapshot(snapshot)) // 선택 필드가 없었던 기존 거점 저장 확인
         { // 이전 정상 저장 호환 시작
             return true; // 초기 윈터폴 선택으로 복원 허용
         } // 이전 정상 저장 호환 종료
@@ -194,6 +194,14 @@ public static class ExpeditionZoneProgress // 현재 저장 슬롯의 고정 세
             (!snapshot.mainStoryReported || snapshot.zones[(int)ExpeditionZoneId.RuinedCitadel].bossCleared); // 메인 스토리 보고의 실제 성채 보스 출처 확인
     } // 구역 기록의 옵션 저장 검증 종료
 
+    private static bool IsUnrecordedSnapshot(ExpeditionZoneProgressSnapshot snapshot) // 구역 기록 도입 전 저장의 빈 진행 상태 판별
+    { // 구형 거점의 누락된 구역 기록 확인 시작
+        return snapshot == null || // 구역 진행 참조가 없는 이전 저장
+            snapshot.version == 0 && snapshot.lastZone == 0 && snapshot.lastLevel == 0 && // Unity가 채운 빈 구역 형식의 기본값
+            !snapshot.hasZoneIdentificationCode && !snapshot.mainStoryReported && // 저장된 영구 구역 진척이 없는 상태
+            snapshot.zones is not { Length: > 0 }; // 실제 구역별 기록이 없는 이전 저장
+    } // 구형 거점의 누락된 구역 기록 확인 종료
+
     internal static bool IsValidRunSelection(int version, int zone, int level, bool reserved) // 진행 중 회차의 고정 출발 기록 형식 확인
     { // 기존 회차 또는 현재 탐사 선택 검사 시작
         return version == 0 ? zone == 0 && level == 0 && !reserved : // 이전 탐사 저장의 누락 필드 허용
@@ -203,7 +211,7 @@ public static class ExpeditionZoneProgress // 현재 저장 슬롯의 고정 세
     internal static void Restore(ExpeditionZoneProgressSnapshot snapshot) // 거점 슬롯의 독립 상태를 현재 상태로 복원
     { // 이전 또는 현재 저장 복원 시작
         Reset(); // 다른 슬롯과 이전 실행의 진행 이력 제거
-        if (snapshot == null) // 이전 저장에 옵션 진행 정보가 없는 경우 확인
+        if (IsUnrecordedSnapshot(snapshot)) // Unity가 채운 빈 상태를 포함한 이전 구역 정보 확인
         { // 이전 저장의 윈터폴 기본값 유지 시작
             return; // 새 게임의 처음 구역과 난이도로 복원
         } // 이전 저장의 윈터폴 기본값 유지 종료
