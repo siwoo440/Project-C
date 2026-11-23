@@ -228,4 +228,25 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: ed88735725f840b4b11ea19dea71fc02, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_EMPTY_HERB_TIN
+    offerType: 1
+    price: 218
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e01, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DRIED_OASIS_LEAF
+    offerType: 1
+    price: 248
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e02, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_REPAIR_DRONE_WING
+    offerType: 1
+    price: 246
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 18ad1efc1d564bf4af5b0895c2c81e03, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

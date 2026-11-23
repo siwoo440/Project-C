@@ -160,6 +160,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, statusEffectProcessor, allyUnitViews, enemyUnitViews, enemyActionRuntime, bossPhaseRuntime); // 카드 행동과 보스 전환 관리자 연결
         battleEvents = new BattleEventDispatcher(); // 전투 단위 공용 이벤트 발행기 생성
         battleEventController = new BattleEventController(battleEvents, battleTurn, cardActionController, allyUnits, enemyUnits); // 기존 전투 신호 공용 이벤트 연결
+        battleEvents.Subscribe(BattleEventType.BattleEnded, StoreAndShowBattleResult, int.MinValue); // 종료 유물 효과 반영 후 결과 체력 보관
         battleEventLogger = new BattleEventDebugLogger(battleEvents); // 공용 이벤트 발행 순서 로그 연결
         Canvas battleCanvas = handView.GetComponentInParent<Canvas>(); // 전투 UI Canvas 조회
         if (battleCanvas != null) // 전투 Canvas 존재 확인
@@ -644,10 +645,6 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 적 행동 제거 시작
             enemyActionRuntime.ClearActions(); // 남은 적 행동 제거
         } // 적 행동 제거 종료
-        if (battleTurn.IsBattleEnded) // 전투 결과 확정 확인
-        { // 결과 저장과 표시 시작
-            StoreAndShowBattleResult(); // 전투 결과 스냅샷 저장과 화면 표시
-        } // 결과 저장과 표시 종료
         if (battleTurn.CurrentPhase == BattleTurnPhase.Victory) // 승리 상태 확인
         { // 승리 처리 시작
             Debug.Log("[BattleSceneSetup] 전투 승리", this); // 승리 결과 출력
@@ -661,9 +658,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP와 정신력 유지", this); // 도주 결과 출력
         } // 도주 처리 종료
     } // 턴 상태 처리 종료
-    private void StoreAndShowBattleResult() // 전투 결과 저장과 화면 표시
+    private void StoreAndShowBattleResult(BattleEventContext eventContext) // 종료 이벤트의 최종 체력과 결과 화면 저장
     { // 결과 저장 시작
-        if (resultStored || battleTurn == null || !battleTurn.IsBattleEnded) // 결과 저장 상태와 종료 여부 확인
+        if (resultStored || battleTurn == null || !battleTurn.IsBattleEnded || eventContext.Result != battleTurn.Result) // 결과 중복과 실제 종료 상태 일치 확인
         { // 저장 불가 처리 시작
             return; // 결과 저장 중단
         } // 저장 불가 처리 종료

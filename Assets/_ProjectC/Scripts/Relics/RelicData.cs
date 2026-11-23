@@ -23,6 +23,8 @@ public sealed class RelicData : ScriptableObject // 유물 원본 데이터
     [SerializeField] private int maximumTriggersPerTurn; // 턴당 최대 발동 횟수
     [Min(0)] // 전투당 발동 제한 최소값
     [SerializeField] private int maximumTriggersPerBattle; // 전투당 최대 발동 횟수
+    [Min(0)] // 아군 턴 주기의 최소값
+    [SerializeField] private int playerTurnInterval; // 아군 턴 발동 간격과 일반 발동 기본값 0
 
     [Header("피해 효과")] // 피해 효과 구역
     [SerializeField] private BattleDamageType damageType = BattleDamageType.Physical; // 유물 피해 유형
@@ -50,6 +52,7 @@ public sealed class RelicData : ScriptableObject // 유물 원본 데이터
     public int EffectValue => Mathf.Max(0, effectValue); // 음수 없는 효과 수치 조회
     public int MaximumTriggersPerTurn => Mathf.Max(0, maximumTriggersPerTurn); // 턴당 발동 제한 조회
     public int MaximumTriggersPerBattle => Mathf.Max(0, maximumTriggersPerBattle); // 전투당 발동 제한 조회
+    public int PlayerTurnInterval => Mathf.Max(0, playerTurnInterval); // 주기적으로 발동할 아군 턴 간격
     public BattleDamageType DamageType => damageType; // 피해 유형 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public int StatusDuration => Mathf.Max(1, statusDuration); // 상태 지속 턴 조회
