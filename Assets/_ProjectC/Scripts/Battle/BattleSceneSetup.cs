@@ -616,6 +616,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             if (allyUnit != null) // 아군 존재 확인
             { // 유효 아군 처리 시작
                 allyUnit.StatusEffectsChanged += HandleAllyStatusEffectsChanged; // 상태 변경 예고 갱신 연결
+                allyUnit.BlockChanged += HandleAllyStatusEffectsChanged; // 방어도 변경 예고 갱신 연결
             } // 유효 아군 처리 종료
         } // 개별 이벤트 등록 종료
     } // 상태 이벤트 등록 종료
@@ -626,6 +627,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             if (allyUnit != null) // 아군 존재 확인
             { // 유효 아군 처리 시작
                 allyUnit.StatusEffectsChanged -= HandleAllyStatusEffectsChanged; // 상태 변경 예고 갱신 해제
+                allyUnit.BlockChanged -= HandleAllyStatusEffectsChanged; // 방어도 변경 예고 갱신 해제
             } // 유효 아군 처리 종료
         } // 개별 이벤트 해제 종료
     } // 상태 이벤트 해제 종료

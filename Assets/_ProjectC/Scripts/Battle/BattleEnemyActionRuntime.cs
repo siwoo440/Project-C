@@ -56,6 +56,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             if (action != null) // 생성 행동 확인
             { // 유효 행동 처리 시작
                 action.SetPreparationPreviewRule(IsFirstAttackAgainstTarget); // 방어 준비 예고 순서 연결
+                action.SetBlockPreviewRule(GetBlockBeforeAttack); // 방어도 예고 순서 연결
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
@@ -79,6 +80,22 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 앞선 공격 검사 종료
         return false; // 예정 목록 밖 공격 제외
     } // 첫 공격 확인 종료
+    private int GetBlockBeforeAttack(BattleEnemyAction action) // 공격 전 예상 잔여 방어도 계산
+    { // 잔여 방어도 계산 시작
+        int block = action.Target == null ? 0 : action.Target.CurrentBlock; // 현재 방어도 조회
+        foreach (BattleEnemyAction candidate in plannedActions) // 예정 공격 순회
+        { // 앞선 공격 검사 시작
+            if (candidate == action) // 현재 공격 도달 확인
+            { // 결과 반환 시작
+                break; // 앞선 공격 검사 종료
+            } // 결과 반환 종료
+            if (candidate != executingAction && candidate.IsExecutable && candidate.ActionType == EnemyActionType.Attack && candidate.Target == action.Target) // 같은 대상의 앞선 유효 공격 확인
+            { // 방어도 소모 예측 시작
+                block -= candidate.PreviewDamageWithBlock(block).AbsorbedDamage; // 앞선 공격의 예상 흡수량 차감
+            } // 방어도 소모 예측 종료
+        } // 앞선 공격 검사 종료
+        return block; // 공격 전 예상 방어도 반환
+    } // 잔여 방어도 계산 종료
     public BattleEnemyActionResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
         if (disposed || action == null || !plannedActions.Contains(action)) // 실행 대상 유효성 확인

@@ -24,6 +24,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private Outline targetOutline; // 선택 가능 대상 윤곽선
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     private BattleMentalView mentalView; // 정신력 표시 화면
+    private GameObject blockRoot; // 방어도 표시 배경
+    private TMP_Text blockText; // 방어도 수치 텍스트
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -36,6 +38,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         Unbind(); // 기존 연결 해제
         RuntimeUnit = runtimeUnit; // 새 런타임 유닛 저장
         RuntimeUnit.HealthChanged += HandleHealthChanged; // 체력 변경 이벤트 등록
+        RuntimeUnit.BlockChanged += HandleBlockChanged; // 방어도 변경 이벤트 등록
         RuntimeUnit.DamageTaken += HandleDamageTaken; // 피해 적용 이벤트 등록
         RuntimeUnit.HealthRestored += HandleHealthRestored; // 회복 적용 이벤트 등록
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
@@ -45,10 +48,12 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         EnsureTargetOutline(); // 대상 선택 윤곽선 준비
         EnsureStatusEffectView(); // 상태 이상 화면 준비
         EnsureMentalView(); // 정신력 화면 준비
+        EnsureBlockView(); // 방어도 화면 준비
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
+        RefreshBlock(); // 방어도 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
     } // 연결 종료
     public void Unbind() // 런타임 유닛 연결 해제
@@ -58,6 +63,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 연결 해제 중단
         } // 미연결 처리 종료
         RuntimeUnit.HealthChanged -= HandleHealthChanged; // 체력 변경 이벤트 해제
+        RuntimeUnit.BlockChanged -= HandleBlockChanged; // 방어도 변경 이벤트 해제
         RuntimeUnit.DamageTaken -= HandleDamageTaken; // 피해 적용 이벤트 해제
         RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
@@ -65,6 +71,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
         mentalView?.Unbind(); // 정신력 화면 연결 해제
         RuntimeUnit = null; // 런타임 참조 제거
+        if (blockRoot != null) // 방어도 화면 존재 확인
+        { // 방어도 화면 숨김 시작
+            blockRoot.SetActive(false); // 연결 해제 시 방어도 숨김
+        } // 방어도 화면 숨김 종료
         if (targetOutline != null) // 대상 윤곽선 존재 확인
         { // 대상 윤곽선 초기화 시작
             targetOutline.enabled = false; // 기존 선택 강조 해제
@@ -241,6 +251,54 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 다른 유닛 처리 종료
         RefreshHealth(); // 체력 표시 갱신
     } // 체력 이벤트 처리 종료
+    private void EnsureBlockView() // 방어도 화면 생성
+    { // 방어도 화면 생성 시작
+        if (blockRoot != null) // 기존 화면 존재 확인
+        { // 기존 화면 처리 시작
+            return; // 중복 생성 방지
+        } // 기존 화면 처리 종료
+        blockRoot = new GameObject("BlockView", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 방어도 배경 생성
+        blockRoot.transform.SetParent(transform, false); // 유닛 화면 자식 배치
+        RectTransform rootRect = blockRoot.GetComponent<RectTransform>(); // 배경 위치 정보 조회
+        rootRect.anchorMin = new Vector2(1f, 1f); // 오른쪽 위 최소 앵커
+        rootRect.anchorMax = new Vector2(1f, 1f); // 오른쪽 위 최대 앵커
+        rootRect.pivot = new Vector2(1f, 1f); // 오른쪽 위 기준점
+        rootRect.anchoredPosition = new Vector2(-4f, -76f); // 초상화 위쪽에 가까운 위치
+        rootRect.sizeDelta = new Vector2(76f, 26f); // 방어도 배경 크기
+        Image background = blockRoot.GetComponent<Image>(); // 배경 이미지 조회
+        background.color = new Color(0.08f, 0.22f, 0.3f, 0.94f); // 푸른색 배경 적용
+        background.raycastTarget = false; // 대상 선택 입력 유지
+        GameObject textObject = new GameObject("BlockText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 방어도 텍스트 생성
+        textObject.transform.SetParent(blockRoot.transform, false); // 배경 자식 배치
+        RectTransform textRect = textObject.GetComponent<RectTransform>(); // 텍스트 위치 정보 조회
+        textRect.anchorMin = Vector2.zero; // 텍스트 최소 앵커
+        textRect.anchorMax = Vector2.one; // 텍스트 최대 앵커
+        textRect.offsetMin = Vector2.zero; // 텍스트 아래 여백
+        textRect.offsetMax = Vector2.zero; // 텍스트 위 여백
+        blockText = textObject.GetComponent<TMP_Text>(); // 텍스트 컴포넌트 조회
+        blockText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 글꼴 적용
+        blockText.fontSize = 14f; // 글자 크기 적용
+        blockText.fontStyle = FontStyles.Bold; // 굵은 글자 적용
+        blockText.alignment = TextAlignmentOptions.Center; // 가운데 정렬 적용
+        blockText.color = new Color(0.78f, 0.94f, 1f, 1f); // 밝은 푸른 글자 적용
+        blockText.raycastTarget = false; // 대상 선택 입력 유지
+    } // 방어도 화면 생성 종료
+    private void RefreshBlock() // 방어도 화면 갱신
+    { // 방어도 화면 갱신 시작
+        if (blockRoot == null || RuntimeUnit == null) // 화면과 유닛 연결 확인
+        { // 갱신 불가 처리 시작
+            return; // 화면 갱신 중단
+        } // 갱신 불가 처리 종료
+        blockText.text = $"방어 {RuntimeUnit.CurrentBlock}"; // 현재 방어도 문구 적용
+        blockRoot.SetActive(!RuntimeUnit.IsDead && RuntimeUnit.CurrentBlock > 0); // 생존 유닛의 양수 방어도 표시
+    } // 방어도 화면 갱신 종료
+    private void HandleBlockChanged(BattleUnitRuntime runtimeUnit) // 방어도 변경 처리
+    { // 방어도 변경 처리 시작
+        if (runtimeUnit == RuntimeUnit) // 연결 유닛 확인
+        { // 연결 유닛 처리 시작
+            RefreshBlock(); // 방어도 화면 갱신
+        } // 연결 유닛 처리 종료
+    } // 방어도 변경 처리 종료
     private void HandleDamageTaken(BattleUnitRuntime runtimeUnit, BattleDamageResult damageResult) // 피해 적용 이벤트 처리
     { // 피해 이벤트 처리 시작
         if (runtimeUnit != RuntimeUnit || combatFeedbackView == null) // 연결 유닛과 피드백 화면 확인

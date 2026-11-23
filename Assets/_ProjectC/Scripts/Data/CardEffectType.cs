@@ -8,5 +8,6 @@ public enum CardEffectType // 카드 효과 종류
     RedirectAttackAndDefend, // 적 공격 유도와 방어 효과
     ProtectAttackTarget, // 공격 예고 대상 보호 효과
     ChooseDraw, // 덱 위 카드 선택 드로우 효과
-    RecoverDiscard // 버린 카드 선택 회수 효과
+    RecoverDiscard, // 버린 카드 선택 회수 효과
+    GainBlock // 피해 흡수 방어도 획득 효과
 } // 열거형 종료

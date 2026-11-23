@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_ARC_03_FEAST
   displayName: 든든한 식탁
-  description: 생존 아군 전체의 물리 방어력 2턴간 3 증가
+  description: 임시 방어도 총 3을 생존 아군에게 균등 배분. 남는 수치는 앞 순서부터 부여
   artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
   cardType: 4
   cardTags: 0
   targetType: 2
   apCost: 2
-  effectType: 2
+  effectType: 9
   damageType: 0
   effectValue: 3
   mentalChangeValue: 0

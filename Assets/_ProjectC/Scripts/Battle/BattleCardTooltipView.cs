@@ -77,6 +77,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
+        { // 방어도 문구 시작
+            return cardInstance.TargetType == CardTargetType.AllAllies ? "전체 방어도 배분" : "방어도 획득"; // 대상별 방어도 문구 반환
+        } // 방어도 문구 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
             return "체력 회복"; // 회복 문구 반환

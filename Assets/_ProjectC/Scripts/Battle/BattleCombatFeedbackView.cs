@@ -9,13 +9,20 @@ public sealed class BattleCombatFeedbackView : MonoBehaviour // 전투 결과 �
     private int floatingSpawnIndex; // 플로팅 숫자 위치 순번
     public void ShowDamage(BattleDamageResult damageResult) // 피해 피드백 표시
     { // 피해 피드백 시작
-        if (!damageResult.HasDamage) // 유효 피해 확인
+        if (!damageResult.HasDamage && damageResult.AbsorbedDamage <= 0) // 체력 피해와 방어도 흡수 확인
         { // 피해 없음 처리 시작
             return; // 피해 피드백 중단
         } // 피해 없음 처리 종료
         Color feedbackColor = SelectDamageColor(damageResult.DamageType); // 피해 유형별 색상 선택
         PlayFlash(feedbackColor); // 피격 강조 표시
-        CreateFloatingText($"-{damageResult.AppliedDamage}", feedbackColor); // 피해 플로팅 숫자 생성
+        if (damageResult.AbsorbedDamage > 0) // 방어도 흡수 여부 확인
+        { // 방어도 흡수 표시 시작
+            CreateFloatingText($"방어 -{damageResult.AbsorbedDamage}", new Color(0.55f, 0.85f, 1f, 1f)); // 흡수량 플로팅 문구 생성
+        } // 방어도 흡수 표시 종료
+        if (damageResult.HasDamage) // 실제 체력 피해 확인
+        { // 체력 피해 표시 시작
+            CreateFloatingText($"-{damageResult.AppliedDamage}", feedbackColor); // 피해 플로팅 숫자 생성
+        } // 체력 피해 표시 종료
     } // 피해 피드백 종료
     public void ShowHealing(int appliedHealing) // 회복 피드백 표시
     { // 회복 피드백 시작
