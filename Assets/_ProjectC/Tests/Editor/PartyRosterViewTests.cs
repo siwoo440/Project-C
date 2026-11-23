@@ -10,6 +10,26 @@ public sealed class PartyRosterViewTests // 거점 파티 목록 화면 테스�
         public bool CanDeploy(CharacterData character) => true; // 출전 가능 상태
     } // 상태 제공자 종료
     [Test] // 테스트 지정
+    public void RosterView_ShowsPortraitsWithoutBlockingButtonInput() // 초상화 표시와 버튼 입력 확인
+    { // 테스트 시작
+        GameObject root = new GameObject("PortraitViewTest", typeof(RectTransform), typeof(Canvas)); // 테스트 화면 생성
+        PartyRosterView view = root.AddComponent<PartyRosterView>(); // 파티 화면 추가
+        CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 캐릭터 목록 조회
+        view.Initialize(roster, new AvailableStatus()); // 목록 화면 초기화
+        Button[] buttons = root.GetComponentsInChildren<Button>(); // 생성된 버튼 목록 조회
+        for (int index = 0; index < roster.Characters.Count; index++) // 전체 캐릭터 순회
+        { // 초상화 검증 시작
+            Transform portraitObject = buttons[index].transform.Find("Portrait"); // 초상화 화면 조회
+            Assert.IsNotNull(portraitObject, roster.Characters[index].CharacterId); // 초상화 화면 존재 확인
+            Image portrait = portraitObject.GetComponent<Image>(); // 초상화 이미지 조회
+            Assert.IsNotNull(portrait); // 이미지 컴포넌트 확인
+            Assert.AreSame(roster.Characters[index].Portrait, portrait.sprite); // 캐릭터 초상화 연결 확인
+            Assert.IsFalse(portrait.raycastTarget); // 버튼 입력 방해 방지 확인
+            Assert.IsTrue(portrait.preserveAspect); // 초상화 비율 유지 확인
+        } // 초상화 검증 종료
+        Object.DestroyImmediate(root); // 테스트 화면 정리
+    } // 테스트 종료
+    [Test] // 테스트 지정
     public void RosterView_ShowsCharactersAndAllowsSelection() // 캐릭터 목록과 선택 확인
     { // 테스트 시작
         GameObject root = new GameObject("PartyViewTest", typeof(RectTransform), typeof(Canvas)); // 테스트 화면 생성

@@ -102,10 +102,20 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
         Image image = rect.gameObject.AddComponent<Image>(); // 버튼 이미지 추가
         Button button = rect.gameObject.AddComponent<Button>(); // 선택 버튼 추가
         button.targetGraphic = image; // 버튼 배경 연결
+        RectTransform portraitRect = CreateRect("Portrait", rect); // 초상화 영역 생성
+        portraitRect.anchorMin = new Vector2(0f, 0.5f); // 초상화 기준 시작점 설정
+        portraitRect.anchorMax = new Vector2(0f, 0.5f); // 초상화 기준 끝점 설정
+        portraitRect.anchoredPosition = new Vector2(32f, 0f); // 초상화 위치 설정
+        portraitRect.sizeDelta = new Vector2(52f, 52f); // 초상화 크기 설정
+        Image portrait = portraitRect.gameObject.AddComponent<Image>(); // 초상화 이미지 추가
+        portrait.sprite = character.Portrait; // 캐릭터 초상화 연결
+        portrait.preserveAspect = true; // 초상화 비율 유지
+        portrait.raycastTarget = false; // 버튼 입력 방해 방지
+        portrait.enabled = character.Portrait != null; // 초상화가 있을 때만 표시
         TMP_Text label = CreateLabel("Label", rect, character.DisplayName, 20f); // 캐릭터 문구 생성
         label.rectTransform.anchorMin = Vector2.zero; // 문구 시작점 설정
         label.rectTransform.anchorMax = Vector2.one; // 문구 끝점 설정
-        label.rectTransform.offsetMin = Vector2.zero; // 문구 왼쪽 아래 여백 제거
+        label.rectTransform.offsetMin = new Vector2(60f, 0f); // 초상화와 문구 간격 설정
         label.rectTransform.offsetMax = Vector2.zero; // 문구 오른쪽 위 여백 제거
         button.onClick.AddListener(() => ToggleCharacter(character)); // 버튼 선택 동작 연결
         characters.Add(character); // 표시 캐릭터 등록
