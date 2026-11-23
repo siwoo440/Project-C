@@ -28,6 +28,14 @@ public sealed class ExplorationEventLayoutTests // 탐사 이벤트 패널 배�
         Assert.That((outer.min.y - canvas.rect.yMin) / canvas.rect.height, Is.EqualTo(0.117f).Within(0.004f)); // 아래 파티 정보 여백 확인
         var body = RectTransformUtility.CalculateRelativeRectTransformBounds(root, root.Find("Content/BodyText")); // 본문 경계 조회
         var frame = panel.GetComponentsInChildren<Image>().Single(item => item.name == "IllustrationFrame").rectTransform; // 실제 삽화 테두리 조회
+        var skin = Resources.Load<Sprite>("UI/EventPanel"); // 전용 사각형 배경 조회
+        Assert.IsNotNull(skin); // 플레이어 리소스 등록 확인
+        Assert.Greater(skin.border.x, 0f); // 테두리 고정 여백 확인
+        foreach (var zone in new[] { frame, root.Find("Content/StoryBackground"), root.Find("Choices") }) // 세 배경 사용처 순회
+        { // 배경 연결 검사 시작
+            Assert.AreSame(skin, zone.GetComponent<Image>().sprite); // 동일한 직각 원화 연결 확인
+            Assert.AreEqual(Image.Type.Sliced, zone.GetComponent<Image>().type); // 영역별 테두리 보존 확인
+        } // 배경 연결 검사 종료
         var art = RectTransformUtility.CalculateRelativeRectTransformBounds(root, frame); // 삽화 경계 조회
         var choices = RectTransformUtility.CalculateRelativeRectTransformBounds(root, root.Find("Choices")); // 선택 버튼 영역 조회
         Assert.Greater(body.min.x, art.max.x); // 본문과 삽화 사이 간격 확인
