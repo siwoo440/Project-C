@@ -281,6 +281,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64d9aa4ec712ec347b5a7420b5bf75f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LobbyController
+  lobbyCanvas: {fileID: 549269558}
 --- !u!4 &443206703
 Transform:
   m_ObjectHideFlags: 0

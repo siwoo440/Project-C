@@ -3,10 +3,21 @@ using UnityEngine.UI; // 거점 도움말 버튼 연결 사용
 
 public sealed class LobbyController : MonoBehaviour
 {
-    private Canvas lobbyCanvas; // 현재 로비 캔버스
+    [SerializeField] private Canvas lobbyCanvas; // 로비 씬에 연결된 전용 캔버스
     private void Start() // 거점 화면 시작
     { // 시작 처리 시작
-        Canvas canvas = FindFirstObjectByType<Canvas>(); // 거점 캔버스 조회
+        Canvas canvas = lobbyCanvas; // 씬에서 지정한 거점 캔버스 조회
+        if (canvas == null) // 캔버스가 지정되지 않은 로비 확인
+        { // 현재 씬의 캔버스 검색 시작
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects()) // 현재 로비 씬의 최상위 객체 순회
+            { // 씬별 화면 확인 시작
+                if (root.TryGetComponent(out Canvas candidate) && candidate.isActiveAndEnabled) // 표시 중인 최상위 캔버스 확인
+                { // 거점 캔버스 발견
+                    canvas = candidate; // 거점 캔버스 선택
+                    break; // 캔버스 검색 종료
+                } // 거점 캔버스 확인 종료
+            } // 씬별 화면 확인 종료
+        } // 현재 씬의 캔버스 검색 종료
         if (canvas == null) // 화면 누락 확인
         { // 누락 처리 시작
             Debug.LogError("[LobbyController] 로비 캔버스가 없습니다."); // 화면 누락 안내
