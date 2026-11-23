@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 달
   description: "임시 능력치 · 기획 역할: 불확실한 손패의 위험 관리"
   role: 3
-  portrait: {fileID: 0}
+  portrait: {fileID: -641543473992875299, guid: 12b951cbb14da5d42a7ee8017a049e95, type: 3}
   maxHealth: 90
   physicalDefense: 2
   magicalResistance: 4

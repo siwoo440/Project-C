@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 태양
   description: "임시 능력치 · 기획 역할: 서로 다른 적을 잇는 연속 공격"
   role: 0
-  portrait: {fileID: 0}
+  portrait: {fileID: -6756778706772286872, guid: 5f67b05649caaa9479673236acd7ffbc, type: 3}
   maxHealth: 104
   physicalDefense: 3
   magicalResistance: 3
