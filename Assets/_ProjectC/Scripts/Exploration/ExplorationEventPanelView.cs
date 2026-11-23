@@ -9,6 +9,9 @@ using UnityEngine.UI; // UI 구성 요소 사용
 public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤트 패널 UI 표시기
 {
     private const int BlurDownsample = 12; // 블러용 축소 비율
+    private const float ChoiceHeight = 58f; // 선택 버튼 한 줄 높이
+    private const float ChoiceGap = 12f; // 선택 버튼 사이 여백
+    private const float ChoiceBottom = 34f; // 패널과 마지막 버튼 사이 여백
 
     private static ExplorationEventPanelView instance; // 싱글톤 인스턴스
 
@@ -19,6 +22,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     private RawImage blurBackgroundImage; // 블러 배경 이미지
     private Image dimOverlayImage; // 어두운 오버레이 이미지
     private RectTransform panelRoot; // 이벤트 패널 루트
+    private RectTransform contentRect; // 선택지 수에 따라 늘어나는 본문 영역
     private TMP_Text titleText; // 이벤트 제목 텍스트
     private TMP_Text bodyText; // 이벤트 설명 텍스트
     private Image illustrationFrameImage; // 그림 프레임 이미지
@@ -623,7 +627,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         RectTransform buttonRect =
             buttonObject.GetComponent<RectTransform>(); // 버튼 RectTransform 조회
 
-        buttonRect.sizeDelta = new Vector2(0f, 58f); // 버튼 높이 설정
+        buttonRect.sizeDelta = new Vector2(0f, ChoiceHeight); // 선택 버튼 한 줄 높이 설정
 
         Image buttonImage =
             buttonObject.GetComponent<Image>(); // 버튼 이미지 조회
@@ -670,6 +674,8 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         buttonText.textWrappingMode = TextWrappingModes.Normal; // 버튼 줄바꿈 모드 설정
 
         choiceButtons.Add(button); // 버튼 목록에 현재 버튼 등록
+        float choicesHeight = choiceButtons.Count * ChoiceHeight + (choiceButtons.Count - 1) * ChoiceGap; // 현재 선택지의 전체 높이 계산
+        contentRect.offsetMin = new Vector2(56f, ChoiceBottom + choicesHeight + 22f); // 선택지 위에 본문과 삽화 배치
     }
 
     private void EnsureEventSystem() // New Input System 기반 UI 클릭 이벤트 시스템 보장
@@ -800,11 +806,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         panelRoot =
             panelObject.GetComponent<RectTransform>(); // 패널 루트 RectTransform 저장
 
-        panelRoot.anchorMin = new Vector2(0.5f, 0.5f); // 패널 중앙 앵커 설정
-        panelRoot.anchorMax = new Vector2(0.5f, 0.5f); // 패널 중앙 앵커 설정
-        panelRoot.pivot = new Vector2(0.5f, 0.5f); // 패널 중앙 피벗 설정
-        panelRoot.sizeDelta = new Vector2(1180f, 660f); // 패널 크기 지정
-        panelRoot.anchoredPosition = Vector2.zero; // 패널 위치 중앙 정렬
+        PreparationUi.Stretch(panelRoot, new Vector2(0.022f, 0.117f), new Vector2(0.976f, 0.965f)); // 화면 위쪽 확장과 아래 파티 정보 여백 확보
 
         Image panelImage =
             panelObject.GetComponent<Image>(); // 패널 배경 이미지 조회
@@ -854,13 +856,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
         contentObject.transform.SetParent(parent, false); // 내용 영역을 패널 하위에 배치
 
-        RectTransform contentRect =
-            contentObject.GetComponent<RectTransform>(); // 내용 영역 RectTransform 조회
+        contentRect = contentObject.GetComponent<RectTransform>(); // 현재 패널의 본문 영역 보관
 
         contentRect.anchorMin = new Vector2(0f, 0f); // 내용 영역 하단 좌측 앵커 설정
         contentRect.anchorMax = new Vector2(1f, 1f); // 내용 영역 상단 우측 앵커 설정
-        contentRect.offsetMin = new Vector2(38f, 165f); // 내용 영역 좌하단 여백 설정
-        contentRect.offsetMax = new Vector2(-38f, -92f); // 내용 영역 우상단 여백 설정
+        contentRect.offsetMin = new Vector2(56f, ChoiceBottom); // 선택지 생성 전 좌하단 여백 지정
+        contentRect.offsetMax = new Vector2(-56f, -100f); // 제목 아래 본문 여백 지정
 
         GameObject frameObject =
             new GameObject(
@@ -873,11 +874,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         RectTransform frameRect =
             frameObject.GetComponent<RectTransform>(); // 프레임 RectTransform 조회
 
-        frameRect.anchorMin = new Vector2(0f, 0.5f); // 프레임 좌측 중앙 앵커 설정
-        frameRect.anchorMax = new Vector2(0f, 0.5f); // 프레임 좌측 중앙 앵커 설정
-        frameRect.pivot = new Vector2(0f, 0.5f); // 프레임 좌측 중앙 피벗 설정
-        frameRect.sizeDelta = new Vector2(320f, 280f); // 프레임 크기 지정
-        frameRect.anchoredPosition = new Vector2(8f, 0f); // 프레임 위치 지정
+        PreparationUi.Stretch(frameRect, Vector2.zero, new Vector2(0.32f, 1f)); // 왼쪽 삽화 열에 프레임 맞춤
 
         illustrationFrameImage =
             frameObject.GetComponent<Image>(); // 일러스트 프레임 이미지 저장
@@ -895,11 +892,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         RectTransform illustrationRect =
             illustrationObject.GetComponent<RectTransform>(); // 그림 RectTransform 조회
 
-        illustrationRect.anchorMin = new Vector2(0.5f, 0.5f); // 그림 중앙 앵커 설정
-        illustrationRect.anchorMax = new Vector2(0.5f, 0.5f); // 그림 중앙 앵커 설정
-        illustrationRect.pivot = new Vector2(0.5f, 0.5f); // 그림 중앙 피벗 설정
-        illustrationRect.sizeDelta = new Vector2(280f, 240f); // 그림 영역 크기 지정
-        illustrationRect.anchoredPosition = Vector2.zero; // 그림 위치 중앙 정렬
+        StretchInsideParent(illustrationRect, 16f); // 확대된 삽화 프레임 안쪽 여백 지정
 
         illustrationImage =
             illustrationObject.GetComponent<Image>(); // 그림 이미지 저장
@@ -938,9 +931,9 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         RectTransform bodyRect =
             bodyObject.GetComponent<RectTransform>(); // 본문 RectTransform 조회
 
-        bodyRect.anchorMin = new Vector2(0f, 0f); // 본문 하단 좌측 앵커 설정
+        bodyRect.anchorMin = new Vector2(0.32f, 0f); // 삽화 오른쪽에서 본문 시작
         bodyRect.anchorMax = new Vector2(1f, 1f); // 본문 상단 우측 앵커 설정
-        bodyRect.offsetMin = new Vector2(360f, 16f); // 본문 좌하단 여백 설정
+        bodyRect.offsetMin = new Vector2(34f, 0f); // 삽화와 본문 사이 여백 지정
         bodyRect.offsetMax = new Vector2(-8f, -8f); // 본문 우상단 여백 설정
 
         bodyText =
@@ -972,13 +965,13 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         choiceContainer.anchorMin = new Vector2(0f, 0f); // 선택지 영역 하단 좌측 앵커 설정
         choiceContainer.anchorMax = new Vector2(1f, 0f); // 선택지 영역 하단 우측 앵커 설정
         choiceContainer.pivot = new Vector2(0.5f, 0f); // 선택지 영역 하단 피벗 설정
-        choiceContainer.offsetMin = new Vector2(56f, 34f); // 선택지 영역 좌하단 여백 설정
+        choiceContainer.offsetMin = new Vector2(56f, ChoiceBottom); // 선택지 영역 좌하단 여백 설정
         choiceContainer.offsetMax = new Vector2(-56f, 132f); // 선택지 영역 우상단 여백 설정
 
         VerticalLayoutGroup layoutGroup =
             choiceObject.GetComponent<VerticalLayoutGroup>(); // 세로 레이아웃 그룹 조회
 
-        layoutGroup.spacing = 12f; // 버튼 사이 간격 지정
+        layoutGroup.spacing = ChoiceGap; // 선택 버튼 사이 여백 적용
         layoutGroup.childControlWidth = true; // 버튼 폭 자동 제어 활성화
         layoutGroup.childControlHeight = false; // 버튼 높이 자동 제어 비활성화
         layoutGroup.childForceExpandWidth = true; // 버튼 폭 확장 활성화
