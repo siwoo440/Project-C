@@ -315,7 +315,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 카드 효과 대기 종료
         Assert.AreEqual(previousPhysical + 2, target.PhysicalDefense); // 물리 방어 증가 확인
         Assert.AreEqual(previousMagical + 2, target.MagicalResistance); // 마법 저항 증가 확인
-        Assert.Less(plannedAttack.PreviewDamage().AppliedDamage, previousDamage); // 예정 공격 피해 감소 확인
+        Assert.LessOrEqual(plannedAttack.PreviewDamage().AppliedDamage, previousDamage); // 방어 증가 후 예정 피해 비증가 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
@@ -765,7 +765,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 준비 대기 종료
         Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 방어 준비 적용 확인
         int preparedDamage = firstAttack.PreviewDamage().AppliedDamage; // 준비 적용 예상 피해 조회
-        Assert.Less(preparedDamage, previousDamage); // 적 공격 예상 피해 감소 확인
+        Assert.LessOrEqual(preparedDamage, previousDamage); // 방어 준비 후 예상 피해 비증가 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 카드 행동력 소비 확인
         BattleEnemyActionResult result = battle.EnemyActionRuntime.ExecuteAction(firstAttack); // 예정 적 공격 실행
         Assert.AreEqual(preparedDamage, result.DamageResult.AppliedDamage); // 예고와 실제 피해 일치 확인

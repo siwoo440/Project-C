@@ -9,6 +9,9 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 아군 목록
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 적 목록
     private readonly List<BattleUnitRuntime> registeredUnits = new List<BattleUnitRuntime>(); // 이벤트 등록 유닛 목록
+    private readonly HashSet<BattleUnitRuntime> skipFirstDurationTick = new HashSet<BattleUnitRuntime>(); // 현재 자기 턴에 시작한 특수 상태 목록
+    private BattleTurnPhase processedEndPhase = BattleTurnPhase.NotStarted; // 지속 시간 처리가 끝난 최근 진영
+    private int processedEndRound = -1; // 지속 시간 처리가 끝난 최근 라운드
     private bool allyDeathAppliedThisPhase; // 현재 단계 아군 사망 반영 여부
     private bool enemyDeathAppliedThisPhase; // 현재 단계 적 사망 반영 여부
     private bool disposed; // 연결 해제 여부
@@ -30,6 +33,7 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
             return false; // 등록 실패 반환
         } // 등록 불가 처리 종료
         enemyUnit.Died += HandleUnitDied; // 소환 적 사망 이벤트 등록
+        enemyUnit.MentalChanged += HandleMentalChanged; // 소환 적 정신 상태 시작 감시
         registeredUnits.Add(enemyUnit); // 등록 유닛 목록 추가
         return true; // 등록 성공 반환
     } // 소환 적 등록 종료
@@ -40,6 +44,8 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
             return false; // 해제 실패 반환
         } // 해제 불가 처리 종료
         enemyUnit.Died -= HandleUnitDied; // 적 사망 이벤트 해제
+        enemyUnit.MentalChanged -= HandleMentalChanged; // 적 정신 상태 감시 해제
+        skipFirstDurationTick.Remove(enemyUnit); // 제거된 적의 대기 상태 정리
         return true; // 해제 성공 반환
     } // 제거 적 해제 종료
     private void HandlePhaseStarted(BattleTurnPhase phase, int round) // 진영 턴 시작 처리
@@ -52,15 +58,39 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
     } // 턴 시작 처리 종료
     private void HandlePhaseEnded(BattleTurnPhase phase, int round) // 진영 턴 종료 처리
     { // 턴 종료 처리 시작
+        processedEndPhase = phase; // 현재 진영의 지속 시간 처리 기록
+        processedEndRound = round; // 현재 라운드의 지속 시간 처리 기록
         IReadOnlyList<BattleUnitRuntime> activeUnits = GetPhaseUnits(phase); // 종료 진영 목록 조회
         foreach (BattleUnitRuntime runtimeUnit in activeUnits) // 종료 진영 유닛 순회
         { // 특수 상태 진행 시작
-            if (runtimeUnit != null && !runtimeUnit.IsDead) // 생존 유닛 확인
+            if (runtimeUnit == null) // 빈 유닛 확인
+            { // 빈 유닛 처리 시작
+                continue; // 다음 유닛 확인
+            } // 빈 유닛 처리 종료
+            bool skipTick = skipFirstDurationTick.Remove(runtimeUnit); // 발동 턴의 첫 감소 생략 확인
+            if (!runtimeUnit.IsDead && !skipTick) // 생존 유닛과 감소 시점 확인
             { // 생존 유닛 처리 시작
                 runtimeUnit.AdvanceMentalStateTurn(); // 특수 상태 남은 턴 감소
             } // 생존 유닛 처리 종료
         } // 특수 상태 진행 종료
     } // 턴 종료 처리 종료
+    private void HandleMentalChanged(BattleUnitRuntime unit, BattleMentalChangeResult change) // 특수 상태 시작과 종료 감시
+    { // 정신 상태 변경 처리 시작
+        if (unit == null || change == null) // 유닛과 변화 정보 확인
+        { // 잘못된 변화 처리 시작
+            return; // 변화 처리 중단
+        } // 잘못된 변화 처리 종료
+        if (change.StateEnded) // 특수 상태 종료 확인
+        { // 대기 감소 정리 시작
+            skipFirstDurationTick.Remove(unit); // 종료된 상태의 감소 생략 제거
+        } // 대기 감소 정리 종료
+        bool ownPhase = unit.Team == BattleTeam.Ally ? turnRuntime.CurrentPhase == BattleTurnPhase.PlayerTurn : turnRuntime.CurrentPhase == BattleTurnPhase.EnemyTurn; // 현재 턴의 해당 진영 여부 확인
+        bool tickAlreadyProcessed = processedEndPhase == turnRuntime.CurrentPhase && processedEndRound == turnRuntime.CurrentRound; // 현재 턴의 지속 시간 처리 완료 확인
+        if (change.StateStarted && ownPhase && !tickAlreadyProcessed) // 자기 턴의 지속 시간 처리 전 상태 발동 확인
+        { // 첫 지속 시간 보존 시작
+            skipFirstDurationTick.Add(unit); // 현재 턴 종료 시 첫 감소 생략 예약
+        } // 첫 지속 시간 보존 종료
+    } // 정신 상태 변경 처리 종료
     private void HandleTurnStateChanged() // 전투 상태 변경 처리
     { // 전투 상태 처리 시작
         if (!turnRuntime.IsBattleEnded) // 전투 종료 여부 확인
@@ -148,6 +178,7 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
                 continue; // 다음 유닛 이동
             } // 중복 처리 종료
             runtimeUnit.Died += HandleUnitDied; // 사망 이벤트 등록
+            runtimeUnit.MentalChanged += HandleMentalChanged; // 정신 상태 시작 이벤트 등록
             registeredUnits.Add(runtimeUnit); // 등록 유닛 목록 추가
         } // 개별 등록 종료
     } // 일괄 등록 종료
@@ -165,7 +196,9 @@ public sealed class BattleMentalController : IDisposable // 전투 정신력 흐
         { // 이벤트 해제 시작
             BattleUnitRuntime runtimeUnit = registeredUnits[unitIndex]; // 등록 유닛 조회
             runtimeUnit.Died -= HandleUnitDied; // 사망 이벤트 해제
+            runtimeUnit.MentalChanged -= HandleMentalChanged; // 정신 상태 이벤트 해제
         } // 이벤트 해제 종료
         registeredUnits.Clear(); // 등록 유닛 목록 초기화
+        skipFirstDurationTick.Clear(); // 대기 중인 지속 시간 생략 정리
     } // 연결 해제 종료
 } // 클래스 종료
