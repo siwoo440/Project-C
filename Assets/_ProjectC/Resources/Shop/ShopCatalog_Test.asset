@@ -90,4 +90,11 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 3963d505d8ba7b24eb81dbe983391c01, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_GATE_KEY
+    offerType: 1
+    price: 246
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 430f6b588edf4cd193ca3b9100cd8294, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

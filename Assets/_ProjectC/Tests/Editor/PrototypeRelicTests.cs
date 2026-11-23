@@ -47,10 +47,24 @@ public sealed class PrototypeRelicTests // 시제품 유물 효과 검사
         Assert.AreEqual(0, dead.CurrentBlock); // 사망 아군 제외 확인
         Object.DestroyImmediate(source); // 임시 아군 원본 정리
     } // 부유석 유물 검사 종료
+    [Test] // 인증키 방어도 검사 지정
+    public void GateKey_GivesSixBlockToEveryLivingAlly() // 생존 아군 전체 방어도 확인
+    { // 인증키 검사 시작
+        CharacterData source = ScriptableObject.CreateInstance<CharacterData>(); // 임시 아군 원본 생성
+        BattleUnitRuntime first = BattleUnitRuntime.CreateAlly(source); // 첫 생존 아군 생성
+        BattleUnitRuntime dead = BattleUnitRuntime.CreateAlly(source); // 사망 아군 생성
+        BattleUnitRuntime second = BattleUnitRuntime.CreateAlly(source); // 두 번째 생존 아군 생성
+        dead.ApplyPersistentHealth(0); // 사망 상태 적용
+        ApplyInitialRelic("GateKey", new[] { first, dead, second }); // 인증키 전투 시작 효과 적용
+        Assert.AreEqual(6, first.CurrentBlock); // 첫 생존 아군 방어도 확인
+        Assert.AreEqual(0, dead.CurrentBlock); // 사망 아군 제외 확인
+        Assert.AreEqual(6, second.CurrentBlock); // 두 번째 생존 아군 방어도 확인
+        Object.DestroyImmediate(source); // 임시 아군 원본 정리
+    } // 인증키 검사 종료
     [Test] // 실제 유물의 획득과 저장 등록 검사 지정
-    public void Relics_AreUniqueAndRegisteredForShopAndSave() // 네 유물의 원본과 상점 및 저장 카탈로그 확인
+    public void Relics_AreUniqueAndRegisteredForShopAndSave() // 유물 원본과 상점 및 저장 목록 확인
     { // 유물 등록 검사 시작
-        string[] names = { "AshSeal", "BrokenMusicBox", "BronzeCenser", "FloatingStone" }; // 검사할 유물 경로 이름
+        string[] names = { "AshSeal", "BrokenMusicBox", "BronzeCenser", "FloatingStone", "GateKey" }; // 검사할 유물 경로 이름
         HashSet<string> ids = new HashSet<string>(); // 고유 유물 식별자 집합 생성
         SaveAssetCatalog save = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 실제 저장 원본 목록 조회
         ShopCatalogData shop = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 실제 상점 상품 목록 조회
