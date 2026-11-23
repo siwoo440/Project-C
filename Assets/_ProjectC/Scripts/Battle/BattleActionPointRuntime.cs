@@ -72,6 +72,22 @@ public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
         StateChanged?.Invoke(); // 행동력 상태 변경 알림
         return true; // 행동력 지불 성공 반환
     } // 행동력 지불 종료
+    internal bool TrySpendWithHealth(BattleUnitRuntime owner, int actionPointCost, int healthCost) // 계약의 실제 행동력과 비치명 체력을 함께 지불
+    { // 두 자원 지불 가능성 확인 시작
+        if (actionPointCost <= 0 || !CanSpend(actionPointCost) || owner == null || !owner.CanSpendHealth(healthCost)) // 양수 행동력과 생존 가능한 체력 선결제 검사
+        { // 결제 불가 거래의 보존 시작
+            return false; // 어느 자원도 지불하거나 알리지 않은 실패
+        } // 결제 불가 거래의 보존 종료
+        int previousActionPoints = CurrentActionPoints; // 기존 공용 행동력의 실제 값 보관
+        CurrentActionPoints -= actionPointCost; // 체력 알림보다 먼저 함께 적용할 공용 행동력 결제
+        if (!owner.TrySpendHealth(healthCost)) // 기존 생존과 방어도 보존 규칙으로 체력 지불
+        { // 미완료 거래의 상태 복원 시작
+            CurrentActionPoints = previousActionPoints; // 외부 알림 없이 원래 공용 행동력 유지
+            return false; // 양쪽 모두 완료한 결제만 성공 표시
+        } // 미완료 거래의 상태 복원 종료
+        StateChanged?.Invoke(); // 공용 행동력과 체력이 모두 반영된 뒤 기존 갱신 알림
+        return true; // 두 실제 비용을 지불한 카드 결과
+    } // 두 자원 지불 가능성 확인 종료
     internal int AddCompoundGainBonus(int amount) // 이번 실제 아군 턴에 새 복리 효과를 누적
     { // 원본 복리 수치 누적 시작
         int added = Math.Clamp(amount, 0, int.MaxValue - compoundGainBonus); // 양수 원본과 정수 범위까지 누적
@@ -87,6 +103,13 @@ public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
         long requested = amount > 0 ? (long)amount + compoundGainBonus : 0L; // 원래 양수 지급과 이번 턴 복리를 한 번 합산
         return GainWithinCapacity(requested); // 한 번의 실제 변화와 원래 상한 적용
     } // 실제 행동력 회복 요청 종료
+    internal int GainWithTurnCapacity(int amount) // 무한 계약의 실제 지급에 필요한 이 턴 한정 상한 확보
+    { // 원본 지급의 상한 확보 시작
+        int needed = (int)Math.Max(0L, Math.Min(int.MaxValue, (long)CurrentActionPoints + amount) - MaxActionPoints); // 기존 상한을 초과하는 원본 지급만 추가
+        MaxActionPoints += needed; // 실제 지급 전에 그만큼만 현재 최대치 확장
+        turnCapacityAdjustment += needed; // 아군 턴의 원래 정리에서 추가분을 함께 회수
+        return Gain(amount); // 기존 복리 가산과 한 번의 상태 알림 및 적용 상한 유지
+    } // 원본 지급의 상한 확보 종료
     internal int RestoreUncommittedSpend(int amount) // 무효 원본 카드의 잠정 결제만 취소
     { // 실패한 거래의 임시 행동력 복구 시작
         return GainWithinCapacity(amount); // 실제로 결제한 행동력 한도에서 그대로 되돌림

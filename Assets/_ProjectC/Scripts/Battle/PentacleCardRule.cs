@@ -41,5 +41,13 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     PayThePrice, // 정해진 체력 지불과 행동력 회복
     Alchemy, // 일반 손패 카드의 전투 중 희귀 변환
     CompoundEffect, // 현재 턴 행동력 회복의 추가량
-    FateManipulation // 선택한 실제 뽑기 더미 카드의 손패 이동
+    FateManipulation, // 선택한 실제 뽑기 더미 카드의 손패 이동
+    RuneBarrier, // 파티 개별 방어도와 다음 실제 턴 행동력
+    GoldenLure, // 적의 공명 표식과 직접 공격 비율 약화
+    ContractBreach, // 고정 추가 행동력을 사용하는 전체 단일 약화 정화
+    AncientFormula, // 일반 드로우 세 장 및 이번 턴 실물 비용 증가
+    RunawayRuneDevice, // 원본 결제 직후 잔여 행동력의 광역 마법 피해
+    GoldenRule, // 원본 결제 직후 잔여 행동력의 광역 회복
+    RewriteFate, // 기존 손패의 소비와 서로 다른 전설 카드 두 장 생성
+    InfiniteContract // 전액 행동력과 시전자 체력을 함께 쓰는 무한 계약
 } // 직렬화 규칙 종료
