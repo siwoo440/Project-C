@@ -39,7 +39,7 @@ public sealed class PrototypeRelicFlowTests // 시제품 유물 획득과 저장
             PlayerResourceManager.EnsureInstance().AddResources(5000, 0, 0, 0); // 독립 테스트 구매 골드 준비
             ShopOfferData gateOffer = null; // 인증키 상품 보관
             int gatePrice = 0; // 인증키 가격 보관
-            string[] ids = { "RLC_ASH_SEAL", "RLC_BROKEN_MUSIC_BOX", "RLC_BRONZE_CENSER", "RLC_FLOATING_STONE", "RLC_GATE_KEY", "RLC_CRACKED_LENS", "RLC_SEALED_ENVELOPE", "RLC_FADED_RUNE" }; // 검사할 실제 유물 식별자
+            string[] ids = { "RLC_ASH_SEAL", "RLC_BROKEN_MUSIC_BOX", "RLC_BRONZE_CENSER", "RLC_FLOATING_STONE", "RLC_GATE_KEY", "RLC_CRACKED_LENS", "RLC_SEALED_ENVELOPE", "RLC_FADED_RUNE", "RLC_BLACK_HANDKERCHIEF" }; // 검사할 실제 유물 식별자
             foreach (string id in ids) // 실제 유물 식별자 순회
             { // 개별 유물 구매 시작
                 ShopOfferData found = null; // 상품 검색 결과 초기화

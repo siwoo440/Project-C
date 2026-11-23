@@ -1048,7 +1048,7 @@
     {
       "sourceRow": 97,
       "name": "검은 손수건",
-      "description": "전투 시작 시 무작위 적 1명 디버프 1개 부여(확률)",
+      "description": "전투 시작 시 10% 확률로 무작위 적 1명의 물리 방어력 1 감소 (1턴, 임시)",
       "buyMin": 260,
       "buyMax": 300,
       "buyVariance": 40,
