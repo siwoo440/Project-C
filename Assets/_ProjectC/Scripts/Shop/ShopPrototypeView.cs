@@ -4,7 +4,7 @@ using UnityEngine.EventSystems; // UI 이벤트 시스템 사용
 using UnityEngine.InputSystem.UI; // 신규 입력 시스템 UI 사용
 using UnityEngine.UI; // Canvas UI 구성 요소 사용
 
-public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 상점 화면
+public sealed partial class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 상점 화면
 {
     private static readonly Color OverlayColor = new Color(0.02f, 0.025f, 0.035f, 0.94f); // 전체 배경 색상
     private static readonly Color PanelColor = new Color(0.08f, 0.09f, 0.12f, 1f); // 상점 패널 색상
@@ -12,6 +12,8 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     private static readonly Color AccentColor = new Color(0.82f, 0.64f, 0.24f, 1f); // 골드 강조 색상
     private static readonly Color ImagePlaceholderColor = new Color(0.11f, 0.13f, 0.17f, 1f); // 이미지 미지정 배경 색상
     private ShopRunManager manager; // 연결 상점 관리자
+    private RelicInventoryRuntime observedRelics; // 상점 밖에서 바뀐 실제 보유 목록
+    private bool shelfDirty; // 다음 프레임에 반영할 보유 변경
     private GameObject overlayObject; // 전체 상점 오버레이
     private TMP_Text goldText; // 현재 골드 텍스트
     private TMP_Text resultText; // 최근 거래 결과 텍스트
@@ -21,6 +23,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     private bool showingRelicSales; // 유물 판매 목록 표시 여부
     private bool showingCardOwners; // 공용 카드 소유자 선택 여부
     private ShopOfferData pendingCardOffer; // 소유자 선택 중인 공용 카드
+    private float ownerReturnScroll; // 소유자 선택을 마친 뒤 되돌아갈 상품 위치
     private float previousTimeScale = 1f; // 상점 열기 전 시간 배율
     private bool pausedByShop; // 상점 시간 정지 적용 여부
 
@@ -43,6 +46,8 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     private void Build(ShopRunManager shopManager) // 상점 화면 전체 구조 생성
     {
         manager = shopManager; // 상점 관리자 저장
+        observedRelics = RelicRunManager.EnsureInstance().Inventory; // 현재 회차 유물 보관함 연결
+        observedRelics.Changed += MarkShelfDirty; // 다른 경로에서 얻거나 잃은 유물 반영
         manager.Changed += HandleManagerChanged; // 상점 변경 이벤트 연결
         manager.TransactionCompleted += HandleTransactionCompleted; // 거래 결과 이벤트 연결
         CreateOverlay(); // 상점 전체 패널 생성
@@ -56,6 +61,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         overlayObject = overlayImage.gameObject; // 오버레이 오브젝트 저장
         StretchFull(overlayImage.rectTransform); // 전체 화면 채우기
         Image panelImage = CreateImage("ShopPanel", overlayImage.transform, PanelColor); // 중앙 상점 패널 생성
+        shopControls = panelImage.gameObject.AddComponent<CanvasGroup>(); // 구매 확인 중 뒤쪽 상품 입력을 차단할 그룹
         SetAnchoredRect(panelImage.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1380f, 900f), Vector2.zero); // 중앙 패널 위치 지정
         TMP_Text titleText = CreateText("Title", panelImage.transform, "Prototype v0.1 상점", 42f, TextAlignmentOptions.Center, AccentColor); // 상점 제목 생성
         SetAnchoredRect(titleText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(-420f, 80f), new Vector2(0f, -24f)); // 제목 위치 지정
@@ -120,6 +126,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
     private void CloseShop() // 상점 닫기
     {
+        ClosePurchaseConfirmation(); // 상점 닫기와 함께 미결제 확인 상태 정리
         overlayObject.SetActive(false); // 상점 오버레이 숨김
         RestoreTimeScale(); // 상점 열기 전 시간 배율 복원
     }
@@ -138,33 +145,39 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         ClearContent(); // 기존 목록 제거
         goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 표시
 
-        foreach (ShopOfferData offer in manager.Catalog.Offers) // 카탈로그 상품 순회
-        {
-            if (offer.RewardOnly || !offer.CanOfferToDeck(manager.RunDeck)) // 보상 전용 또는 지급 불가능한 상품 확인
-            { // 상점 표시 제외 시작
-                continue; // 현재 파티에 판매할 수 없는 상품 제외
-            } // 상점 표시 제외 종료
-            ShopOfferData capturedOffer = offer; // 버튼용 현재 상품 보관
-            bool sold = manager.IsPurchased(capturedOffer); // 현재 상품 판매 완료 조회
-            string typeLabel = GetOfferTypeLabel(capturedOffer.OfferType); // 상품 종류 한글 문구 생성
-            Color cardColor = sold ? new Color(0.12f, 0.12f, 0.13f, 1f) : ButtonColor; // 판매 상태별 카드 색상 결정
-            string priceLabel = sold ? "판매 완료" : $"{manager.GetOfferPrice(capturedOffer)} Gold"; // 판매 완료 또는 실제 구매 가격 지정
-            Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, priceLabel, typeLabel, sold, cardColor); // 판매 상태와 실제 가격을 반영한 카드 생성
-            offerButton.interactable = !sold; // 판매 완료 상품 비활성화
-            offerButton.onClick.AddListener(() => SelectOffer(capturedOffer)); // 상품 선택 동작 연결
-        }
+        manager.CollectStock(out var available, out var sold); // 원래 순서의 판매 가능 상품과 판매 완료 상품 조회
+        foreach (ShopOfferData offer in available) // 먼저 구매할 수 있는 상품 배치
+        { // 판매 가능 상품 배치 시작
+            CreateOfferButton(offer, false); // 정상 가격과 구매 확인 버튼 생성
+        } // 판매 가능 상품 배치 종료
 
         Button removalButton = CreateProductCard("CardRemovalService", null, "서비스", "보유 카드 1장 제거", $"{manager.GetCardRemovalPrice()} Gold", "카드\n제거", false, new Color(0.30f, 0.18f, 0.20f, 1f)); // 할인 적용 카드 제거 서비스 카드 생성
         removalButton.onClick.AddListener(ShowCardRemovalList); // 카드 제거 목록 열기 연결
         Button sellButton = CreateProductCard("RelicSellService", null, "서비스", "보유 유물 판매", "판매할 유물 선택", "유물\n판매", false, new Color(0.18f, 0.30f, 0.28f, 1f)); // 유물 판매 서비스 생성
         sellButton.onClick.AddListener(ShowRelicSaleList); // 유물 판매 목록 열기 연결
+        foreach (ShopOfferData offer in sold) // 모든 서비스 뒤의 판매 완료 상품 배치
+        { // 품절 상품 배치 시작
+            CreateOfferButton(offer, true); // 원래 카탈로그 순서의 비활성 품절 칸 생성
+        } // 품절 상품 배치 종료
         ResetScrollToTop(); // 상품 목록 시작 위치 복원
     }
+
+    private void CreateOfferButton(ShopOfferData offer, bool sold) // 실제 상품 칸 하나 생성
+    { // 상품 버튼 생성 시작
+        string typeLabel = GetOfferTypeLabel(offer.OfferType); // 상품 종류 이름
+        Color color = sold ? new Color(0.12f, 0.12f, 0.13f, 1f) : ButtonColor; // 판매 완료 표시 색상
+        string price = sold ? "판매 완료" : $"{manager.GetOfferPrice(offer)} Gold"; // 현재 할인 가격과 품절 문구
+        Button button = CreateProductCard($"Offer_{offer.OfferId}", offer.Icon, typeLabel, offer.DisplayName, price, typeLabel, sold, color); // 해당 원본의 한 칸 생성
+        button.interactable = !sold; // 판매 완료 버튼의 재입력 차단
+        button.onClick.AddListener(() => OpenPurchaseConfirmation(offer)); // 실제 금액과 설명 먼저 표시
+    } // 상품 버튼 생성 종료
 
     private void SelectOffer(ShopOfferData offer) // 상품 선택 처리
     { // 상품 선택 시작
         if (offer != null && offer.RequiresOwnerChoice) // 공용 카드 소유자 선택 확인
         { // 공용 카드 선택 시작
+            pendingOwnerPrice = manager.GetOfferPrice(offer); // 구매 확인을 마친 가격 보관
+            ownerReturnScroll = productScrollRect.verticalNormalizedPosition; // 소유자 선택 전 확인한 상품 위치 보관
             ShowCardOwnerList(offer); // 현재 파티의 소유자 선택 표시
             if (resultText != null) // 안내 문구 존재 확인
             { // 카드 소유자 안내 시작
@@ -196,7 +209,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
                     continue; // 다음 파티원 확인
                 } // 빈 슬롯 처리 종료
                 Button ownerButton = CreateProductCard($"ChooseCardOwner_{capturedOwner.CharacterId}", capturedOwner.Portrait, "소유자 선택", capturedOwner.DisplayName, $"{manager.GetOfferPrice(offer)} Gold", "캐릭터", false, ButtonColor); // 캐릭터 소유자 선택 카드 생성
-                ownerButton.onClick.AddListener(() => manager.TryPurchase(offer, capturedOwner)); // 선택한 소유자로 구매
+                ownerButton.onClick.AddListener(() => PurchaseForOwner(offer, capturedOwner)); // 확인한 가격과 소유자를 재검사한 뒤 결제
             } // 개별 캐릭터 표시 종료
         } // 파티 소유자 표시 종료
         ResetScrollToTop(); // 소유자 목록 시작 위치 복원
@@ -210,6 +223,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             resultText.color = Color.white; // 기본 안내 색상 복원
         } // 기본 안내 복원 종료
         RefreshMainView(); // 구매 없이 상품 목록 복귀
+        productScrollRect.verticalNormalizedPosition = ownerReturnScroll; // 취소한 카드가 있던 목록 위치 복구
     } // 소유자 선택 취소 종료
 
     private void ShowCardRemovalList() // 카드 제거 선택 목록 표시
@@ -266,8 +280,22 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         }
     }
 
+    private void MarkShelfDirty() // 외부 유물 변경 뒤 표시 갱신 예약
+    { // 보유 변경 확인 시작
+        shelfDirty = overlayObject != null && overlayObject.activeSelf; // 열려 있는 목록만 갱신
+    } // 보유 변경 확인 종료
+
+    private void LateUpdate() // 이번 프레임의 유물 변경을 한 번만 반영
+    { // 진열 갱신 시작
+        if (shelfDirty) // 거래 완료 알림 없이 보관함만 바뀐 경우 확인
+        { // 외부 획득 반영 시작
+            HandleManagerChanged(); // 현재 하위 화면의 원본과 가격 갱신
+        } // 외부 획득 반영 종료
+    } // 진열 갱신 종료
+
     private void HandleManagerChanged() // 상점 상태 변경 처리
     {
+        shelfDirty = false; // 같은 거래에서 이미 예약된 중복 목록 갱신 해제
         if (goldText != null) // 골드 텍스트 존재 확인
         {
             goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 갱신
@@ -281,11 +309,17 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             return; // 준비 전 상품 조회 방지
         } // 준비 전 상점 처리 종료
 
+        if (pendingConfirmation != null && overlayObject.activeSelf) // 확인 중인 상품의 재고와 할인 변경 확인
+        { // 확인 화면 갱신 시작
+            RefreshPurchaseConfirmation(); // 구매 버튼과 실제 금액 갱신
+            return; // 확인 화면 뒤쪽의 목록 재생성 보류
+        } // 확인 화면 갱신 종료
         if (overlayObject != null && overlayObject.activeSelf && showingCardOwners) // 열린 카드 소유자 선택 확인
         { // 카드 소유자 선택 갱신 시작
             if (pendingCardOffer == null || manager.IsPurchased(pendingCardOffer)) // 선택 상품의 판매 완료 확인
             { // 구매 완료 처리 시작
                 RefreshMainView(); // 상품 목록으로 복귀
+                productScrollRect.verticalNormalizedPosition = ownerReturnScroll; // 공용 카드 결제 전 보고 있던 위치 복구
             } // 구매 완료 처리 종료
             else // 구매 미완료 처리
             { // 소유자 선택 유지 시작
@@ -298,7 +332,9 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         } // 유물 판매 목록 갱신 종료
         else if (overlayObject != null && overlayObject.activeSelf && !showingCardRemoval) // 열린 상품 목록 확인
         {
+            float position = productScrollRect.verticalNormalizedPosition; // 구매와 외부 획득 전의 목록 위치 보관
             RefreshMainView(); // 판매 상태 포함 상품 목록 갱신
+            productScrollRect.verticalNormalizedPosition = position; // 재고 정렬 뒤 스크롤 위치 복구
         }
     }
 
@@ -405,6 +441,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         {
             Transform child = contentRoot.GetChild(index); // 현재 목록 자식 조회
             child.gameObject.SetActive(false); // 지연 제거 전 기존 항목 즉시 숨김
+            child.SetParent(null, false); // 같은 프레임에 나타난 새 상품과 이전 버튼 구별
             Destroy(child.gameObject); // 기존 목록 항목 제거
         }
     }
@@ -498,6 +535,11 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
     private void OnDestroy() // 상점 화면 제거 처리
     {
+        if (observedRelics != null) // 연결했던 보관함 존재 확인
+        { // 보관함 연결 해제 시작
+            observedRelics.Changed -= MarkShelfDirty; // 사라진 상점으로 알림 전달 방지
+        } // 보관함 연결 해제 종료
+        ClosePurchaseConfirmation(); // 씬 제거 시 구매 확인 연결 정리
         RestoreTimeScale(); // Scene 종료 중 시간 배율 복원
 
         if (manager != null) // 상점 관리자 존재 확인

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RelicData
   relicId: RELIC_TEST_MAX_HP
   displayName: "\uCD5C\uB300 \uCCB4\uB825 \uC720\uBB3C"
-  description: 
+  description: 전투 시작 시 모든 생존 아군의 최대 체력이 10 증가합니다.
   icon: {fileID: 0}
   rarity: 0
   triggerType: 2

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_TEST_ATTACK
   displayName: Test Attack
-  description: "4\uC77C\uCC28 \uD14C\uC2A4\uD2B8 \uACF5\uACA9 \uCE74\uB4DC"
+  description: 선택한 적 한 명에게 물리 피해 10을 줍니다.
   artwork: {fileID: 0}
   cardType: 0
   targetType: 3

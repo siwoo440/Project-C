@@ -69,6 +69,7 @@ public sealed class FirstBossRewardComparisonTests // 같은 보스와 시드에
                 Assert.AreEqual(150, PlayerResourceManager.Instance.Gold); // 실제 보물의 정상 골드 지급 확인
                 Room(map, ExplorationRoomType.Shop).SendMessage("OpenShop"); // 같은 층 상점 상품 화면 열기
                 Click("Offer_SHOP_SHEET_HEAVY_STRIKE"); // 실제 공용 강타 상품 선택
+                Click("ConfirmPurchase"); // 실제 가격 확인 뒤 소유자 선택
                 Click("ChooseCardOwner_ARC_00"); // 바보에게 강타 구매
                 Assert.AreEqual(70, PlayerResourceManager.Instance.Gold); // 실제 상점 가격 팔십 골드 차감 확인
                 AssertOwner(Strike, "ARC_00"); // 바보의 회차 덱에 강타 한 장 확인

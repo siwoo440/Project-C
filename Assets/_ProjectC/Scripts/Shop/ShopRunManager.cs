@@ -129,15 +129,23 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         { // 잘못된 상품 처리 시작
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상품 정보가 올바르지 않습니다."); // 잘못된 상품 완료 반환
         } // 잘못된 상품 처리 종료
+        if (purchasing) // 같은 거래의 알림 중 재진입 확인
+        { // 중복 거래 방지 시작
+            return ShopPurchaseResult.Unavailable; // 진행 중인 구매 완료 대기
+        } // 중복 거래 방지 종료
+        if (offer.OfferType == ShopOfferType.Relic) // 같은 유물의 별도 상품 번호 확인
+        { // 유물 재고 확인 시작
+            ShopPurchaseResult stock = CheckRelicStock(offer); // 방의 실제 판매 기록과 보유 여부 조회
+            if (stock != ShopPurchaseResult.Success) // 판매했거나 표시하지 않는 유물 확인
+            { // 유물 구매 차단 시작
+                return CompleteTransaction(stock, BuildPurchaseMessage(stock, offer.DisplayName)); // 차감 없이 재구매 차단
+            } // 유물 구매 차단 종료
+        } // 유물 재고 확인 종료
         CharacterData owner = offer.RequiresOwnerChoice ? chosenOwner : offer.CardOwner; // 공용 또는 고정 소유자 결정
         if (offer.RequiresOwnerChoice && (PartyLoadoutRuntime.Active == null || PartyLoadoutRuntime.Active.Party == null || !PartyLoadoutRuntime.Active.Party.ContainsCharacter(owner))) // 공용 카드 소유 파티원 확인
         { // 소유자 선택 오류 시작
             return CompleteTransaction(ShopPurchaseResult.Unavailable, "현재 파티 캐릭터를 선택하세요."); // 소유자 선택 필요 알림
         } // 소유자 선택 오류 종료
-        if (purchasing) // 같은 거래의 알림 중 재진입 확인
-        { // 중복 거래 방지 시작
-            return ShopPurchaseResult.Unavailable; // 진행 중인 구매 완료 대기
-        } // 중복 거래 방지 종료
         ShopPurchaseResult result; // 실제 거래 결과 보관
         purchasing = true; // 상품 지급과 할인 소모까지 거래 잠금
         try // 외부 보관함 알림에도 거래 잠금 정리
@@ -155,6 +163,75 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         string message = BuildPurchaseMessage(result, offer.DisplayName); // 거래 결과 문구 생성
         return CompleteTransaction(result, message); // 거래 결과 알림과 반환
     } // 상품 구매 종료
+
+    internal void CollectStock(out List<ShopOfferData> available, out List<ShopOfferData> sold) // 현재 방의 구매 가능 목록과 품절 목록 생성
+    { // 진열 계산 시작
+        available = new List<ShopOfferData>(); // 판매 가능한 실제 상품
+        sold = new List<ShopOfferData>(); // 이 방에서 팔린 실제 상품
+        var listedRelics = new HashSet<string>(StringComparer.Ordinal); // 품절 또는 진열된 유물 식별자
+        foreach (ShopOfferData offer in catalog.Offers) // 기존 저장의 실제 판매 번호 우선 확인
+        { // 판매 기록 확인 시작
+            if (IsPurchased(offer) && !offer.RewardOnly && offer.CanOfferToDeck(runDeckManager) && (offer.OfferType != ShopOfferType.Relic || listedRelics.Add(offer.Relic.RelicId))) // 실제 판매한 원본에서 유물당 한 칸 선택
+            { // 품절 상품 보관 시작
+                sold.Add(offer); // 카탈로그 순서대로 판매 완료 목록에 추가
+            } // 품절 상품 보관 종료
+        } // 판매 기록 확인 종료
+        var inventory = RelicRunManager.Instance?.Inventory; // 현재 보유 유물 조회
+        foreach (ShopOfferData offer in catalog.Offers) // 원래 순서대로 구매 가능 상품 확인
+        { // 구매 목록 확인 시작
+            if (offer.RewardOnly || !offer.CanOfferToDeck(runDeckManager) || IsPurchased(offer)) // 보상 전용과 미출전 카드 및 품절 상품 제외
+            { // 구매 목록 제외 시작
+                continue; // 다음 원본 확인
+            } // 구매 목록 제외 종료
+            if (offer.OfferType == ShopOfferType.Relic && (inventory?.ContainsRelic(offer.Relic.RelicId) == true || !listedRelics.Add(offer.Relic.RelicId))) // 소지한 유물과 이미 표시한 유물 제외
+            { // 유물 중복 제외 시작
+                continue; // 유물 칸 하나만 유지
+            } // 유물 중복 제외 종료
+            available.Add(offer); // 기존 가격의 실제 상품을 원래 순서로 추가
+        } // 구매 목록 확인 종료
+    } // 진열 계산 종료
+
+    private ShopPurchaseResult CheckRelicStock(ShopOfferData offer) // 표시된 유물 원본의 실제 거래 가능 여부
+    { // 유물 거래 확인 시작
+        ShopOfferData first = null; // 해당 유물의 첫 판매 원본
+        foreach (ShopOfferData entry in catalog.Offers) // 현재 방의 같은 유물 원본 확인
+        { // 유물 원본 확인 시작
+            if (entry.OfferType == ShopOfferType.Relic && entry.Relic.RelicId == offer.Relic.RelicId) // 이름과 무관한 유물 식별자 비교
+            { // 동일 유물 확인 시작
+                first ??= entry; // 기본 진열 원본 보관
+                if (IsPurchased(entry)) // 이전 저장의 다른 상품 번호까지 판매 여부 확인
+                { // 품절 반환 시작
+                    return ShopPurchaseResult.AlreadyPurchased; // 판매한 뒤 되판 유물의 중복 결제 방지
+                } // 품절 반환 종료
+            } // 동일 유물 확인 종료
+        } // 유물 원본 확인 종료
+        return first == offer && RelicRunManager.Instance?.Inventory.ContainsRelic(offer.Relic.RelicId) != true ? ShopPurchaseResult.Success : ShopPurchaseResult.Unavailable; // 실제 진열 원본과 미보유 조건 확인
+    } // 유물 거래 확인 종료
+
+    internal ShopPurchaseResult PreviewPurchase(ShopOfferData offer) // 결제 전 표시할 현재 상품 상태 확인
+    { // 구매 상태 조회 시작
+        if (!IsReady || offer == null || offer.RewardOnly || !offer.CanOfferToDeck(runDeckManager)) // 준비 중인 상점과 지급 가능한 상품 확인
+        { // 상품 오류 처리 시작
+            return ShopPurchaseResult.InvalidOffer; // 거래 대상 없음
+        } // 상품 오류 처리 종료
+        if (IsPurchased(offer)) // 현재 방 판매 완료 여부 확인
+        { // 품절 처리 시작
+            return ShopPurchaseResult.AlreadyPurchased; // 같은 상품 차감 차단
+        } // 품절 처리 종료
+        if (offer.OfferType == ShopOfferType.Relic) // 유물 고유 재고 확인
+        { // 유물 구매 조건 시작
+            var stock = CheckRelicStock(offer); // 보유와 다른 상품 번호의 품절 상태 조회
+            if (stock != ShopPurchaseResult.Success) // 구매할 수 없는 유물 확인
+            { // 숨은 유물 처리 시작
+                return stock; // 차감 없는 현재 상태 반환
+            } // 숨은 유물 처리 종료
+        } // 유물 구매 조건 종료
+        if (offer.OfferType == ShopOfferType.Potion && !CanDeliver(offer, null)) // 포션을 담을 빈 슬롯 확인
+        { // 보관함 포화 처리 시작
+            return ShopPurchaseResult.Unavailable; // 소모품 지급 불가 반환
+        } // 보관함 포화 처리 종료
+        return Gold < GetOfferPrice(offer) ? ShopPurchaseResult.InsufficientGold : ShopPurchaseResult.Success; // 현재 할인 가격과 실제 지갑 비교
+    } // 구매 상태 조회 종료
 
     public int GetOfferPrice(ShopOfferData offer) // 현재 상점의 상품 가격 조회
     { // 표식 포함 가격 조회 시작

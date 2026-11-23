@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PotionData
   itemId: POTION_TEST_MENTAL
   displayName: "테스트 정신 포션"
-  description: 
+  description: 선택한 아군 한 명의 정신력을 10 회복합니다.
   icon: {fileID: 21300000, guid: 421bd206c83a459d9a0c036e258e6f04, type: 3}
   category: 0
   effectType: 2

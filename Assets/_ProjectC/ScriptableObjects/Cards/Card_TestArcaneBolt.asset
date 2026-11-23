@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CardData
   cardId: CRD_TEST_ARCANE_BOLT
   displayName: "마력 탄환"
-  description: "선택한 적에게 마법 피해를 준다."
+  description: 선택한 적 한 명에게 마법 피해 14를 줍니다.
   artwork: {fileID: 0}
   cardType: 1
   cardTags: 3

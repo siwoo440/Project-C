@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RelicData
   relicId: RELIC_TEST_HEAL
   displayName: "\uD68C\uBCF5 \uC720\uBB3C"
-  description: 
+  description: 전투 시작 시 모든 생존 아군의 체력을 10 회복합니다.
   icon: {fileID: 0}
   rarity: 0
   triggerType: 2
