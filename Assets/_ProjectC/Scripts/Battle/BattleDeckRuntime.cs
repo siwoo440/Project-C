@@ -160,6 +160,18 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 선택 처리 성공 반환
     } // 선택 드로우 종료
+    public bool TryDiscardDrawTop(CardInstance choice) // 뽑을 더미 맨 위 카드 버리기
+    { // 맨 위 카드 버리기 시작
+        if (choice == null || drawPile.Count == 0 || drawPile[drawPile.Count - 1] != choice) // 현재 맨 위 카드 확인
+        { // 버리기 불가 처리 시작
+            return false; // 버리기 실패 반환
+        } // 버리기 불가 처리 종료
+        drawPile.RemoveAt(drawPile.Count - 1); // 뽑을 더미 맨 위 카드 제거
+        discardPile.Add(choice); // 버린 카드 더미에 추가
+        EnsureValidState(); // 카드 영역 상태 검증
+        StateChanged?.Invoke(); // 카드 영역 변경 알림
+        return true; // 버리기 성공 반환
+    } // 맨 위 카드 버리기 종료
     public bool TryRecoverDiscard(CardInstance choice) // 버린 카드 한 장 회수 시도
     { // 카드 회수 시작
         if (choice == null || hand.Count >= MaxHandSize || !discardPile.Contains(choice)) // 카드 위치와 손패 공간 확인
