@@ -470,8 +470,17 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             return;
         }
 
-        Vector2 worldPosition =
-            GetWorldPosition(cell.Coordinate); // 조우 셀 월드 좌표 계산
+        Vector2 worldPosition; // 조우 실제 배치 위치
+
+        if (!tilemapView.TryGetRandomEncounterPosition(
+                cell.Coordinate,
+                CurrentMap.Seed,
+                out worldPosition))
+        {
+            worldPosition =
+                GetWorldPosition(
+                    cell.Coordinate); // 안전 위치를 찾지 못하면 기존 방 중심 위치 사용
+        }
 
         GameObject encounterObject =
             new GameObject(
