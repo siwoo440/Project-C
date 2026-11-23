@@ -93,5 +93,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     SandQueenSummonAttackGrow = 90, // 실제 적 소환 완료에 따른 전투 지속 누적 공격력 증가
     BattlefieldMapAccuracyUp = 91, // 두 아군 턴의 전장 지도 명중률 증가
     GoldenLureAttackPercentDown = 92, // 두 적 턴의 금빛 미끼 직접 공격 피해 감소
-    ActionPointDown = 93 // 적 원본 또는 카드가 명시적으로 부여한 행동력 감소
+    ActionPointDown = 93, // 적 원본 또는 카드가 명시적으로 부여한 행동력 감소
+    MagneticEvasionDown = 94, // 적이 받는 두 턴의 자기장 회피율 약화
+    WasteHeatAttackPowerUp = 95 // 실제 화상 피해 뒤 분리되어 유지되는 공격 강화
 } // 열거형 종료

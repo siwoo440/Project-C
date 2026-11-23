@@ -4184,4 +4184,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 559e1eae224759398522c84fed6dfbe3, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_SECURITY_ENFORCER_BADGE
+    offerType: 1
+    price: 267
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: cd443af40f915f2b9ae02a3405c364a2, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RECOVERY_DRONE_HOOK
+    offerType: 1
+    price: 280
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 3b0b14d4d51f5262ab03a7e79fafcbf3, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_MAGNETIC_COMPRESSION_CORE
+    offerType: 1
+    price: 301
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: af192c7d7dc6574d96689f0885a402b3, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SURVEILLANCE_CORE_FRAGMENT
+    offerType: 1
+    price: 314
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 9630977bebae5364b47914547a7a815d, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WASTE_HEAT_RADIATOR
+    offerType: 1
+    price: 335
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 0417f9545c14596e81130af79bca54fd, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_EMERGENCY_REBOOT_SWITCH
+    offerType: 1
+    price: 198
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2fe1c9c0a374574ba4e8ae4858030cb2, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_BLACK_BOX
+    offerType: 1
+    price: 219
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: d59beebf8e7a5e54b71cc5cdab611edb, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_ISOLATION_ROOM_NUMBER_TAG
+    offerType: 1
+    price: 232
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 76cdcb0c15835c44b9f20444e6a4ef2f, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

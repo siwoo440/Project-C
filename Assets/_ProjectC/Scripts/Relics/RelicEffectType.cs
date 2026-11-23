@@ -233,4 +233,12 @@ public enum RelicEffectType // 유물 효과 종류
     LeakageTurretCasingShieldAttackShock, // 방패 사용 뒤 다음 공격에 예약한 감전
     ScrapSyringeHealingTrade, // 실제 회복 카드의 추가 체력 회복과 약화 위험
     MechanicalBugShellAreaReduction, // 적의 실제 직접 광역 피해 경감
+    SecurityEnforcerBadgeDebuffedDamage, // 행동 제한 중인 적의 카드 피해 가산
+    RecoveryDroneHookMarkedActionLoss, // 명중한 표식 적의 다음 행동 취소 판정
+    MagneticCompressionCoreEvasionDown, // 세 아군 차례마다 적 회피율 감소
+    SurveillanceCoreFragmentResistanceTrade, // 아군 마법 저항과 첫 실제 드로우 감소
+    WasteHeatRadiatorBurnAttackUp, // 화상 체력 피해 후 개별 공격력 강화
+    EmergencyRebootSwitchLowHealthHeal, // 체력 저하 시 전투당 한 번의 회복
+    BrokenBlackBoxAllyDefeatDraw, // 실제 아군 전투불능 때 공유 카드 보충
+    IsolationRoomNumberTagDualOpeningMarks, // 전투 개시 무작위 아군과 적 표식
 }

@@ -45,7 +45,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public int CreationOrder { get; } // 행동 생성 순서 조회
     public int ActionOrder { get; private set; } // 최종 행동 순번 조회
 
-    public BattleStatusEffectType BlockingStatus => Actor.GetStatusEffect(BattleStatusEffectType.Stun) != null ? BattleStatusEffectType.Stun : Actor.GetStatusEffect(BattleStatusEffectType.Stagger) != null ? BattleStatusEffectType.Stagger : BattleStatusEffectType.None; // 이번 행동을 막는 실제 상태
+    public BattleStatusEffectType BlockingStatus => // 실제 예정 행동을 막는 상태 우선순위
+        Actor.GetStatusEffect(BattleStatusEffectType.Stun) != null ? BattleStatusEffectType.Stun : // 기절의 원래 행동 전체 취소 우선
+        Actor.GetStatusEffect(BattleStatusEffectType.Stagger) != null ? BattleStatusEffectType.Stagger : // 일반 경직의 원래 한 번 취소
+        Actor.GetStatusEffect(BattleStatusEffectType.ActionPointDown) is { IsExpired: false, EffectiveValue: > 0 } // 유효 행동력 감소의 한 번 취소
+            ? BattleStatusEffectType.ActionPointDown : BattleStatusEffectType.None; // 현재 예정 행동의 실제 취소 원인
     private int TurnAttackPenalty => DamageType == BattleDamageType.Physical || DamageType == BattleDamageType.Magical ? Actor.GetStatusEffect(BattleStatusEffectType.AttackPowerDown)?.EffectiveValue ?? 0 : 0; // 물리·마법 공격에만 적용할 경보 약화
     private int FearAttackPenalty => Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && Actor.GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false } // 실제 공포가 있는 적의 공격인지 확인
         ? BattleSupplyRelics.Find(RelicEffectType.AfraidEnemyAttackReduction)?.EffectValue ?? 0 // 보유한 침묵 결정종의 추가 공격력 감소량
@@ -328,9 +332,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     internal BattleEnemyActionResult Execute(Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, BattleUnitRuntime guard, Action consumeBodyGuard) // 대신 받기를 포함한 행동 실행
     { // 보호 포함 실행 시작
         areaHitResults.Clear(); // 새 행동의 광역 실행 기록 초기화
-        if (BlockingStatus == BattleStatusEffectType.Stagger) // 다음 행동 한 번을 취소하는 상태 확인
+        BattleStatusEffectType blocker = BlockingStatus; // 이번 예정 행동의 실제 취소 상태 기록
+        if (blocker is BattleStatusEffectType.Stagger or BattleStatusEffectType.ActionPointDown) // 행동 한 번을 대신 쓰는 상태 취소
         { // 행동 한 번 취소 시작
-            Actor.RemoveStatusEffect(BattleStatusEffectType.Stagger); // 취소한 예고 한 번에만 상태 소모
+            Actor.RemoveStatusEffect(blocker); // 실제로 한 행동을 취소한 상태만 소모
             return BattleEnemyActionResult.Empty(ActionType, DamageType); // 피해와 부가 효과 없는 결과
         } // 행동 한 번 취소 종료
         if (!IsExecutable)

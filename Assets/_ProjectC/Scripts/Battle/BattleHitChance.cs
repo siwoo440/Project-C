@@ -23,7 +23,9 @@ public static class BattleHitChance // 공격 명중 여부 계산
             evasion = (int)Math.Min(100, (long)evasion + bonus); // 기존 회피와 퍼센트포인트 합산 및 백 상한
         } // 꺼진 등불 심지의 은신 회피 종료
         int evasionLoss = target?.GetStatusEffect(BattleStatusEffectType.EvasionDown)?.EffectiveValue ?? 0; // 대상 회피 감소 값 조회
-        evasion = Math.Max(0, evasion - evasionLoss); // 회피 감소를 실명 보정과 분리해 영점까지 적용
+        var magneticLoss = target?.GetStatusEffect(BattleStatusEffectType.MagneticEvasionDown); // 현재 대상의 자기장 회피 약화 조회
+        int magneticPercent = magneticLoss is { IsExpired: false } ? magneticLoss.EffectiveValue : 0; // 적 차례가 끝나기 전 실제 활성 자기장 퍼센트포인트
+        evasion = (int)Math.Clamp((long)evasion - evasionLoss - magneticPercent, 0L, 100L); // 두 별도 회피 감소의 합계와 정상 회피 범위 적용
         int disorientation = Math.Min(100, attacker.GetStatusEffect(BattleStatusEffectType.Disorientation)?.EffectiveValue ?? 0); // 실명과 별개인 방랑자 명중 감소
         int poisonPenalty = attacker.Team == BattleTeam.Enemy && attacker.GetStatusEffect(BattleStatusEffectType.Poison) is { IsExpired: false } // 실제 적 공격자의 현재 활성 중독 확인
             ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.WineStainPoisonAccuracyLoss)?.EffectValue ?? 0, 0, 100) // 실제 보유한 포도주 얼룩의 고정 퍼센트포인트 조회
