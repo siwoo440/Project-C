@@ -16,8 +16,10 @@ public sealed class BattleActionPointOrbTests // 행동력 구체 검사
         handObject.transform.SetParent(canvas.transform, false); // 손패 부모 연결
         handObject.GetComponent<RectTransform>().sizeDelta = new Vector2(1400f, 350f); // 손패 화면 크기 설정
         BattleHandView hand = handObject.GetComponent<BattleHandView>(); // 손패 화면 조회
-        Transform orb = handObject.transform.Find("ActionPointOrb"); // 행동력 구체 조회
+        Transform orb = handObject.transform.Find("ActionPointOrb"); // 손패 패널 왼쪽 위 행동력 구체 조회
         Assert.IsNotNull(orb); // 행동력 구체 존재 확인
+        Assert.AreEqual(new Vector2(0f, 1f), (orb as RectTransform).anchorMin); // 구체의 손패 왼쪽 위 앵커 확인
+        Assert.AreEqual(new Vector2(0f, 1f), (orb as RectTransform).anchorMax); // 구체의 손패 왼쪽 위 기준 확인
         Image fill = orb.Find("APFill").GetComponent<Image>(); // 구체 충전 이미지 조회
         Assert.IsNotNull(orb.Find("APFrame").GetComponent<Image>().sprite); // 구체 테두리 이미지 확인
         Assert.IsFalse(fill.raycastTarget); // 구체의 입력 차단 방지 확인
