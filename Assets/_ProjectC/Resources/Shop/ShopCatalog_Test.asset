@@ -4275,4 +4275,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 76cdcb0c15835c44b9f20444e6a4ef2f, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_CENTRAL_POWER_FUSE
+    offerType: 1
+    price: 253
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 7c9297c7c2915bd5adb368af91bdd116, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_COOLANT_VALVE
+    offerType: 1
+    price: 266
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 9e2b56a27c0453e5bd15fca39f193be5, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DEADLOCK_BACKUP_CHIP
+    offerType: 1
+    price: 287
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 307fd2b194bc540e804688207feb54e6, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BASILISK_ENGINE_CORE
+    offerType: 1
+    price: 300
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2f70a2fb6bff5751947b8b9257f583b6, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SCRAP_MOTHER_REASSEMBLY_CORE
+    offerType: 1
+    price: 321
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 319bc3b876ef5366bf79046c404ff52c, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_CENTRAL_LOCKDOWN_PROTOCOL
+    offerType: 1
+    price: 334
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 967ab3f5a7bf5010990c356cf9a77e63, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SPECIMEN_PRESERVATION_CAPSULE
+    offerType: 1
+    price: 205
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2fe4ef1492fc5dcfbb1d44f33e5c9e15, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FAULTY_AI_DECISION
+    offerType: 1
+    price: 218
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 11fb271fc16d5c3fbfa864f4d23e0305, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

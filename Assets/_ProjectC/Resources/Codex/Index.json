@@ -1663,6 +1663,54 @@
       "artworkKey": "eaca43433f8853d088df9b3ac45876d0"
     },
     {
+      "category": 3,
+      "name": "중앙 전력 퓨즈",
+      "description": "아군이 감전이 활성인 적을 실제로 처치하면 공용 행동력을 2 얻는다.",
+      "artworkKey": "c3ffb87d3d825ae986d9d947af54be9c"
+    },
+    {
+      "category": 3,
+      "name": "냉각수 밸브",
+      "description": "아군이 화상 상태가 처음 적용될 때 50% 확률로 그 화상을 즉시 해제한다. 같은 화상이 중첩되면 다시 판정하지 않는다.",
+      "artworkKey": "f7c5007268785eee930da73706004782"
+    },
+    {
+      "category": 3,
+      "name": "데드락 백업칩",
+      "description": "전투 시작에 생존 적 전체에 두 적 턴 동안 표식을 부여한다. 전투 중 모든 아군의 마법 저항력이 5 낮아진다.",
+      "artworkKey": "cdf7aa45af715ce2a645f2efb814ce67"
+    },
+    {
+      "category": 3,
+      "name": "바실리스크 엔진 코어",
+      "description": "전투 시작에 첫 생존 아군이 방어도 30을 얻는다. 같은 아군의 첫 아군 턴 행동 속도는 1 감소한다.",
+      "artworkKey": "94aeb3746a9d514ab898f0e342a2606f"
+    },
+    {
+      "category": 3,
+      "name": "스크랩 마더의 재조립핵",
+      "description": "아군이 기계형 적을 처치하면 그 아군의 전투 방어도 지급량에 5가 누적된다. 처치 시 즉시 방어도 5를 얻고 이후 아군 턴마다 누적 방어도를 다시 얻는다.",
+      "artworkKey": "42094e3fb2495df2a2ef2d1435af378b"
+    },
+    {
+      "category": 3,
+      "name": "중앙 봉쇄 프로토콜",
+      "description": "실제 아군 턴이 세 번 시작될 때마다 25% 확률로 생존 적 전체의 다음 예정 행동 하나를 취소한다.",
+      "artworkKey": "51e77966599e5ac8b55ed7d56614853e"
+    },
+    {
+      "category": 3,
+      "name": "실험체 보존 캡슐",
+      "description": "전투 종료 때 생존 아군 모두가 체력을 기본 10 회복하고 정신력이 3 감소한다.",
+      "artworkKey": "6d27772592d056a29a1e0f1c97fc5ae0"
+    },
+    {
+      "category": 3,
+      "name": "불량 AI의 판단식",
+      "description": "매 아군 턴의 손패 지급을 마친 뒤 무작위 고정 비용 카드 한 장의 비용이 이번 턴에만 1 줄거나 1 늘어난다.",
+      "artworkKey": "600d7b92e3f655b5852d9b07a19f8e47"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

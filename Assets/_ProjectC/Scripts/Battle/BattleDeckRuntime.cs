@@ -15,6 +15,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private bool recoveredRandomDiscard; // 회수용 자석의 전투 발동 기록
     private CardInstance firstDrawDiscountCard; // 현재 턴에 개별 드로우 할인을 받은 카드
     private CardInstance openingRandomDiscountCard; // 퇴색한 왕관이 첫 손패에서 선택한 카드
+    private CardInstance faultyAiAdjustedCard; // 현재 완성 손패에서 AI가 가격을 바꾼 하나의 실제 카드
     private CardInstance openingRetainedCard; // 핸드벨이 첫 손패에서 유지할 카드
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
@@ -246,6 +247,12 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             card.AncientFormulaApSurcharge = 0; // 다음 실제 사용과 비용 표시를 원래 일반 가격으로 복원
         } // 물리 카드 비용 복원 종료
         allyTurnDrawnCards.Clear(); // 다음 턴의 고유 실물 기록 준비
+        if (faultyAiAdjustedCard != null) // 이번 실제 차례에 한 장의 실물이 선택됐는지 확인
+        { // 같은 카드의 임시 가격 조정 복원 시작
+            faultyAiAdjustedCard.FaultyAiApAdjustment = 0; // 손패에서 사용하거나 버렸어도 같은 실물만 원래 규칙으로 복귀
+            faultyAiAdjustedCard = null; // 다음 실제 아군 차례의 독립 추첨 준비
+            refresh = true; // 이전 실물과 모든 원래 비용의 원래 표시를 한 번에 갱신
+        } // 같은 카드의 임시 가격 조정 복원 종료
         if (refresh) // 실제 원래 비용으로 되돌릴 손패 표시 확인
         { // 한 번의 실제 비용 갱신 시작
             StateChanged?.Invoke(); // 다음 턴이나 재사용 시 기본 비용 변경 알림
@@ -262,6 +269,23 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         firstDrawDiscountCard = null; // 종료된 턴의 할인 참조 해제
         StateChanged?.Invoke(); // 유지된 손패의 비용 표시 갱신
     } // 첫 드로우 할인 정리 종료
+    internal void ApplyFaultyAiTurnCost(int amount) // 이번 실제 차례의 완성 손패에서 한 장의 고정 기본 비용 조정
+    { // 아군 손패 추첨과 실제 값 적용 시작
+        if (amount <= 0 || !trackingAllyTurnDraws || faultyAiAdjustedCard != null) // 유효한 원본과 실제 아군 차례 및 같은 차례 중복 확인
+        { // 추첨 생략 시작
+            return; // 실제 카드 가격과 기존 난수 순서 보존
+        } // 추첨 생략 종료
+        var candidates = hand.FindAll(card => IsDrawable(card) && card.EffectType != CardEffectType.Unplayable && // 현재 손에 있는 살아 있는 소유자의 실제 사용 카드
+            !card.IsBattleOnlySingleUse && !card.SourceData.SpendsAllActionPoints); // 원래 강제 무료 임시 카드와 전액 비용의 지급 계약 유지
+        if (candidates.Count == 0) // 현재 실제 손패에 유효한 고정 가격 원본이 있는지 확인
+        { // 비용 수정 사례가 없는 경우 시작
+            return; // 잘못된 무작위 범위 사용 방지
+        } // 비용 수정 사례가 없는 경우 종료
+        faultyAiAdjustedCard = candidates[random.Next(candidates.Count)]; // 같은 원본의 복수 실물까지 포함하여 한 장을 균등 추첨
+        faultyAiAdjustedCard.FaultyAiApAdjustment = random.Next(2) == 0 ? -amount : amount; // 독립적으로 같은 확률의 감소 또는 증가 수치 적용
+        StateChanged?.Invoke(); // 변경을 마친 현재 손패의 정확한 가격 표시 전달
+    } // 아군 손패 추첨과 실제 값 적용 종료
+
     internal void DiscountRandomOpeningHandCard(int amount) // 첫 손패의 유료 고정 카드 한 장 할인
     { // 왕관의 무작위 카드 선택 시작
         if (amount <= 0 || openingRandomDiscountCard != null) // 유효한 할인량과 첫 선택 여부 확인

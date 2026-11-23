@@ -241,4 +241,12 @@ public enum RelicEffectType // 유물 효과 종류
     EmergencyRebootSwitchLowHealthHeal, // 체력 저하 시 전투당 한 번의 회복
     BrokenBlackBoxAllyDefeatDraw, // 실제 아군 전투불능 때 공유 카드 보충
     IsolationRoomNumberTagDualOpeningMarks, // 전투 개시 무작위 아군과 적 표식
+    CentralPowerFuseShockedDefeatActionPoints, // 중앙 전력 퓨즈의 실제 전투 효과
+    CoolantValveInstantBurnCleanse, // 냉각수 밸브의 실제 전투 효과
+    DeadlockBackupChipOpeningMarksTrade, // 데드락 백업칩의 실제 전투 효과
+    BasiliskEngineCoreOpeningGuard, // 바실리스크 엔진 코어의 실제 전투 효과
+    ScrapMotherReassemblyCoreMechanicalDefeatArmor, // 스크랩 마더의 재조립핵의 실제 전투 효과
+    CentralLockdownProtocolActionLoss, // 중앙 봉쇄 프로토콜의 실제 전투 효과
+    SpecimenPreservationCapsuleBattleEndRecovery, // 실험체 보존 캡슐의 실제 전투 효과
+    FaultyAiDecisionRandomCardCost, // 불량 AI의 판단식의 실제 전투 효과
 }
