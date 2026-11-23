@@ -1,11 +1,11 @@
-using System.Text; // 문자열 조합 기능 사용
-using TMPro; // 텍스트 메시 기능 사용
+using System.Collections.Generic; // 상태 아이콘 재사용 목록 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
 public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이상 화면 표시
 { // 클래스 시작
     private GameObject statusRoot; // 상태 이상 표시 루트
-    private TMP_Text statusText; // 상태 이상 요약 텍스트
+    private readonly List<BattleStatusIconView> iconViews = new List<BattleStatusIconView>(); // 재사용할 상태 아이콘 목록
+    private float lastLayoutWidth = -1f; // 마지막 상태 아이콘 배치 너비
     private BattleStatusEffectTooltipView tooltipView; // 상태 이상 상세 툴팁
     private BattleUnitRuntime runtimeUnit; // 연결된 런타임 유닛
     private bool tooltipVisible; // 상세 툴팁 표시 여부
@@ -59,7 +59,7 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
     } // 상태 변경 처리 종료
     private void Refresh() // 상태 이상 요약 갱신
     { // 요약 갱신 시작
-        if (statusRoot == null || statusText == null) // 상태 화면 구조 확인
+        if (statusRoot == null) // 상태 화면 구조 확인
         { // 화면 없음 처리 시작
             return; // 요약 갱신 중단
         } // 화면 없음 처리 종료
@@ -69,25 +69,55 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
             HideTooltip(); // 상태 상세 툴팁 숨김
             return; // 요약 갱신 종료
         } // 상태 없음 처리 종료
-        StringBuilder summaryBuilder = new StringBuilder(); // 상태 요약 문자열 생성
         for (int effectIndex = 0; effectIndex < runtimeUnit.StatusEffects.Count; effectIndex++) // 상태 목록 순회
-        { // 상태 문구 생성 시작
+        { // 상태 아이콘 갱신 시작
             BattleStatusEffectInstance statusEffect = runtimeUnit.StatusEffects[effectIndex]; // 현재 상태 조회
-            if (effectIndex > 0) // 첫 상태 여부 확인
-            { // 상태 구분 처리 시작
-                summaryBuilder.Append("  "); // 상태 사이 여백 추가
-            } // 상태 구분 처리 종료
-            string colorCode = statusEffect.IsDebuff ? "#FF7777" : "#72E69A"; // 버프와 디버프 색상 선택
-            summaryBuilder.Append($"<color={colorCode}>[{statusEffect.IconLabel}]x{statusEffect.StackCount} {statusEffect.RemainingTurns}T</color>"); // 아이콘형 상태 요약 추가
-        } // 상태 문구 생성 종료
-        statusText.text = summaryBuilder.ToString(); // 상태 요약 텍스트 적용
+            if (effectIndex >= iconViews.Count) // 재사용 가능한 아이콘 존재 확인
+            { // 새 상태 아이콘 생성 시작
+                iconViews.Add(BattleStatusIconView.Create(statusRoot.transform, effectIndex)); // 새 정사각형 상태 아이콘 생성
+            } // 새 상태 아이콘 생성 종료
+            iconViews[effectIndex].Bind(statusEffect); // 실제 상태 이미지와 수치 갱신
+        } // 상태 아이콘 갱신 종료
+        for (int index = runtimeUnit.StatusEffects.Count; index < iconViews.Count; index++) // 사용하지 않는 아이콘 순회
+        { // 남은 아이콘 숨김 시작
+            iconViews[index].gameObject.SetActive(false); // 사라진 상태 아이콘 숨김
+        } // 남은 아이콘 숨김 종료
         statusRoot.SetActive(true); // 상태 화면 표시
         statusRoot.transform.SetAsLastSibling(); // 상태 화면 최상단 배치
+        LayoutIcons(); // 현재 화면 너비에 맞춰 상태 아이콘 배치
         if (tooltipVisible) // 기존 툴팁 표시 여부 확인
         { // 툴팁 내용 갱신 시작
             tooltipView.Show(runtimeUnit); // 변경된 상태 상세 갱신
         } // 툴팁 내용 갱신 종료
     } // 요약 갱신 종료
+    private void LateUpdate() // 상태 아이콘 화면 크기 변화 감시
+    { // 상태 배치 갱신 시작
+        if (statusRoot != null && statusRoot.activeSelf && !Mathf.Approximately(lastLayoutWidth, ((RectTransform)statusRoot.transform).rect.width)) // 상태 영역 너비 변경 확인
+        { // 상태 아이콘 재배치 시작
+            LayoutIcons(); // 변경된 화면 너비에 맞춰 상태 아이콘 배치
+        } // 상태 아이콘 재배치 종료
+    } // 상태 배치 갱신 종료
+    private void LayoutIcons() // 상태 아이콘을 정사각형 여러 줄로 배치
+    { // 상태 아이콘 배치 시작
+        if (runtimeUnit == null || statusRoot == null || runtimeUnit.StatusEffects.Count == 0) // 실제 표시 상태 확인
+        { // 배치 불가 처리 시작
+            return; // 상태 아이콘 배치 중단
+        } // 배치 불가 처리 종료
+        RectTransform rootRect = (RectTransform)statusRoot.transform; // 상태 아이콘 영역 조회
+        float width = Mathf.Max(34f, rootRect.rect.width); // 아이콘을 배치할 실제 너비 계산
+        int naturalColumns = Mathf.Max(1, Mathf.FloorToInt((width + 2f) / 36f)); // 기본 크기 기준 가로 칸 수 계산
+        int columns = Mathf.Min(runtimeUnit.StatusEffects.Count, Mathf.Max(naturalColumns, (runtimeUnit.StatusEffects.Count + 1) / 2)); // 모든 상태를 최대 두 줄에 표시할 가로 칸 수
+        float size = Mathf.Min(34f, (width - (columns - 1) * 2f) / columns); // 화면 너비에 맞춘 정사각형 아이콘 크기 계산
+        int rows = (runtimeUnit.StatusEffects.Count + columns - 1) / columns; // 필요한 상태 아이콘 줄 수 계산
+        rootRect.sizeDelta = new Vector2(-8f, rows * (size + 2f) - 2f); // 상태 줄 수에 맞춘 아래 방향 영역 높이 설정
+        for (int index = 0; index < runtimeUnit.StatusEffects.Count; index++) // 현재 상태 아이콘 순회
+        { // 개별 상태 아이콘 배치 시작
+            RectTransform iconRect = (RectTransform)iconViews[index].transform; // 개별 상태 아이콘 사각형 조회
+            iconRect.sizeDelta = new Vector2(size, size); // 동일한 가로와 세로 크기 적용
+            iconRect.anchoredPosition = new Vector2(index % columns * (size + 2f), -(index / columns) * (size + 2f)); // 왼쪽 위부터 일정 간격 배치
+        } // 개별 상태 아이콘 배치 종료
+        lastLayoutWidth = rootRect.rect.width; // 현재 화면 너비 기록
+    } // 상태 아이콘 배치 종료
     private void EnsureVisualStructure() // 상태 화면 구조 준비
     { // 화면 구조 준비 시작
         if (statusRoot != null) // 기존 화면 구조 확인
@@ -99,28 +129,12 @@ public sealed class BattleStatusEffectView : MonoBehaviour // 유닛 상태 이�
         RectTransform rootRect = statusRoot.GetComponent<RectTransform>(); // 상태 배경 사각형 조회
         rootRect.anchorMin = new Vector2(0f, 0f); // 왼쪽 아래 최소 앵커
         rootRect.anchorMax = new Vector2(1f, 0f); // 오른쪽 아래 최대 앵커
-        rootRect.pivot = new Vector2(0.5f, 0f); // 아래 중앙 기준점
-        rootRect.anchoredPosition = new Vector2(0f, 3f); // 유닛 하단 위치
-        rootRect.sizeDelta = new Vector2(-8f, 24f); // 상태 표시 크기
+        rootRect.pivot = new Vector2(0.5f, 1f); // 위쪽 중앙 기준점
+        rootRect.anchoredPosition = new Vector2(0f, 27f); // 정신력 아래에서 아이콘이 내려가는 위치
+        rootRect.sizeDelta = new Vector2(-8f, 34f); // 기본 상태 아이콘 영역 크기
         Image backgroundImage = statusRoot.GetComponent<Image>(); // 상태 배경 이미지 조회
-        backgroundImage.color = new Color(0.025f, 0.035f, 0.055f, 0.94f); // 상태 배경색 적용
+        backgroundImage.color = Color.clear; // 개별 아이콘만 표시하는 투명 배경
         backgroundImage.raycastTarget = false; // 상태 배경 입력 차단 해제
-        GameObject textObject = new GameObject("StatusText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 상태 텍스트 오브젝트 생성
-        textObject.transform.SetParent(statusRoot.transform, false); // 상태 배경 자식 배치
-        RectTransform textRect = textObject.GetComponent<RectTransform>(); // 상태 텍스트 사각형 조회
-        textRect.anchorMin = Vector2.zero; // 텍스트 최소 앵커 적용
-        textRect.anchorMax = Vector2.one; // 텍스트 최대 앵커 적용
-        textRect.offsetMin = new Vector2(3f, 1f); // 텍스트 왼쪽 아래 여백
-        textRect.offsetMax = new Vector2(-3f, -1f); // 텍스트 오른쪽 위 여백
-        statusText = textObject.GetComponent<TextMeshProUGUI>(); // 상태 텍스트 컴포넌트 조회
-        statusText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
-        statusText.fontSize = 10f; // 상태 글자 크기
-        statusText.color = Color.white; // 기본 글자색 적용
-        statusText.alignment = TextAlignmentOptions.Center; // 상태 글자 중앙 정렬
-        statusText.textWrappingMode = TextWrappingModes.NoWrap; // 상태 자동 줄바꿈 해제
-        statusText.overflowMode = TextOverflowModes.Ellipsis; // 넘친 상태 생략 설정
-        statusText.richText = true; // 상태 색상 태그 허용
-        statusText.raycastTarget = false; // 상태 텍스트 입력 차단 해제
         statusRoot.SetActive(false); // 상태 화면 기본 숨김
     } // 화면 구조 준비 종료
     private void EnsureTooltipView() // 상태 상세 툴팁 준비

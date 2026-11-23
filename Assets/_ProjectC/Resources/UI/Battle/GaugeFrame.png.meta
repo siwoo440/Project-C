@@ -1,0 +1,1365 @@
+fileFormatVersion: 2
+guid: 4dc4d17dc737ec14ab196af84b2c2848
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6275841549285196307
+    second: GaugeFrame_0
+  - first:
+      213: 4500866508811697344
+    second: GaugeFrame_1
+  - first:
+      213: 6356535314480838981
+    second: GaugeFrame_2
+  - first:
+      213: -5536576145198839611
+    second: GaugeFrame_3
+  - first:
+      213: 3483594092328298042
+    second: GaugeFrame_4
+  - first:
+      213: -7094856331246170076
+    second: GaugeFrame_5
+  - first:
+      213: 3672285089715234797
+    second: GaugeFrame_6
+  - first:
+      213: -5145959891351991526
+    second: GaugeFrame_7
+  - first:
+      213: -3860958686401153401
+    second: GaugeFrame_8
+  - first:
+      213: 35332539722234471
+    second: GaugeFrame_9
+  - first:
+      213: 5733138630537204516
+    second: GaugeFrame_10
+  - first:
+      213: 8659366531810182520
+    second: GaugeFrame_11
+  - first:
+      213: 5492211374863595028
+    second: GaugeFrame_12
+  - first:
+      213: -764706074756736452
+    second: GaugeFrame_13
+  - first:
+      213: 6882661414107736673
+    second: GaugeFrame_14
+  - first:
+      213: -3727384969176819164
+    second: GaugeFrame_15
+  - first:
+      213: -1880584970613075906
+    second: GaugeFrame_16
+  - first:
+      213: -2593538343376395442
+    second: GaugeFrame_17
+  - first:
+      213: -8900920023344034617
+    second: GaugeFrame_18
+  - first:
+      213: -2958892193645536679
+    second: GaugeFrame_19
+  - first:
+      213: -7675629077900899077
+    second: GaugeFrame_20
+  - first:
+      213: -2376235913452898429
+    second: GaugeFrame_21
+  - first:
+      213: 3960677622270494066
+    second: GaugeFrame_22
+  - first:
+      213: -7471401998910740392
+    second: GaugeFrame_23
+  - first:
+      213: 2700835239879342958
+    second: GaugeFrame_24
+  - first:
+      213: -4330566571269858437
+    second: GaugeFrame_25
+  - first:
+      213: 2917803135404110355
+    second: GaugeFrame_26
+  - first:
+      213: -6587825613208126612
+    second: GaugeFrame_27
+  - first:
+      213: 4065338149872997276
+    second: GaugeFrame_28
+  - first:
+      213: -2162510809084096333
+    second: GaugeFrame_29
+  - first:
+      213: 1637808722644032650
+    second: GaugeFrame_30
+  - first:
+      213: 4005607798458367758
+    second: GaugeFrame_31
+  - first:
+      213: 5349930957107249234
+    second: GaugeFrame_32
+  - first:
+      213: 3276963792350053453
+    second: GaugeFrame_33
+  - first:
+      213: -3876013749218774202
+    second: GaugeFrame_34
+  - first:
+      213: 8166128039856000348
+    second: GaugeFrame_35
+  - first:
+      213: 8124679868974799660
+    second: GaugeFrame_36
+  - first:
+      213: 6115702452203460094
+    second: GaugeFrame_37
+  - first:
+      213: 6055358876777698891
+    second: GaugeFrame_38
+  - first:
+      213: 4641028742772781649
+    second: GaugeFrame_39
+  - first:
+      213: 8865683761782497171
+    second: GaugeFrame_40
+  - first:
+      213: 1640820658643852236
+    second: GaugeFrame_41
+  - first:
+      213: 1190129774903207938
+    second: GaugeFrame_42
+  - first:
+      213: -8852031510269024658
+    second: GaugeFrame_43
+  - first:
+      213: 1847360444638174750
+    second: GaugeFrame_44
+  - first:
+      213: 8029229799365437437
+    second: GaugeFrame_45
+  - first:
+      213: 935118666452037414
+    second: GaugeFrame_46
+  - first:
+      213: -63415448686571891
+    second: GaugeFrame_47
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GaugeFrame_0
+      rect:
+        serializedVersion: 2
+        x: 52
+        y: 63
+        width: 2073
+        height: 607
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31208c363a4481750800000000000000
+      internalID: 6275841549285196307
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_1
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 643
+        width: 13
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0cc7c2f3e3a467e30800000000000000
+      internalID: 4500866508811697344
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_2
+      rect:
+        serializedVersion: 2
+        x: 1168
+        y: 642
+        width: 6
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5493bdda033f63850800000000000000
+      internalID: 6356535314480838981
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_3
+      rect:
+        serializedVersion: 2
+        x: 1172
+        y: 645
+        width: 12
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c8858974512a23b0800000000000000
+      internalID: -5536576145198839611
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_4
+      rect:
+        serializedVersion: 2
+        x: 1064
+        y: 616
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a36a0eebe56385030800000000000000
+      internalID: 3483594092328298042
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_5
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 626
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42014a3c1c10a8d90800000000000000
+      internalID: -7094856331246170076
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_6
+      rect:
+        serializedVersion: 2
+        x: 1106
+        y: 594
+        width: 27
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: de7a07e15d396f230800000000000000
+      internalID: 3672285089715234797
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_7
+      rect:
+        serializedVersion: 2
+        x: 1180
+        y: 600
+        width: 22
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1b8e874eb0e598b0800000000000000
+      internalID: -5145959891351991526
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_8
+      rect:
+        serializedVersion: 2
+        x: 1070
+        y: 612
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 786b99ce78e1b6ac0800000000000000
+      internalID: -3860958686401153401
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_9
+      rect:
+        serializedVersion: 2
+        x: 1076
+        y: 586
+        width: 21
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76af727f1c68d7000800000000000000
+      internalID: 35332539722234471
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_10
+      rect:
+        serializedVersion: 2
+        x: 1132
+        y: 604
+        width: 21
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4235d318533309f40800000000000000
+      internalID: 5733138630537204516
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_11
+      rect:
+        serializedVersion: 2
+        x: 1164
+        y: 593
+        width: 10
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 875c37c3bff3c2870800000000000000
+      internalID: 8659366531810182520
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_12
+      rect:
+        serializedVersion: 2
+        x: 1172
+        y: 608
+        width: 6
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 416ba1e7521483c40800000000000000
+      internalID: 5492211374863595028
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_13
+      rect:
+        serializedVersion: 2
+        x: 1199
+        y: 612
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3a9a8860e73365f0800000000000000
+      internalID: -764706074756736452
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_14
+      rect:
+        serializedVersion: 2
+        x: 869
+        y: 594
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 16aed291710248f50800000000000000
+      internalID: 6882661414107736673
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_15
+      rect:
+        serializedVersion: 2
+        x: 1091
+        y: 585
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42ad51b7e1ba54cc0800000000000000
+      internalID: -3727384969176819164
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_16
+      rect:
+        serializedVersion: 2
+        x: 1170
+        y: 592
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e305ba8dee1d6e5e0800000000000000
+      internalID: -1880584970613075906
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_17
+      rect:
+        serializedVersion: 2
+        x: 1174
+        y: 594
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e43e1bb2e96e10cd0800000000000000
+      internalID: -2593538343376395442
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_18
+      rect:
+        serializedVersion: 2
+        x: 1211
+        y: 576
+        width: 31
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ccca6ad564997480800000000000000
+      internalID: -8900920023344034617
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_19
+      rect:
+        serializedVersion: 2
+        x: 2130
+        y: 578
+        width: 11
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95ad41d0a37efe6d0800000000000000
+      internalID: -2958892193645536679
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_20
+      rect:
+        serializedVersion: 2
+        x: 442
+        y: 570
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bfcce085500ba7590800000000000000
+      internalID: -7675629077900899077
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_21
+      rect:
+        serializedVersion: 2
+        x: 754
+        y: 575
+        width: 15
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3873d1cc60ae50fd0800000000000000
+      internalID: -2376235913452898429
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_22
+      rect:
+        serializedVersion: 2
+        x: 1199
+        y: 578
+        width: 7
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2758549105727f630800000000000000
+      internalID: 3960677622270494066
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_23
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 562
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 85828c8977f305890800000000000000
+      internalID: -7471401998910740392
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_24
+      rect:
+        serializedVersion: 2
+        x: 442
+        y: 565
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6b7ddd475b4b7520800000000000000
+      internalID: 2700835239879342958
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_25
+      rect:
+        serializedVersion: 2
+        x: 2083
+        y: 564
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7b5743d5acb6e3c0800000000000000
+      internalID: -4330566571269858437
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_26
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 538
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31278421e7e1e7820800000000000000
+      internalID: 2917803135404110355
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_27
+      rect:
+        serializedVersion: 2
+        x: 764
+        y: 546
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c6b728232875394a0800000000000000
+      internalID: -6587825613208126612
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_28
+      rect:
+        serializedVersion: 2
+        x: 860
+        y: 538
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c93160b128bfa6830800000000000000
+      internalID: 4065338149872997276
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_29
+      rect:
+        serializedVersion: 2
+        x: 601
+        y: 530
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b0999960e73df1e0800000000000000
+      internalID: -2162510809084096333
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_30
+      rect:
+        serializedVersion: 2
+        x: 804
+        y: 538
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a8cdb331b5aaab610800000000000000
+      internalID: 1637808722644032650
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_31
+      rect:
+        serializedVersion: 2
+        x: 1321
+        y: 514
+        width: 13
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0f35a0f117c69730800000000000000
+      internalID: 4005607798458367758
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_32
+      rect:
+        serializedVersion: 2
+        x: 1332
+        y: 513
+        width: 6
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2504e3f3cd5ce3a40800000000000000
+      internalID: 5349930957107249234
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_33
+      rect:
+        serializedVersion: 2
+        x: 1337
+        y: 516
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4487d0053d1a7d20800000000000000
+      internalID: 3276963792350053453
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_34
+      rect:
+        serializedVersion: 2
+        x: 458
+        y: 500
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 643f845f702a53ac0800000000000000
+      internalID: -3876013749218774202
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_35
+      rect:
+        serializedVersion: 2
+        x: 1118
+        y: 463
+        width: 15
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5d49fdaf2ae35170800000000000000
+      internalID: 8166128039856000348
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_36
+      rect:
+        serializedVersion: 2
+        x: 1054
+        y: 256
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2b92006b49a0c070800000000000000
+      internalID: 8124679868974799660
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_37
+      rect:
+        serializedVersion: 2
+        x: 1138
+        y: 250
+        width: 9
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef592975af65fd450800000000000000
+      internalID: 6115702452203460094
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_38
+      rect:
+        serializedVersion: 2
+        x: 802
+        y: 198
+        width: 14
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b46d7d5d0d4f80450800000000000000
+      internalID: 6055358876777698891
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_39
+      rect:
+        serializedVersion: 2
+        x: 1309
+        y: 193
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15279556d0f386040800000000000000
+      internalID: 4641028742772781649
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_40
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 160
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 39f9effa86c390b70800000000000000
+      internalID: 8865683761782497171
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_41
+      rect:
+        serializedVersion: 2
+        x: 981
+        y: 116
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ccbd69212bd55c610800000000000000
+      internalID: 1640820658643852236
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_42
+      rect:
+        serializedVersion: 2
+        x: 989
+        y: 113
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 208a8b589b0348010800000000000000
+      internalID: 1190129774903207938
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_43
+      rect:
+        serializedVersion: 2
+        x: 265
+        y: 95
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e66a9d1dd34472580800000000000000
+      internalID: -8852031510269024658
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_44
+      rect:
+        serializedVersion: 2
+        x: 261
+        y: 83
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1e14c2698423a910800000000000000
+      internalID: 1847360444638174750
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_45
+      rect:
+        serializedVersion: 2
+        x: 440
+        y: 83
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df7682b36fd8d6f60800000000000000
+      internalID: 8029229799365437437
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_46
+      rect:
+        serializedVersion: 2
+        x: 893
+        y: 79
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62fe5b009753afc00800000000000000
+      internalID: 935118666452037414
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GaugeFrame_47
+      rect:
+        serializedVersion: 2
+        x: 901
+        y: 79
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d8ec3c34cf3be1ff0800000000000000
+      internalID: -63415448686571891
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID:
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      GaugeFrame_0: 6275841549285196307
+      GaugeFrame_1: 4500866508811697344
+      GaugeFrame_10: 5733138630537204516
+      GaugeFrame_11: 8659366531810182520
+      GaugeFrame_12: 5492211374863595028
+      GaugeFrame_13: -764706074756736452
+      GaugeFrame_14: 6882661414107736673
+      GaugeFrame_15: -3727384969176819164
+      GaugeFrame_16: -1880584970613075906
+      GaugeFrame_17: -2593538343376395442
+      GaugeFrame_18: -8900920023344034617
+      GaugeFrame_19: -2958892193645536679
+      GaugeFrame_2: 6356535314480838981
+      GaugeFrame_20: -7675629077900899077
+      GaugeFrame_21: -2376235913452898429
+      GaugeFrame_22: 3960677622270494066
+      GaugeFrame_23: -7471401998910740392
+      GaugeFrame_24: 2700835239879342958
+      GaugeFrame_25: -4330566571269858437
+      GaugeFrame_26: 2917803135404110355
+      GaugeFrame_27: -6587825613208126612
+      GaugeFrame_28: 4065338149872997276
+      GaugeFrame_29: -2162510809084096333
+      GaugeFrame_3: -5536576145198839611
+      GaugeFrame_30: 1637808722644032650
+      GaugeFrame_31: 4005607798458367758
+      GaugeFrame_32: 5349930957107249234
+      GaugeFrame_33: 3276963792350053453
+      GaugeFrame_34: -3876013749218774202
+      GaugeFrame_35: 8166128039856000348
+      GaugeFrame_36: 8124679868974799660
+      GaugeFrame_37: 6115702452203460094
+      GaugeFrame_38: 6055358876777698891
+      GaugeFrame_39: 4641028742772781649
+      GaugeFrame_4: 3483594092328298042
+      GaugeFrame_40: 8865683761782497171
+      GaugeFrame_41: 1640820658643852236
+      GaugeFrame_42: 1190129774903207938
+      GaugeFrame_43: -8852031510269024658
+      GaugeFrame_44: 1847360444638174750
+      GaugeFrame_45: 8029229799365437437
+      GaugeFrame_46: 935118666452037414
+      GaugeFrame_47: -63415448686571891
+      GaugeFrame_5: -7094856331246170076
+      GaugeFrame_6: 3672285089715234797
+      GaugeFrame_7: -5145959891351991526
+      GaugeFrame_8: -3860958686401153401
+      GaugeFrame_9: 35332539722234471
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

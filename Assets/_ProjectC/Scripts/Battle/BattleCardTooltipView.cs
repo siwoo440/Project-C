@@ -42,6 +42,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             backgroundImage = gameObject.AddComponent<Image>(); // 툴팁 배경 이미지 추가
         } // 툴팁 배경 추가 종료
         backgroundImage.color = new Color(0.035f, 0.045f, 0.07f, 0.98f); // 툴팁 배경 색상 설정
+        LobbyUiArt.Apply(backgroundImage, "Button"); // 기존 제작 금속 이미지로 카드 상세 배경 적용
         backgroundImage.raycastTarget = false; // 툴팁 입력 차단 해제
         CanvasGroup canvasGroup = GetComponent<CanvasGroup>(); // 툴팁 입력 제어 조회
         if (canvasGroup == null) // 입력 제어 누락 확인

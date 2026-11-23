@@ -47,14 +47,15 @@ public sealed class BattleMentalView : MonoBehaviour // 유닛 정신력 게이�
         rootRect.sizeDelta = new Vector2(-8f, 20f); // 정신력 게이지 크기
         Image backgroundImage = viewRoot.GetComponent<Image>(); // 배경 이미지 조회
         backgroundImage.color = new Color(0.04f, 0.04f, 0.06f, 0.9f); // 어두운 배경색 적용
+        BattleUiArt.Apply(backgroundImage, "GaugeFrame"); // 새로 제작한 정신력 게이지 테두리 적용
         backgroundImage.raycastTarget = false; // 배경 클릭 차단 해제
         GameObject fillObject = new GameObject("GaugeFill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 정신력 채움 생성
         fillObject.transform.SetParent(viewRoot.transform, false); // 채움 배경 자식 배치
         gaugeFillRect = fillObject.GetComponent<RectTransform>(); // 채움 사각형 조회
         gaugeFillRect.anchorMin = new Vector2(0f, 0f); // 채움 왼쪽 아래 앵커
         gaugeFillRect.anchorMax = new Vector2(0.5f, 1f); // 초기 절반 채움 앵커
-        gaugeFillRect.offsetMin = new Vector2(2f, 2f); // 채움 왼쪽 아래 여백
-        gaugeFillRect.offsetMax = new Vector2(-2f, -2f); // 채움 오른쪽 위 여백
+        gaugeFillRect.offsetMin = new Vector2(5f, 4f); // 금속 테두리 안쪽 채움 시작 여백
+        gaugeFillRect.offsetMax = new Vector2(-5f, -4f); // 금속 테두리 안쪽 채움 끝 여백
         gaugeFillImage = fillObject.GetComponent<Image>(); // 채움 이미지 조회
         gaugeFillImage.color = NeutralColor; // 초기 중립 색상 적용
         gaugeFillImage.raycastTarget = false; // 채움 클릭 차단 해제

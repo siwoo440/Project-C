@@ -52,6 +52,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         EnsureStatusEffectView(); // 상태 이상 화면 준비
         EnsureMentalView(); // 정신력 화면 준비
         EnsureBlockView(); // 방어도 화면 준비
+        ApplyHealthGaugeArt(); // 체력 게이지의 전투 이미지 적용
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
@@ -59,6 +60,12 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RefreshBlock(); // 방어도 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
     } // 연결 종료
+    private void ApplyHealthGaugeArt() // 실제 체력 게이지 배경 이미지 적용
+    { // 체력 게이지 디자인 적용 시작
+        Transform background = healthSlider != null ? healthSlider.transform.Find("Background") : null; // 체력 게이지 배경 조회
+        Image image = background != null ? background.GetComponent<Image>() : null; // 체력 게이지 배경 이미지 조회
+        BattleUiArt.Apply(image, "GaugeFrame"); // 생성한 게이지 테두리 적용
+    } // 체력 게이지 디자인 적용 종료
     public void Unbind() // 런타임 유닛 연결 해제
     { // 연결 해제 시작
         if (RuntimeUnit == null) // 기존 연결 여부 확인

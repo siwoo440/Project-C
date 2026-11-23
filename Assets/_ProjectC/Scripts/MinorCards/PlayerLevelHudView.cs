@@ -40,6 +40,7 @@ public sealed class PlayerLevelHudView : MonoBehaviour, IDisposable // 전투 �
 
         Image backgroundImage = gameObject.AddComponent<Image>(); // HUD 배경 추가
         backgroundImage.color = new Color(0.04f, 0.045f, 0.065f, 0.94f); // HUD 배경색 적용
+        LobbyUiArt.Apply(backgroundImage, "Button"); // 기존 제작 금속 이미지로 레벨 정보 배경 적용
         backgroundImage.raycastTarget = false; // 입력 차단 해제
 
         GameObject textObject = new GameObject("LevelText", typeof(RectTransform), typeof(TextMeshProUGUI)); // 레벨 텍스트 생성
