@@ -26,5 +26,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Stagger, // 다음 예고 행동 한 번 취소
     Stun, // 자기 턴 동안 행동 금지
     NextAttackDown, // 다음 공격의 원본 피해 감소
-    AttackPowerDown // 해당 적 턴의 직접 공격 피해 감소
+    AttackPowerDown, // 해당 적 턴의 직접 공격 피해 감소
+    BladeMaintenance, // 이번 턴 다음 검 피해 카드의 타격 강화
+    PhysicalRiposte // 직접 받은 첫 물리 체력 피해 반사
 } // 열거형 종료

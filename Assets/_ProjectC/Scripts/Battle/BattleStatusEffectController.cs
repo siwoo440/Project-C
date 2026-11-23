@@ -77,7 +77,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
         bool ownPhase = target.Team == BattleTeam.Ally ? turnRuntime.CurrentPhase == BattleTurnPhase.PlayerTurn : turnRuntime.CurrentPhase == BattleTurnPhase.EnemyTurn; // 대상의 자기 턴 여부 확인
         bool alreadyProcessed = processedEndPhase == turnRuntime.CurrentPhase && processedEndRound == turnRuntime.CurrentRound; // 현재 턴의 지속 처리 완료 확인
         bool targetAwaitingEnd = alreadyProcessed && processingEndUnits && !endProcessedUnits.Contains(target); // 종료 처리 대기 중인 대상 확인
-        if (type != BattleStatusEffectType.AttackPowerDown && ownPhase && (!alreadyProcessed || targetAwaitingEnd)) // 자기 턴 대상의 지속 처리 전 상태 적용 확인
+        if (type != BattleStatusEffectType.BladeMaintenance && type != BattleStatusEffectType.AttackPowerDown && ownPhase && (!alreadyProcessed || targetAwaitingEnd)) // 자기 턴 대상의 지속 처리 전 상태 적용 확인
         { // 첫 감소 생략 예약 시작
             target.GetStatusEffect(type)?.SkipNextDurationDecrease(); // 적용한 상태의 첫 지속 감소 생략
         } // 첫 감소 생략 예약 종료

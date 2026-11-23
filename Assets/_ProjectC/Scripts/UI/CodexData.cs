@@ -84,6 +84,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 행동 제한 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 다음 행동 취소 또는 기절 설명
                     } // 행동 제한 설명 종료
+                    else if (effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte) // 검 정비와 반사 상태의 원본 수치 확인
+                    { // 검 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.BladeMaintenance ? 3 : 50); // 첫 검 공격과 물리 반사의 상태 설명
+                    } // 검 상태 설명 종료
                     else if (effect == BattleStatusEffectType.AttackPowerDown) // 청동 경보장치의 한 턴 약화
                     { // 경보 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1) + ". 적 턴이 끝나면 해제."; // 적용 공격과 종료 시점 표시

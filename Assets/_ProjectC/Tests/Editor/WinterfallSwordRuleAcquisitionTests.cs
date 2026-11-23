@@ -10,7 +10,7 @@ using UnityEngine; // 게임 보물과 소유자 객체 사용
 using UnityEngine.TestTools; // 실제 탐사 저장 검사
 using UnityEngine.UI; // 보물 소유자 선택 버튼
 
-public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 열여섯 종 원본과 획득 검사
+public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 스물네 종 원본과 획득 검사
 { // 검사 시작
     [TestCase(6, "CRITICAL_STRIKE", "치명 일격", "CriticalStrike", "21FF9BAD30297CC83563445A0B0E568D94FB8441AC91B254DAEDD99AE808AB6D")] // 치명 일격 원본
     [TestCase(7, "SWORD_DANCE", "검의 춤", "SwordDance", "982D7C84F598CD245EEF47AF918B95DD7F0B7249EAAAF23CB23EE894848F82E0")] // 검의 춤 원본
@@ -28,6 +28,14 @@ public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 
     [TestCase(23, "SHIELD_SPLITTER", "방패 쪼개기", "ShieldSplitter", "016322B10602A0B8E72CE7D3E883AB3987224E7AFB2813D8FE5ECF27226550D6")] // 방패 쪼개기 원본
     [TestCase(24, "INTERCEPT_SLASH", "저지 베기", "InterceptSlash", "AD52ADAA22F20F325C1DEECEF8CE0A42F454EFCD5C82C31101D83724F73D3F75")] // 저지 베기 원본
     [TestCase(25, "CHECK_SLASH", "견제 참격", "CheckSlash", "E42D1B813455528D7C3945210D2C8F23AE37E895BC16ED364E7E371B016F495D")] // 견제 참격 원본
+    [TestCase(26, "VITAL_AIM", "급소 노림", "VitalAim", "CAC20B48D6D58E409074FBF3A5D2EDA09F550D8A5CB01579C8AEA8FA6173082C")] // 급소 노림 원본
+    [TestCase(27, "BLADE_MAINTENANCE", "칼날 정비", "BladeMaintenance", "B101E796B32F9F483A2146B0DBF4E6200AB34FD54FD976FE5EAD23AF66AB53C8")] // 칼날 정비 원본
+    [TestCase(28, "FRONTLINE_ORDER", "전열 정돈", "FrontlineOrder", "715E7E2402E1F680D36900F7D32CAFA38CD6144D66888ECBB6FE0419D0BF55D8")] // 전열 정돈 원본
+    [TestCase(30, "EXECUTION_SLASH", "처형 베기", "ExecutionSlash", "0C5C7AB4FA313980F297C6FA35BE01DD387FF0349A4F5DCDAAB05204083B5910")] // 처형 베기 원본
+    [TestCase(31, "BLOOD_GALE", "피바람", "BloodGale", "35B7AC55A2FF71EBD0917B35511620A4F91CC4A8FD8496271922F1995F912BD5")] // 피바람 원본
+    [TestCase(32, "PHYSICAL_RIPOSTE", "검격 반사", "PhysicalRiposte", "A2C176F41E4ACBF6BA7F0B560F911E1CBE3F44AA91F63A0DAE9F5CBB85223291")] // 검격 반사 원본
+    [TestCase(33, "PIERCING_LUNGE", "파고들기", "PiercingLunge", "873ABEE8622DA646C500AF95E270BD40495EB012AD8F6BDE6D135FBC5C7A1EA9")] // 파고들기 원본
+    [TestCase(34, "TWIN_BLADE_FLURRY", "쌍검 연무", "TwinBladeFlurry", "ABEE9112CB30E075FD0708F1BCA536DA47DE415BA76D72AF6918C33655F3EC7B")] // 쌍검 연무 원본
     public void TreasureMatchesSwordSheetOriginalAndSavedArtwork(int row, string id, string name, string file, string digest) // 기획 행과 동명 그림 및 저장 가능한 보물 확인
     { // 원본 비교 시작
         var sheet = CardSheetCatalog.Load().FindByName(name); // 게임이 읽는 기획 행 조회
@@ -54,14 +62,14 @@ public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 
     } // 원본 비교 종료
 
     [UnityTest] // 실제 보물 선택 및 파일 복원 검사 지정
-    public IEnumerator TreasuresKeepTheirChosenAlternatingOwners() // 검 카드 열여섯 장의 개별 소유자와 저장 상태 확인
+    public IEnumerator TreasuresKeepTheirChosenAlternatingOwners() // 검 카드 스물네 장의 개별 소유자와 저장 상태 확인
     { // 실물 획득 검사 시작
         yield return new EnterPlayMode(); // 플레이 모드 진입
         VerifyChosenOwners(); // 실제 보물에서 두 파티원에게 교대로 지급
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 실물 획득 검사 종료
 
-    private static void VerifyChosenOwners() // 실제 탐사 경로로 검 열여섯 장 획득
+    private static void VerifyChosenOwners() // 실제 탐사 경로로 검 스물네 장 획득
     { // 탐사 검사 시작
         var shop = PrepareExpedition(); // 생존 파티와 저장 가능한 회차 덱 구성
         var party = PartyLoadoutRuntime.Active.Party.Members; // 실제 출전한 소유자 후보 조회
@@ -83,6 +91,14 @@ public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 
             "CRD_SHEET_SHIELD_SPLITTER", // 방패 쪼개기 원본 번호
             "CRD_SHEET_INTERCEPT_SLASH", // 저지 베기 원본 번호
             "CRD_SHEET_CHECK_SLASH", // 견제 참격 원본 번호
+            "CRD_SHEET_VITAL_AIM", // 급소 노림 원본 번호
+            "CRD_SHEET_BLADE_MAINTENANCE", // 칼날 정비 원본 번호
+            "CRD_SHEET_FRONTLINE_ORDER", // 전열 정돈 원본 번호
+            "CRD_SHEET_EXECUTION_SLASH", // 처형 베기 원본 번호
+            "CRD_SHEET_BLOOD_GALE", // 피바람 원본 번호
+            "CRD_SHEET_PHYSICAL_RIPOSTE", // 검격 반사 원본 번호
+            "CRD_SHEET_PIERCING_LUNGE", // 파고들기 원본 번호
+            "CRD_SHEET_TWIN_BLADE_FLURRY", // 쌍검 연무 원본 번호
         }; // 검 카드 목록 종료
         var owners = new Dictionary<string, string>(); // 지급한 카드별 선택 소유자 기록
         var usedRooms = new List<string>(); // 저장에 포함할 실제 보물 방 기록
@@ -113,7 +129,7 @@ public sealed class WinterfallSwordRuleAcquisitionTests // 윈터폴 검 카드 
                 owners.Add(added.Card.CardId, owner.CharacterId); // 저장 복원에 대조할 소유자 기록
                 usedRooms.Add(room); // 지급을 마친 실제 방 기록
             } // 방 확인 종료
-            CollectionAssert.IsEmpty(pendingIds); // 열여섯 검을 모두 실제 보물에서 획득했는지 확인
+            CollectionAssert.IsEmpty(pendingIds); // 스물네 검을 모두 실제 보물에서 획득했는지 확인
             Assert.AreEqual(2, owners.Values.Distinct().Count()); // 두 소유자 모두 실제 지급받았는지 확인
             Assert.IsTrue(ExplorationSaveService.Save(path, Vector3.zero)); // 실제 탐사 파일 저장
             shop.RunDeck.ResetToSource(null); // 메모리 카드와 소유자 기록 제거

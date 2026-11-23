@@ -281,7 +281,7 @@
       "attribute": "검",
       "rarity": "일반",
       "cost": "0",
-      "description": "이번 턴 자신의 다음 검 카드 피해 +3",
+      "description": "이번 턴에 카드 사용자가 다음으로 사용하는 검 피해 카드의 모든 타격에 피해 +3. 카드 사용 시 소모되며 다시 부여하면 +3으로 갱신한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "칼날 정비.png"
@@ -336,7 +336,7 @@
       "attribute": "검",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 자신이 받는 첫 물리 피해를 50% 반격",
+      "description": "다음 아군 턴 시작 전까지 적의 직접 물리 공격으로 사용자가 체력을 잃고 생존하면 1회 반격한다. 직접 잃은 체력의 절반(내림)을 공격자에게 방어를 무시하는 고정 피해로 준다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "검격 반사.png"
@@ -347,7 +347,7 @@
       "attribute": "검",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 12 피해, 대상 방어도 무시 30%",
+      "description": "적에게 물리 피해 12. 대상의 현재 임시 방어도 중 30%를 이번 타격에서 건너뛴다. 건너뛴 방어도는 남는다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "파고들기.png"

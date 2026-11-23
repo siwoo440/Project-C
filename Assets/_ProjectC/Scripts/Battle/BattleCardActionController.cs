@@ -10,6 +10,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
+    private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly WinterfallBossPhaseRuntime bossPhaseRuntime; // 선택적인 보스 페이즈 관리자
@@ -169,7 +170,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 취소 처리 시작
             CancelSelection(); // 체력 부족 카드 선택 해제
         } // 선택 취소 처리 종료
-        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher) // 처형 카드 선택 중 체력 변화 확인
+        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 처형 카드 선택 중 체력 변화 확인
         { // 대상 범위 갱신 시작
             UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
         } // 대상 범위 갱신 종료
@@ -208,6 +209,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        preparedSwordDamage = 0; // 이전 카드의 칼날 정비 보너스 정리
+        if (cardInstance.CardType == CardType.Sword && cardInstance.EffectType == CardEffectType.Damage) // 실제 비용을 지불한 검 피해 카드 확인
+        { // 칼날 정비 소모 시작
+            var preparation = cardInstance.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BladeMaintenance); // 이번 카드 소유자의 준비 상태 조회
+            if (preparation != null) // 준비된 검 확인
+            { // 추가 피해 보관 시작
+                preparedSwordDamage = preparation.EffectiveValue; // 명중과 무관하게 이 카드 전체에 쓸 피해 보관
+                cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.BladeMaintenance); // 한 번 사용한 칼날 정비 제거
+            } // 추가 피해 보관 종료
+        } // 칼날 정비 소모 종료
         paidActionPoints = cost; // 충돌 시점에 사용할 실제 지불 비용 보관
         if (cardInstance.SourceData.SwordRule == SwordCardRule.DoomBlade) // 파멸의 검 체력 대가 확인
         { // 체력 대가 지불 시작
@@ -254,9 +265,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
         } // 효과 적용 종료
-        else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance) // 두 칸 안에서 독립 세 타격 확인
+        else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance || cardInstance.SourceData.SwordRule == SwordCardRule.TwinBladeFlurry) // 지정된 적 범위에서 매 타격 재추첨
         { // 무작위 연속 공격 시작
-            totalAppliedAmount = ApplyDanceHits(cardInstance, targetUnits); // 매 타격 직전 같은 두 칸에서 재추첨
+            totalAppliedAmount = ApplyDanceHits(cardInstance, targetUnits); // 선택된 범위에서 타격 직전마다 생존 적 재추첨
         } // 무작위 연속 공격 종료
         else // 일반 카드 효과 분기
         { // 일반 효과 처리 시작
@@ -464,6 +475,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 처형 대상 제한 시작
             return false; // 체력 오분의 일을 넘는 적 선택 차단
         } // 처형 대상 제한 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.ExecutionSlash && !SwordCardCombat.IsFinisherTarget(targetUnit, 2)) // 처형 베기의 실제 대상 체력 확인
+        { // 처형 베기 제한 시작
+            return false; // 체력이 절반보다 많은 적 선택 차단
+        } // 처형 베기 제한 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
         { // 체력 비용 지불 불가 시작
             return false; // 선택 불가 반환
@@ -796,7 +811,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
-        int baseDamage = SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 표기 수치와 실제 지불 비용 및 체력 손실 반영
+        int baseDamage = (int)Math.Min(int.MaxValue, (long)SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit) + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
@@ -808,7 +823,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
         } // 치명타 표시 종료
         modifiedDamage = suitHitRelics.ApplyHitBonus(modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
-        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
+        int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
+        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
         { // 돌진 후속 효과 시작
             targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 피격 대상의 다음 턴 물리 방어 약화 예약
@@ -834,7 +850,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 타격 판정 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
-        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, suitHitRelics.ApplyHitBonus); // 다른 적의 독립 명중과 피해 처리
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, suitHitRelics.ApplyHitBonus, preparedSwordDamage); // 다른 적의 독립 명중과 피해 처리
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

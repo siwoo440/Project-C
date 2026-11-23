@@ -23,7 +23,7 @@ public sealed class BattleStatusIconTests // 전투 상태 아이콘 화면 검�
             } // 상태 없음 제외 종료
             Sprite icon = BattleStatusIconArt.Get(effect); // 생성한 상태 이미지 조회
             Assert.IsNotNull(icon, effect.ToString()); // 각 상태 이미지 존재 확인
-            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion || effect == BattleStatusEffectType.Disorientation || effect == BattleStatusEffectType.CriticalChanceUp || effect == BattleStatusEffectType.ChargeDefenseDown || effect == BattleStatusEffectType.Bleed || effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun || effect == BattleStatusEffectType.NextAttackDown || effect == BattleStatusEffectType.AttackPowerDown; // 개별 투명 원화 상태 확인
+            bool separate = effect == BattleStatusEffectType.Awakening || effect == BattleStatusEffectType.Collapse || effect == BattleStatusEffectType.Evasion || effect == BattleStatusEffectType.Disorientation || effect == BattleStatusEffectType.CriticalChanceUp || effect == BattleStatusEffectType.ChargeDefenseDown || effect == BattleStatusEffectType.Bleed || effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun || effect == BattleStatusEffectType.NextAttackDown || effect == BattleStatusEffectType.AttackPowerDown || effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte; // 개별 투명 원화 상태 확인
             Assert.AreEqual(separate ? effect + "StatusIcon" : "StatusIcons", icon.texture.name); // 상태별 생성 이미지 사용 확인
             if (!separate) // 공용 아이콘 시트 상태 확인
             { // 기존 정사각형 이미지 검사 시작

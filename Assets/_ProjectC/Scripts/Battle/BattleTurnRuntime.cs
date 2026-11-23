@@ -184,11 +184,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         SetBattleResult(BattleResult.Escape); // 도주 결과 확정
         return true; // 도주 성공 반환
     } // 도주 요청 종료
-    internal bool HasFinisherTarget() // 처형 가능한 생존 적 확인
+    internal bool HasFinisherTarget(int healthDivisor = 5) // 처형 가능한 생존 적 확인
     { // 처형 후보 확인 시작
         foreach (var enemy in enemyUnits) // 현재 배치한 적 순회
         { // 적 체력 검사 시작
-            if (SwordCardCombat.IsFinisherTarget(enemy)) // 생존과 체력 비율 검사
+            if (SwordCardCombat.IsFinisherTarget(enemy, healthDivisor)) // 생존과 체력 비율 검사
             { // 유효 대상 확인 시작
                 return true; // 처형 가능 대상 발견
             } // 유효 대상 확인 종료
