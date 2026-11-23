@@ -523,6 +523,7 @@ MonoBehaviour:
   allyUnitRoot: {fileID: 675924956}
   enemyUnitRoot: {fileID: 37766817}
   handView: {fileID: 2051001002}
+  sharedMaximumActionPoints: 3
   maximumHandSize: 5
   initialHandSize: 3
   useFixedShuffleSeed: 0

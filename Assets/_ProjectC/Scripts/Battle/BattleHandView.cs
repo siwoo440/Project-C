@@ -8,26 +8,36 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private readonly List<BattleCardView> spawnedCardViews = new List<BattleCardView>(); // 생성된 카드 화면 목록
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
+    private TMP_Text actionPointText; // 공용 행동력 텍스트
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
+    private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private CardInstance selectedCard; // 현재 선택 카드
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
+    public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
     public event Action<CardInstance> CardClicked; // 손패 카드 클릭 이벤트
     private void Awake() // 손패 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 손패 내부 UI 자동 생성
         Refresh(); // 초기 화면 갱신
     } // 화면 준비 종료
-    public bool Bind(BattleDeckRuntime battleDeck) // 런타임 덱 연결
+    public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints) // 런타임 덱과 공용 행동력 연결
     { // 덱 연결 시작
         if (battleDeck == null) // 런타임 덱 누락 확인
         { // 덱 누락 처리 시작
             Debug.LogError("[BattleHandView] 연결할 런타임 덱이 없습니다.", this); // 덱 누락 출력
             return false; // 덱 연결 실패 반환
         } // 덱 누락 처리 종료
+        if (actionPoints == null) // 공용 행동력 누락 확인
+        { // 행동력 누락 처리 시작
+            Debug.LogError("[BattleHandView] 연결할 공용 행동력이 없습니다.", this); // 행동력 누락 출력
+            return false; // 화면 연결 실패 반환
+        } // 행동력 누락 처리 종료
         Unbind(); // 기존 런타임 덱 연결 해제
         runtimeDeck = battleDeck; // 새 런타임 덱 저장
+        sharedActionPoints = actionPoints; // 새 공용 행동력 저장
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
+        sharedActionPoints.StateChanged += HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 등록
         Refresh(); // 현재 덱 상태 표시
         return true; // 덱 연결 성공 반환
     } // 덱 연결 종료
@@ -37,7 +47,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         } // 이벤트 해제 종료
+        if (sharedActionPoints != null) // 기존 공용 행동력 확인
+        { // 행동력 이벤트 해제 시작
+            sharedActionPoints.StateChanged -= HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 해제
+        } // 행동력 이벤트 해제 종료
         runtimeDeck = null; // 런타임 덱 참조 제거
+        sharedActionPoints = null; // 공용 행동력 참조 제거
         selectedCard = null; // 선택 카드 제거
         Refresh(); // 빈 손패 화면 표시
     } // 덱 연결 해제 종료
@@ -57,10 +72,17 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
         statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(1f, 1f); // 수량 텍스트 최대 앵커 설정
+        statusRect.anchorMax = new Vector2(0.78f, 1f); // 수량 텍스트 최대 앵커 설정
         statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
         statusRect.anchoredPosition = new Vector2(0f, -4f); // 수량 텍스트 위치 설정
         statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
+        actionPointText = CreateText("ActionPointText", transform, "AP -- / --", 24f, new Color(0.45f, 0.8f, 1f, 1f)); // 공용 행동력 텍스트 생성
+        RectTransform actionPointRect = actionPointText.rectTransform; // 행동력 텍스트 RectTransform 조회
+        actionPointRect.anchorMin = new Vector2(0.8f, 1f); // 행동력 텍스트 최소 앵커 설정
+        actionPointRect.anchorMax = new Vector2(1f, 1f); // 행동력 텍스트 최대 앵커 설정
+        actionPointRect.pivot = new Vector2(1f, 1f); // 행동력 텍스트 오른쪽 피벗 설정
+        actionPointRect.anchoredPosition = new Vector2(-8f, -4f); // 행동력 텍스트 오른쪽 위치 설정
+        actionPointRect.sizeDelta = new Vector2(0f, 34f); // 행동력 텍스트 높이 설정
         GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform), typeof(HorizontalLayoutGroup)); // 손패 배치 오브젝트 생성
         handRootObject.transform.SetParent(transform, false); // 손패 배치 부모 연결
         handLayoutRoot = handRootObject.GetComponent<RectTransform>(); // 손패 배치 RectTransform 조회
@@ -86,13 +108,16 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (runtimeDeck == null) // 런타임 덱 연결 확인
         { // 덱 미연결 처리 시작
             deckStatusText.text = "Waiting for deck"; // 덱 미연결 상태 표시
+            actionPointText.text = "AP -- / --"; // 행동력 미연결 상태 표시
             return; // 화면 갱신 중단
         } // 덱 미연결 처리 종료
         deckStatusText.text = $"Deck {runtimeDeck.DrawPileCount} | Hand {runtimeDeck.HandCount}/{runtimeDeck.MaxHandSize} | Discard {runtimeDeck.DiscardPileCount}"; // 카드 영역 수량 표시
+        RefreshActionPointStatus(); // 공용 행동력 수량 표시
         foreach (CardInstance cardInstance in runtimeDeck.Hand) // 현재 손패 카드 순회
         { // 카드 화면 생성 시작
             BattleCardView cardView = CreateCardView(cardInstance); // 카드 화면 코드 생성
             cardView.SetSelected(cardInstance == selectedCard); // 현재 카드 선택 표시 적용
+            cardView.SetInteractable(IsCardUsable(cardInstance)); // 카드 사용 가능 표시 적용
             spawnedCardViews.Add(cardView); // 생성 카드 화면 목록 등록
         } // 카드 화면 생성 종료
     } // 화면 갱신 종료
@@ -118,6 +143,28 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             } // 선택 표시 적용 종료
         } // 선택 표시 적용 종료
     } // 선택 카드 설정 종료
+    public void RefreshCardAvailability() // 카드 사용 가능 상태 갱신
+    { // 사용 가능 상태 갱신 시작
+        foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
+        { // 사용 가능 상태 적용 시작
+            if (cardView != null && cardView.RuntimeCard != null) // 카드 화면 연결 확인
+            { // 카드 사용 가능 적용 시작
+                cardView.SetInteractable(IsCardUsable(cardView.RuntimeCard)); // 카드 사용 가능 표시 적용
+            } // 카드 사용 가능 적용 종료
+        } // 사용 가능 상태 적용 종료
+    } // 사용 가능 상태 갱신 종료
+    private bool IsCardUsable(CardInstance cardInstance) // 카드 사용 가능 여부 확인
+    { // 카드 사용 가능 검사 시작
+        if (cardInstance == null || cardInstance.OwnerUnit == null) // 카드와 소유자 확인
+        { // 카드 연결 오류 처리 시작
+            return false; // 카드 사용 불가 반환
+        } // 카드 연결 오류 처리 종료
+        if (cardInstance.OwnerUnit.IsDead || sharedActionPoints == null) // 소유자 생존과 행동력 연결 확인
+        { // 카드 사용 조건 오류 처리 시작
+            return false; // 카드 사용 불가 반환
+        } // 카드 사용 조건 오류 처리 종료
+        return sharedActionPoints.CanSpend(cardInstance.ApCost); // 공용 행동력 검사 결과 반환
+    } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
@@ -144,6 +191,19 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     { // 덱 상태 처리 시작
         Refresh(); // 손패 화면 자동 갱신
     } // 덱 상태 처리 종료
+    private void HandleActionPointStateChanged() // 공용 행동력 변경 처리
+    { // 행동력 변경 처리 시작
+        RefreshActionPointStatus(); // 행동력 수량 표시 갱신
+        RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+    } // 행동력 변경 처리 종료
+    private void RefreshActionPointStatus() // 공용 행동력 수량 갱신
+    { // 행동력 수량 갱신 시작
+        if (actionPointText == null) // 행동력 텍스트 존재 확인
+        { // 텍스트 누락 처리 시작
+            return; // 행동력 수량 갱신 중단
+        } // 텍스트 누락 처리 종료
+        actionPointText.text = sharedActionPoints == null ? "AP -- / --" : $"AP {sharedActionPoints.CurrentActionPoints} / {sharedActionPoints.MaxActionPoints}"; // 공용 행동력 수량 표시
+    } // 행동력 수량 갱신 종료
     private static TMP_Text CreateText(string objectName, Transform parent, string initialText, float fontSize, Color textColor) // 텍스트 생성
     { // 텍스트 생성 시작
         GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 텍스트 오브젝트 생성
@@ -163,5 +223,9 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         } // 이벤트 해제 종료
+        if (sharedActionPoints != null) // 연결된 공용 행동력 확인
+        { // 행동력 이벤트 해제 시작
+            sharedActionPoints.StateChanged -= HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 해제
+        } // 행동력 이벤트 해제 종료
     } // 제거 처리 종료
 } // 클래스 종료

@@ -4,15 +4,17 @@ using UnityEngine; // 유니티 로그 기능 사용
 public sealed class BattleCardActionController : IDisposable // 카드 선택과 사용 흐름 관리
 { // 클래스 시작
     private readonly BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
+    private readonly BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleHandView battleHandView, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleHandView battleHandView, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
+        sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
         handView = battleHandView ?? throw new ArgumentNullException(nameof(battleHandView)); // 손패 화면 저장
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
@@ -20,6 +22,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         RegisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 등록
         RegisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 등록
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
+        handView.RefreshCardAvailability(); // 시작 카드 사용 가능 상태 갱신
     } // 생성자 종료
     private void HandleCardClicked(CardInstance cardInstance) // 카드 클릭 처리
     { // 카드 클릭 처리 시작
@@ -32,6 +35,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] 사망한 소유자의 카드는 사용할 수 없습니다: {cardInstance.OwnerUnit.DisplayName}"); // 사용 불가 출력
             return; // 카드 클릭 처리 중단
         } // 사망 소유자 처리 종료
+        if (!sharedActionPoints.CanSpend(cardInstance.ApCost)) // 카드 비용 지불 가능 확인
+        { // 행동력 부족 처리 시작
+            Debug.LogWarning($"[BattleCardActionController] 공용 AP가 부족합니다: 현재 {sharedActionPoints.CurrentActionPoints} / 필요 {cardInstance.ApCost}"); // 행동력 부족 출력
+            handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+            return; // 카드 클릭 처리 중단
+        } // 행동력 부족 처리 종료
         if (selectedCard == cardInstance) // 동일 카드 재선택 확인
         { // 재선택 처리 시작
             CancelSelection(); // 카드 선택 취소
@@ -83,6 +92,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 상태 초기화
         } // 손패 이탈 처리 종료
     } // 덱 상태 처리 종료
+    private void HandleUnitDied(BattleUnitRuntime runtimeUnit) // 유닛 사망 처리
+    { // 유닛 사망 처리 시작
+        handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+        if (selectedCard != null && selectedCard.OwnerUnit == runtimeUnit) // 선택 카드 소유자 사망 확인
+        { // 소유자 사망 처리 시작
+            CancelSelection(); // 카드 선택 상태 초기화
+        } // 소유자 사망 처리 종료
+    } // 유닛 사망 처리 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
         if (!ContainsHandCard(cardInstance) || targetUnits == null || targetUnits.Count < 1) // 카드와 대상 유효성 확인
@@ -96,6 +113,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 미지원 효과 처리 종료
+        if (!sharedActionPoints.Spend(cardInstance.ApCost)) // 카드 비용 차감 확인
+        { // 비용 차감 실패 처리 시작
+            Debug.LogWarning($"[BattleCardActionController] 카드 비용 차감에 실패했습니다: {cardInstance.DisplayName}"); // 비용 차감 실패 출력
+            CancelSelection(); // 선택 상태 초기화
+            return; // 카드 실행 중단
+        } // 비용 차감 실패 처리 종료
         foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
         { // 효과 적용 시작
             targetUnit.TakeDamage(cardInstance.EffectValue); // 카드 피해 적용
@@ -105,7 +128,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
         } // 카드 이동 실패 처리 종료
-        Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / 피해 {cardInstance.EffectValue}"); // 카드 사용 결과 출력
+        Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / 피해 {cardInstance.EffectValue} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
         CancelSelection(); // 카드 선택 상태 초기화
     } // 카드 실행 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
@@ -195,6 +218,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             if (unitView != null) // 유닛 화면 존재 확인
             { // 유닛 화면 연결 시작
                 unitView.Clicked += HandleUnitClicked; // 유닛 클릭 이벤트 등록
+                if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
+                { // 런타임 이벤트 등록 시작
+                    unitView.RuntimeUnit.Died += HandleUnitDied; // 유닛 사망 이벤트 등록
+                } // 런타임 이벤트 등록 종료
             } // 유닛 화면 연결 종료
         } // 이벤트 등록 처리 종료
     } // 이벤트 등록 종료
@@ -205,6 +232,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             if (unitView != null) // 유닛 화면 존재 확인
             { // 유닛 화면 연결 해제 시작
                 unitView.Clicked -= HandleUnitClicked; // 유닛 클릭 이벤트 해제
+                if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
+                { // 런타임 이벤트 해제 시작
+                    unitView.RuntimeUnit.Died -= HandleUnitDied; // 유닛 사망 이벤트 해제
+                } // 런타임 이벤트 해제 종료
             } // 유닛 화면 연결 해제 종료
         } // 이벤트 해제 처리 종료
     } // 이벤트 해제 종료
