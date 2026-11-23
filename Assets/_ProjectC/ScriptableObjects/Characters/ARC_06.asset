@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 동료 한 명과 협공"
   role: 0
   portrait: {fileID: -867741584634932163, guid: a67bf5f303956ef46aadea4f44bdd55f, type: 3}
+  battleIllustration: {fileID: 4000000000000000006, guid: d378eb30770b41dbbbdd61cecb4ab78a, type: 3}
   maxHealth: 98
   physicalDefense: 3
   magicalResistance: 2

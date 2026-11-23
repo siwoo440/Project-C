@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 한 턴 단일 표적 돌파"
   role: 0
   portrait: {fileID: -5774309225951526590, guid: 2c8325eda65ffb7478e1702b070cd3a8, type: 3}
+  battleIllustration: {fileID: 4000000000000000007, guid: 86e7927a2100429c869fb18f4ff738f7, type: 3}
   maxHealth: 108
   physicalDefense: 4
   magicalResistance: 2
