@@ -134,6 +134,8 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.Evasion); // 이 적 턴에 적용된 회피의 기간 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.ShockAbsorption); // 지정 적 턴의 충격 흡수 기간 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.ResistanceStance); // 지정 적 턴의 저항 태세 기간 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.ShieldCounter); // 한 번의 적 턴 동안 적용되는 반격 종료
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.GuardianCircle); // 수호의 원의 남은 적 턴 차감
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료

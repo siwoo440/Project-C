@@ -10,6 +10,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly Dictionary<BattleUnitRuntime, int> phasePatternStarts = new Dictionary<BattleUnitRuntime, int>(); // 적별 현재 페이즈 시작 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
     private BattleEnemyAction executingAction; // 현재 실행 행동
+    private BattleUnitRuntime shieldTaunter; // 이번 적 턴의 전체 도발 아군
     private readonly BattleTurnRuntime turns; // 실제 아군 턴 시작과 장화 횟수 초기화 연결
     private int bootUses; // 이번 턴 파티가 사용한 철제 장화 횟수
     private bool dogTagUsed; // 이번 전투에서 파티가 군번줄을 사용한 여부
@@ -26,6 +27,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         if (turns != null) // 실제 턴 관리자를 받은 전투 확인
         { // 장화 횟수 연결 시작
             turns.PhaseStarted += ResetBootUses; // 새 아군 턴부터 파티 공용 횟수 복구
+            turns.PhaseEnded += HandleShieldTauntPhaseEnded; // 첫 적 턴 종료에 도발 자동 해제
         } // 장화 횟수 연결 종료
         RegisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 등록
         RegisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 등록
@@ -72,6 +74,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 action.SetBootPreviewRule(GetBootPreviewReduction); // 남은 장화 횟수와 예고된 순서 반영
                 action.SetBlockPreviewRule(GetBlockBeforeAttack); // 방어도 예고 순서 연결
                 action.SetBodyGuardPreviewRule(GetBodyGuardPreviewTarget); // 대신 받을 대상 예고 연결
+                action.SetShieldTauntTarget(shieldTaunter); // 새 예정 공격에도 현재 도발 반영
                 plannedActions.Add(action); // 예정 행동 목록 추가
             } // 유효 행동 처리 종료
         } // 적 행동 생성 종료
@@ -140,7 +143,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
-        int guardIndex = action.IsPositiveDirectAttack ? FindBodyGuardIndex(action.IntendedTarget) : -1; // 실제 지정 대상의 첫 보호 검색
+        int guardIndex = action.IsPositiveDirectAttack ? FindBodyGuardIndex(action.PrioritizedTarget) : -1; // 도발을 반영한 대상의 첫 보호 검색
         BattleEnemyActionResult actionResult; // 적 행동 적용 결과
         executingAction = action; // 현재 실행 행동 저장
         try // 실행 여부 초기화 보장
@@ -171,7 +174,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 유도 실패 반환
         } // 유도 불가 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 해당 적의 예정 행동 조회
-        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget != targetUnit; // 지정 대상 변경 가능 확인
+        return action != null && action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget != targetUnit; // 현재 우선 대상 변경 가능 확인
     } // 유도 가능 확인 종료
     public bool TryRedirectAttack(BattleUnitRuntime enemyUnit, BattleUnitRuntime targetUnit) // 예정 공격 대상 변경 시도
     { // 공격 유도 시작
@@ -180,7 +183,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 유도 실패 반환
         } // 잘못된 공격 처리 종료
         BattleEnemyAction action = FindAction(enemyUnit); // 유도할 예정 행동 조회
-        if (!action.ChangeTarget(targetUnit)) // 공격 대상 변경 시도
+        if (!OverridePlannedAttackTarget(action, targetUnit)) // 선택한 공격만 직접 유도 시도
         { // 변경 실패 처리 시작
             return false; // 유도 실패 반환
         } // 변경 실패 처리 종료
@@ -205,7 +208,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         BattleEnemyAction action = FindAction(enemyUnit); // 선택 적의 예정 공격 조회
         List<BattleUnitRuntime> living = CollectLivingAllies(); // 운명의 카드로 다시 정할 생존 대상 목록
         BattleUnitRuntime target = living[RelicRandomCardTarget.PickIndex(living.Count, random.Next)]; // 카드의 무작위 재지정에 보유 주사위 반영
-        if (!action.ChangeTarget(target)) // 재추첨된 대상 적용 확인
+        if (!OverridePlannedAttackTarget(action, target)) // 재추첨 결과의 개별 적용 확인
         { // 대상 적용 실패 시작
             return false; // 재굴림 실패 반환
         } // 대상 적용 실패 종료
@@ -224,7 +227,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 분담 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 동료 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally && action.SetDamageShare(protector)) // 지정 동료를 향한 첫 공격에 분담자 설정
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally && action.SetDamageShare(protector)) // 현재 지정 동료를 향한 첫 공격에 분담자 설정
             { // 분담 설정 완료 시작
                 StateChanged?.Invoke(); // 변경된 피해 예고 알림
                 return true; // 분담 설정 성공 반환
@@ -232,6 +235,52 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 첫 동료 공격 검색 종료
         return false; // 설정할 공격 없음 반환
     } // 피해 분담 설정 종료
+    public bool TryShieldTaunt(BattleUnitRuntime owner) // 단일 적 공격 전체의 도발 설정
+    { // 전체 도발 시작
+        if (disposed || owner == null || owner.Team != BattleTeam.Ally || owner.IsDead || !ContainsUnit(allyUnits, owner)) // 전투 중 생존 아군 확인
+        { // 도발 불가 처리 시작
+            return false; // 잘못된 도발자 거부
+        } // 도발 불가 처리 종료
+        SetShieldTaunter(owner); // 이번 적 턴의 도발 대상 교체
+        StateChanged?.Invoke(); // 우선 공격 대상 예고 갱신
+        return true; // 도발 설정 성공
+    } // 전체 도발 종료
+    public void ClearShieldTaunt() // 이번 적 턴의 전체 도발 해제
+    { // 도발 해제 시작
+        if (shieldTaunter == null) // 남아 있는 도발자 확인
+        { // 해제 대상 없음 처리 시작
+            return; // 도발 해제 생략
+        } // 해제 대상 없음 처리 종료
+        SetShieldTaunter(null); // 남은 예정 공격의 원래 대상 복원
+        StateChanged?.Invoke(); // 복원된 공격 예고 알림
+    } // 도발 해제 종료
+    private void HandleShieldTauntPhaseEnded(BattleTurnPhase phase, int round) // 상태가 유지되는 적 턴 종료 감시
+    { // 턴 종료 확인 시작
+        if (phase == BattleTurnPhase.EnemyTurn) // 적 진영 행동이 끝났는지 확인
+        { // 적 턴 도발 회수 시작
+            ClearShieldTaunt(); // 도발 대상과 예고 정리
+        } // 적 턴 도발 회수 종료
+    } // 턴 종료 확인 종료
+    private void SetShieldTaunter(BattleUnitRuntime owner) // 현재와 이후 공격의 도발 대상 저장
+    { // 현재 도발자 갱신 시작
+        shieldTaunter = owner; // 다음 예정 공격에도 쓸 도발 대상 저장
+        foreach (BattleEnemyAction action in plannedActions) // 현재 적의 예정 행동 순회
+        { // 남은 행동 확인 시작
+            if (action != executingAction) // 실행 중인 행동 제외
+            { // 도발 예고 적용 시작
+                action.SetShieldTauntTarget(owner); // 아직 실행하지 않은 공격만 갱신
+            } // 도발 예고 적용 종료
+        } // 남은 행동 확인 종료
+    } // 현재 도발자 갱신 종료
+    private static bool OverridePlannedAttackTarget(BattleEnemyAction action, BattleUnitRuntime target) // 명시적으로 선택한 개별 공격의 대상 변경
+    { // 개별 대상 변경 시작
+        if (!action.ChangeTarget(target)) // 새 개별 공격 대상 적용 확인
+        { // 변경 불가 처리 시작
+            return false; // 대상 변경 실패 반환
+        } // 변경 불가 처리 종료
+        action.SetShieldTauntTarget(null); // 개별 대상 변경이 적용된 공격의 도발 우선순위 해제
+        return true; // 대상 변경 성공 반환
+    } // 개별 대상 변경 종료
     public bool CanBodyGuard(BattleUnitRuntime guard, BattleUnitRuntime ally) // 다음 피해 대신 받기 가능 확인
     { // 대신 받기 조건 확인 시작
         return !disposed && guard != null && ally != null && guard != ally && !guard.IsDead && !ally.IsDead && guard.Team == BattleTeam.Ally && ally.Team == BattleTeam.Ally && ContainsUnit(allyUnits, guard) && ContainsUnit(allyUnits, ally); // 서로 다른 생존 전투 아군 확인
@@ -264,16 +313,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         { // 보호 예고 제외 시작
             return null; // 기존 대상 예고 유지
         } // 보호 예고 제외 종료
-        int guardIndex = FindBodyGuardIndex(action.IntendedTarget); // 지정 대상의 첫 보호 조회
+        BattleUnitRuntime target = action.PrioritizedTarget; // 도발이 반영된 공격 대상 조회
+        int guardIndex = FindBodyGuardIndex(target); // 우선 대상의 첫 보호 조회
         foreach (BattleEnemyAction candidate in plannedActions) // 공격 예고 순서대로 순회
         { // 앞선 보호 소모 확인 시작
             if (guardIndex < 0 || candidate == action) // 보호 소진 또는 현재 공격 도달 확인
             { // 보호자 예고 반환 시작
                 return guardIndex < 0 ? null : bodyGuards[guardIndex].Guard; // 남은 첫 보호자 반환
             } // 보호자 예고 반환 종료
-            if (candidate != executingAction && candidate.IntendedTarget == action.IntendedTarget && candidate.IsPositiveDirectAttack && BattleHitChance.GetPercent(candidate.Actor, bodyGuards[guardIndex].Guard) > 0) // 이전 공격의 같은 아군 보호 소모 예측
+            if (candidate != executingAction && candidate.PrioritizedTarget == target && candidate.IsPositiveDirectAttack && BattleHitChance.GetPercent(candidate.Actor, bodyGuards[guardIndex].Guard) > 0) // 같은 우선 대상의 앞선 보호 소모 예측
             { // 예고용 보호 이동 시작
-                guardIndex = FindBodyGuardIndex(action.IntendedTarget, guardIndex + 1); // 다음 보호 위치 조회
+                guardIndex = FindBodyGuardIndex(target, guardIndex + 1); // 다음 보호 위치 조회
             } // 예고용 보호 이동 종료
         } // 앞선 보호 소모 확인 종료
         return null; // 예정 목록 밖의 보호자 예고 제외
@@ -286,7 +336,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 공격 가능 확인 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally) // 지정 동료를 향한 유효 공격 확인
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally) // 현재 동료를 향한 유효 공격 확인
             { // 보호 가능 처리 시작
                 return true; // 대신 받을 공격 존재 반환
             } // 보호 가능 처리 종료
@@ -301,7 +351,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 보호 불가 처리 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순서대로 순회
         { // 첫 공격 검색 시작
-            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.IntendedTarget == ally && action.ChangeTarget(guard)) // 지정 동료의 첫 공격을 보호자로 전환
+            if (action != executingAction && action.IsExecutable && action.ActionType == EnemyActionType.Attack && action.PrioritizedTarget == ally && OverridePlannedAttackTarget(action, guard)) // 현재 동료의 첫 공격만 보호자로 전환
             { // 공격 전환 처리 시작
                 StateChanged?.Invoke(); // 변경된 공격 예고 알림
                 return true; // 보호 성공 반환
@@ -552,6 +602,11 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private void HandleAllyDied(BattleUnitRuntime allyUnit) // 아군 사망 처리
     { // 아군 사망 처리 시작
         bool changed = bodyGuards.RemoveAll(bodyGuard => bodyGuard.Guard == allyUnit || bodyGuard.Ally == allyUnit) > 0; // 사망 아군이 참여한 보호 제거
+        if (shieldTaunter == allyUnit) // 현재 도발자 사망 확인
+        { // 사망 도발자 해제 시작
+            SetShieldTaunter(null); // 남은 적 공격의 기존 대상 복원
+            changed = true; // 도발 예고 갱신 예약
+        } // 사망 도발자 해제 종료
         foreach (BattleEnemyAction action in plannedActions) // 예정 행동 순회
         { // 대상 확인 시작
             if (action == executingAction) // 현재 실행 행동 확인
@@ -612,9 +667,11 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         if (turns != null) // 실제 턴 이벤트 연결 확인
         { // 장화 횟수 해제 시작
             turns.PhaseStarted -= ResetBootUses; // 끝난 전투의 공용 횟수 연결 해제
+            turns.PhaseEnded -= HandleShieldTauntPhaseEnded; // 끝난 전투의 도발 종료 연결 해제
         } // 장화 횟수 해제 종료
         UnregisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 해제
         UnregisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 해제
+        SetShieldTaunter(null); // 종료한 전투의 도발자 연결 해제
         plannedActions.Clear(); // 예정 행동 목록 비우기
         bodyGuards.Clear(); // 전투에 남아 있는 대신 받기 보호 제거
         nextPatternIndices.Clear(); // 적별 패턴 순번 비우기

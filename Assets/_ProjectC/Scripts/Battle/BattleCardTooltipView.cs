@@ -24,7 +24,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 검 카드 범위 분기 시작
             SwordCardRule.SwordDance or SwordCardRule.HorizontalSlash => "선택한 적과 인접한 한 칸", // 이웃 칸 공격 범위
             SwordCardRule.TwinBladeFlurry => "타격마다 무작위 생존 적 하나", // 전체 적에서 하나씩 고르는 연타 범위
-            _ => GetTargetLabel(cardInstance.TargetType) // 일반 카드 대상 문구
+            _ => GetTargetLabel(cardInstance) // 일반 카드와 두 아군 선택의 대상 문구
         }; // 카드 대상 표시 완료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
@@ -75,9 +75,13 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         SetRect(detailText.rectTransform, Vector2.zero, new Vector2(1f, 0.72f), new Vector2(14f, 10f), new Vector2(-14f, -2f)); // 카드 상세 영역 설정
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
     } // 화면 구조 준비 종료
-    private static string GetTargetLabel(CardTargetType targetType) // 카드 대상 문구 조회
+    private static string GetTargetLabel(CardInstance card) // 카드 대상 문구 조회
     { // 대상 문구 조회 시작
-        switch (targetType) // 카드 대상 종류 분기
+        if (card.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 분할 방벽의 순차 아군 선택 확인
+        { // 분할 방벽 대상 문구 시작
+            return "서로 다른 아군 2명 선택"; // 두 명의 대상 선택 안내
+        } // 분할 방벽 대상 문구 종료
+        switch (card.TargetType) // 카드 대상 종류 분기
         { // 대상 종류 분기 시작
             case CardTargetType.Self: // 자신 대상
                 return "자신"; // 자신 문구 반환
@@ -151,6 +155,18 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.ShieldRule == ShieldCardRule.RendingShield) // 현재 방어도를 기본 피해에 연결하는 카드 확인
+        { // 방어도 피해 상세 표시 시작
+            return $"기본 물리 피해 {cardInstance.OwnerUnit.CurrentBlock / 2} · 현재 방어도의 절반"; // 현재 방어도로 계산한 실제 기본 피해 표시
+        } // 방어도 피해 상세 표시 종료
+        if (cardInstance.SourceData.ShieldRule == ShieldCardRule.Taunt) // 생존 적의 단일 공격을 유도하는 방패 카드 확인
+        { // 전체 도발 상세 표시 시작
+            return $"다음 적 턴 단일 공격 유도 · 물리 방어력 +{cardInstance.EffectValue}"; // 유도 범위와 방어력 효과 표시
+        } // 전체 도발 상세 표시 종료
+        if (cardInstance.StatusEffectType == BattleStatusEffectType.DangerInterception) // 피격 한 번을 기다리는 상태의 카드 확인
+        { // 위험 차단 상세 표시 시작
+            return $"다음 직접 공격 피해 −{cardInstance.EffectValue}% · 1회"; // 턴이 아닌 공격 횟수 안내
+        } // 위험 차단 상세 표시 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher) // 남은 행동력 공격 확인
         { // 처형 피해 표시 시작
             return $"물리 피해 X × {cardInstance.EffectValue}"; // 남은 행동력과 실제 배수 표시

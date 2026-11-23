@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetBalanceGuard
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_BALANCE_GUARD
+  displayName: "균형 잡기"
+  description: "방어도 3을 얻는다. 자신이 다음에 쓰는 방패 카드 중 고정 비용이 1 이상인 카드의 비용을 1 줄인다. 할인은 중첩되지 않는다."
+  artwork: {fileID: 21300000, guid: ef8a30ab552a5e08b2c424051ba79f4f, type: 3}
+  cardType: 4
+  targetType: 0
+  apCost: 0
+  effectType: 9
+  damageType: 0
+  effectValue: 3
+  shieldRule: 6
+  secondaryEffectValue: 1
+  mentalChangeValue: 0
+  statusEffectType: 42
+  statusDuration: 1
+  statusMaximumStacks: 1

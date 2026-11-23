@@ -7,14 +7,17 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
     private Func<BattleEnemyAction, BattleUnitRuntime> getBodyGuardPreviewTarget; // 대신 받을 아군 예고 조회
     private BattleUnitRuntime executedAttackTarget; // 실행 당시의 실제 공격 대상
-    private BattleUnitRuntime damageShareRecipient; // 원래 대상의 피해 분담 동료
+    private BattleUnitRuntime shieldTauntTarget; // 이번 공격의 살아 있는 도발 대상
+    private BattleUnitRuntime damageShareTarget; // 피해 분담을 설정한 공격 대상
+    private BattleUnitRuntime damageShareRecipient; // 지정 대상의 피해 분담 동료
     private readonly Func<int> rollPercent; // 명중과 추가 상태 확률 난수
     private readonly int statusChancePercent; // 공격 후 상태 부여 확률
     private readonly int statusValue; // 공격 후 상태 효과 수치
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
     internal BattleUnitRuntime IntendedTarget { get; private set; } // 전환 효과 전의 지정 대상
-    public BattleUnitRuntime Target => executedAttackTarget ?? getBodyGuardPreviewTarget?.Invoke(this) ?? IntendedTarget; // 실제 또는 예고 피격 대상
-    public BattleUnitRuntime SharedDamageRecipient => Target == IntendedTarget ? damageShareRecipient : null; // 현재 피격 대상의 분담 동료
+    internal BattleUnitRuntime PrioritizedTarget => shieldTauntTarget != null && !shieldTauntTarget.IsDead ? shieldTauntTarget : IntendedTarget; // 대신 받기 전의 우선 공격 대상
+    public BattleUnitRuntime Target => executedAttackTarget ?? getBodyGuardPreviewTarget?.Invoke(this) ?? PrioritizedTarget; // 실제 또는 예고 피격 대상
+    public BattleUnitRuntime SharedDamageRecipient => Target == damageShareTarget ? damageShareRecipient : null; // 현재 피격 대상의 분담 동료
     public EnemyActionType ActionType { get; } // 행동 종류 조회
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public int Amount { get; } // 층 난이도 포함 예정 수치 조회
@@ -40,8 +43,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         Actor != null &&
         !Actor.IsDead &&
         BlockingStatus == BattleStatusEffectType.None && // 취소되거나 기절한 행동 제외
-        IntendedTarget != null && // 지정 대상 확인
-        !IntendedTarget.IsDead && // 지정 대상 생존 확인
+        PrioritizedTarget != null && // 우선 공격 대상 확인
+        !PrioritizedTarget.IsDead && // 우선 공격 대상 생존 확인
         IsActionConfigurationValid(); // 실행 가능 여부 조회
 
     internal bool IsPositiveDirectAttack => IsExecutable && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && AttackAmount > 0; // 양수 직접 적 공격 확인
@@ -121,20 +124,33 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return false;
         }
 
-        if (IntendedTarget != target) // 지정 공격 대상 변경 확인
-        { // 기존 분담 해제 시작
-            damageShareRecipient = null; // 이전 지정 대상의 분담 해제
-        } // 기존 분담 해제 종료
         IntendedTarget = target; // 새 지정 대상 저장
         executedAttackTarget = null; // 이전 실행 대상 초기화
+        ClearPreviousDamageShare(); // 공격 대상이 달라진 경우 분담 해제
         return true;
     }
+    internal void SetShieldTauntTarget(BattleUnitRuntime target) // 전체 도발의 우선 대상 설정
+    { // 도발 대상 설정 시작
+        bool singleTargetAttack = Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && (TargetRule == EnemyTargetRule.FirstLiving || TargetRule == EnemyTargetRule.LowestHealth || TargetRule == EnemyTargetRule.RandomLiving); // 단일 대상 직접 공격 확인
+        shieldTauntTarget = singleTargetAttack ? target : null; // 현재 규칙의 일반 공격에만 도발 적용
+        ClearPreviousDamageShare(); // 도발 전 대상으로 맺은 분담 해제
+    } // 도발 대상 설정 종료
+    private void ClearPreviousDamageShare() // 대상 변경으로 무효가 된 분담 정리
+    { // 분담 확인 시작
+        if (damageShareTarget != PrioritizedTarget) // 분담 당시와 현재 우선 대상 비교
+        { // 분담 초기화 시작
+            damageShareTarget = null; // 이전 공격 대상 정리
+            damageShareRecipient = null; // 이전 분담 동료 정리
+        } // 분담 초기화 종료
+    } // 분담 확인 종료
     internal bool SetDamageShare(BattleUnitRuntime recipient) // 생존 동료를 피해 분담자로 설정
     { // 피해 분담 설정 시작
-        if (recipient == null || recipient.IsDead || recipient == IntendedTarget || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 지정 대상과 분담자 유효성 확인
+        BattleUnitRuntime target = PrioritizedTarget; // 현재 우선 공격 대상 조회
+        if (target == null || recipient == null || recipient.IsDead || recipient == target || recipient.Team != BattleTeam.Ally || ActionType != EnemyActionType.Attack) // 대상과 분담자 유효성 확인
         { // 분담 설정 불가 시작
             return false; // 설정 실패 반환
         } // 분담 설정 불가 종료
+        damageShareTarget = target; // 분담이 적용될 우선 공격 대상 보관
         damageShareRecipient = recipient; // 현재 공격의 피해 분담자 저장
         return true; // 설정 성공 반환
     } // 피해 분담 설정 종료
@@ -145,6 +161,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return false; // 변경 없음 반환
         } // 해제 대상 없음 종료
         damageShareRecipient = null; // 지정 분담자 연결 해제
+        damageShareTarget = null; // 분담을 설정한 공격 대상 정리
         return true; // 해제 성공 반환
     } // 피해 분담 해제 종료
 
@@ -201,12 +218,13 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         }
 
         int modifiedAmount = AttackAmount; // 실제 공격 약화와 정신 상태를 반영한 피해
+        bool firstImpact = canPreviewPreparation == null || canPreviewPreparation(this); // 대상의 첫 유효 직접 공격 여부
 
         return Target.PreviewDamage( // 적 공격 예상 피해 계산
             modifiedAmount, // 정신 상태 포함 피해량 전달
             DamageType, // 공격 피해 유형 전달
-            canPreviewPreparation == null || canPreviewPreparation(this) ? Actor : null, // 첫 공격에만 방어 준비 포함
-            block, enemyDirectAttack: true); // 현재 예고 순서의 잔여 방어도와 코일 반영
+            firstImpact ? Actor : null, // 첫 공격에만 방어 준비 포함
+            block, enemyDirectAttack: true, applyDangerInterception: firstImpact); // 예고 순서와 첫 위험 차단을 반영한 피해 계산
     }
 
     public BattleEnemyActionResult Execute(Func<bool> preventHealthDamage = null, Func<int, int> reduceHealthDamage = null) // 예정 행동 실행
@@ -243,8 +261,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         }
 
         int attackDamage = AttackAmount; // 약화 소모 전 이번 공격 수치 보관
+        BattleUnitRuntime prioritizedTarget = PrioritizedTarget; // 명중 판정 전에 우선 공격 대상 저장
         Actor.RemoveStatusEffect(BattleStatusEffectType.NextAttackDown); // 적이 실제 공격을 시도하면 명중과 관계없이 한 번 소모
-        BattleUnitRuntime attackTarget = attackDamage > 0 && guard != null && !guard.IsDead ? guard : IntendedTarget; // 현재 명중 판정 대상 선택
+        BattleUnitRuntime attackTarget = attackDamage > 0 && guard != null && !guard.IsDead ? guard : prioritizedTarget; // 도발 또는 보호 상태의 최종 대상 선택
         executedAttackTarget = attackTarget; // 연출과 결과 표시용 피격 대상 고정
         int hitChance = BattleHitChance.GetPercent(Actor, attackTarget); // 실제 대상 회피를 포함한 명중률
         if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), attackTarget)) // 실제 대상에 대한 명중 판정
@@ -252,7 +271,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료
 
-        if (attackTarget != IntendedTarget) // 보호자에게 명중한 공격 확인
+        if (attackTarget != prioritizedTarget) // 도발 이후 보호자가 실제로 막아선 경우 확인
         { // 대신 받기 소모 시작
             consumeBodyGuard?.Invoke(); // 피격 이벤트 전 이번 효과 소모
         } // 대신 받기 소모 종료

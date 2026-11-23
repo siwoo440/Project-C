@@ -754,7 +754,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 2명에게 방어도 +4",
+      "description": "서로 다른 생존 아군 두 명에게 각각 방어도 4를 부여한다.",
       "area": "2",
       "targets": "아군",
       "imageFileName": "보호막 분배.png"
@@ -765,7 +765,7 @@
       "attribute": "방패",
       "rarity": "일반",
       "cost": "0",
-      "description": "방어도 3 획득, 다음 방패 카드 비용 -1",
+      "description": "방어도 3을 얻는다. 자신이 다음에 쓰는 방패 카드 중 고정 비용이 1 이상인 카드의 비용을 1 줄인다. 할인은 중첩되지 않는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "균형 잡기.png"
@@ -787,7 +787,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 전체가 자신을 우선 공격, 방어력 +4 (1턴)",
+      "description": "자신의 물리 방어력이 1턴 동안 4 증가한다. 다음 적 턴에 단일 대상 공격은 자신을 우선 노린다.",
       "area": "전체",
       "targets": "적/아군",
       "imageFileName": "도발.png"
@@ -798,7 +798,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 방어 후 공격자에게 8 피해",
+      "description": "다음 적 턴이 끝날 때까지 방어도가 적의 직접 공격 피해를 흡수할 때마다 그 적에게 고정 피해 8을 준다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "방패 반격.png"
@@ -809,7 +809,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 받는 피해 -10% (2턴)",
+      "description": "다음 두 번의 적 턴 동안 생존 아군 모두가 받는 직접 피해를 10% 줄인다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "수호의 원.png"
@@ -820,7 +820,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "방어도 +10, 적에게 8 피해",
+      "description": "적 하나에게 물리 피해 8을 주고 자신은 방어도 10을 얻는다.",
       "area": "단일",
       "targets": "적/아군",
       "imageFileName": "방어 전진.png"
@@ -831,7 +831,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "자신의 방어도 절반만큼 적에게 피해",
+      "description": "적 하나에게 현재 자신이 지닌 방어도의 절반만큼 물리 피해를 준다. 소수점은 버리며 방어도는 소모하지 않는다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "파열 방패.png"
@@ -842,7 +842,7 @@
       "attribute": "방패",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명의 다음 피해 1회 -70%",
+      "description": "아군 하나가 다음에 적에게 받는 직접 피해 1회를 70% 줄인다. 피해를 줄일 때까지 유지된다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "위험 차단.png"

@@ -41,5 +41,9 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     SwordSaintStance, // 검 카드 비용 감소와 직접 타격 강화
     ShockAbsorption, // 지정 적 턴 동안의 직접 피해 고정 경감
     ResistanceStance, // 지정 적 턴 동안의 마법 피해 비율 경감
-    ActionSpeedUp // 시전자가 보유한 행동 속도 상승
+    ActionSpeedUp, // 시전자가 보유한 행동 속도 상승
+    ShieldBalance, // 다음 유료 방패 카드 기본 비용 감소
+    ShieldCounter, // 방어도로 적 직접 공격 흡수 시 고정 반격
+    GuardianCircle, // 받는 직접 피해 비율 경감
+    DangerInterception // 다음 적의 직접 공격 한 번에 대한 비율 경감
 } // 열거형 종료
