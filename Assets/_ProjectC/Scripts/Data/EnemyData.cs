@@ -11,6 +11,10 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     [Header("기본 전투 수치")] // 기본 전투 수치 구역
     [Min(1)] // 최대 체력 최소값
     [SerializeField] private int maxHealth = 50; // 최대 체력
+    [Min(0)] // 물리 방어력 최소값
+    [SerializeField] private int physicalDefense; // 물리 방어력
+    [Min(0)] // 마법 저항력 최소값
+    [SerializeField] private int magicalResistance; // 마법 저항력
     [Header("기본 행동")] // 기본 행동 구역
     [SerializeField] private EnemyActionType actionType = EnemyActionType.Attack; // 기본 행동 종류
     [Min(0)] // 공격력 최소값
@@ -22,6 +26,8 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public string Description => description; // 적 설명 조회
     public Sprite Portrait => portrait; // 적 이미지 조회
     public int MaxHealth => maxHealth; // 최대 체력 조회
+    public int PhysicalDefense => physicalDefense; // 물리 방어력 조회
+    public int MagicalResistance => magicalResistance; // 마법 저항력 조회
     public EnemyActionType ActionType => actionType; // 기본 행동 종류 조회
     public int BasicAttackPower => basicAttackPower; // 기본 공격력 조회
     public BattleDamageType DamageType => damageType; // 기본 피해 유형 조회

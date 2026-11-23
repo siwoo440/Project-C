@@ -35,17 +35,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
-    public int ExecuteAction(BattleEnemyAction action) // 적 행동 실행
+    public BattleDamageResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
         if (disposed || action == null || !plannedActions.Contains(action)) // 실행 대상 유효성 확인
         { // 실행 불가 처리 시작
-            return 0; // 적용 피해 없음 반환
+            return BattleDamageResult.Empty(action == null ? BattleDamageType.None : action.DamageType); // 적용 피해 없음 반환
         } // 실행 불가 처리 종료
         if (action.Actor.IsDead) // 행동 적 사망 확인
         { // 사망 적 처리 시작
             plannedActions.Remove(action); // 예정 행동 제거
             StateChanged?.Invoke(); // 예정 행동 변경 알림
-            return 0; // 적용 피해 없음 반환
+            return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
         } // 사망 적 처리 종료
         if (action.Target == null || action.Target.IsDead) // 기존 대상 상태 확인
         { // 대상 재선택 시작
@@ -54,15 +54,15 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 대상 없음 처리 시작
                 plannedActions.Remove(action); // 실행 불가 행동 제거
                 StateChanged?.Invoke(); // 예정 행동 변경 알림
-                return 0; // 적용 피해 없음 반환
+                return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
         executingAction = action; // 현재 실행 행동 저장
-        int appliedDamage = action.Execute(); // 적 공격 피해 적용
+        BattleDamageResult damageResult = action.Execute(); // 적 공격 피해 적용
         executingAction = null; // 현재 실행 행동 제거
         plannedActions.Remove(action); // 실행 완료 행동 제거
         StateChanged?.Invoke(); // 예정 행동 변경 알림
-        return appliedDamage; // 실제 피해량 반환
+        return damageResult; // 피해 계산 결과 반환
     } // 행동 실행 종료
     public BattleEnemyAction FindAction(BattleUnitRuntime enemyUnit) // 적 예정 행동 조회
     { // 행동 조회 시작

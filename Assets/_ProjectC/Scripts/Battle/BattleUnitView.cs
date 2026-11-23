@@ -61,7 +61,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         } // 행동 예고 숨김 종료
         EnsureEnemyIntentView(); // 행동 예고 화면 준비
         string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-        enemyIntentText.text = $"예고: {damageLabel} {action.Amount}\n→ {action.Target.DisplayName}"; // 행동 예고 내용 적용
+        BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
+        enemyIntentText.text = $"예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 행동 예고 내용 적용
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
     } // 행동 예고 표시 종료
