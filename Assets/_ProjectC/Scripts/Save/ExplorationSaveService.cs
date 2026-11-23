@@ -245,6 +245,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             UnityEngine.Object.Destroy(party); // 임시 파티 제거
             return false; // 탐사 복원 실패 반환
         } // 거점 상태 복원 실패 종료
+        ExplorationRewardOwnerView.ClosePending(); // 복원 전 대기 중 보물 선택 종료
         ShopRunManager.Instance?.ResetSession(); // 이전 상점 상태 제거
         RestRoomRunManager.Instance?.ResetSession(); // 이전 휴식 상태 제거
         RunDeckManager deck = RunDeckManager.EnsureInstance(); // 회차 덱 관리자 준비
