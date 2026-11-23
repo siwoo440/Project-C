@@ -4531,4 +4531,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 528269467e1a569bb27d1da0eafbea78, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_SWAMP_LEECH_SINEW
+    offerType: 1
+    price: 347
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: eafdf336ff655165892675ded9116582, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_VENOM_SAP_CORE
+    offerType: 1
+    price: 210
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2a877191e18b5bc383b09ece8723d086, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_MUD_GOLEM_CORE_MUD
+    offerType: 1
+    price: 231
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 789c02bc2df05a0e8326f600bc574a00, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SWAMP_FAIRY_WING_DUST
+    offerType: 1
+    price: 244
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 21359766ed4a5c73954ac8ce801c43d8, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_HOLLOW_PREDATOR_STOMACH
+    offerType: 1
+    price: 265
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: b20e821a1f5056b48ef9ee3a90e02c52, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SCORCHED_RAVINE_HEART
+    offerType: 1
+    price: 278
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 5562fae049f954378deb8778696d900b, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_MOUNTAIN_STATUE_SHOULDER
+    offerType: 1
+    price: 299
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2a83e9ed331a57ec818c415ba7ae3929, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LAVA_KING_THRONE_SHARD
+    offerType: 1
+    price: 312
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 6dcae63a10ab5bd18389040709cee620, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

@@ -1855,6 +1855,54 @@
       "artworkKey": "4b44703cf45b51ee8b3b740b655b787e"
     },
     {
+      "category": 3,
+      "name": "늪지 거머리 심줄",
+      "description": "아군 카드가 출혈 중인 적에게 직접 명중해 줄인 체력의 10%를 사용자에게 회복한다.",
+      "artworkKey": "681717e9df125b1abeb82baaaacf3b86"
+    },
+    {
+      "category": 3,
+      "name": "독수액 핵",
+      "description": "중독 중인 적이 전투불능이 되면 25% 확률로 남은 생존 적 전체에게 두 적 턴 동안 중독 1을 부여한다.",
+      "artworkKey": "2d807fe1af875582b5a3abba2652cf97"
+    },
+    {
+      "category": 3,
+      "name": "진흙 골렘의 심토",
+      "description": "실제 아군 턴 종료에 방어도가 남은 생존 아군의 체력을 각각 3 회복한다.",
+      "artworkKey": "9b3f1ae33fb756aab7138fa3be05b36d"
+    },
+    {
+      "category": 3,
+      "name": "늪의 요정 날개가루",
+      "description": "아군 회복 카드를 받은 생존 대상의 회피율이 실제 적 턴 한 번 동안 10%p 증가한다.",
+      "artworkKey": "517f0198583852d4b420b1a9570d2a7b"
+    },
+    {
+      "category": 3,
+      "name": "포식괴물의 빈 위장",
+      "description": "아군이 적을 처치하면 처치자가 체력 10을 회복한다. 전투 시작에 생존 아군 각각은 체력을 최대 5 지불하고 최소 1을 유지한다.",
+      "artworkKey": "4fe1218ec0ac55a6b82407f6a4196a30"
+    },
+    {
+      "category": 3,
+      "name": "불타는 협곡의 심장편",
+      "description": "전투 중 화상 상태인 적에게 가해지는 양수 피해가 20% 증가한다.",
+      "artworkKey": "92cf48bc62995b3e9c23d2e48cef2be6"
+    },
+    {
+      "category": 3,
+      "name": "산맥석상의 어깨조각",
+      "description": "전투 중 아군이 받는 물리 피해가 15% 감소하고 마법 피해가 5% 증가한다.",
+      "artworkKey": "17858d156bcb569d9d701177ce4a55ab"
+    },
+    {
+      "category": 3,
+      "name": "용암왕의 왕좌파편",
+      "description": "전투 시작에 생존 적 전원에게 적 턴 두 번의 화상 1을, 선두 생존 아군에게 아군 턴 한 번의 화상 1을 부여한다.",
+      "artworkKey": "90feb205c950517ca410d54fe3469899"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",
