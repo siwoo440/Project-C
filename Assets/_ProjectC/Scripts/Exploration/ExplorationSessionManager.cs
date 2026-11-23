@@ -1,7 +1,7 @@
 using System.Collections.Generic; // 조우 클리어 목록 사용
 using UnityEngine; // 영구 오브젝트와 위치 기능 사용
 
-public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 상태 관리자
+public sealed class ExplorationSessionManager : MonoBehaviour // 45일차 탐사 런·정산 상태 관리자
 {
     private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
 
@@ -22,6 +22,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
     private int completedFloor; // 탐사 완료 층
     private int completedEncounterCount; // 완료 시점 클리어 조우 수
     private int lastExplorationSuccessAffinity; // 마지막 탐사 성공 호감도 보상
+    private int runExperienceGained; // 이번 탐사 실제 획득 경험치
+    private int runGoldGained; // 이번 탐사 실제 획득 골드
+    private int runScrewGained; // 이번 탐사 실제 획득 나사
+    private int runIronPlateGained; // 이번 탐사 실제 획득 철판
+    private int runWireGained; // 이번 탐사 실제 획득 전선
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
@@ -35,6 +40,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
     public int CompletedFloor => completedFloor; // 탐사 완료 층 조회
     public int CompletedEncounterCount => completedEncounterCount; // 완료 시점 클리어 조우 수 조회
     public int LastExplorationSuccessAffinity => lastExplorationSuccessAffinity; // 마지막 성공 호감도 조회
+    public int RunExperienceGained => runExperienceGained; // 이번 탐사 실제 경험치 조회
+    public int RunGoldGained => runGoldGained; // 이번 탐사 실제 골드 조회
+    public int RunScrewGained => runScrewGained; // 이번 탐사 실제 나사 조회
+    public int RunIronPlateGained => runIronPlateGained; // 이번 탐사 실제 철판 조회
+    public int RunWireGained => runWireGained; // 이번 탐사 실제 전선 조회
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds; // 클리어 조우 목록 조회
@@ -119,7 +129,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         hasReturnPosition = true; // 복귀 위치 활성화
 
         Debug.Log(
-            $"[Exploration][Day39] 조우 시작 - " +
+            $"[Exploration][Day45] 조우 시작 - " +
             $"{runtimeEncounterId} / " +
             $"{encounterData.DisplayName} / " +
             $"적 {encounterData.Enemies.Count}명"); // 절차 조우 시작 로그
@@ -162,7 +172,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
 
         if (resultData.Result == BattleResult.Victory)
         {
-            GrantVictoryRewards(activeEncounter); // 승리 보상 지급
+            GrantVictoryRewards(activeEncounter); // 승리 보상 지급 및 런 합계 누적
 
             if (!string.IsNullOrWhiteSpace(runtimeEncounterId))
             {
@@ -170,7 +180,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             }
 
             Debug.Log(
-                $"[Exploration][Day44] 조우 클리어 - " +
+                $"[Exploration][Day45] 조우 클리어 - " +
                 $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
 
             if (clearedBattleType == BattleType.Boss)
@@ -183,7 +193,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             LastClearReward = null; // 비승리 보상 제거
 
             Debug.Log(
-                $"[Exploration][Day39] 조우 유지 - " +
+                $"[Exploration][Day45] 조우 유지 - " +
                 $"{runtimeEncounterId} / " +
                 $"{encounterName} / " +
                 $"결과 {resultData.Result}"); // 조우 유지 로그
@@ -213,10 +223,15 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             lastExplorationSuccessAffinity); // 탐사 성공 호감도 지급
 
         Debug.Log(
-            $"[Exploration][Day44] 탐사 성공 - " +
+            $"[Exploration][Day45] 탐사 성공 - " +
             $"{completedFloor}F / " +
             $"클리어 조우 {completedEncounterCount}개 / " +
-            $"호감도 +{lastExplorationSuccessAffinity}"); // 탐사 성공 결과 로그
+            $"EXP +{runExperienceGained} / " +
+            $"Gold +{runGoldGained} / " +
+            $"나사 +{runScrewGained} / " +
+            $"철판 +{runIronPlateGained} / " +
+            $"전선 +{runWireGained} / " +
+            $"호감도 +{lastExplorationSuccessAffinity}"); // 탐사 성공 정산 로그
 
         return true;
     }
@@ -266,7 +281,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         if (isExplorationCompleted)
         {
             Debug.Log(
-                $"[Exploration][Day44] 탐사 완료 상태라 다음 층으로 이동하지 않습니다. " +
+                $"[Exploration][Day45] 탐사 완료 상태라 다음 층으로 이동하지 않습니다. " +
                 $"완료 층 {completedFloor}F"); // 완료 후 층 이동 차단 로그
 
             return currentFloor;
@@ -281,12 +296,12 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         ClearCurrentFloorSeed(); // 다음 층용 Seed 생성 준비
 
         Debug.Log(
-            $"[Exploration][Day39] 다음 층 진입 - {currentFloor}F"); // 층 진행 로그
+            $"[Exploration][Day45] 다음 층 진입 - {currentFloor}F"); // 층 진행 로그
 
         return currentFloor; // 변경된 층 반환
     }
 
-    public void ResetExploration() // 탐사 전체 초기화
+    public void ResetExploration() // 다음 탐사를 위한 런 상태 초기화
     {
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화
@@ -300,11 +315,19 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         completedFloor = 0; // 완료 층 초기화
         completedEncounterCount = 0; // 완료 조우 수 초기화
         lastExplorationSuccessAffinity = 0; // 성공 호감도 표시 초기화
+        runExperienceGained = 0; // 런 경험치 합계 초기화
+        runGoldGained = 0; // 런 골드 합계 초기화
+        runScrewGained = 0; // 런 나사 합계 초기화
+        runIronPlateGained = 0; // 런 철판 합계 초기화
+        runWireGained = 0; // 런 전선 합계 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
+
+        Debug.Log(
+            "[Exploration][Day45] 다음 탐사를 위해 런 상태를 초기화했습니다."); // 새 탐사 초기화 로그
     }
 
     private void GrantVictoryRewards(
-        EncounterData encounterData) // 승리 보상 지급
+        EncounterData encounterData) // 승리 보상 지급 및 탐사 합계 기록
     {
         CharacterProgressionManager progressionManager =
             CharacterProgressionManager.EnsureInstance(); // 캐릭터 성장 관리자 준비
@@ -312,37 +335,74 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         PlayerResourceManager resourceManager =
             PlayerResourceManager.EnsureInstance(); // 영구 자원 관리자 준비
 
+        FacilityUpgradeManager facilityManager =
+            FacilityUpgradeManager.EnsureInstance(); // 실제 자원 보너스 계산용 설비 관리자 준비
+
         int previousLevel =
             progressionManager.Level; // 보상 전 레벨 저장
 
+        int experienceReward =
+            encounterData.CharacterExperienceReward; // 현재 조우 경험치 보상 저장
+
+        int goldReward =
+            encounterData.GoldReward; // 현재 조우 골드 보상 저장
+
+        int baseScrewReward =
+            encounterData.ScrewReward; // 현재 조우 기본 나사 보상 저장
+
+        int baseIronPlateReward =
+            encounterData.IronPlateReward; // 현재 조우 기본 철판 보상 저장
+
+        int baseWireReward =
+            encounterData.WireReward; // 현재 조우 기본 전선 보상 저장
+
+        int rewardedScrew =
+            facilityManager.ApplyResourceRewardBonus(
+                baseScrewReward); // 물자 창고 적용 실제 나사 획득량 계산
+
+        int rewardedIronPlate =
+            facilityManager.ApplyResourceRewardBonus(
+                baseIronPlateReward); // 물자 창고 적용 실제 철판 획득량 계산
+
+        int rewardedWire =
+            facilityManager.ApplyResourceRewardBonus(
+                baseWireReward); // 물자 창고 적용 실제 전선 획득량 계산
+
         int appliedExperience =
             progressionManager.AddExperience(
-                encounterData.CharacterExperienceReward); // 캐릭터 경험치 지급
+                experienceReward); // 캐릭터 경험치 지급
 
         resourceManager.AddClearReward(
-            encounterData.GoldReward,
-            encounterData.ScrewReward,
-            encounterData.IronPlateReward,
-            encounterData.WireReward); // 클리어 자원 지급
+            goldReward,
+            baseScrewReward,
+            baseIronPlateReward,
+            baseWireReward); // 기존 경로로 실제 클리어 자원 지급
+
+        runExperienceGained += appliedExperience; // 실제 경험치 런 합계 누적
+        runGoldGained += goldReward; // 실제 골드 런 합계 누적
+        runScrewGained += rewardedScrew; // 실제 나사 런 합계 누적
+        runIronPlateGained += rewardedIronPlate; // 실제 철판 런 합계 누적
+        runWireGained += rewardedWire; // 실제 전선 런 합계 누적
 
         LastClearReward =
             new ExplorationClearRewardResult(
                 encounterData.DisplayName,
                 appliedExperience,
-                encounterData.GoldReward,
-                encounterData.ScrewReward,
-                encounterData.IronPlateReward,
-                encounterData.WireReward,
+                goldReward,
+                rewardedScrew,
+                rewardedIronPlate,
+                rewardedWire,
                 previousLevel,
-                progressionManager.Level); // 마지막 클리어 보상 생성
+                progressionManager.Level); // 실제 지급량 기준 마지막 클리어 보상 생성
 
         Debug.Log(
-            $"[Exploration] 클리어 보상 - " +
+            $"[Exploration][Day45] 클리어 보상 - " +
             $"EXP +{appliedExperience}, " +
-            $"Gold +{encounterData.GoldReward}, " +
-            $"나사 +{encounterData.ScrewReward}, " +
-            $"철판 +{encounterData.IronPlateReward}, " +
-            $"전선 +{encounterData.WireReward}"); // 클리어 보상 로그
+            $"Gold +{goldReward}, " +
+            $"나사 +{rewardedScrew}, " +
+            $"철판 +{rewardedIronPlate}, " +
+            $"전선 +{rewardedWire} / " +
+            $"런 누적 Gold {runGoldGained}"); // 실제 지급량과 런 누적 로그
     }
 
     private void OnDestroy() // 탐사 관리자 제거 처리

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_TestPiercingThrust
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_TEST_PIERCING_THRUST
+  displayName: "정밀 찌르기"
+  description: "선택한 적의 빈틈을 찔러 물리 피해를 준다."
+  artwork: {fileID: 0}
+  cardType: 0
+  targetType: 3
+  apCost: 1
+  effectType: 0
+  damageType: 1
+  effectValue: 16
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
