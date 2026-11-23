@@ -479,6 +479,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
                 } // 기존 상태 약화 적용 종료
             } // 개별 생존 적 확인 종료
         } // 기존 적과 소환된 적의 회피 약화 종료
+        battleTurn.RecordCompletedEnemySummon(summonedEnemy); // 모든 관리자 연결과 기존 성공 효과 이후 실제 소환 한 번 처리
         Debug.Log($"[BattleSceneSetup] 적 소환 - {summonedEnemy.DisplayName} / 현재 생존 적 {CountLivingEnemies()}명 / 다음 행동 준비부터 참여", this); // 적 소환 결과 출력
         return true; // 적 소환 성공 반환
     } // 적 소환 종료

@@ -11,6 +11,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     internal int FirstDefensiveRelicApDiscount { get; set; } // 전투의 첫 유료 방어 카드에 예약된 할인
     private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
     internal bool IsBattleOnlySingleUse { get; private set; } // 원본 덱에 저장하지 않는 고정 비용 영의 전투 일회 카드
+    internal bool HasBeenPlayed { get; set; } // 현재 전투에서 같은 실물 인스턴스가 실제 사용을 완료한 기록
 
     public string InstanceId { get; }
     public CardData SourceData { get; }
@@ -51,7 +52,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             int upgradedCost = HasRunePower ? 0 : (int)Math.Max(0L, (long)UnmodifiedFixedBaseCost - strategicStorageApDiscount); // 다음 실제 사용까지 유지하며 별도 행동력은 건드리지 않는 기본 비용 면제
             int efficientUse = SourceData.SpendsAllActionPoints ? 0 : OwnerUnit.EfficientUseApDiscount; // X 비용에는 적용하지 않는 이번 아군 턴의 별도 기본 할인
             int calculation = CardType == CardType.Pentacle && !SourceData.SpendsAllActionPoints ? OwnerUnit.MechanicalCalculationApDiscount : 0; // 고정 펜타클의 일반 기본 비용에만 기계식 할인 포함
-            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse + calculation; // 공용 기본 비용과 별도 추가 대가의 기존 경계 유지
+            int crown = !HasBeenPlayed && !SourceData.SpendsAllActionPoints ? OwnerUnit.WindWornCrownApDiscount : 0; // 실제 사막에서 아직 쓰지 않은 일반 고정 비용의 독립 첫 할인
+            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount + efficientUse + calculation + crown; // X 및 별도 추가 지불의 원래 경계 아래 기본 할인만 합산
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료

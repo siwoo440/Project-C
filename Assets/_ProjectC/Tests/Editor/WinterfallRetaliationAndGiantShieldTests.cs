@@ -99,7 +99,7 @@ public sealed class WinterfallRetaliationAndGiantShieldTests // 방벽 반격과
         Assert.IsNotNull(queue); // 카드 라우팅과 실제 턴 관리자의 연결 확인
         for (int count = 0; count < uses; count++) // 같은 아군 턴의 거인 방패 반복 사용 대조
         { // 개별 카드 정산 시작
-            queue.Invoke(turns, new object[] { 1 }); // 해결한 카드의 다음 턴 행동력 한 점 감소 예약
+            queue.Invoke(turns, new object[] { ally, 1 }); // 실제 거인의 방패 시전자와 다음 턴 행동력 한 점 감소 예약
         } // 개별 카드 정산 종료
         Assert.AreEqual(3, points.CurrentActionPoints); // 예약이 현재 턴 행동력에 미리 적용되지 않는지 확인
         Assert.AreEqual(3, points.MaxActionPoints); // 예약이 현재 턴 상한에 미리 적용되지 않는지 확인

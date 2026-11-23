@@ -25,16 +25,19 @@ public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
             StateChanged?.Invoke(); // 현재 수치와 최대 수치 갱신
         } // 행동력 확장 종료
     } // 추가 행동력 종료
-    internal void ReduceTurnCapacity(int amount) // 현재와 최대 행동력을 이번 턴만 함께 감소
+    internal int ReduceTurnCapacity(int amount) // 이번 턴의 최대 행동력 감소와 현재 행동력에 실제 적용된 양
     { // 임시 행동력 감소 시작
-        int removed = Math.Clamp(amount, 0, MaxActionPoints); // 행동력 상한을 넘지 않는 실제 차감량
-        if (removed > 0) // 줄일 행동력 존재 여부 확인
-        { // 행동력 감소 반영 시작
-            turnCapacityAdjustment -= removed; // 턴 종료에 되돌릴 상한 감소량 기록
-            MaxActionPoints -= removed; // 이번 턴의 일시 행동력 상한 감소
-            CurrentActionPoints = Math.Max(0, CurrentActionPoints - removed); // 사용할 수 있는 공용 행동력의 동일 차감
-            StateChanged?.Invoke(); // 현재 수치와 최대 수치 갱신
-        } // 행동력 감소 반영 종료
+        int removed = Math.Clamp(amount, 0, MaxActionPoints); // 행동력 상한을 넘지 않는 실제 최대치 차감
+        if (removed == 0) // 감소가 모두 잘리거나 실제 요청이 없는 경우 확인
+        { // 원래 행동력 유지 시작
+            return 0; // 현재 사용할 수 있는 행동력에 적용된 감소 없음
+        } // 원래 행동력 유지 종료
+        int actualLoss = Math.Min(removed, CurrentActionPoints); // 최대치가 줄어도 가용 현재치에서 실제로 빠진 값만 기록
+        turnCapacityAdjustment -= removed; // 턴 종료에 되돌릴 상한 감소량 기록
+        MaxActionPoints -= removed; // 이번 턴의 일시 행동력 상한 감소
+        CurrentActionPoints -= actualLoss; // 영 아래로 내려가지 않게 실제 현재치만 적용
+        StateChanged?.Invoke(); // 원래 한 번의 현재치와 최대치 변경 알림
+        return actualLoss; // 알림 사이의 다른 행동력 변경과 분리한 명시 감소 적용량
     } // 임시 행동력 감소 종료
     internal void ClearTurnCapacity() // 끝난 턴의 임시 행동력 상한 변화 회수
     { // 임시 상한 정리 시작

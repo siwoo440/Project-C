@@ -209,4 +209,12 @@ public enum RelicEffectType // 유물 효과 종류
     DryOasisHeartOpeningHealAndMental, // 전투 시작 생존 아군의 회복과 정신력 감소
     SandstormBottleOpeningEvasionAndAccuracy, // 개막 적 턴 회피 증가와 첫 아군 턴 명중 감소
     CaravanSecretLedgerVictoryTrade, // 네 가지 승리 자원과 정예전 피해 증가
+    RuinedSunGlyphChaliceBurnDamage, // 화상 적에게 주는 직접 성배 카드 피해 증가
+    BlackSandAnkletActionLossDamage, // 실제 부여된 행동력 감소 대상의 일반 피해
+    DesertWraithHoodStealthMental, // 새 은신 아군의 정신력 회복
+    WindWornCrownDesertFirstCardDiscount, // 사막 조우에서 각 물리 카드의 첫 사용 기본 할인
+    BlackSunColdCoreOpeningBurn, // 전투 개막 양쪽 생존 대상의 화상
+    SandQueenBannerEnemySummonAttack, // 완료한 적 소환마다 아군 공격력 누적 상승
+    GlassDesertBrokenHeartReflectTrade, // 적 직접 체력 손실 반사와 아군 회복 감소
+    EndlessPilgrimBellLateTurnPulse, // 다섯 아군 턴 이후 회복과 적 정신력 감소
 }

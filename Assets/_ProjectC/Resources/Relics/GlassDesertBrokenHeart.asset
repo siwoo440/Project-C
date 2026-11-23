@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: GlassDesertBrokenHeart
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_GLASS_DESERT_BROKEN_HEART
+  displayName: 유리사막의 깨진 심장
+  description: "적의 직접 공격으로 잃은 체력의 10%를 공격자에게 피해로 돌려주며 전투 중 아군이 받는 체력 회복은 10% 감소한다."
+  icon: {fileID: 21300000, guid: 1cbcff9b07b35b70afbe13b0065ec6c8, type: 3}
+  rarity: 0
+  triggerType: 6
+  effectType: 215
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 10
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

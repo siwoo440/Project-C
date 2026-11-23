@@ -2390,7 +2390,7 @@
     {
       "sourceRow": 219,
       "name": "폐허의 태양문양",
-      "description": "화상 적에게 성배 카드 피해 +5",
+      "description": "화상 중인 적에게 명중하는 아군의 직접 성배 카드 타격 피해가 5 증가한다.",
       "buyMin": 253,
       "buyMax": 296,
       "buyVariance": 43,
@@ -2401,7 +2401,7 @@
     {
       "sourceRow": 220,
       "name": "검은 모래의 발목고리",
-      "description": "행동력 감소를 부여하면 대상에게 5 피해",
+      "description": "아군이 능력으로 행동력 감소를 실제 적용하면 대상이 일반 피해 5를 받는다.",
       "buyMin": 270,
       "buyMax": 306,
       "buyVariance": 36,
@@ -2412,7 +2412,7 @@
     {
       "sourceRow": 221,
       "name": "사막 망령의 빈 후드",
-      "description": "아군이 은신 상태가 되면 정신력 3 회복",
+      "description": "아군이 실제로 새 은신 상태에 들어가면 정신력을 3 회복한다.",
       "buyMin": 287,
       "buyMax": 330,
       "buyVariance": 43,
@@ -2423,7 +2423,7 @@
     {
       "sourceRow": 222,
       "name": "바람에 깎인 왕관",
-      "description": "사막 구역에서 모든 카드 코스트 첫 사용 -1",
+      "description": "사막 조우에서 각 일반 전투 카드의 첫 실제 사용 시 기본 행동력 비용을 1 낮춘다.",
       "buyMin": 304,
       "buyMax": 340,
       "buyVariance": 36,
@@ -2434,7 +2434,7 @@
     {
       "sourceRow": 223,
       "name": "검은 태양의 식은 핵",
-      "description": "전투 시작 시 적 전체 화상(2턴), 아군 전체 화상(1턴)",
+      "description": "전투 시작에 생존 적 전원에게 화상을 두 적 턴 동안, 생존 아군 전원에게 한 아군 턴 동안 부여한다. 화상은 피해 2에서 시작한다.",
       "buyMin": 321,
       "buyMax": 364,
       "buyVariance": 43,
@@ -2445,7 +2445,7 @@
     {
       "sourceRow": 224,
       "name": "모래여왕의 명령패",
-      "description": "적이 소환될 때마다 아군 전체 공격력 +1 (전투 중 누적)",
+      "description": "적 소환이 완료될 때마다 생존 아군 모두의 공격력이 전투 종료까지 1 증가한다. 여러 번 누적된다.",
       "buyMin": 188,
       "buyMax": 224,
       "buyVariance": 36,
@@ -2456,7 +2456,7 @@
     {
       "sourceRow": 225,
       "name": "유리사막의 깨진 심장",
-      "description": "피해 반사 10% 획득, 회복량 -10%",
+      "description": "적의 직접 공격으로 잃은 체력의 10%를 공격자에게 피해로 돌려주며 전투 중 아군이 받는 체력 회복은 10% 감소한다.",
       "buyMin": 205,
       "buyMax": 248,
       "buyVariance": 43,
@@ -2467,7 +2467,7 @@
     {
       "sourceRow": 226,
       "name": "끝없는 순례자의 종",
-      "description": "5턴 이후 매 턴 아군 전체 체력 5 회복, 적 전체 정신력 -3",
+      "description": "여섯 번째 실제 아군 턴의 시작부터 매 아군 턴에 생존 아군의 체력을 5 회복시키고 생존 적의 정신력을 3 낮춘다.",
       "buyMin": 222,
       "buyMax": 258,
       "buyVariance": 36,

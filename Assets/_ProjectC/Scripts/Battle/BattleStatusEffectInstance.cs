@@ -16,7 +16,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public bool PublicMarkCountsEnemyTurns { get; private set; } // 전술 표식이 사용하는 기존 공명 표식 인스턴스의 적 턴 수명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
     public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing || EffectType == BattleStatusEffectType.StealthBreakDamageUp || EffectType == BattleStatusEffectType.ManaConcentration || EffectType == BattleStatusEffectType.ConfessionDamageMark || EffectType == BattleStatusEffectType.DanceShoeDamageUp || EffectType == BattleStatusEffectType.IllusionHitReduction || EffectType == BattleStatusEffectType.ToolMaintenanceAttackUp; // 원래 사건과 도구 손질의 유효 직접 명중을 기다리는 상태
-    public bool LastsUntilBattleEnd => EffectType is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown; // 턴 횟수와 별개인 분배 상태의 전투 수명
+    public bool LastsUntilBattleEnd => EffectType is BattleStatusEffectType.DistributionAttackUp or BattleStatusEffectType.DistributionPhysicalDefenseDown or BattleStatusEffectType.SandQueenSummonAttackGrow; // 턴 횟수와 별개인 분배 상태의 전투 수명
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -166,6 +166,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "검격 반사"; // 검격 반사 표시
             case BattleStatusEffectType.NextAttackDown: // 다음 공격 약화 종류
                 return "다음 공격 약화"; // 다음 공격 약화 표시
+            case BattleStatusEffectType.SandQueenSummonAttackGrow: // 실제 전투 중 소환만 누적한 강화 상태
+                return "모래여왕의 명령"; // 현재 강화의 이름과 세부 수치
             case BattleStatusEffectType.DistributionAttackUp: // 전투 지속 분배 공격력 증가 종류
                 return "분배 공격력 증가"; // 실제 강화 상태의 표시 이름
             case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 전투 지속 분배 물리 방어 감소 종류
@@ -484,6 +486,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
                 return "취약"; // 취약 아이콘의 대체 글자
+            case BattleStatusEffectType.SandQueenSummonAttackGrow: // 실제 전투 중 소환만 누적한 강화 상태
+                return "명령+"; // 현재 강화의 이름과 세부 수치
             case BattleStatusEffectType.DistributionAttackUp: // 분배 공격 강화 표시 약칭
                 return "공+"; // 공격력 증가 아이콘의 이름
             case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 분배 방어 약화 표시 약칭
@@ -562,6 +566,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
                 return $"피해 카드 원본 피해 증가 {effectiveValue}"; // 공격 증가 설명 반환
+            case BattleStatusEffectType.SandQueenSummonAttackGrow: // 실제 전투 중 소환만 누적한 강화 상태
+                return $"전투 종료까지 공격력 {effectiveValue} 증가"; // 현재 강화의 이름과 세부 수치
             case BattleStatusEffectType.DistributionAttackUp: // 분배의 실제 전투 지속 공격력 상세
                 return $"공격력 +{effectiveValue}"; // 일반 피해 카드에 더할 공격력 안내
             case BattleStatusEffectType.DistributionPhysicalDefenseDown: // 분배의 실제 전투 지속 물리 방어 상세

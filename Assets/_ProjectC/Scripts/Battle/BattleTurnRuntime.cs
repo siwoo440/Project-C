@@ -19,6 +19,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int completedLordOrderAllyTurns; // 명령서의 방어 대가 전에 완료해야 할 실제 아군 턴 수
     private bool lordOrderDefenseResolved; // 두 아군 턴 뒤 방어 약화의 전투당 한 번 처리 기록
     private int lastSandQueenEggshellRound; // 알껍질이 마지막으로 판정한 실제 아군 턴
+    private int lastEndlessPilgrimBellRound; // 순례자의 종을 마지막으로 적용한 실제 아군 턴
     private int lastBanquetHeartRound; // 심장 잔뿌리의 마지막 실제 아군 턴
     private int lastChandelierRound; // 샹들리에가 마지막으로 처리한 실제 아군 턴
     private int lastBanquetOilRound; // 기름등이 마지막으로 확률을 확인한 아군 턴
@@ -41,7 +42,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly ExplorationSessionManager explorationRun; // 현재 전투에 연결된 실제 탐사 회차
     private readonly object activeRunEncounter; // 전투를 시작한 고유 탐사 조우 토큰
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
-    private int nextPlayerTurnActionPointLoss; // 거인의 방패 사용으로 다음 아군 턴에 차감할 행동력
+    private List<(BattleUnitRuntime Caster, int Amount)> nextPlayerTurnActionPointLosses; // 다음 아군 턴에 차감할 명시 요청과 실제 원본 시전자
     private int pendingEmergencyActionPoints; // 다음 실제 아군 턴에만 지급할 예비 자금의 누적 행동력
     private int lastCompletedCardRound; // 아군 전체의 실제 원본 사용이 마지막으로 완료된 라운드
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
@@ -237,6 +238,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         CurrentRound = 1; // 첫 라운드 설정
         openingRelics = RelicRunManager.Instance?.Inventory; // 전투 진입 시 실제 탐사 유물 조회
         runtimeDeck.SetFirstDefensiveRelicApDiscount(openingRelics?.FindEffect(RelicEffectType.FirstDefensiveCardDiscount)?.EffectValue ?? 0); // 이번 전투의 첫 유료 방어 할인 준비
+        int crown = Region == ExplorationRegion.Desert ? openingRelics?.FindEffect(RelicEffectType.WindWornCrownDesertFirstCardDiscount)?.EffectValue ?? 0 : 0; // 실제 조우 데이터에 지정된 사막만 왕관의 할인
+        SetWindWornCrownDiscount(crown); // 이번 전투의 새 물리 카드도 같은 아군 자격 사용
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningSpeedLoss); // 안테나의 첫 적 속도 약화 적용
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningDroneWeakness); // 드론 약화를 첫 공격 예고 전에 적용
         ApplyLordsWaxOpening(); // 선제 및 첫 적 의도 전에 일반전과 정예전의 생존 적 약화
@@ -244,6 +247,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ResolveOpeningBottle(); // 첫 행동 준비 전에 바닥 없는 병의 전체 정신력 비용 결제
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
         ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
+        ApplyColdCoreOpeningBurn(); // 첫 행동 전에 살아 있는 양 진영에 원래 화상 부여
         ApplyDesertTrackerOpening(); // 첫 실제 진영 행동 전에 가장 낮은 현재 체력 적 표식
         ApplyDesertOpeningAllyEffects(); // 실제 개막 회복과 두 적 턴 회피를 선제 공격 전에 적용
         ApplyOpeningCorrosion(); // 선제 공격 전에 실제 생존 적에게 실금석의 마법 저항 약화 적용
@@ -426,6 +430,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void ClearEconomyReservations() // 전투가 끝난 경우의 소유자 룬 예약과 예비 자금 초기화
     { // 전투 한정 자원 정리 시작
         pendingEmergencyActionPoints = 0; // 사용하지 않고 전투가 끝난 다음 행동력 제거
+        nextPlayerTurnActionPointLosses = null; // 끝난 교전의 미집행 행동력 감소와 대상 해제
+        SetWindWornCrownDiscount(0); // 전투가 끝나거나 해제된 실제 아군의 사막 비용 자격 회수
         SetMechanicalCalculationDiscount(0); // 실제 전투 종료 후 소유자에 남은 기계식 계산 해제
         foreach (var ally in allyUnits) // 같은 전투에 실제 참가한 모든 소유 아군 순회
         { // 아군별 전투 할인 정리 시작
@@ -491,6 +497,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
             DrawPlayerHand(drawCount); // 선제 뒤 시작 손패 또는 새 라운드와 예약 손패 지급
+            if (IsBattleEnded) // 새 손패 전 실제 명시 피해로 종료된 전투 확인
+            { // 종료된 턴의 시작 보상 추가 처리 차단 시작
+                return true; // 실제 적용하고 완료한 전투 결과 유지
+            } // 종료된 턴의 시작 보상 추가 처리 차단 종료
             DrawOpeningCaravanReward(); // 적 선제 뒤에도 실제 첫 아군 손패에서만 적립 보상 지급 확인
             PrepareOpeningBookmark(); // 적 선제가 끝난 실제 첫 아군의 완성 손패 이후 선택 준비
             StateChanged?.Invoke(); // 턴 상태 변경 알림
@@ -561,6 +571,51 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 약화 적용 종료
         return null; // 생존 적이 없는 경우의 대상 없음
     } // 시작 적 상태 처리 종료
+    private void ApplyColdCoreOpeningBurn() // 흑태양 식은 핵의 실제 시작 화상
+    { // 양 진영 시작 화상의 원본 확인
+        var core = openingRelics?.FindEffect(RelicEffectType.BlackSunColdCoreOpeningBurn); // 보유한 원본의 수치와 두 적 턴 지속
+        if (core == null) // 미보유 조우 확인
+        { // 원본 없는 효과 제외 시작
+            return; // 이전 체력과 상태 및 난수 보존
+        } // 원본 없는 효과 제외 종료
+        ApplyRelicStatusToLivingEnemies(core); // 원래 면역과 두 적 턴의 네이티브 화상
+        foreach (var ally in allyUnits) // 처음에 실제 전투에 참가한 아군 순회
+        { // 아군의 한 차례 화상 처리 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false }) // 실제 생존 아군과 원래 전투 여부 확인
+            { // 기존 상태 적용 시작
+                ally.ApplyStatusEffect(core.StatusEffectType, core.EffectValue, 1, core.StatusMaximumStacks); // 정식 면역과 한 아군 턴 지속
+            } // 기존 상태 적용 종료
+        } // 아군의 한 차례 화상 처리 종료
+    } // 양 진영 시작 화상의 원본 확인 종료
+
+    private void ApplyEndlessPilgrimBell() // 여섯 번째 실제 아군 차례부터 순례자의 종 반복
+    { // 이미 마친 실제 아군 차례와 현재 전투 확인 시작
+        if (firstActualAllyTurnRound <= 0 || CurrentRound - firstActualAllyTurnRound < 5 || lastEndlessPilgrimBellRound == CurrentRound || HasPendingBossPhaseTransition) // 선제와 신규 진영 전환 및 중복 없는 아군 시작 확인
+        { // 초기와 중복 턴 효과 제외 시작
+            return; // 이른 차례와 같은 시점의 원래 수치 보존
+        } // 초기와 중복 턴 효과 제외 종료
+        var bell = openingRelics?.FindEffect(RelicEffectType.EndlessPilgrimBellLateTurnPulse); // 실제 보유한 회복 및 공격 원본
+        if (bell == null) // 조우의 보유 상태 확인
+        { // 보유 유물 없는 실제 턴 유지 시작
+            return; // 기존 체력과 정신력 변화 없음
+        } // 보유 유물 없는 실제 턴 유지 종료
+        lastEndlessPilgrimBellRound = CurrentRound; // 상태 알림 전에 이 실제 아군 시작 지급 기록
+        foreach (var ally in allyUnits) // 현재 순서의 살아 있는 아군 확인
+        { // 실제 아군의 정상 회복 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false }) // 전투불능 아군은 일반 치유 대상에서 제외
+            { // 현재 수치와 최대 체력 처리 시작
+                ally.RestoreHealth(bell.EffectValue); // 실제 회복량 보정과 치유 정신력의 원래 규칙
+            } // 현재 수치와 최대 체력 처리 종료
+        } // 실제 아군의 정상 회복 종료
+        foreach (var enemy in enemyUnits) // 실제 살아 있는 적의 현재 목록 확인
+        { // 별도 생존 적 정신력 손실 시작
+            if (enemy is { Team: BattleTeam.Enemy, IsDead: false }) // 아군 치료 여부와 독립인 생존 적 확인
+            { // 네이티브 정신력 처리 시작
+                enemy.ChangeMental(-3, BattleMentalChangeReason.RelicEffect); // 기존 정신력 하한과 상태 규칙을 따른 세 점 손실
+            } // 네이티브 정신력 처리 종료
+        } // 별도 생존 적 정신력 손실 종료
+    } // 이미 마친 실제 아군 차례와 현재 전투 확인 종료
+
     private void ApplyDesertTrackerOpening() // 흑사막 추적자의 실제 전투 시작 적 표식
     { // 최저 현재 체력 생존 적 고르기 시작
         var relic = openingRelics?.FindEffect(RelicEffectType.BlackDesertTrackerPinOpeningMark); // 보유한 표식핀의 원본 수치와 적 턴 기간
@@ -1011,13 +1066,61 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeDeck.QueuePlayerTurnDraw(draw); // 첫 실제 아군 드로우의 추가량 예약
         openingSpecimenActionPoints = actionPoints; // 선제 적 턴에는 사용하지 않을 행동력 보관
     } // 시작 표본병 예약 종료
-    internal void QueueNextPlayerTurnActionPointLoss(int amount) // 해결된 거인의 방패의 다음 아군 턴 차감 예약
-    { // 다음 아군 턴 행동력 예약 시작
-        if (!disposed && IsPlayerTurn && !IsBattleEnded && amount > 0) // 성공한 아군 행동과 양수 행동력 차감 확인
-        { // 개별 카드의 차감 예약 시작
-            nextPlayerTurnActionPointLoss = (int)Math.Min(int.MaxValue, (long)nextPlayerTurnActionPointLoss + amount); // 여러 사용의 행동력 차감을 정수 범위에서 누적
-        } // 개별 카드의 차감 예약 종료
-    } // 다음 아군 턴 행동력 예약 종료
+    private void SetWindWornCrownDiscount(int amount) // 해당 전투의 실제 사막 할인과 아군 자격 초기화
+    { // 같은 회차의 모든 등록 아군 순회 시작
+        foreach (var ally in allyUnits) // 이후 생성되는 물리 카드도 갖는 소유자 공용 원본 범위
+        { // 원래 참가자의 사막 자격 저장 시작
+            if (ally != null) // 이전 출전 명단의 빈 참조만 건너뜀
+            { // 실제 소유자에게 새 조우 범위 적용 시작
+                ally.WindWornCrownApDiscount = amount; // 실제 사막 입장의 원본 또는 전투 종료 회수
+            } // 실제 소유자에게 새 조우 범위 적용 종료
+        } // 원래 참가자의 사막 자격 저장 종료
+    } // 같은 회차의 모든 등록 아군 순회 종료
+    internal void QueueNextPlayerTurnActionPointLoss(BattleUnitRuntime caster, int amount) // 사용이 확정된 거인의 방패의 다음 아군 턴 차감 예약
+    { // 나중에도 알고 있어야 할 원래 시전자와 차감 예약 시작
+        if (!disposed && IsPlayerTurn && !IsBattleEnded && amount > 0 && caster?.Team == BattleTeam.Ally && registeredUnits.Contains(caster)) // 성공한 실제 아군 카드 및 출전 시전자 확인
+        { // 각 실제 사용 결과를 따로 예약 시작
+            (nextPlayerTurnActionPointLosses ??= new()).Add((caster, amount)); // 같은 팀 공용 감소의 정산을 원래 시전자에게 연결
+        } // 각 실제 사용 결과를 따로 예약 종료
+    } // 나중에도 알고 있어야 할 원래 시전자와 차감 예약 종료
+    private void ApplyQueuedPlayerTurnActionPointLosses() // 실제 다음 아군 턴 시작에서 명시 감소와 각 적용 결과 확인
+    { // 예약한 실제 카드 감소의 순서 유지 시작
+        var requests = nextPlayerTurnActionPointLosses; // 이전에 준비한 실제 명시 감소의 불변 실행 목록
+        nextPlayerTurnActionPointLosses = null; // 행동력 알림과 피해 발생 전에 이미 사용한 예약을 먼저 비움
+        if (requests == null) // 실제로 적용할 명시 감소가 없는 일반 턴 확인
+        { // 일반 회복과 드로우의 기존 흐름 시작
+            return; // 평소 턴에는 감소와 유물 반응 없음
+        } // 일반 회복과 드로우의 기존 흐름 종료
+        int requested = 0; // 실제 공용 행동력 상한에 적용할 명시 감소 합계
+        foreach (var request in requests) // 예약과 누적 순서의 원래 기록 사용
+        { // 양수 실제 감소를 합계에 추가 시작
+            requested = (int)Math.Min(int.MaxValue, (long)requested + request.Amount); // 기존과 같은 정수 상한의 공용 일시 감소
+        } // 양수 실제 감소를 합계에 추가 종료
+        int applied = sharedActionPoints.ReduceTurnCapacity(requested); // 기존 한 번의 상태 알림을 지킨 실제 가용 행동력 감소
+        foreach (var request in requests) // 출처가 같은 카드도 별개의 실제 사용으로 배정
+        { // 원래 요청자에게 앞에서부터 실제 적용 수량 분배 시작
+            if (applied == 0 || IsBattleEnded) // 더 적용된 감소가 없거나 피해로 이미 전투 종료 확인
+            { // 정산을 멈춰야 할 실제 경계 시작
+                break; // 영으로 잘린 후속 요청에는 유물 피해 없음
+            } // 정산을 멈춰야 할 실제 경계 종료
+            int allocated = Math.Min(applied, request.Amount); // 이번 직접 요청에 실제로 적용된 현재 행동력 감소
+            applied -= allocated; // 다음 적용 건은 아직 배정하지 않은 양에서만 소비
+            HandleAppliedAlliedActionPointReduction(request.Caster, request.Caster, allocated); // 공용 자원을 자신에게 줄인 실제 시전자가 이 명시 효과의 대상
+        } // 원래 요청자에게 앞에서부터 실제 적용 수량 분배 종료
+    } // 예약한 실제 카드 감소의 순서 유지 종료
+    internal void HandleAppliedAlliedActionPointReduction(BattleUnitRuntime source, BattleUnitRuntime target, int appliedLoss) // 명시 행동력 효과가 확정한 실제 아군발 감소의 공용 신호
+    { // 감소를 부여한 진영과 실제 수신자 및 현재 보유 확인 시작
+        if (disposed || IsBattleEnded || CurrentPhase is not (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn) || appliedLoss <= 0 ||
+            source?.Team != BattleTeam.Ally || target == null || target.IsDead || !registeredUnits.Contains(source) || !registeredUnits.Contains(target)) // 유효한 현재 전투의 양수 명시 감소와 살아 있는 실제 대상 확인
+        { // 카드 결제와 잘린 감소 및 죽은 수신자를 제외한 원래 경계 시작
+            return; // 관련 없는 자원 지급이나 사망자에게 피해 없음
+        } // 카드 결제와 잘린 감소 및 죽은 수신자를 제외한 원래 경계 종료
+        int damage = BattleSupplyRelics.Find(RelicEffectType.BlackSandAnkletActionLossDamage)?.EffectValue ?? 0; // 실제 적용하는 순간에 보유 중인 발목고리의 원본 피해 수치
+        if (damage > 0) // 원본 피해가 있는 실제 보유 유물 확인
+        { // 행동력 감소 대상의 실제 방어도 미적용 피해 진행 시작
+            target.TakeUnblockedDamage(damage, BattleDamageType.None, source); // 기존 피해 보호와 사망 판정을 쓰는 고정 원본 체력 피해
+        } // 행동력 감소 대상의 실제 방어도 미적용 피해 진행 종료
+    } // 감소를 부여한 진영과 실제 수신자 및 현재 보유 확인 종료
     internal int QueueEmergencyActionPoints(int amount) // 다음 실제 아군 턴에 사용할 예비 자금 한 건 예약
     { // 원본 행동력 준비 수치 누적 시작
         int addition = Math.Clamp(amount, 0, int.MaxValue - pendingEmergencyActionPoints); // 여러 실제 사용의 정수 누적 범위 확인
@@ -1032,9 +1135,12 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     } // 이번 아군 턴의 예비 자금 처리 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
-        int actionPointLoss = nextPlayerTurnActionPointLoss; // 현재 턴에 적용할 이전 카드의 차감량
-        nextPlayerTurnActionPointLoss = 0; // 행동력 변경 알림 전에 예약 초기화
-        sharedActionPoints.ReduceTurnCapacity(actionPointLoss); // 기본 회복 뒤 현재와 최대 행동력의 일시 차감
+        ApplyQueuedPlayerTurnActionPointLosses(); // 기본 회복에 이어 이전 명시 감소와 실제 시전 대상의 유물 피해
+        if (IsBattleEnded) // 해당 턴 명시 피해로 실제 전투가 끝났는지 확인
+        { // 전투 종료 뒤 카드와 행동력 추가 지급 중단 시작
+            LastDrawnCardCount = 0; // 지급하지 않은 손패 기록 정리
+            return; // 완료된 전투에 예약 행동력이나 드로우를 새로 적용하지 않음
+        } // 전투 종료 뒤 카드와 행동력 추가 지급 중단 종료
         ApplyEmergencyActionPoints(); // 다음 실제 아군 턴에만 이전 카드가 예약한 공용 행동력 확장
         int specimenActionPoints = openingSpecimenActionPoints; // 실제 아군 턴에 지급할 행동력 확보
         openingSpecimenActionPoints = 0; // 발동 알림 전에 재지급 방지
@@ -1402,6 +1508,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             { // 이전 아군 턴 효과 중단 시작
                 return; // 종료된 전투에 차례 시작과 추가 상태 효과 발행 방지
             } // 이전 아군 턴 효과 중단 종료
+            ApplyEndlessPilgrimBell(); // 다섯 아군 턴 뒤의 실제 아군 시작 회복과 정신 피해
             ApplySandQueenEggshell(); // 세 번째 실제 아군 턴의 살아 있는 적 약화 판정
             foreach (var enemy in enemyUnits) // 적별 돌진 예약 확인
             { // 개별 약화 시작
@@ -1618,6 +1725,26 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 등록 불가 처리 종료
         return RegisterUnitEvent(enemyUnit); // 소환 적 사망 이벤트 등록 결과 반환
     } // 소환 적 등록 종료
+    internal void RecordCompletedEnemySummon(BattleUnitRuntime summonedEnemy) // 실제 모든 등록을 마친 적 소환의 후속 처리
+    { // 실제 현재 전투에 등록된 생존 소환 적 확인
+        if (disposed || IsBattleEnded || CurrentRound <= 0 || summonedEnemy is not { Team: BattleTeam.Enemy, IsDead: false } || !registeredUnits.Contains(summonedEnemy)) // 전체 소환 등록과 활성 전투 경계
+        { // 전투나 대상의 무효 처리 시작
+            return; // 초기 배치와 롤백 및 전투 종료에 대한 원래 상태 보존
+        } // 전투나 대상의 무효 처리 종료
+        var banner = openingRelics?.FindEffect(RelicEffectType.SandQueenBannerEnemySummonAttack); // 실제 획득한 공격력 누적 원본
+        if (banner == null) // 조우의 유효 보유 여부 확인
+        { // 유물 없는 기존 소환 유지 시작
+            return; // 원래 소환 효과만 처리
+        } // 유물 없는 기존 소환 유지 종료
+        foreach (var ally in allyUnits) // 실제 소환 순간의 모든 파티원
+        { // 생존 파티원의 독립 강화 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false }) // 전투불능을 제외한 실제 파티 확인
+            { // 정상 일반 공격력 누적 시작
+                ally.ApplyStatusEffect(BattleStatusEffectType.SandQueenSummonAttackGrow, banner.EffectValue, 1, int.MaxValue); // 전투가 끝날 때까지 소환 성공마다 한 중첩
+            } // 정상 일반 공격력 누적 종료
+        } // 생존 파티원의 독립 강화 종료
+    } // 실제 현재 전투에 등록된 생존 소환 적 확인 종료
+
     public bool UnregisterEnemy(BattleUnitRuntime enemyUnit) // 제거 적 사망 판정 해제
     { // 제거 적 해제 시작
         return UnregisterUnitEvent(enemyUnit); // 적 사망 이벤트 해제 결과 반환
@@ -1801,6 +1928,14 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전술 카드에서 온 표식만 종료 처리 종료
     } // 전술 표식 및 미사용 도구 손질 해제 종료
 
+    private void ClearSandQueenSummonAttackGrowth() // 전투 안에만 남는 소환 누적 강화 회수
+    { // 전투에 참가한 실제 파티 순회 시작
+        foreach (var ally in allyUnits) // 실제 현재 전투의 전체 아군 슬롯
+        { // 사용하지 않은 누적 공격력 상태 정리 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.SandQueenSummonAttackGrow); // 실제 완료된 전투의 강화만 회수
+        } // 사용하지 않은 누적 공격력 상태 정리 종료
+    } // 전투에 참가한 실제 파티 순회 종료
+
     private void ClearDistributionStatuses() // 이번 전투의 원본과 복사 분배 상태를 종료 시 해제
     { // 참가한 모든 아군의 지속 상태 해제 시작
         foreach (var ally in allyUnits) // 선택 대상과 강화를 복사한 생존 여부 무관 아군 조회
@@ -1822,9 +1957,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             ally?.RemoveStatusEffect(BattleStatusEffectType.ResurrectionSeed); // 결과 확정 이후 부활을 예약하지 않는 전투 상태 정리
         } // 미사용 씨앗 제거 종료
         ClearTacticalCardStatuses(); // 실제 결과 확정 때 전술 카드의 남은 전투 효과 종료
+        ClearSandQueenSummonAttackGrowth(); // 확정 결과와 전투 해제 뒤 소환 누적 공격력 회수
         ClearDistributionStatuses(); // 승리와 패배 및 도주 결과 확정 뒤 분배 상태 종료
         SetEfficientUseDiscount(0); // 승리 및 패배와 도주 뒤 남은 턴 할인 제거
-        nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         ClearEconomyReservations(); // 새 교전에 이월되지 않을 카드 할인과 예약 행동력 제거
         pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
         OpeningBookmarkChoices = null; // 이미 끝난 전투에서는 대기 중인 개막 선택 제거
@@ -2020,6 +2155,19 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 대상별 원래 일반 피해 적용 종료
     } // 무도회의 마지막 박자 정산 종료
 
+    private void HandleAllyStealthEntered(BattleUnitRuntime ally) // 살아 있는 아군이 실제 새 은신 상태에 진입한 처리
+    { // 전투와 후드의 실제 발동 조건 확인 시작
+        if (disposed || IsBattleEnded || CurrentRound <= 0 || ally.IsDead) // 시작 전과 종료 및 사망의 상태 적용 제외
+        { // 원래 정신력 유지 시작
+            return; // 실제 전투의 생존 아군 진입만 후드 발동
+        } // 원래 정신력 유지 종료
+        var hood = openingRelics?.FindEffect(RelicEffectType.DesertWraithHoodStealthMental); // 현재 실제 획득한 사막 망령 후드
+        if (hood != null) // 살아 있는 현재 아군에 원본 유물 효과 확인
+        { // 기존 정신력 처리 시작
+            ally.ChangeMental(hood.EffectValue, BattleMentalChangeReason.RelicEffect); // 원래 최대 정신력과 각성 상태에 맞춘 회복
+        } // 기존 정신력 처리 종료
+    } // 전투와 후드의 실제 발동 조건 확인 종료
+
     private void HandleAllyStealthEnded(BattleUnitRuntime ally) // 살아 있는 아군의 실제 은신 종료 정산
     { // 팔찌 피해 예약 확인 시작
         if (disposed || CurrentPhase is not (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn) || ally.IsDead) // 진행 중 전투의 생존 아군만 확인
@@ -2040,6 +2188,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 등록 처리 종료
         if (runtimeUnit.Team == BattleTeam.Ally) // 은신 해제는 생존 아군에게만 구독
         { // 아군 은신 종료 연결 시작
+            runtimeUnit.StealthEntered += HandleAllyStealthEntered; // 현재 전투의 생존 아군에게 실제 새 은신 진입 구독
             runtimeUnit.StealthEnded += HandleAllyStealthEnded; // 실제 해제와 만료 경로의 공통 이벤트 연결
         } // 아군 은신 종료 연결 종료
         runtimeUnit.SeedRevivalSettled += HandleUnitDied; // 씨앗 부활 뒤 남은 생존 명단으로 승패 재판정 등록
@@ -2079,6 +2228,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeUnit.AllyDefeatReady -= HandleUnitDied; // 전투를 떠난 아군의 부활 정산 구독 해제
         runtimeUnit.EnemyAttackEvaded -= HandleEnemyAttackEvaded; // 전투를 떠난 아군의 적 공격 회피 구독 해제
         runtimeUnit.DamageTaken -= HandleAllyHealthLoss; // 전투를 떠난 아군의 체력 손실 구독 해제
+        runtimeUnit.StealthEntered -= HandleAllyStealthEntered; // 이전 전투의 실제 후드 진입 구독 해제
         runtimeUnit.StealthEnded -= HandleAllyStealthEnded; // 전투를 떠난 아군의 은신 종료 구독 해제
         runtimeUnit.SeedRevivalSettled -= HandleUnitDied; // 전투 밖으로 나간 유닛의 부활 판정 해제
         runtimeUnit.Defeated -= HandleUnitDefeated; // 회전 깃발의 처치 구독 해제
@@ -2141,6 +2291,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
         ClearTacticalCardStatuses(); // 실제 전투 관리 해제 때 쓰지 않은 전술 카드 효과 회수
+        ClearSandQueenSummonAttackGrowth(); // 확정 결과와 전투 해제 뒤 소환 누적 공격력 회수
         ClearDistributionStatuses(); // 장면 해제나 새 전투에도 현재 분배 수치가 남지 않는 정리
         SetEfficientUseDiscount(0); // 전투 관리자 해제 후 아군 소유자 할인 회수
         ClearEconomyReservations(); // 장면 해제 중에도 같은 교전의 룬 할인과 다음 행동력 예약 제거

@@ -21,6 +21,11 @@ public static class BattleCardDamageContext // 카드 피해 계산 문맥
             targetIndex < activeTargets.Count && activeTargets[targetIndex] == target; // 다음 현재 대상과 일치할 때만 직접 타격 인정
     } // 원래 직접 카드 문맥 확인 종료
 
+    internal static CardType? GetPendingCardType(BattleUnitRuntime source, BattleUnitRuntime target) // 다음 직접 카드 타격의 원본 계열 확인
+    { // 타입을 조회할 때 원래 대상 인덱스 유지
+        return IsPendingHit(source, target) ? activeCard.CardType : null; // 정확히 일치하는 소유자와 대상의 원본 카드 계열만 반환
+    } // 타입을 조회할 때 원래 대상 인덱스 유지 종료
+
     public static bool TryConsume(
         out CardInstance card,
         out BattleUnitRuntime target) // 다음 카드 피해 대상 조회

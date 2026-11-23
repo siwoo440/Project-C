@@ -366,7 +366,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 { // 개별 광역 타격 시작
                     BattleEnemyActionResult hit = ExecuteHit(target, attackDamage, preventHealthDamage, reduceHealthDamage, null, out BattleUnitRuntime recipient); // 명중 뒤 수호 전환을 포함한 광역 개별 결과
                     areaHitResults.Add((recipient, hit)); // 실제로 피해와 후속 효과를 받은 아군 기록
-                    if (hit.WasMissed && Actor.IsDead) // 실제 회피 반응으로 쓰러진 광역 공격자 확인
+                    if (Actor.IsDead) // 실제 회피 또는 명중의 유효 반응으로 쓰러진 광역 공격자 확인
                     { // 남은 공격 중단 시작
                         break; // 쓰러진 적의 같은 행동에서 남은 아군 공격 중단
                     } // 남은 공격 중단 종료

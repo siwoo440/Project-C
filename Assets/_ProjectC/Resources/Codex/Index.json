@@ -1471,6 +1471,54 @@
       "artworkKey": "aaff602354405a75867381d1f50be94b"
     },
     {
+      "category": 3,
+      "name": "폐허의 태양문양",
+      "description": "화상 중인 적에게 명중하는 아군의 직접 성배 카드 타격 피해가 5 증가한다.",
+      "artworkKey": "c4f6aa4e3be15930a52383d262d84761"
+    },
+    {
+      "category": 3,
+      "name": "검은 모래의 발목고리",
+      "description": "아군이 능력으로 행동력 감소를 실제 적용하면 대상이 일반 피해 5를 받는다.",
+      "artworkKey": "0c148fb61af65e4b91d97b9e1289a147"
+    },
+    {
+      "category": 3,
+      "name": "사막 망령의 빈 후드",
+      "description": "아군이 실제로 새 은신 상태에 들어가면 정신력을 3 회복한다.",
+      "artworkKey": "5a053007d4b655e4a0788c0fb81380aa"
+    },
+    {
+      "category": 3,
+      "name": "바람에 깎인 왕관",
+      "description": "사막 조우에서 각 일반 전투 카드의 첫 실제 사용 시 기본 행동력 비용을 1 낮춘다.",
+      "artworkKey": "3ed851a6a2d5553b85d56f2a2e9c57b8"
+    },
+    {
+      "category": 3,
+      "name": "검은 태양의 식은 핵",
+      "description": "전투 시작에 생존 적 전원에게 화상을 두 적 턴 동안, 생존 아군 전원에게 한 아군 턴 동안 부여한다. 화상은 피해 2에서 시작한다.",
+      "artworkKey": "1b56d945a76f5119931de47cc7b218bf"
+    },
+    {
+      "category": 3,
+      "name": "모래여왕의 명령패",
+      "description": "적 소환이 완료될 때마다 생존 아군 모두의 공격력이 전투 종료까지 1 증가한다. 여러 번 누적된다.",
+      "artworkKey": "6330b750038f5d0298260afce7bf7eef"
+    },
+    {
+      "category": 3,
+      "name": "유리사막의 깨진 심장",
+      "description": "적의 직접 공격으로 잃은 체력의 10%를 공격자에게 피해로 돌려주며 전투 중 아군이 받는 체력 회복은 10% 감소한다.",
+      "artworkKey": "1cbcff9b07b35b70afbe13b0065ec6c8"
+    },
+    {
+      "category": 3,
+      "name": "끝없는 순례자의 종",
+      "description": "여섯 번째 실제 아군 턴의 시작부터 매 아군 턴에 생존 아군의 체력을 5 회복시키고 생존 적의 정신력을 3 낮춘다.",
+      "artworkKey": "8e45536c21eb5ed187816c6f6ad5d386"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

@@ -46,8 +46,8 @@ public sealed class WorldTutorialViewTests // 거점과 탐사 안내 화면 검
         previous.onClick.Invoke(); // 왼쪽 버튼으로 이전 안내 선택
         Assert.AreEqual("페이지 1 / 5", page.text); // 이전 페이지 번호 표시 확인
         Assert.IsTrue(forward.interactable); // 돌아와도 실제 이동 기록 유지 확인
-        forward.onClick.Invoke(); // 접촉 상호작용 안내 이동
-        Assert.IsTrue(guide.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("접촉")); // 실제 접촉 상호작용 안내 확인
+        forward.onClick.Invoke(); // 탐사 상호작용 안내 이동
+        StringAssert.Contains("F 키", guide.Find("Panel/Description").GetComponent<TMP_Text>().text); // 현재 탐사 상호작용 키 안내 확인
         string[] images = { "Event", "Treasure", "Rest", "Shop" }; // 각 방의 실제 촬영 이미지 이름
         string[] rooms = { "이벤트", "보물", "휴식", "상점" }; // 방별 안내 제목
         for (int index = 0; index < images.Length; index++) // 이동 다음의 네 페이지 검사

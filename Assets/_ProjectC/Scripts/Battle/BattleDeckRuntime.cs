@@ -710,6 +710,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 카드 버리기 종료
     private void PlacePlayedCard(CardInstance card) // 손패에서 빠진 사용 카드 정산
     { // 사용 위치 처리 시작
+        card.HasBeenPlayed = true; // 선택과 일반 버림을 지나 실제 사용으로 빠진 실물의 첫 기회 완료
         ClearHandExitEffects(card); // 정상 사용 정산 후 같은 카드의 개시 유지 해제
         if (card.SourceData.ExcludeOnUse || card.IsBattleOnlySingleUse) // 원본 규칙 또는 별도 생성 카드의 실제 사용 후 제외 확인
         { // 전투 제외 시작

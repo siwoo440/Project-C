@@ -18,8 +18,7 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
         area.anchorMin = new Vector2(0f, 1f); // 화면 왼쪽 위 최소 앵커
         area.anchorMax = new Vector2(0f, 1f); // 화면 왼쪽 위 최대 앵커
         area.pivot = new Vector2(0f, 1f); // 왼쪽 위 기준점 설정
-        area.anchoredPosition = new Vector2(20f, -20f); // 탐사 화면 가장자리 여백
-        area.sizeDelta = new Vector2(316f, 132f); // 다섯 칸과 두 줄의 화면 크기
+        area.anchoredPosition = new Vector2(12f, -12f); // 왼쪽 위 소모품 영역의 여백
         Image background = root.GetComponent<Image>(); // 아이템 패널 배경 조회
         background.color = new Color(0.01f, 0.03f, 0.04f, 0.86f); // 어두운 아이템 패널 바탕
         background.raycastTarget = false; // 빈 패널의 탐사 입력 차단 방지
@@ -39,8 +38,8 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
         gridRect.offsetMin = new Vector2(6f, 6f); // 격자 왼쪽 아래 여백
         gridRect.offsetMax = new Vector2(-6f, -6f); // 격자 오른쪽 위 여백
         GridLayoutGroup grid = slots.GetComponent<GridLayoutGroup>(); // 실제 아이템 칸 격자 조회
-        grid.cellSize = new Vector2(58f, 58f); // 정사각형 아이템 칸 크기
-        grid.spacing = new Vector2(4f, 4f); // 아이템 칸 사이 여백
+        grid.cellSize = new Vector2(76f, 94f); // 확대된 소모품 칸 크기
+        grid.spacing = new Vector2(6f, 6f); // 아이템 칸 사이 여백
         grid.startCorner = GridLayoutGroup.Corner.UpperLeft; // 왼쪽 위부터 아이템 배치
         grid.startAxis = GridLayoutGroup.Axis.Horizontal; // 가로 방향 우선 배치
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount; // 가로 칸 수 고정
@@ -90,7 +89,7 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
         area.anchorMax = new Vector2(0f, 0f); // 패널 왼쪽 아래 최대 앵커
         area.pivot = new Vector2(0f, 1f); // 안내 화면 왼쪽 위 기준점
         area.anchoredPosition = new Vector2(0f, -6f); // 아이템 칸 바로 아래 안내 위치
-        area.sizeDelta = new Vector2(316f, 70f); // 아이템 이름 안내 크기
+        area.sizeDelta = new Vector2(416f, 70f); // 확대된 보관함 너비에 맞춘 안내 크기
         Image background = tooltip.GetComponent<Image>(); // 안내 배경 이미지 조회
         background.color = new Color(0.02f, 0.04f, 0.06f, 0.98f); // 안내 글자 대비 배경
         background.raycastTarget = false; // 탐사 화면 입력 통과
@@ -139,7 +138,7 @@ public sealed class ExplorationInventoryView : MonoBehaviour // 탐사 중 보�
         { // 보관칸 노출 시작
             icons[last].transform.parent.gameObject.SetActive(extra); // 판매 후 보관칸 숨김
         } // 보관칸 노출 종료
-        ((RectTransform)transform).sizeDelta = new Vector2(316f, extra ? 194f : 132f); // 포션칸 세 번째 줄의 패널 크기 적용
+        ((RectTransform)transform).sizeDelta = new Vector2(416f, extra ? 306f : 206f); // 기본 두 줄과 확장 세 번째 줄의 배경 크기
         for (int index = 0; index < inventory.Capacity; index++) // 실제 소유한 아이템 칸 순회
         { // 단일 아이템 칸 갱신 시작
             ConsumableItemData item = inventory.GetItem(index); // 현재 칸의 실제 아이템 조회
