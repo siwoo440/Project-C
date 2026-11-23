@@ -10,6 +10,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly int cardsPerPlayerTurn; // 플레이어 턴당 드로우 수
     private int openingHandAfterAmbush = -1; // 적 선제 직후 첫 아군에게 줄 시작 손패 수
     private RelicInventoryRuntime openingRelics; // 현재 탐사 유물 보관함
+    private bool openingAllySpeedActive; // 첫 적 턴까지 유지할 배지 상태
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
@@ -67,7 +68,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 시작 불가 처리 종료
         CurrentRound = 1; // 첫 라운드 설정
         openingRelics = RelicRunManager.Instance?.Inventory; // 전투 진입 시 실제 탐사 유물 조회
-        ApplyOpeningSpeedLoss(); // 적 예고의 첫 속도 추첨 전 적용
+        ApplyOpeningEnemyStatus(RelicEffectType.OpeningSpeedLoss); // 안테나의 첫 적 속도 약화 적용
+        ApplyOpeningEnemyStatus(RelicEffectType.OpeningDroneWeakness); // 드론 약화를 첫 공격 예고 전에 적용
+        ApplyOpeningAllySpeed(); // 전투 시작 시 생존 아군 속도 증가
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
@@ -151,6 +154,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 플레이어 턴 정리 시작
         runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
         runtimeDeck.SetRelicApDiscount(0); // 끝난 아군 턴의 유물 할인 해제
+        runtimeDeck.ClearFirstDrawRelicDiscount(); // 종료된 턴의 첫 드로우 카드 비용 복원
         springReady = false; // 지난 턴의 붉은 스프링 예약 해제
         runtimeDeck.SetNextCardRelicApDiscount(0); // 다음 카드에 남은 비용 표시 복구
         sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
@@ -163,6 +167,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
         NotifyPhaseEnded(); // 적 턴 종료 알림
+        ClearOpeningAllySpeed(); // 첫 적 턴이 끝나면 배지 속도 회수
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
@@ -189,17 +194,17 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
-    private void ApplyOpeningSpeedLoss() // 전투 시작 적 행동 속도 약화
-    { // 안테나 발동 시작
-        var antenna = openingRelics?.FindEffect(RelicEffectType.OpeningSpeedLoss); // 보유한 안테나 조회
-        if (antenna == null) // 유물 미보유 확인
+    private void ApplyOpeningEnemyStatus(RelicEffectType effectType) // 전투 시작 시 무작위 적 상태 적용
+    { // 시작 적 상태 처리 시작
+        var relic = openingRelics?.FindEffect(effectType); // 지정 시작 유물의 보유 여부 조회
+        if (relic == null) // 유물 미보유 확인
         { // 미발동 처리 시작
-            return; // 속도 약화 생략
+            return; // 보유하지 않은 효과 생략
         } // 미발동 처리 종료
         var living = new List<BattleUnitRuntime>(); // 약화 대상 후보
         foreach (var enemy in enemyUnits) // 전투 배치의 적 순회
         { // 적별 생존 여부 확인
-            if (enemy != null && !enemy.IsDead) // 생존 적만 후보 포함
+            if (enemy != null && enemy.Team == BattleTeam.Enemy && !enemy.IsDead) // 실제 생존 적만 후보 포함
             { // 후보 추가 시작
                 living.Add(enemy); // 실제 생존 적 등록
             } // 후보 추가 종료
@@ -207,9 +212,37 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         if (living.Count > 0) // 대상 존재 확인
         { // 하나의 적에 약화 적용
             var target = living[UnityEngine.Random.Range(0, living.Count)]; // 생존 적 하나 무작위 선택
-            target.ApplyStatusEffect(antenna.StatusEffectType, antenna.EffectValue, antenna.StatusDuration, antenna.StatusMaximumStacks); // 기존 면역과 지속 시간 적용
+            target.ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks); // 유물 상태 수치와 기존 면역 규칙 적용
         } // 약화 적용 종료
-    } // 안테나 발동 종료
+    } // 시작 적 상태 처리 종료
+    private void ApplyOpeningAllySpeed() // 전투 시작 배지 속도 증가 적용
+    { // 배지 발동 시작
+        var badge = openingRelics?.FindEffect(RelicEffectType.OpeningAllySpeed); // 보유한 바람개비 배지 조회
+        if (badge == null || badge.EffectValue <= 0) // 유효한 배지 효과 확인
+        { // 배지 미발동 처리 시작
+            return; // 속도 증가 생략
+        } // 배지 미발동 처리 종료
+        openingAllySpeedActive = true; // 첫 적 턴 종료 시 회수 예약
+        foreach (var ally in allyUnits) // 전투 배치 아군 순회
+        { // 개별 아군 검사 시작
+            if (ally != null && ally.Team == BattleTeam.Ally && !ally.IsDead) // 생존 아군만 적용 확인
+            { // 개별 속도 부여 시작
+                ally.ApplyStatusEffect(BattleStatusEffectType.ActionSpeedUp, badge.EffectValue, badge.StatusDuration, badge.StatusMaximumStacks); // 배지의 속도 상태 부여
+            } // 개별 속도 부여 종료
+        } // 개별 아군 검사 종료
+    } // 배지 발동 종료
+    private void ClearOpeningAllySpeed() // 첫 적 턴의 배지 속도 제거
+    { // 속도 효과 회수 시작
+        if (!openingAllySpeedActive) // 남아 있는 배지 효과 확인
+        { // 회수할 효과 없음 시작
+            return; // 속도 제거 생략
+        } // 회수할 효과 없음 종료
+        openingAllySpeedActive = false; // 발동한 배지 상태 초기화
+        foreach (var ally in allyUnits) // 배지 효과가 적용된 진영 순회
+        { // 개별 상태 제거 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.ActionSpeedUp); // 첫 적 턴용 속도 상태 해제
+        } // 개별 상태 제거 종료
+    } // 속도 효과 회수 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
         var pouch = openingRelics?.FindEffect(RelicEffectType.LargeDiscardDraw); // 보유한 잔해 주머니 조회
@@ -441,6 +474,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 결과 확정 시작
         Result = battleResult; // 최종 전투 결과 저장
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
+        ClearOpeningAllySpeed(); // 첫 적 턴을 마치지 않은 전투의 배지 상태 회수
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
         sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
         StateChanged?.Invoke(); // 전투 종료 알림
@@ -504,6 +538,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
+        ClearOpeningAllySpeed(); // 전투 관리자 해제 시 배지 상태 회수
         for (int unitIndex = registeredUnits.Count - 1; unitIndex >= 0; unitIndex--) // 등록 유닛 역순 순회
         { // 이벤트 일괄 해제 시작
             UnregisterUnitEvent(registeredUnits[unitIndex]); // 개별 사망 이벤트 해제

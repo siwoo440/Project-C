@@ -40,5 +40,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     DuelMark, // 시전자와 상대가 공유하는 결투 표식
     SwordSaintStance, // 검 카드 비용 감소와 직접 타격 강화
     ShockAbsorption, // 지정 적 턴 동안의 직접 피해 고정 경감
-    ResistanceStance // 지정 적 턴 동안의 마법 피해 비율 경감
+    ResistanceStance, // 지정 적 턴 동안의 마법 피해 비율 경감
+    ActionSpeedUp // 시전자가 보유한 행동 속도 상승
 } // 열거형 종료

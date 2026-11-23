@@ -26,6 +26,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public WandererCryRunState wandererCry; // 교전 전 추적과 세 카드 및 귀 막기 보관
         public CrackedCompassRunState compass; // 첫 일반 방 사용 여부와 발견한 사건
         public string[] avoidedEncounters; // 승리 보상 없이 회피한 조우 목록
+        public EscapeGoldClaim[] escapeGoldClaims; // 조우별 선지급 도주 골드 목록
         public CharredWellRunState well; // 사용자별 물과 현재 및 다음 층 봉인 저장
         public BurntCartRunState cart; // 수레 매복과 상점 할인 저장
         public string[] relics; // 획득 순서 유물 목록
@@ -56,6 +57,12 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string owner; // 소유 캐릭터 식별자
         public int upgrade; // 카드 강화 단계
     } // 카드 저장 정보 종료
+    [Serializable] // 조우별 도주 골드 직렬화 지정
+    internal sealed class EscapeGoldClaim // 도주 골드 지급 정보
+    { // 지급 정보 시작
+        public string encounter; // 해당 런타임 조우 식별자
+        public int gold; // 이미 지갑으로 지급한 골드
+    } // 지급 정보 종료
     private sealed class ResolvedRun // 저장 식별자 검증 결과
     { // 검증 결과 시작
         public RunSnapshot snapshot; // 검증된 탐사 저장 정보
@@ -134,6 +141,17 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             events.Sort(StringComparer.Ordinal); // 이벤트 식별자 순서 정리
             var avoided = new List<string>(session.AvoidedEncounterIds); // 지급과 별도로 관리하는 회피 조우 복사
             avoided.Sort(StringComparer.Ordinal); // 회피 조우 저장 순서 고정
+            var escapeClaims = new List<EscapeGoldClaim>(); // 저장할 도주 골드 목록 초기화
+            foreach (var pair in session.EscapeGoldClaims) // 런타임 조우별 선지급 보상 순회
+            { // 개별 도주 골드 기록 시작
+                var claim = new EscapeGoldClaim // 조우의 도주 골드 저장 항목 생성
+                { // 지급 정보 기록 시작
+                    encounter = pair.Key, // 런타임 조우 식별자 복사
+                    gold = pair.Value // 입금된 골드 복사
+                }; // 지급 정보 기록 종료
+                escapeClaims.Add(claim); // 실제 지급 정보 목록에 추가
+            } // 개별 도주 골드 기록 종료
+            escapeClaims.Sort((left, right) => StringComparer.Ordinal.Compare(left.encounter, right.encounter)); // 도주 골드 저장 순서 고정
             List<string> relics = new List<string>(); // 보유 유물 목록 생성
             if (RelicRunManager.Instance != null) // 유물 관리자 존재 확인
             { // 유물 수집 시작
@@ -188,6 +206,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 wandererCry = session.WandererCry, // 선택한 방과 확정 카드 후보를 함께 저장
                 compass = session.Compass, // 출발 기회와 현재 층 사건 원본 저장
                 avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
+                escapeGoldClaims = escapeClaims.ToArray(), // 재도주 방지와 승리 차감에 쓸 실제 지급량 저장
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
                 shopRoom = shop != null ? shop.ActiveRoomRuntimeId : null, // 상점 방 식별자 설정
@@ -398,6 +417,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 잘못된 회피 기록 처리 시작
             return false; // 회피와 승리가 겹치는 저장 차단
         } // 잘못된 회피 기록 처리 종료
+        if (snapshot.escapeGoldClaims != null && !ValidEscapeGoldClaims(snapshot)) // 신규 지급 기록이 있는 저장의 유효성 확인
+        { // 잘못된 도주 골드 기록 처리 시작
+            return false; // 중복 지급이나 승리 조우의 도주 기록 복원 차단
+        } // 잘못된 도주 골드 기록 처리 종료
         foreach (string offerId in snapshot.purchasedOffers) // 판매 완료 상품 순회
         { // 상품 식별자 검사 시작
             if (!shopCatalog.ContainsOffer(offerId)) // 상점 상품 식별자 확인
@@ -526,6 +549,20 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         } // 원본 비교 종료
         return found; // 유일한 일치 원본 반환
     } // 원본 조회 종료
+    private static bool ValidEscapeGoldClaims(RunSnapshot snapshot) // 도주 골드 지급 목록 검증
+    { // 지급 기록 검사 시작
+        var seen = new HashSet<string>(StringComparer.Ordinal); // 중복 조우 식별자 검사
+        long claimedGold = 0; // 지급 기록 전체 골드 합계 준비
+        foreach (var claim in snapshot.escapeGoldClaims) // 저장된 도주 기록 검사
+        { // 개별 지급 기록 검사 시작
+            if (claim == null || string.IsNullOrWhiteSpace(claim.encounter) || claim.gold <= 0 || !seen.Add(claim.encounter) || Array.IndexOf(snapshot.cleared, claim.encounter) >= 0) // 누락과 중복 및 승리 정산 잔존 확인
+            { // 잘못된 지급 기록 처리 시작
+                return false; // 자료 복원 차단
+            } // 잘못된 지급 기록 처리 종료
+            claimedGold += claim.gold; // 이미 지급한 골드 합산
+        } // 개별 지급 기록 검사 종료
+        return claimedGold <= snapshot.runGold; // 실제 탐사 획득량 이내 확인
+    } // 지급 기록 검사 종료
     private static bool ValidIds(string[] ids) // 저장 식별자 목록 검증
     { // 식별자 검사 시작
         if (ids == null) // 목록 누락 확인

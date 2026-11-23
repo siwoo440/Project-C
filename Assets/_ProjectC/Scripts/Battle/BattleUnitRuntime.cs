@@ -27,6 +27,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public bool IsDead { get; private set; } // 사망 여부
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
     public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
+    public int ActionSpeedModifier => GetStatusEffectValue(BattleStatusEffectType.ActionSpeedUp) - GetStatusEffectValue(BattleStatusEffectType.ActionSpeedDown); // 행동 속도 증가와 감소의 차이
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
     public bool HasRemovableDebuff => ContainsRemovableDebuff(); // 정화 가능한 디버프 존재 여부
     public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
@@ -167,6 +168,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 금속판 완화 시작
             value = 1; // 새로 부여되는 약화 한 점으로 완화
         } // 금속판 완화 종료
+        if (Team == BattleTeam.Ally && duration > 1 && IsStandardTimedDebuff(effectType) && ExplorationSessionManager.Instance?.ActiveEncounterInFade == true) // 퇴색 교전에서 받는 아군의 지속 디버프 확인
+        { // 방독면 지속 턴 보정 시작
+            int reduction = BattleSupplyRelics.Find(RelicEffectType.ShorterFadeDebuffs)?.EffectValue ?? 0; // 실제 보유 방독면의 지속 감소량
+            duration = Mathf.Max(1, duration - reduction); // 최소 한 턴을 보장한 이번 적용 지속
+        } // 방독면 지속 턴 보정 종료
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 동일 상태 이상 조회
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
@@ -182,6 +188,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
         return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
+    private static bool IsStandardTimedDebuff(BattleStatusEffectType effectType) // 턴으로 지속하는 일반 디버프 확인
+    { // 턴 디버프 확인 시작
+        return BattleStatusEffectInstance.IsDebuffType(effectType) // 기존 디버프 분류 사용
+            && effectType != BattleStatusEffectType.Stagger // 다음 행동을 기다리는 경직 제외
+            && effectType != BattleStatusEffectType.NextAttackDown // 다음 공격을 기다리는 약화 제외
+            && effectType != BattleStatusEffectType.DuelMark // 공유 지속을 쓰는 결투 표식 제외
+            && effectType != BattleStatusEffectType.ChariotMark // 지정 시점에 소모하는 전차 표식 제외
+            && effectType != BattleStatusEffectType.PublicMark; // 첫 턴에 만료되는 공명 표식 제외
+    } // 턴 디버프 확인 종료
     public bool RemoveStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 제거
     { // 상태 이상 제거 시작
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 제거할 상태 이상 조회

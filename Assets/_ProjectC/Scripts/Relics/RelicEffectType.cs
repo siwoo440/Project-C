@@ -60,4 +60,12 @@ public enum RelicEffectType // 유물 효과 종류
     FavorTwelveDamage, // 피해 6·12 중 12의 정수 확률 증가
     ExtraHandCapacity, // 해당 전투의 최대 손패 증가
     SingleAttackDamage, // 단일 한 타격 카드의 피해 증가
+    ChaliceMentalOnUse, // 아군 턴의 첫 성배 카드 소유자 정신력
+    PentacleDrawOnUse, // 아군 턴의 첫 펜타클 카드 사용 뒤 드로우
+    OpeningAllySpeed, // 전투 시작 전체 아군의 행동 속도 증가
+    ShorterFadeDebuffs, // 침식지대 전투의 기간제 디버프 지속 감소
+    EscapePartialGold, // 해당 조우에서 처음 도주할 때 일부 골드 보상
+    OpeningDroneWeakness, // 전투 시작 무작위 적의 공격력 감소
+    FirstDrawCardDiscount, // 전투 첫 손패 도착 카드의 일시 사용 비용 감소
+    FirstCardDrawBonus, // 첫 장수 기반 카드 드로우 증가
 }
