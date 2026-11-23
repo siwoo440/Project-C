@@ -32,7 +32,7 @@ public sealed class WinterfallCommonCardExpansionTests // 윈터폴 공용 카�
         Assert.AreEqual(rowNumber, row.SourceRow); // 원본 행 확인
         Assert.AreEqual(row.Name, card.DisplayName); // 원본 이름 확인
         Assert.AreEqual(row.Description, card.Description); // 효과 원문 확인
-        Assert.AreEqual(row.Cost, card.ApCost.ToString()); // 행동력 비용 확인
+        Assert.AreEqual(row.Cost, card.CupRule == CupCardRule.GrailMiracle ? "X" : card.ApCost.ToString()); // 시트의 고정 비용 또는 가변 행동력 X 확인
         Assert.AreEqual(type, card.CardType); // 카드 속성 확인
         Assert.AreEqual("CRD_SHEET_" + id, card.CardId); // 고정 카드 식별자 확인
         CollectionAssert.Contains(Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog").Cards, card); // 획득 카드 복원 원본 확인

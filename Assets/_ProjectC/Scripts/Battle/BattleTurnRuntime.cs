@@ -699,7 +699,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     } // 종료 효과 적용 종료
     internal void RecordCardPayment(CardInstance card, int paid) // 실제 지불에 따른 스프링 예약과 소비
     { // 다음 카드 할인 처리 시작
-        if (springReady && card.SourceData.SwordRule != SwordCardRule.Finisher && card.ApCostBeforeNextCardDiscount > 0) // 예약을 쓸 수 있는 유료 고정 카드 확인
+        if (springReady && !card.SourceData.SpendsAllActionPoints && card.ApCostBeforeNextCardDiscount > 0) // 예약을 쓸 수 있는 유료 고정 카드 확인
         { // 예약 할인 소비 시작
             springReady = false; // 같은 턴의 남은 카드 할인 종료
             runtimeDeck.SetNextCardRelicApDiscount(0); // 다른 손패의 실제 비용 복원

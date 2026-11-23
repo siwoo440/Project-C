@@ -25,10 +25,10 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardType CardType => SourceData.CardType; // 카드 종류 조회
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
-    public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
+    public string CostLabel => SourceData.SpendsAllActionPoints ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
     public int ApCost => (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount + SourceData.AdditionalActionPointCost); // 기존 할인과 방패끈을 적용한 기본 비용에 의무 행동력 대가 합산
     private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
-    internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && SourceData.SwordRule != SwordCardRule.Finisher && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
+    internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && !SourceData.SpendsAllActionPoints && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
     internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인
         EffectType == CardEffectType.ApplyStatusEffect && CardType == CardType.Shield && StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(StatusEffectType); // 방패 카드의 양의 상태 효과 확인
     private bool HasFriendlyTarget => TargetType is CardTargetType.Self or CardTargetType.SingleAlly or CardTargetType.AllAllies; // 본인과 일반 아군 대상 확인

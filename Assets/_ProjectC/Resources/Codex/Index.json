@@ -2201,6 +2201,48 @@
       "name": "구원의 원",
       "description": "생존 아군 전체의 공포를 해제하고 각각 체력 8을 회복한다.",
       "artworkKey": "c53dc8d24ce95406a37a54662540baf5"
+    },
+    {
+      "category": 7,
+      "name": "생명의 계약",
+      "description": "시전자의 정신력 5를 소모하고 선택한 생존 아군의 체력을 25 회복한다.",
+      "artworkKey": "a298eccbfcad576fbf65f03f9188ae1a"
+    },
+    {
+      "category": 7,
+      "name": "대천사의 축복",
+      "description": "생존 아군 전체에서 제거 가능한 디버프를 모두 없애고 각각 체력 25를 회복한다.",
+      "artworkKey": "219b8c4325ca59c594f0c116e4bbebb6"
+    },
+    {
+      "category": 7,
+      "name": "순교자의 빛",
+      "description": "시전자의 체력을 1로 낮춘 뒤 시전자를 포함한 생존 아군 전체를 체력 30씩 회복한다.",
+      "artworkKey": "2b46f74987db50d6b7cf030dfd3db7c6"
+    },
+    {
+      "category": 7,
+      "name": "부활 성가",
+      "description": "쓰러진 출전 아군 한 명을 최대 체력의 50%로 부활시킨다. 소수점은 올린다.",
+      "artworkKey": "33ee35df081b51c8876676a3c7088175"
+    },
+    {
+      "category": 7,
+      "name": "불멸의 잔",
+      "description": "생존 아군마다 첫 치명 피해에서 체력 1로 버티는 보호 1회와 방어도 10을 준다.",
+      "artworkKey": "1e44900f04c15c4797540712e0e46a3e"
+    },
+    {
+      "category": 7,
+      "name": "성배의 기적",
+      "description": "현재 행동력을 모두 소모해 지불한 행동력마다 생존 아군 전체를 각각 체력 8 회복한다. 행동력을 4 이상 지불하면 각 대상에게서 디버프 하나도 해제한다.",
+      "artworkKey": "4fccf7fb991e5585a7ff81f2d6deaff2"
+    },
+    {
+      "category": 7,
+      "name": "빛의 대심판",
+      "description": "생존 적 전체에게 마법 피해 25를 주고 생존 아군 전체를 각각 체력 15만큼 회복한다.",
+      "artworkKey": "9c7d7e8a21b659f8a1cc7650ff63082e"
     }
   ]
 }

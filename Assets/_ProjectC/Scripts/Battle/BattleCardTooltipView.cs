@@ -280,6 +280,12 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return $"공포 해제 · 정신력 +{cardInstance.MentalChangeValue}"; // 진정의 두 독립 효과 표시
             case CupCardRule.HolyWater: // 성수의 조건부 언데드 피해 안내
                 return $"마법 피해 {cardInstance.EffectValue} · 언데드에게 추가 +{cardInstance.SourceData.SecondaryEffectValue}"; // 일반과 언데드 대상의 피해 구분 표시
+            case CupCardRule.LifeContract: // 시전자 정신력과 지정 아군 체력 안내
+                return $"자신 정신력 {cardInstance.SourceData.MentalChangeValue} · 아군 체력 {cardInstance.EffectValue} 회복"; // 원본 정신력 대가와 실제 직접 회복 수치
+            case CupCardRule.MartyrsLight: // 시전자 체력 하한과 아군 전체 회복 안내
+                return $"시전자 체력을 1로 낮춘 뒤 생존 아군 전체 체력 {cardInstance.EffectValue} 회복"; // 비용 선행과 시전자를 포함한 회복 범위 표시
+            case CupCardRule.GrailMiracle: // 실제 가변 비용과 정화 발동 기준 안내
+                return $"생존 아군 전체 체력 X × {cardInstance.EffectValue} 회복 · X가 {cardInstance.SourceData.SecondaryEffectValue} 이상이면 각자 디버프 1개 해제"; // 지불량 배수와 대상별 정화 문구 표시
             case CupCardRule.SacrificialHealing: // 소유자 체력 비용을 가진 희생 치유 안내
                 return $"자신 체력 {cardInstance.SourceData.SecondaryEffectValue} 소모 · 아군 체력 {cardInstance.EffectValue} 회복"; // 방어도와 별개인 생존 체력 비용과 대상 회복 표시
             case CupCardRule.WaterOfLife: // 직접 회복과 예약 회복을 가진 생명수 안내

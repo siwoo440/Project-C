@@ -47,10 +47,10 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
 
     internal static bool CanUse(CardInstance card, BattleActionPointRuntime points, BattleTurnRuntime turn) // 검 카드 행동력과 체력 대가 확인
     { // 사용 가능 검사 시작
-        if (card.SourceData.SwordRule == SwordCardRule.Finisher) // 남은 행동력을 쓰는 공격 확인
-        { // 처형 조건 검사 시작
-            return points.CurrentActionPoints > 0 && turn.HasFinisherTarget(); // 행동력과 생존한 저체력 적 확인
-        } // 처형 조건 검사 종료
+        if (card.SourceData.SpendsAllActionPoints) // 남은 행동력 전체를 쓰는 카드 확인
+        { // 가변 행동력 조건 검사 시작
+            return points.CurrentActionPoints > 0 && (card.SourceData.SwordRule != SwordCardRule.Finisher || turn.HasFinisherTarget()); // 행동력 양수와 처형의 전용 저체력 조건 확인
+        } // 가변 행동력 조건 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 체력 절반 이하 적에게만 사용하는 검 확인
         { // 처형 베기 사용 검사 시작
             return points.CanSpend(card.ApCost) && turn.HasFinisherTarget(2); // 행동력과 체력 절반 이하 적 확인

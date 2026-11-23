@@ -213,7 +213,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 선택 생략 처리 시작
             return; // 기존 손패 카드 비용 보존
         } // 선택 생략 처리 종료
-        var candidates = hand.FindAll(card => IsDrawable(card) && card.EffectType != CardEffectType.Unplayable && card.SourceData.SwordRule != SwordCardRule.Finisher && card.ApCostBeforeNextCardDiscount > 0); // 생존 소유자의 줄일 수 있는 고정 비용 카드 후보
+        var candidates = hand.FindAll(card => IsDrawable(card) && card.EffectType != CardEffectType.Unplayable && !card.SourceData.SpendsAllActionPoints && card.ApCostBeforeNextCardDiscount > 0); // 생존 소유자의 줄일 수 있는 고정 비용 카드 후보
         if (candidates.Count == 0) // 줄일 수 있는 실제 손패 확인
         { // 후보 없음 처리 시작
             return; // 빈 손패나 무료 카드의 비용 보존
