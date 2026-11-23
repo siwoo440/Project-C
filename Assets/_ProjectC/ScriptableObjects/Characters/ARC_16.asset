@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 다수 적의 방어도 파괴"
   role: 0
   portrait: {fileID: 4649167915037525540, guid: a06c4c203c66e5f42afd385c8301fefb, type: 3}
+  battleIllustration: {fileID: 4000000000000000016, guid: ba79a2a8a7464cc1b6129148c2efbd14, type: 3}
   maxHealth: 110
   physicalDefense: 4
   magicalResistance: 2

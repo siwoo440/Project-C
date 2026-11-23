@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 불리한 상태를 자신에게 이전"
   role: 2
   portrait: {fileID: 2118659416408344347, guid: 759ac7fa97233fe4a81366f2679a8d4a, type: 3}
+  battleIllustration: {fileID: 4000000000000000012, guid: 7f8e5105532047baa9be0c288f509e73, type: 3}
   maxHealth: 110
   physicalDefense: 4
   magicalResistance: 4

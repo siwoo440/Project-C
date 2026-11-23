@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 체력 대가의 폭발 피해"
   role: 0
   portrait: {fileID: 7799363534181538611, guid: 6ca50bc1e53acc94b9d0008c1a7efa53, type: 3}
+  battleIllustration: {fileID: 4000000000000000015, guid: 7d539523aadb4300b2e20d242df2bfa7, type: 3}
   maxHealth: 105
   physicalDefense: 3
   magicalResistance: 2
