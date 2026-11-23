@@ -26,7 +26,7 @@ public sealed class BattleStatusIconView : MonoBehaviour // 개별 상태 아이
         icon.color = icon.sprite != null ? Color.white : new Color(0.22f, 0.22f, 0.22f, 1f); // 이미지 누락 시 구분 가능한 임시 배경 표시
         countersBackground.color = effect.IsProtectedMentalState ? Color.clear : new Color(0f, 0f, 0f, 0.78f); // 정신 상태 아이콘의 투명 배경 유지
         amount.text = effect.IsProtectedMentalState ? string.Empty : effect.EffectiveValue.ToString(); // 정신 상태는 지속 턴만 표시
-        duration.text = effect.RemainingTurns.ToString(); // 왼쪽 아래에 남은 지속 턴 표시
+        duration.text = effect.LastsUntilBattleEnd ? "전투" : effect.RemainingTurns.ToString(); // 전투 지속 상태와 남은 실제 턴 표시 구분
         gameObject.SetActive(true); // 현재 상태 아이콘 표시
     } // 상태 아이콘 연결 종료
     private void Build() // 상태 이미지와 수치 화면 구성

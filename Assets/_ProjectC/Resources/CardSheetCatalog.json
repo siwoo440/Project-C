@@ -2272,7 +2272,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 하나 공격력 +8, 방어력 -4",
+      "description": "선택한 생존 아군의 공격력을 8 높이고 물리 방어력을 4 낮춘다. 두 효과는 전투가 끝날 때까지 지속된다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "힘의 분배.png"
@@ -2283,7 +2283,7 @@
       "attribute": "펜타클",
       "rarity": "전설",
       "cost": "4",
-      "description": "이번 턴 사용한 카드 1장 복사",
+      "description": "이번 아군 턴에 실제로 사용한 카드 한 장을 골라 복제한다. 같은 소유자와 강화 상태의 새 카드가 손패에 들어온다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "카드 복제.png"
@@ -2294,7 +2294,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "무작위 카드 1장 코스트 0으로 변환",
+      "description": "선택한 아군이 소유한 손패 카드 중 기본 행동력 비용이 있는 일반 카드 한 장의 기본 비용을 무작위로 0으로 바꾼다. 그 카드를 사용할 때까지 적용된다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "룬의 힘.png"
@@ -2305,7 +2305,7 @@
       "attribute": "펜타클",
       "rarity": "특수",
       "cost": "3",
-      "description": "체력 -5, 코스트 +2 획득",
+      "description": "시전자의 체력을 5 지불하고 행동력을 2 회복한다. 시전자에게는 체력이 최소 1 남아야 한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "제의.png"
@@ -2316,7 +2316,7 @@
       "attribute": "펜타클",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 드로우 +2, 회복 10, 적 전체 피해 15",
+      "description": "공용 손패에 카드 두 장을 뽑고 생존 아군 전원의 체력을 10 회복한다. 생존 적 전원에게 일반 피해 15를 준다.",
       "area": "전체",
       "targets": "아군/적",
       "imageFileName": "융합의 힘.png"
@@ -2327,7 +2327,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "0",
-      "description": "코스트 +1, 이 카드는 소멸",
+      "description": "행동력을 1 회복하고 이 카드를 이번 전투에서 제외한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "동전 줍기.png"
@@ -2349,7 +2349,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "1",
-      "description": "카드 1장 드로우, 방어도 +3",
+      "description": "공용 손패에 카드 한 장을 뽑고 시전자가 방어도 3을 얻는다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "물자 확보.png"
@@ -2360,7 +2360,7 @@
       "attribute": "펜타클",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 체력 4 회복, 코스트 +1 30%",
+      "description": "선택한 생존 아군의 체력을 4 회복한다. 별도로 30% 확률로 행동력을 1 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "임시 보급.png"

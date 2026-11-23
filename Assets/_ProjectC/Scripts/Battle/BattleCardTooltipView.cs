@@ -38,6 +38,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 화상 연장의 실제 대상 문구 시작
             targetLabel = "화상 상태인 모든 적"; // 남은 화상이 있는 생존 적 전체 안내
         } // 화상 연장의 실제 대상 문구 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.FusionOfPower) // 두 진영 모두를 처리하는 실제 힘의 융합 대상 확인
+        { // 혼합 광역 카드 대상 표시 시작
+            targetLabel = "생존 아군과 적 전체"; // 일반 지원 버튼에서 보여 주는 실제 영향 범위
+        } // 혼합 광역 카드 대상 표시 종료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         if (availableActionPoints.HasValue && cardInstance.CardType == CardType.Wand && cardInstance.SourceData.SpendsAllActionPoints && cardInstance.EffectType == CardEffectType.Damage) // 실제 가용 행동력으로 피해가 달라지는 지팡이 카드 확인
         { // 현재 기본 피해 미리보기 시작
@@ -47,6 +51,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 임시 카드 안내 표시 시작
             effectDetail += " · 전투 임시 · 사용 후 제외"; // 원본 효과 뒤에 생성 카드의 실제 수명과 제외 안내
         } // 임시 카드 안내 표시 종료
+        if (cardInstance.HasRunePower) // 이번 실물의 다음 사용에 남은 비용 면제 확인
+        { // 현재 카드 설명에 기본 비용 면제 표시 시작
+            effectDetail += " · 다음 실제 사용의 기본 행동력 0"; // 원래 추가 비용과 독립인 룬 예약 안내
+        } // 현재 카드 설명에 기본 비용 면제 표시 종료
         if (cardInstance.EnchantmentPercent > 0) // 해당 실제 손패 카드에 아직 남은 한 번의 강화 확인
         { // 기존 효과 상세에 강화 안내 추가 시작
             effectDetail += $" · 다음 실제 사용 효과 +{cardInstance.EnchantmentPercent}%"; // 현재 원본 실물 카드에만 적용되는 전투 강화 표시
@@ -205,6 +213,20 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 계약 상세 수치 표시 시작
             return $"행동력 +{cardInstance.EffectValue} · 시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue}"; // 정상 화면의 실제 두 자원 변화 설명
         } // 계약 상세 수치 표시 종료
+        var support = cardInstance.SourceData.PentacleRule; // 이번 지원 효과의 분리된 실제 수치 확인
+        switch (support) // 펜타클 지원 카드의 실제 두 효과 표시
+        { // 지원 카드의 상세 효과 시작
+            case PentacleCardRule.Ritual: // 실체력을 지불하는 자기 대상 의식 확인
+                return $"시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue} · 행동력 +{cardInstance.EffectValue}"; // 현재 실제 체력 대가와 공용 행동력 증가
+            case PentacleCardRule.FusionOfPower: // 아군과 적을 동시에 처리하는 일반 광역 효과
+                return $"공용 드로우 2장 · 아군 회복 {cardInstance.SourceData.SecondaryEffectValue} · 적 일반 피해 {cardInstance.EffectValue}"; // 실제 세 효과 유형과 원본 수치 연결
+            case PentacleCardRule.PickUpCoin: // 실제로 쓰면 이번 전투에서 제외되는 원본 동전
+                return $"행동력 +{cardInstance.EffectValue} · 사용 후 전투에서 제외"; // 실제 무료 행동력과 사용 후 지속 범위 안내
+            case PentacleCardRule.SecureSupplies: // 원래 손패와 본인에게 실제 지급되는 지원 효과
+                return $"공용 드로우 {cardInstance.SourceData.SecondaryEffectValue}장 · 시전자 방어도 +{cardInstance.EffectValue}"; // 자기 방어도와 공동 손패의 실제 수량 안내
+            case PentacleCardRule.TemporarySupplies: // 실제 지정 회복과 별도로 발동하는 행동력 증가 확인
+                return $"회복 {cardInstance.EffectValue} · {cardInstance.SourceData.SecondaryEffectValue}%로 행동력 +1"; // 회복량과 독립 확률의 실제 효과 설명
+        } // 지원 카드의 상세 효과 종료
         if (cardInstance.StatusEffectType == BattleStatusEffectType.ResurrectionSeed) // 부활의 씨앗의 체력 비율과 기간 확인
         { // 부활 씨앗 상세 표시 시작
             return $"적 턴 {cardInstance.StatusDuration}회 동안 · 전투불능 시 체력 {cardInstance.EffectValue}%로 한 번 부활"; // 실제 부활 비율과 사용 한계 안내

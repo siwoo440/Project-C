@@ -78,7 +78,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
     internal static bool HasUpfrontHealthCost(CardInstance card) // 효과 적용 전에 소유자 체력을 지불하는 카드 확인
     { // 체력 대가 카드 확인 시작
         return card.SourceData.SwordRule is SwordCardRule.DoomBlade or SwordCardRule.BloodOath || card.SourceData.CupRule == CupCardRule.SacrificialHealing || // 이전 검과 희생 치유의 공통 실체력 지불
-            card.SourceData.PentacleRule == PentacleCardRule.Contract; // 실제로 생존하는 계약 소유자의 고정 체력 비용
+            card.SourceData.PentacleRule is PentacleCardRule.Contract or PentacleCardRule.Ritual; // 실제 살아남아야 하는 펜타클의 고정 생존 체력 비용
     } // 체력 대가 카드 확인 종료
 
     internal static List<BattleUnitRuntime> GetDanceArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 바로 옆 한 칸의 고정 범위

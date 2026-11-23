@@ -1553,6 +1553,15 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 현재 손실 체력의 정수 비용 지불 종료
         } // 서약의 생존 체력 비용 계산 종료
     } // 전투 종료 서약 처리 종료
+    private void ClearDistributionStatuses() // 이번 전투의 원본과 복사 분배 상태를 종료 시 해제
+    { // 참가한 모든 아군의 지속 상태 해제 시작
+        foreach (var ally in allyUnits) // 선택 대상과 강화를 복사한 생존 여부 무관 아군 조회
+        { // 아군별 실제 전투 지속 상태 제거 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.DistributionAttackUp); // 종료 전의 남은 분배 공격 강화 제거
+            ally?.RemoveStatusEffect(BattleStatusEffectType.DistributionPhysicalDefenseDown); // 종료 전의 남은 분배 물리 방어 약화 제거
+        } // 아군별 실제 전투 지속 상태 제거 종료
+    } // 참가한 모든 아군의 지속 상태 해제 종료
+
     private void SetBattleResult(BattleResult battleResult) // 전투 결과 확정
     { // 결과 확정 시작
         Result = battleResult; // 최종 전투 결과 저장
@@ -1564,6 +1573,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 미사용 씨앗 제거 시작
             ally?.RemoveStatusEffect(BattleStatusEffectType.ResurrectionSeed); // 결과 확정 이후 부활을 예약하지 않는 전투 상태 정리
         } // 미사용 씨앗 제거 종료
+        ClearDistributionStatuses(); // 승리와 패배 및 도주 결과 확정 뒤 분배 상태 종료
         SetEfficientUseDiscount(0); // 승리 및 패배와 도주 뒤 남은 턴 할인 제거
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
@@ -1828,6 +1838,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
+        ClearDistributionStatuses(); // 장면 해제나 새 전투에도 현재 분배 수치가 남지 않는 정리
         SetEfficientUseDiscount(0); // 전투 관리자 해제 후 아군 소유자 할인 회수
         OpeningBookmarkChoices = null; // 해제 뒤 이전 전투의 개막 선택 후보 회수
         runtimeDeck.ClearBattleRelicCards(); // 결과 이전에 전투 해제할 때도 덱의 모든 전투 한정 카드 회수

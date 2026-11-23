@@ -2957,6 +2957,54 @@
       "name": "계약",
       "description": "시전자의 체력을 10 지불하고 현재 행동력을 3 회복한다. 체력은 최소 1 남아야 한다.",
       "artworkKey": "5a805eed2beb5795b77183c0bb2521c9"
+    },
+    {
+      "category": 7,
+      "name": "힘의 분배",
+      "description": "선택한 생존 아군의 공격력을 8 높이고 물리 방어력을 4 낮춘다. 두 효과는 전투가 끝날 때까지 지속된다.",
+      "artworkKey": "4bd8217401495c18a30bb3f81b8b9855"
+    },
+    {
+      "category": 7,
+      "name": "카드 복제",
+      "description": "이번 아군 턴에 실제로 사용한 카드 한 장을 골라 복제한다. 같은 소유자와 강화 상태의 새 카드가 손패에 들어온다.",
+      "artworkKey": "8b4ecd57d95a5e84bf0f8c5a0d41e388"
+    },
+    {
+      "category": 7,
+      "name": "룬의 힘",
+      "description": "선택한 아군이 소유한 손패 카드 중 기본 행동력 비용이 있는 일반 카드 한 장의 기본 비용을 무작위로 0으로 바꾼다. 그 카드를 사용할 때까지 적용된다.",
+      "artworkKey": "db3ad9c249eb5dbcae896ce0d0befed8"
+    },
+    {
+      "category": 7,
+      "name": "제의",
+      "description": "시전자의 체력을 5 지불하고 행동력을 2 회복한다. 시전자에게는 체력이 최소 1 남아야 한다.",
+      "artworkKey": "3b1ce08e4f1154bead6bbb0e57ecb208"
+    },
+    {
+      "category": 7,
+      "name": "융합의 힘",
+      "description": "공용 손패에 카드 두 장을 뽑고 생존 아군 전원의 체력을 10 회복한다. 생존 적 전원에게 일반 피해 15를 준다.",
+      "artworkKey": "829efc3f3dba585b9d4a78400c9eac9f"
+    },
+    {
+      "category": 7,
+      "name": "동전 줍기",
+      "description": "행동력을 1 회복하고 이 카드를 이번 전투에서 제외한다.",
+      "artworkKey": "d343d35e4f215f75a026ac98fc4b6eca"
+    },
+    {
+      "category": 7,
+      "name": "물자 확보",
+      "description": "공용 손패에 카드 한 장을 뽑고 시전자가 방어도 3을 얻는다.",
+      "artworkKey": "3fde31a24f8956d883a7a3afaf42b214"
+    },
+    {
+      "category": 7,
+      "name": "임시 보급",
+      "description": "선택한 생존 아군의 체력을 4 회복한다. 별도로 30% 확률로 행동력을 1 회복한다.",
+      "artworkKey": "4eedb2ac99dc56d99334adb57ece396a"
     }
   ]
 }
