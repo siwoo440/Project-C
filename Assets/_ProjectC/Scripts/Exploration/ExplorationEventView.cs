@@ -1,6 +1,6 @@
 using UnityEngine; // 트리거 처리와 유니티 기능 사용
 
-public sealed class ExplorationEventView : MonoBehaviour // 탐사 이벤트 오브젝트 표시와 UI 호출 처리
+public sealed class ExplorationEventView : MonoBehaviour, IExplorationInteractable // F 키로 여는 탐사 이벤트 오브젝트
 {
     private ExplorationEventData eventData; // 현재 이벤트 데이터
     private string runtimeEventId; // 현재 배치 이벤트 런타임 ID
@@ -8,6 +8,7 @@ public sealed class ExplorationEventView : MonoBehaviour // 탐사 이벤트 오
 
     public string RuntimeEventId => runtimeEventId; // 런타임 이벤트 ID 조회
     public ExplorationEventData EventData => eventData; // 이벤트 데이터 조회
+    public bool CanInteract => isActiveAndEnabled && !interactionLocked && eventData != null && !string.IsNullOrWhiteSpace(runtimeEventId) && ExplorationSessionManager.Instance?.IsEventResolved(runtimeEventId) != true; // 열 수 있는 미처리 이벤트 확인
 
     public void Initialize(
         ExplorationEventData data,
@@ -35,31 +36,12 @@ public sealed class ExplorationEventView : MonoBehaviour // 탐사 이벤트 오
         interactionLocked = false; // 복원 후 미처리 이벤트 재접촉 허용
     } // 잠금 해제 종료
 
-    private void OnTriggerEnter2D(Collider2D other) // 플레이어 이벤트 접촉 처리
-    {
-        if (interactionLocked ||
-            eventData == null ||
-            string.IsNullOrWhiteSpace(runtimeEventId))
-        {
-            return; // 잠금 상태 또는 데이터 누락 시 중단
-        }
-
-        ExplorationPlayerController player =
-            other.GetComponent<ExplorationPlayerController>(); // 플레이어 접촉 여부 확인
-
-        if (player == null)
-        {
-            return; // 플레이어가 아니면 중단
-        }
-
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
-
-        if (sessionManager.IsEventResolved(runtimeEventId))
-        {
-            interactionLocked = true; // 이미 처리한 이벤트는 재실행 방지
-            return;
-        }
+    public void Interact(ExplorationPlayerController player) // 키를 눌렀을 때만 실제 이벤트 열기
+    { // 탐사 이벤트 열기 시작
+        if (player == null || !CanInteract) // 현재 플레이어와 아직 열 수 있는 이벤트 재확인
+        { // 사용할 수 없는 이벤트 처리 시작
+            return; // 완료된 이벤트와 다른 입력에서의 중복 실행 차단
+        } // 사용할 수 없는 이벤트 처리 종료
 
         ExplorationEventPanelView panelView =
             ExplorationEventPanelView.EnsureInstance(); // 이벤트 패널 UI 준비
@@ -79,5 +61,5 @@ public sealed class ExplorationEventView : MonoBehaviour // 탐사 이벤트 오
             this,
             eventData,
             runtimeEventId); // 이벤트 패널 표시 요청
-    }
+    } // 탐사 이벤트 열기 종료
 }

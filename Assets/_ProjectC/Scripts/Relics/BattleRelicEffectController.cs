@@ -166,6 +166,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
+        if (relicData.EffectType is (RelicEffectType.DryWaterskinBattleEndHealing or RelicEffectType.SandBoneFirstBleedingEnemyDamage or RelicEffectType.BlackSandBlindChanceBonus or RelicEffectType.DesertKingBraceletOpeningWeakness)) // 실제 저장과 명중 및 확률과 전투 시작 경로의 전용 유물
+        { // 별도 전투 경로 유물의 일반 처리 제외 시작
+            return false; // 기본 확률과 대상 처리를 거치지 않고 원래 전용 정산 유지
+        } // 별도 전투 경로 유물의 일반 처리 제외 종료
         if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage or RelicEffectType.SilverSnufferBurnKillHealing or RelicEffectType.OperaMaskAfraidKillMentalLoss or RelicEffectType.BallroomLastBeatSecondEvade) // 실제 체력과 처치 및 두 번째 회피의 전용 유물 정산 확인
         { // 공용 발동에서 전용 유물 제외 시작
             return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
@@ -191,6 +195,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             return false; // 일반 유물 실행과 성공 로그 생략
         } // 일반 실행 제외 끝
 
+        if (relicData.EffectType is RelicEffectType.ManorWickFortressOpeningBlock or RelicEffectType.DesertGlassBraceletBlindResistance) // 전투 원본 지역과 적 실명 경로가 직접 처리하는 유물 확인
+        { // 유효한 지역이 있는 전용 효과의 공용 중복 처리 제외 시작
+            return false; // 별도 공용 효과나 발동 횟수 없이 실제 발생점에서만 처리
+        } // 유효한 지역이 있는 전용 효과의 공용 중복 처리 제외 종료
         if (relicData.EffectType is RelicEffectType.LordsFinalOrderAttackThenDefenseLoss or RelicEffectType.BanquetHeartPoisonCountHealing or RelicEffectType.ChandelierThirdTurnPulse) // 실제 턴 처리기의 명령서 및 두 시작 유물 확인
         { // 공용 시작 이벤트의 중복 발동 차단 시작
             return false; // 별도 횟수와 난수 없이 실제 아군과 적 턴에서 처리

@@ -13,6 +13,7 @@ public sealed class ExplorationEventData : ScriptableObject // 탐사 이벤트 
     [SerializeField] private Sprite illustrationSprite; // 이벤트 패널 일러스트 스프라이트
     [SerializeField] private Sprite worldSprite; // 탐사 맵 이벤트 고정 표시 스프라이트
     [SerializeField] private ExplorationEventCategory category = ExplorationEventCategory.Choice; // 이벤트 분류
+    [SerializeField] private ExplorationRegion region = ExplorationRegion.Winterfall; // 기존 기록과 새 지역 자료의 실제 지역 지정
     [SerializeField] private List<ExplorationEventChoiceData> choices = new List<ExplorationEventChoiceData>(); // 이벤트 선택지 목록
 
     public string EventId => eventId; // 이벤트 ID 조회
@@ -21,6 +22,7 @@ public sealed class ExplorationEventData : ScriptableObject // 탐사 이벤트 
     public Sprite IllustrationSprite => illustrationSprite; // 이벤트 패널 그림 조회
     public Sprite WorldSprite => worldSprite; // 탐사 맵 이벤트 표시 스프라이트 조회
     public ExplorationEventCategory Category => category; // 이벤트 분류 조회
+    public ExplorationRegion Region => region; // 원본 자료가 지정한 지역 조회
     public IReadOnlyList<ExplorationEventChoiceData> Choices => choices; // 선택지 목록 조회
 
     public bool IsValidData() // 이벤트 데이터 유효성 확인
@@ -38,12 +40,13 @@ public sealed class ExplorationEventData : ScriptableObject // 탐사 이벤트 
         string text,
         ExplorationEventCategory eventCategory,
         Sprite sprite,
-        List<ExplorationEventChoiceData> choiceList) // 런타임 기본 이벤트 데이터 초기화
+        List<ExplorationEventChoiceData> choiceList, ExplorationRegion eventRegion = ExplorationRegion.Winterfall) // 기본값과 명시 지역을 포함한 런타임 이벤트 초기화
     {
         eventId = id; // 런타임 이벤트 ID 저장
         displayName = name; // 런타임 이벤트 이름 저장
         description = text; // 런타임 이벤트 설명 저장
         category = eventCategory; // 런타임 이벤트 분류 저장
+        region = eventRegion; // 런타임 원본의 지정 이벤트 지역 저장
         illustrationSprite = sprite; // 런타임 이벤트 그림 저장
         choices = choiceList ?? new List<ExplorationEventChoiceData>(); // 런타임 선택지 저장
     }

@@ -1,6 +1,5 @@
 using System.Collections.Generic; // 적 목록 자료형 사용
 using UnityEngine; // ScriptableObject와 수치 보정 기능 사용
-using UnityEngine.SceneManagement; // 전투 Scene 자동 감지 기능 사용
 
 [CreateAssetMenu(
     fileName = "Encounter_New",
@@ -11,6 +10,7 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     [SerializeField] private string encounterId; // 조우 고유 ID
     [SerializeField] private string displayName; // 조우 표시 이름
     [SerializeField] private BattleType battleType = BattleType.Normal; // 전투 유형
+    [SerializeField] private ExplorationRegion region = ExplorationRegion.Winterfall; // 기존 기록과 새 지역 자료의 실제 지역 지정
     [Min(0)] // 조우 목록 버전 최소값
     [SerializeField] private int minimumEncounterPoolVersion; // 조우가 처음 추가된 목록 버전
     [SerializeField] private bool legacyOnly; // 이전 탐사에서만 사용하는 임시 조우 표시
@@ -43,6 +43,7 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
     public string EncounterId => encounterId; // 조우 ID 조회
     public string DisplayName => displayName; // 조우 이름 조회
     public BattleType BattleType => battleType; // 전투 유형 조회
+    public ExplorationRegion Region => region; // 원본 자료가 지정한 지역 조회
     public bool IsAvailableForPoolVersion(int version) // 저장된 조우 목록 버전 호환 확인
     { // 조우 버전 확인 시작
         return version >= 0 && minimumEncounterPoolVersion <= version && (!legacyOnly || version == 0) && (removedAtEncounterPoolVersion == 0 || version < removedAtEncounterPoolVersion); // 저장 버전의 조우 추가와 제거 범위 확인
@@ -382,170 +383,3 @@ public static class ExplorationDifficultyCalculator // 43일차 층·조우 등�
             floor); // 1층 이상 값 반환
     }
 }
-
-[DefaultExecutionOrder(500)]
-public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사 전투 적 체력 난이도 적용
-{
-    private readonly System.Collections.Generic.HashSet<BattleUnitRuntime> scaledEnemies =
-        new System.Collections.Generic.HashSet<BattleUnitRuntime>(); // 이미 난이도를 적용한 적 목록
-
-    private BattleSceneSetup battleSceneSetup; // 현재 전투 구성 관리자
-    private bool profileLogged; // 현재 층 난이도 로그 출력 여부
-
-    private void Start() // 전투 난이도 초기 적용
-    {
-        TryApplyDifficulty(); // 초기 적 난이도 적용 시도
-    }
-
-    private void Update() // 소환 적 포함 난이도 적용 유지
-    {
-        TryApplyDifficulty(); // 새로 생성된 적 난이도 적용 시도
-    }
-
-    private void TryApplyDifficulty() // 현재 전투의 미적용 적 체력 보정
-    {
-        if (battleSceneSetup == null)
-        {
-            battleSceneSetup =
-                FindFirstObjectByType<BattleSceneSetup>(); // 현재 전투 구성 관리자 조회
-        }
-
-        if (battleSceneSetup == null ||
-            !battleSceneSetup.IsInitialized)
-        {
-            return;
-        }
-
-        int floor =
-            ExplorationDifficultyCalculator.GetCurrentBattleFloor(); // 현재 탐사 전투 층 조회
-
-        BattleType battleType =
-            ExplorationDifficultyCalculator.GetCurrentBattleType(); // 현재 조우 등급 조회
-
-        int zoneLevel = ExplorationDifficultyCalculator.GetCurrentBattleZoneLevel(); // 실제 출정에서 확정한 지역 레벨
-        LogDifficultyProfile(floor, battleType, zoneLevel); // 현재 전투의 층과 등급 및 지역 레벨 난이도 기록
-
-        System.Collections.Generic.IReadOnlyList<BattleUnitRuntime> enemyUnits =
-            battleSceneSetup.EnemyUnits; // 현재 전투 적 목록 조회
-
-        for (int index = 0;
-             index < enemyUnits.Count;
-             index++)
-        {
-            BattleUnitRuntime enemyUnit =
-                enemyUnits[index]; // 현재 적 조회
-
-            if (enemyUnit == null ||
-                enemyUnit.EnemySource == null ||
-                scaledEnemies.Contains(enemyUnit))
-            {
-                continue;
-            }
-
-            ApplyHealthScaling(enemyUnit, floor, battleType, zoneLevel); // 현재 적과 소환 적의 실제 최대 체력에 지역 레벨까지 적용
-
-            scaledEnemies.Add(
-                enemyUnit); // 중복 적용 방지 등록
-        }
-    }
-
-    private static void ApplyHealthScaling(
-        BattleUnitRuntime enemyUnit,
-        int floor,
-        BattleType battleType, int zoneLevel) // 원래 적 최대 및 현재 체력에 출정 단계 적용
-    { // 실제 원본 적 체력 배율 적용 시작
-        int scaledMaximumHealth = ExplorationDifficultyCalculator.ScaleHealth(enemyUnit.EnemySource.MaxHealth, floor, battleType, zoneLevel); // 기존 층과 등급에 선택 레벨을 겹친 최대 체력
-
-        int additionalHealth =
-            scaledMaximumHealth -
-            enemyUnit.MaxHealth; // 현재 런타임 대비 추가 체력 계산
-
-        if (additionalHealth <= 0)
-        {
-            return;
-        }
-
-        int appliedMaximumHealth =
-            enemyUnit.ModifyMaxHealth(
-                additionalHealth); // 런타임 최대 체력 증가 적용
-
-        if (appliedMaximumHealth > 0)
-        {
-            enemyUnit.RestoreHealth(
-                appliedMaximumHealth); // 증가한 최대 체력만큼 현재 체력 보충
-        }
-
-        Debug.Log(
-            $"[Exploration][Day43] 적 체력 난이도 적용 - " +
-            $"{enemyUnit.DisplayName} / " +
-            $"{floor}F / {battleType} / " +
-            $"HP {enemyUnit.MaxHealth}"); // 적별 층·등급 체력 적용 결과 출력
-    }
-
-    private void LogDifficultyProfile(
-        int floor,
-        BattleType battleType, int zoneLevel) // 현재 전투의 실제 층과 등급 및 지역 난이도 로그
-    {
-        if (profileLogged)
-        {
-            return;
-        }
-
-        profileLogged = true; // 중복 로그 방지 기록
-
-        Debug.Log(
-            $"[Exploration][Day43] 조우 등급 난이도 적용 - " +
-            $"{floor}F / {battleType} / " +
-            $"Floor HP x{ExplorationDifficultyCalculator.GetHealthMultiplier(floor):0.00} " +
-            $"ATK x{ExplorationDifficultyCalculator.GetAttackMultiplier(floor):0.00} " +
-            $"Reward x{ExplorationDifficultyCalculator.GetRewardMultiplier(floor):0.00} / " +
-            $"Grade HP x{ExplorationDifficultyCalculator.GetEncounterHealthMultiplier(battleType):0.00} " +
-            $"ATK x{ExplorationDifficultyCalculator.GetEncounterAttackMultiplier(battleType):0.00} " +
-            $"Reward x{ExplorationDifficultyCalculator.GetEncounterRewardMultiplier(battleType):0.00} / " +
-            $"Zone Lv{zoneLevel} x{ExplorationDifficultyCalculator.GetZoneLevelStatMultiplier(zoneLevel):0.00} / " + // 현재 출정의 지역 레벨과 적 성장 배율
-            $"Final HP x{ExplorationDifficultyCalculator.GetCombinedHealthMultiplier(floor, battleType) * ExplorationDifficultyCalculator.GetZoneLevelStatMultiplier(zoneLevel):0.00} " + // 실제 적 최대 체력의 최종 증가율
-            $"ATK x{ExplorationDifficultyCalculator.GetCombinedAttackMultiplier(floor, battleType) * ExplorationDifficultyCalculator.GetZoneLevelStatMultiplier(zoneLevel):0.00} " + // 현재 공격 예고 및 실제 피해의 최종 증가율
-            $"Reward x{ExplorationDifficultyCalculator.GetCombinedRewardMultiplier(floor, battleType):0.00}"); // 최종 층·등급 배율 출력
-    }
-}
-
-public static class ExplorationBattleDifficultyBootstrap // 전투 Scene 난이도 적용기 자동 설치
-{
-    private const string BattleSceneName =
-        "40_Battle"; // 전투 Scene 이름
-
-    [RuntimeInitializeOnLoadMethod(
-        RuntimeInitializeLoadType.BeforeSceneLoad)]
-    private static void InitializeRuntime() // Scene 로드 이벤트 초기화
-    {
-        SceneManager.sceneLoaded -=
-            HandleSceneLoaded; // 중복 Scene 이벤트 제거
-
-        SceneManager.sceneLoaded +=
-            HandleSceneLoaded; // Scene 로드 이벤트 등록
-    }
-
-    private static void HandleSceneLoaded(
-        Scene scene,
-        LoadSceneMode loadSceneMode) // Scene 로드 완료 처리
-    {
-        if (scene.name != BattleSceneName)
-        {
-            return;
-        }
-
-        BattleSceneSetup battleSceneSetup =
-            Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 구성 관리자 조회
-
-        if (battleSceneSetup == null)
-        {
-            return;
-        }
-
-        if (battleSceneSetup.GetComponent<ExplorationBattleDifficultyRuntime>() == null)
-        {
-            battleSceneSetup.gameObject.AddComponent<ExplorationBattleDifficultyRuntime>(); // 층 난이도 적용기 자동 추가
-        }
-    }
-}
-

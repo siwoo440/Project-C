@@ -43,12 +43,12 @@ public sealed class WinterfallBossFlowTests // 실제 윈터폴 보스 전투 �
         } // 전투 대기 종료
         BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 실제 전투 관리자 조회
         Assert.IsNotNull(battle); // 실제 전투 관리자 확인
-        yield return null; // 기존 보스 배율 적용 프레임 대기
         BattleUnitRuntime boss = battle.EnemyUnits[0]; // 실제 보스 유닛 조회
         Assert.AreEqual("ENM_WF_ASHSTORM_CORE", boss.EnemySource.EnemyId); // 실제 보스 식별자 확인
-        Assert.AreEqual(875, boss.MaxHealth); // 사용자 확인 보스 체력 배율 확인
-        Assert.AreEqual(875, boss.CurrentHealth); // 보스 체력 증가분 복구 확인
-        Assert.IsFalse(battle.BattleTurn.HasPendingBossPhaseTransition); // 체력 배율 적용으로 페이즈 전환 방지 확인
+        Assert.AreEqual(438, boss.MaxHealth); // 기존 난이도 체력 875의 절반 올림 확인
+        Assert.AreEqual(438, boss.CurrentHealth); // 첫 프레임부터 새 최대 체력으로 시작 확인
+        Assert.AreEqual(51, boss.CurrentMental); // 기존 난이도에서 얻던 시작 정신력 유지 확인
+        Assert.IsFalse(battle.BattleTurn.HasPendingBossPhaseTransition); // 조우 시작 시 페이즈 전환 예약 없음 확인
         Assert.IsFalse(battle.BattleTurn.CanEscape); // 실제 보스전 도주 불가 확인
         Assert.AreEqual(24, battle.EnemyActionRuntime.FindAction(boss).Amount); // 사용자 확인 보스 공격 배율 확인
         battle.BattleDeck.DrawCards(20); // 손패에 실제 공격 카드 확보
@@ -65,12 +65,24 @@ public sealed class WinterfallBossFlowTests // 실제 윈터폴 보스 전투 �
         boss.TakeDamage(boss.CurrentHealth - (boss.MaxHealth / 2 + 1), BattleDamageType.None, battle.AllyUnits[0]); // 전환 경계 바로 위까지 보스 체력 감소
         Assert.IsFalse(battle.BattleTurn.HasPendingBossPhaseTransition); // 경계 이전 전환 방지 확인
         BattleCardActionController controller = (BattleCardActionController)typeof(BattleSceneSetup).GetField("cardActionController", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(battle); // 실제 카드 처리기 조회
-        typeof(BattleCardActionController).GetMethod("ResolveCardImpact", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, new object[] { attack, new[] { boss } }); // 실제 공격 카드 충돌 처리
+        typeof(BattleCardActionController).GetMethod("ResolveCardImpact", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, new object[] { attack, new[] { boss }, false, (0, 0, 0), null }); // 현재 전투의 비용과 반향 인수를 포함한 실제 공격 카드 정산
         Assert.IsTrue(battle.BattleTurn.HasPendingBossPhaseTransition); // 카드 공격의 페이즈 전환 예약 확인
         typeof(BattleCardActionController).GetMethod("HandleActionSequenceCompleted", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null); // 실제 카드 행동 완료 처리
         Assert.AreEqual(2, battle.BattleTurn.CurrentRound); // 적 행동 취소 후 다음 라운드 확인
         Assert.IsTrue(battle.BattleTurn.IsPlayerTurn); // 다음 아군 턴 확인
         Assert.AreEqual(3, battle.EnemyActionRuntime.FindAction(boss).PatternIndex); // 두 번째 페이즈 첫 행동 예고 확인
+        EncounterData ordinary = Resources.Load<EncounterData>("Encounters/Encounter_WF_AshWanderer"); // 실제 일반 소환 적 원본 조우 조회
+        Assert.IsNotNull(ordinary); // 소환할 일반 원본 조우 확인
+        Assert.IsTrue(battle.TrySummonEnemy(ordinary.Enemies[0])); // 보스 조우에 일반 적 소환
+        BattleUnitRuntime summoned = battle.EnemyUnits[1]; // 실제 소환된 적 조회
+        Assert.AreEqual(63, summoned.MaxHealth); // 소환 즉시 기존 조우 체력 125의 절반 올림 확인
+        Assert.AreEqual(63, summoned.CurrentHealth); // 소환 즉시 최대 체력으로 시작 확인
+        Assert.AreEqual(51, summoned.CurrentMental); // 기존 소환 적의 난이도 정신력 보존 확인
+        summoned.TakeDamage(1, BattleDamageType.None); // 소환과 같은 프레임에 체력 피해 적용
+        yield return null; // 모든 난이도와 화면 갱신 시점 통과
+        Assert.AreEqual(63, summoned.MaxHealth); // 다음 프레임에 난이도 중복 적용 없음 확인
+        Assert.AreEqual(62, summoned.CurrentHealth); // 첫 프레임에 받은 실제 피해 유지 확인
+        summoned.TakeDamage(10000, BattleDamageType.None); // 원래 승리 조건 확인을 위해 소환 적 정리
         boss.TakeDamage(10000, BattleDamageType.None, battle.AllyUnits[0]); // 실제 보스 처치
         Assert.AreEqual(BattleResult.Victory, battle.BattleTurn.Result); // 실제 전투 승리 판정 확인
         Assert.IsTrue(BattleResultManager.Instance.HasPendingResult); // 탐사로 전달할 승리 결과 저장 확인

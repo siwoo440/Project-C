@@ -16,7 +16,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
     public const int BreakGlass = 0; // 유리 속 카드 꺼내기
     public const int CrossCarefully = 1; // 조심히 지나가기
     public const int RunBlind = 2; // 눈을 감고 달리기
-    internal static int BreakGlassHealthDamage => BattleResultManager.GetEventTrapHealthDamage(6); // 깨진 유리 함정의 실제 체력 피해
+    internal static int GetBreakGlassHealthDamage(ExplorationRegion region) => BattleResultManager.GetEventTrapHealthDamage(6, region); // 현재 실제 지역의 함정 체력 피해
     private static bool resolving; // 지급 중 재입력 방지
 
     internal static ExplorationEventData Create() // 기획 원문과 선택지 생성
@@ -39,7 +39,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
         return choice; // 선택 정보 반환
     } // 선택 생성 종료
 
-    public static bool TryResolve(string runtimeId, int choice, CharacterData actor, out string summary) // 들판 선택 한 번 확정
+    public static bool TryResolve(string runtimeId, int choice, CharacterData actor, out string summary, ExplorationRegion region = ExplorationRegion.Winterfall) // 들판 선택 한 번 확정
     { // 선택 처리 시작
         summary = string.Empty; // 처리 전 안내 초기화
         var session = ExplorationSessionManager.EnsureInstance(); // 진행 중인 탐사 조회
@@ -59,7 +59,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
                     summary = "생존 파티원에게 카드를 지급할 수 없습니다."; // 다른 선택 안내
                     return false; // 비용과 방 유지
                 } // 카드 미지급 처리 종료
-                allies.ApplyEventChange(actor, BreakGlassHealthDamage, 0); // 유리 파편의 보정된 체력 피해 적용
+                allies.ApplyEventChange(actor, GetBreakGlassHealthDamage(region), 0); // 유리 파편의 보정된 체력 피해 적용
                 allies.TryGetSavedAllyState(actor, out int afterHealth, out _, out _); // 실제 유리 피해 뒤 남은 체력 조회
                 successful = reward.CardId != WinterfallRiskCardReward.CurseCardId; // 실제 희귀 카드 당첨과 저주 실패 결과 구분
                 summary = $"{actor.DisplayName} 체력 {health} → {afterHealth} · [{reward.DisplayName}] 획득"; // 실제 남은 체력과 획득 카드 표시

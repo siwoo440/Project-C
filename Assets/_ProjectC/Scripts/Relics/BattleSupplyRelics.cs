@@ -78,23 +78,27 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
 
     internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null) // 실제 상태 종류와 출처를 포함한 명중 후 약화 굴림
     { // 명중 후 효과 굴림 시작
-        if (type == BattleStatusEffectType.Bleed && source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy) // 실제 아군이 적에게 시도한 확률형 출혈 확인
-        { // 녹슨 포크 장식의 출혈 확률 처리 시작
-            if (target.IsDead || chance <= 0) // 생존 적과 실제 선택 출혈 확률 여부 확인
-            { // 무효 출혈 처리 시작
+        bool alliedAgainstEnemy = source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy; // 실제 아군이 적에게 시도한 원본 효과 확인
+        bool alliedBleed = alliedAgainstEnemy && type == BattleStatusEffectType.Bleed; // 기존 포크의 확률형 출혈 범위
+        int blindBonus = alliedAgainstEnemy && type == BattleStatusEffectType.Blind && chance is > 0 and < 100 // 실제 아군의 비확정 실명에만 검은 모래병 보정 확인
+            ? Find(RelicEffectType.BlackSandBlindChanceBonus)?.EffectValue ?? 0 : 0; // 실제 보유의 다섯 퍼센트포인트 조회
+        if (alliedBleed || blindBonus > 0) // 기존 출혈 처리와 유효한 검은 모래병 실명 보정 확인
+        { // 확률형 약화의 원본 확인 시작
+            if (target.IsDead || chance <= 0) // 생존 적과 실제 선택 약화 확률 여부 확인
+            { // 무효 약화 처리 시작
                 return false; // 무효 상태에 유물 및 난수 사용 제외
-            } // 무효 출혈 처리 종료
-            if (target.HasStatusImmunity) // 정상 상태 부여의 출혈 면역 확인
+            } // 무효 약화 처리 종료
+            if (target.HasStatusImmunity) // 정상 상태 부여의 약화 면역 확인
             { // 원래 면역 결과 처리 시작
                 return true; // 확률을 소비하지 않고 원래 상태 부여에서 면역 결과 반환
             } // 원래 면역 결과 처리 종료
-            int bonus = Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0; // 원본에 더할 현재 포크 장식의 오 퍼센트포인트 조회
+            int bonus = alliedBleed ? Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0 : blindBonus; // 출혈 또는 실명에 해당하는 실제 유물 확률 가산
             chance = (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 기존 확률의 수치와 원본 보정을 합친 정수 범위 확인
-            if (chance == 100) // 기존 확률과 유물 보정으로 완전히 보장된 출혈 확인
-            { // 확정 출혈 처리 시작
+            if (chance == 100) // 기존 확률과 유물 보정으로 완전히 보장된 약화 확인
+            { // 확정 약화 처리 시작
                 return true; // 다른 확률 유물과 무작위 없이 확정 적용 반환
-            } // 확정 출혈 처리 종료
-        } // 녹슨 포크 장식의 출혈 확률 처리 종료
+            } // 확정 약화 처리 종료
+        } // 확률형 약화의 원본 확인 종료
         if (!usedGlassMarble && chance > 0 && chance < 100 && !target.HasStatusImmunity && Find(RelicEffectType.GuaranteeOptionalCardEffect) != null) // 발동 가능한 확률 효과와 전투 최초 유물 확인
         { // 유리 구슬 발동 시작
             usedGlassMarble = true; // 같은 전투의 두 번째 보정 차단
@@ -111,7 +115,7 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         int damage = UnityEngine.Random.Range(0, 100) < chance ? high : card.SourceData.EffectValue; // 높은 피해 또는 기본 피해 결정
         return CardUpgradeProfileCatalog.CalculateEffectValue(card.SourceData, damage, card.UpgradeLevel); // 실제 선택 피해에 카드 강화 반영
     } // 두 피해 굴림 종료
-    internal bool RollAuthoredBlind(BattleUnitRuntime target, int baseChance) // 명시한 아군 카드의 선택적 실명 확률 판정
+    internal bool RollAuthoredBlind(BattleUnitRuntime target, int baseChance, BattleUnitRuntime source = null) // 원본 출처를 포함한 아군 카드의 선택적 실명 확률 판정
     { // 원본 실명 확률 확인 시작
         if (baseChance < 0) // 확률 효과로 명시하지 않은 카드 확인
         { // 기존 처리 유지 시작
@@ -123,6 +127,6 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         } // 원본 보장 효과 종료
         int bonus = Find(RelicEffectType.BlindApplicationChanceBonus)?.EffectValue ?? 0; // 실제 보유한 공허 렌즈의 추가 조건 조회
         int chance = (int)Math.Clamp((long)baseChance + bonus, 0L, 100L); // 명시된 실명 확률에 렌즈의 수치 가산
-        return chance == 100 || chance > 0 && RollOptionalStatus(target, chance); // 전체 성공과 무효 경계에서 난수를 사용하지 않는 기존 선택 판정
+        return chance == 100 || chance > 0 && RollOptionalStatus(target, chance, BattleStatusEffectType.Blind, source); // 공허 렌즈 적용 뒤 같은 실제 실명 확률 경로 공유
     } // 원본 실명 확률 확인 종료
 } // 전투 유물 처리 종료

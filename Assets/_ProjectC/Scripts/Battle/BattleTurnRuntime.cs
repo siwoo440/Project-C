@@ -25,6 +25,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int pendingBlackCutleryDrawRound; // 사용 카드가 손패를 떠난 뒤 지급할 출혈 보상 턴
     private int lastDustClockRound; // 어비스 먼지시계의 마지막 발동 아군 턴
     private int ballroomEvadesThisEnemyTurn; // 이번 적 턴의 실제 아군 회피 수
+    private bool dryWaterskinSettled; // 실제 종료 저장 전 물주머니 회복 처리 여부
+    private bool sandBoneUsed; // 이번 전투에서 출혈 적에게 실제 직접 피해 가산 사용 여부
     private bool firstHostileDebuffReflectAttempted; // 이번 전투의 첫 적 약화 반사 확률 사용 여부
     private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
     private readonly List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)> openingFearedEnemies = new List<(BattleUnitRuntime Enemy, BattleStatusEffectInstance Fear)>(); // 포스터가 새로 공포를 부여한 적과 상태
@@ -60,6 +62,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     internal BattleDeckRuntime Deck => runtimeDeck; // 손패 버림 신호를 발행하는 현재 전투 덱
     public BattleTurnPhase CurrentPhase { get; private set; } = BattleTurnPhase.NotStarted; // 현재 턴 단계
     public BattleType BattleType { get; } // 현재 전투 유형 조회
+    public ExplorationRegion Region { get; } // 시작할 때 확정한 실제 조우 지역
     public BattleResult Result { get; private set; } = BattleResult.None; // 현재 전투 결과 조회
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
     private bool playerCardDecisionPending; // 실제 손패 선택의 중복 사용 잠금
@@ -179,7 +182,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
     public event Action<BattleResult> BattleCompleted; // 전투 종료 처리 완료 이벤트
-    public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType, ExplorationSessionManager exploration = null) // 실제 탐사 조우를 선택 연결하는 턴 관리자 생성
+    public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType, ExplorationSessionManager exploration = null, ExplorationRegion region = ExplorationRegion.Winterfall) // 실제 탐사 조우와 원본 지역을 선택 연결하는 턴 관리자
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
@@ -211,6 +214,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 현재 탐사 조우 연결 종료
         cardsPerPlayerTurn = drawCountPerTurn; // 턴당 드로우 수 저장
         BattleType = battleType; // 전투 유형 저장
+        Region = region; // 실제 원본 전투에서 확정한 지역 저장
         runtimeDeck.CardExcluded += HandleExcludedCard; // 실제 카드 제외 결과 연결
         RegisterUnitEvents(allyUnits); // 아군 사망 이벤트 등록
         RegisterUnitEvents(enemyUnits); // 적 사망 이벤트 등록
@@ -236,9 +240,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyOpeningStethoscopeMark(); // 기존 첫 턴 준비 중 최대 현재 체력 적에게 청진기 표식 적용
         ApplyOpeningServantContract(); // 적 선제보다 먼저 첫 생존 아군의 두 턴 계약 표식 적용
         ApplyOpeningPortraitFear(); // 적 행동 예고보다 먼저 한 번 확률로 생존 적 전체의 공포 부여
+        ApplyOpeningEnemyStatus(RelicEffectType.DesertKingBraceletOpeningWeakness); // 첫 행동 전에 팔찌로 생존 적 한 명의 공격력 약화
         ApplyOpeningHiddenNameWard(); // 실제 첫 적 행동 전에 각 생존 아군의 개별 치명 피해 보호 부여
         ResolveOpeningPulse(); // 현재 실제 생존 아군 한 명과 시작 정신력 비용 확정
         ApplyAbyssLampOpening(); // 첫 진영 시작 전에 등잔의 적 약화와 아군 정신력 비용 정산
+        ApplyFortressOpeningBlock(); // 시작 효과 정리 완료 뒤 적 선제와 첫 예고 전에 성채 방어도 지급
         ApplyNamelessOathOpening(); // 전투에 입장한 생존 아군의 전투용 일반 공격력 부여
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningEnemyAttackReduction); // 금 간 접시 장식이 고른 생존 적에게만 약화 시도
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
@@ -256,6 +262,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyFirstPlayerTurnEnemyStatuses(); // 실제 첫 아군 턴을 위한 검은 왕관과 포스터 약화
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
         DrawPlayerHand(initialHandSize); // 실제 첫 아군 턴의 손패 드로우
+        DrawOpeningCaravanReward(); // 첫 손패 완성 뒤 실제 상점 구매 예약을 남은 자리에 지급
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         NotifyPhaseStarted(); // 첫 플레이어 턴 시작 알림
         PrepareOpeningBookmark(); // 첫 턴 효과와 실제 완성된 손패 이후 개막 후보 확보
@@ -420,6 +427,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
             DrawPlayerHand(drawCount); // 선제 뒤 시작 손패 또는 새 라운드와 예약 손패 지급
+            DrawOpeningCaravanReward(); // 적 선제 뒤에도 실제 첫 아군 손패에서만 적립 보상 지급 확인
             PrepareOpeningBookmark(); // 적 선제가 끝난 실제 첫 아군의 완성 손패 이후 선택 준비
             StateChanged?.Invoke(); // 턴 상태 변경 알림
         } // 전투 지속 처리 종료
@@ -804,6 +812,22 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 포스터 공포 확인 종료
         openingFearedEnemies.Clear(); // 다음 턴으로 넘기지 않을 포스터 대상 참조 정리
     } // 검은 왕관 해제 종료
+    private void ApplyFortressOpeningBlock() // 성채 조우에서만 첫 행동 전에 생존 아군 방어도 지급
+    { // 현재 실제 성채 지역과 유물 확인 시작
+        int block = Region == ExplorationRegion.Fortress ? openingRelics?.FindEffect(RelicEffectType.ManorWickFortressOpeningBlock)?.EffectValue ?? 0 : 0; // 성채 전용 보유 유물의 원본 방어도
+        if (block <= 0) // 성채 유물 또는 적용 가능한 방어도 확인
+        { // 다른 지역이나 미보유 전투의 적용 제외 시작
+            return; // 이전 원래 개막 방어도 유지
+        } // 다른 지역이나 미보유 전투의 적용 제외 종료
+        foreach (var ally in allyUnits) // 실제 조우에서 시작하는 아군 명단 순회
+        { // 개별 생존 아군의 개막 방어도 지급 시작
+            if (ally?.Team == BattleTeam.Ally && !ally.IsDead) // 실제 출전한 생존 아군 확인
+            { // 기존 방어도 갱신 시작
+                ally.GainBlock(block); // 원래 방어 처리와 알림을 따르는 시작 방어도 증가
+            } // 기존 방어도 갱신 종료
+        } // 개별 생존 아군의 개막 방어도 지급 종료
+    } // 현재 실제 성채 지역과 유물 확인 종료
+
     private void ApplyOpeningAllySpeed() // 전투 시작 배지 속도 증가 적용
     { // 배지 발동 시작
         var badge = openingRelics?.FindEffect(RelicEffectType.OpeningAllySpeed); // 보유한 바람개비 배지 조회
@@ -908,6 +932,16 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyOpeningTemporaryThrust(); // 선제 유무와 관계없이 기존 첫 손패 드로우 뒤 임시 찌르기 한 장 확인
         LastDrawnCardCount += TryDrawBlackCutlery(preparingPlayerHand: true); // 첫 손패의 원래 생성 뒤 남은 자리에서 식기함 보상 확인
     } // 턴 손패 처리 종료
+    private void DrawOpeningCaravanReward() // 처음 아군 손패에서 실제 구입으로 받은 카드 지급
+    { // 상단 저울의 적립 드로우 정산 시작
+        if (CurrentRound != 1 || !IsActiveExplorationBattle || explorationRun.PendingCaravanDraws <= 0) // 실제 탐사 조우의 첫 아군 손패와 남은 적립 확인
+        { // 지급할 수 없는 전투 및 턴 시작
+            return; // 비탐사 및 다른 아군 턴의 예약 보존
+        } // 지급할 수 없는 전투 및 턴 종료
+        int drawn = runtimeDeck.DrawRelicCardsIntoHand(explorationRun.PendingCaravanDraws); // 기존 드로우의 손패 상한과 유효 더미를 반영한 실제 도착 장수
+        explorationRun.SpendCaravanDraws(drawn); // 슬롯 부족이나 드로우 실패분을 다음 실제 교전으로 이월
+        LastDrawnCardCount += drawn; // 이번 아군 턴에 실제로 도착한 카드 수에 보상 합산
+    } // 상단 저울의 적립 드로우 정산 종료
     private void PrepareOpeningBookmark() // 첫 실제 아군 손패 뒤 서고 먼지갈피 선택 후보
     { // 처음 손패 개막 선택 확인 시작
         if (CurrentRound != 1 || !IsPlayerTurn || IsBattleEnded || runtimeDeck.HandCount >= runtimeDeck.MaxHandSize) // 전투가 계속되는 첫 정상 아군 턴과 손패 공간 확인
@@ -1434,9 +1468,47 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     internal BattleResultData CaptureBattleResult(IReadOnlyList<string> defeatedEnemyIds) // 전투 종료 회복 반영 결과 생성
     { // 결과 생성 시작
         ApplyCorrosionSutureHealing(); // 저장 이전 침식 회복 적용
+        ApplyDryWaterskinHealing(); // 승리와 도주의 실제 생존 팀 회복을 결과 저장 전에 적용
         SettleNamelessOath(); // 종료 회복 뒤 현재 손실 체력 기준의 서약 비용 저장
         return new BattleResultData(Result, BattleType, CurrentRound, allyUnits, defeatedEnemyIds); // 회복 반영 전투 결과
     } // 결과 생성 끝
+
+    private void ApplyDryWaterskinHealing() // 정상 종료의 생존 아군에게 한 번 적용할 물주머니 회복
+    { // 현재 전투 결과와 유물 확인 시작
+        if (dryWaterskinSettled || Result is not (BattleResult.Victory or BattleResult.Escape)) // 실제 승리나 도주가 아닌 결과와 반복 저장 제외
+        { // 지급하지 않을 결과 처리 시작
+            return; // 패배와 미종료 및 이미 저장한 결과에서는 회복 없음
+        } // 지급하지 않을 결과 처리 종료
+        dryWaterskinSettled = true; // 회복 사건과 저장 재시도 앞서 중복 발동 방지
+        int healing = openingRelics?.FindEffect(RelicEffectType.DryWaterskinBattleEndHealing)?.EffectValue ?? 0; // 실제 보유한 물주머니의 기본 회복량
+        if (healing <= 0) // 보유하지 않았거나 유효한 원본 수치가 없는 경우
+        { // 미보유 회복 제외 시작
+            return; // 아군의 현재 체력 유지
+        } // 미보유 회복 제외 종료
+        foreach (var ally in allyUnits) // 현재 전투에 참가했던 각 아군 확인
+        { // 생존 아군의 기존 회복 처리 시작
+            if (ally is { IsDead: false }) // 실제 생존 동료만 회복
+            { // 일반 체력 회복 시작
+                ally.RestoreHealth(healing); // 원래 최대 체력과 회복 효과가 반영되는 실제 치유
+            } // 일반 체력 회복 종료
+        } // 생존 아군의 기존 회복 처리 종료
+    } // 현재 전투 결과와 유물 확인 종료
+
+    internal int GetSandBoneDamageBonus(BattleUnitRuntime source, BattleUnitRuntime target) // 순수 예고와 실제 카드 타격이 공유하는 첫 활성 출혈 가산
+    { // 현재 전투의 한 번 제한과 양 진영 조건 확인 시작
+        if (disposed || IsBattleEnded || HasPendingBossPhaseTransition || CurrentRound <= 0 || sandBoneUsed || // 진행 중 실제 전투의 아직 남은 첫 가산 확인
+            source is not { Team: BattleTeam.Ally, IsDead: false } || !registeredUnits.Contains(source) || // 같은 전투에 등록된 생존 아군의 직접 타격 확인
+            target is not { Team: BattleTeam.Enemy, IsDead: false } || !registeredUnits.Contains(target) || target.GetStatusEffect(BattleStatusEffectType.Bleed) is not { IsExpired: false }) // 실제 생존 적과 타격 직전의 활성 출혈 조건
+        { // 가산 조건에 맞지 않는 타격 처리 시작
+            return 0; // 이미 사용하거나 활성 출혈이 없는 경우 가산 없음
+        } // 가산 조건에 맞지 않는 타격 처리 종료
+        return openingRelics?.FindEffect(RelicEffectType.SandBoneFirstBleedingEnemyDamage)?.EffectValue ?? 0; // 이번 전투에 보유한 원본 방어 전 피해 두 점
+    } // 현재 전투의 한 번 제한과 양 진영 조건 확인 종료
+
+    internal void ConsumeSandBoneDamage() // 실제 체력 또는 방어도 피해가 확정한 첫 가산 소모
+    { // 전투당 첫 유효 가산 기록 시작
+        sandBoneUsed = true; // 다음 직접 명중과 예고에서 같은 가산 재사용 방지
+    } // 전투당 첫 유효 가산 기록 종료
 
     private void ApplyCorrosionSutureHealing() // 균열 봉합실 전투 종료 회복
     { // 유물 회복 처리 시작
@@ -1671,12 +1743,13 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 아군 전투 유물 연결 종료
         else // 기존 적 처치 처리 유지
         { // 적 사망 판정 연결 시작
+            runtimeUnit.SandBoneBattle = this; // 현재 전투의 적 직접 피해 예고와 실제 가산 연결
             runtimeUnit.Died += HandleUnitDied; // 기존 적 사망과 승리 판정 연결
         } // 적 사망 판정 연결 종료
         if (runtimeUnit.Team == BattleTeam.Ally) // 공용 유물의 보호를 받을 아군 확인
         { // 공용 보호 연결 시작
             runtimeUnit.PreventIncomingMentalLoss = TryNullifyFirstMentalDamage; // 현재 전투의 공용 보호 연결
-            runtimeUnit.GetHostileBlindResistance = GetOpeningBlindResistance; // 현재 전투의 첫 적 턴 실명 저항 조회 연결
+            runtimeUnit.GetHostileBlindResistance = GetCombinedHostileBlindResistance; // 현재 실제 조우 및 첫 적 턴의 실명 저항 연결
         } // 공용 보호 연결 종료
         registeredUnits.Add(runtimeUnit); // 등록 유닛 목록 추가
         return true; // 이벤트 등록 성공 반환
@@ -1687,6 +1760,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 미등록 처리 시작
             return false; // 이벤트 해제 실패 반환
         } // 미등록 처리 종료
+        if (runtimeUnit.SandBoneBattle == this) // 현재 해제하는 전투의 연결만 초기화
+        { // 적의 직접 가산 연결 해제 시작
+            runtimeUnit.SandBoneBattle = null; // 이탈과 전투 해제 후 이전 전투 가산 차단
+        } // 적의 직접 가산 연결 해제 종료
         runtimeUnit.Died -= HandleUnitDied; // 사망 이벤트 해제
         runtimeUnit.AllyDefeatReady -= HandleUnitDied; // 전투를 떠난 아군의 부활 정산 구독 해제
         runtimeUnit.EnemyAttackEvaded -= HandleEnemyAttackEvaded; // 전투를 떠난 아군의 적 공격 회피 구독 해제
@@ -1699,19 +1776,24 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 공용 보호 연결 해제 시작
             runtimeUnit.PreventIncomingMentalLoss = null; // 전투를 떠난 아군의 공용 보호 해제
         } // 공용 보호 연결 해제 종료
-        if (runtimeUnit.GetHostileBlindResistance == (Func<int>)GetOpeningBlindResistance) // 이 전투에서 연결한 개막 효과인지 확인
+        if (runtimeUnit.GetHostileBlindResistance == (Func<int>)GetCombinedHostileBlindResistance) // 이 전투에서 연결한 개막 효과인지 확인
         { // 동일 전투의 개막 효과 해제 시작
             runtimeUnit.GetHostileBlindResistance = null; // 전투를 떠난 아군의 첫 적 턴 저항 조회 해제
             runtimeUnit.NamelessOathAttackPower = 0; // 실제 전투 씬에서만 쓴 서약의 공격력 회수
         } // 동일 전투의 개막 효과 해제 종료
         return true; // 이벤트 해제 성공 반환
     } // 개별 사망 이벤트 해제 종료
-    private int GetOpeningBlindResistance() // 먼지 먹은 손수건의 첫 실제 적 턴 실명 저항
-    { // 적 턴 저항 가능 여부 검사 시작
-        return !disposed && !IsBattleEnded && !firstEnemyTurnFinished && CurrentPhase == BattleTurnPhase.EnemyTurn // 적 선제 포함 실제 첫 적의 턴이 계속되는지 확인
-            ? openingRelics?.FindEffect(RelicEffectType.FirstTurnBlindResistance)?.EffectValue ?? 0 // 현재 보유한 첫 턴 실명 저항 수치
-            : 0; // 첫 적 턴 외에는 원래 실명 확률 유지
-    } // 적 턴 저항 가능 여부 검사 종료
+    private int GetCombinedHostileBlindResistance() // 첫 적 턴 및 실제 사막 조우의 적 실명 저항 합계
+    { // 실제 전투 중에만 적용되는 두 저항 계산 시작
+        if (disposed || IsBattleEnded || CurrentRound <= 0) // 현재 실제 조우의 진행 상태 확인
+        { // 조우 전후의 기존 계산 보존 시작
+            return 0; // 활성 전투가 없을 때 실명 저항 추가 없음
+        } // 조우 전후의 기존 계산 보존 종료
+        int handkerchief = !firstEnemyTurnFinished && CurrentPhase == BattleTurnPhase.EnemyTurn // 선제 포함 첫 실제 적 턴만 적용할 기존 저항
+            ? openingRelics?.FindEffect(RelicEffectType.FirstTurnBlindResistance)?.EffectValue ?? 0 : 0; // 보유 손수건의 첫 적 턴 보정
+        int bracelet = Region == ExplorationRegion.Desert ? openingRelics?.FindEffect(RelicEffectType.DesertGlassBraceletBlindResistance)?.EffectValue ?? 0 : 0; // 사막의 적 실명에만 추가하는 팔찌 저항
+        return (int)Math.Min(100, (long)handkerchief + bracelet); // 기존 확률 범위 안에서 두 실명 저항 퍼센트포인트 계산
+    } // 실제 전투 중에만 적용되는 두 저항 계산 종료
     private bool TryNullifyFirstMentalDamage(BattleMentalChangeReason reason) // 검은 심연판의 실제 첫 정신 피해 판정
     { // 공용 보호 판정 시작
         if (disposed || IsBattleEnded || firstMentalDamageNullified || reason is not (BattleMentalChangeReason.ReceiveDamage or BattleMentalChangeReason.HeavyDamage or BattleMentalChangeReason.DisruptReceived)) // 전투 유효성, 남은 보호 및 실제 피격·교란 원인 확인

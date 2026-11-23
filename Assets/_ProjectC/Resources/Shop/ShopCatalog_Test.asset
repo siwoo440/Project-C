@@ -3413,4 +3413,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: f4ac41ce7c8d50e9942b930f4486356e, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_SLEEPLESS_MANOR_WICK
+    offerType: 1
+    price: 296
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 9fa4d4f71454537caf48295b78eee094, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DESERT_GLASS_SHARD_BRACELET
+    offerType: 1
+    price: 317
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 6afa4e5cdddd5041b4e12d8fd7161c56, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DRY_WATERSKIN_STRAP
+    offerType: 1
+    price: 330
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 83feaf3fca4c5665937490b044e74c62, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SAND_STAINED_BONE_FRAGMENT
+    offerType: 1
+    price: 351
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 2a89442b166b55258f435d2a3ab17102, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WEATHERED_FOOTPRINT_STONE
+    offerType: 1
+    price: 214
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 6211f2f3b1bd5ac4b58f1416c2e065d4, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_SAND_VIAL
+    offerType: 1
+    price: 235
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1af16aea41265489933e1d23c39589f6, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_CARAVAN_OLD_SCALES
+    offerType: 1
+    price: 269
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 858bac5a174c56839dc3c006977c9eec, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DESERT_KING_BROKEN_BRACELET
+    offerType: 1
+    price: 282
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: dd9df7fb35a25f0289677462b84463c7, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

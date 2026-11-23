@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: DryWaterskinStrap
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_DRY_WATERSKIN_STRAP
+  displayName: 마른 물주머니 끈
+  description: "전투에서 승리하거나 도주를 완료하면 생존 아군 전원이 체력을 2 회복한다."
+  icon: {fileID: 21300000, guid: 03a8fa52c69c5fc89532333cc8a02b32, type: 3}
+  rarity: 0
+  triggerType: 11
+  effectType: 187
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 2
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

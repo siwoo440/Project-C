@@ -194,7 +194,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = // 재폭풍의 눈 선택별 비용과 보상
                 { // 효과 표시 목록 시작
                     "정신력 -8 · 희귀 카드 1장", // 응시 비용과 보상
-                    $"체력 -{AshstormEyeEvent.ShatterHealthDamage} · 철판 +1 · 나사 +1", // 파편 피해와 기존 재료 보상
+                    $"체력 -{AshstormEyeEvent.GetShatterHealthDamage(currentEventData.Region)} · 철판 +1 · 나사 +1", // 파편 피해와 기존 재료 보상
                     "정신력 +1" // 시선 회피 보상
                 }; // 효과 표시 목록 종료
                 label += "   " + effects[index]; // 선택지 옆에 효과 표시
@@ -218,7 +218,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             { // 들판 선택 안내 시작
                 string[] effects = // 유리화된 들판 선택별 비용과 보상
                 { // 효과 표시 목록 시작
-                    $"체력 -{GlassFieldEvent.BreakGlassHealthDamage} · 희귀 또는 저주 각 50%", // 유리 파편 피해와 카드 확률
+                    $"체력 -{GlassFieldEvent.GetBreakGlassHealthDamage(currentEventData.Region)} · 희귀 또는 저주 각 50%", // 유리 파편 피해와 카드 확률
                     "아군 회피 +10%p · 2턴", // 안전 통과의 다음 전투 회피
                     "아군 명중 -15%p · 1턴" // 달리기의 다음 전투 명중 감소
                 }; // 효과 표시 목록 종료
@@ -280,8 +280,10 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         } // 방랑자 선택 종료
         if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 원문 선택 확인
         { // 들판 선택 시작
-            string hint = choiceIndex == GlassFieldEvent.BreakGlass ? $"유리 파편으로 체력 피해를 {GlassFieldEvent.BreakGlassHealthDamage} 받고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 파편의 실제 피해 안내
-            SelectActorEventChoice(choiceIndex, hint, GlassFieldEvent.TryResolve); // 대상 또는 다음 전투 효과 확정
+            string hint = choiceIndex == GlassFieldEvent.BreakGlass ? $"유리 파편으로 체력 피해를 {GlassFieldEvent.GetBreakGlassHealthDamage(currentEventData.Region)} 받고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 파편의 실제 피해 안내
+            var region = currentEventData.Region; // 현재 선택 창을 연 실제 이벤트 원본 지역 보관
+            SelectActorEventChoice(choiceIndex, hint, (string runtimeId, int selected, CharacterData actor, out string summary) => // 실제 확인한 행동자와 이벤트 선택 연결
+                GlassFieldEvent.TryResolve(runtimeId, selected, actor, out summary, region)); // 표시된 원본 지역을 실제 함정 피해에 전달
             return; // 일반 자원 선택 처리 제외
         } // 들판 선택 종료
         if (currentEventData.EventId == BurntScarecrowEvent.Id) // 타버린 허수아비 원본 확인
@@ -373,7 +375,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, "정신력 8을 잃고 눈을 들여다볼 생존자를 선택하세요.", "선택 취소", allies.IsLivingPartyMember, allies.IsLivingPartyMember, actor => SelectAshstormOwner(runtimeId, actor)); // 응시자 선택 후 소유자 화면으로 이동
             return; // 카드 소유자 확정 전 결과 보류
         } // 응시자 선택 종료
-        string hint = choice == AshstormEyeEvent.Shatter ? $"돌을 던져 파편으로 체력 피해를 {AshstormEyeEvent.ShatterHealthDamage} 받을 생존자를 선택하세요." : "시선을 피하고 정신력 1을 회복할 생존자를 선택하세요."; // 눈 파편의 실제 피해 안내
+        string hint = choice == AshstormEyeEvent.Shatter ? $"돌을 던져 파편으로 체력 피해를 {AshstormEyeEvent.GetShatterHealthDamage(currentEventData.Region)} 받을 생존자를 선택하세요." : "시선을 피하고 정신력 1을 회복할 생존자를 선택하세요."; // 눈 파편의 실제 피해 안내
         ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, hint, "선택 취소", allies.IsLivingPartyMember, actor => CommitAshstormChoice(runtimeId, choice, actor, null)); // 생존자 선택 후 비용과 결과 반영
     } // 행동자 선택 종료
 
@@ -392,7 +394,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
     private bool CommitAshstormChoice(string runtimeId, int choice, CharacterData actor, CharacterData owner) // 최종 대상 확정 후 결과 표시
     { // 결과 확정 시작
-        if (choiceCommitted || currentRuntimeEventId != runtimeId || currentEventData == null || !AshstormEyeEvent.TryResolve(runtimeId, choice, actor, owner, out string summary)) // 현재 방의 미처리 선택 성공 확인
+        if (choiceCommitted || currentRuntimeEventId != runtimeId || currentEventData == null || !AshstormEyeEvent.TryResolve(runtimeId, choice, actor, owner, out string summary, currentEventData.Region)) // 현재 방의 미처리 선택 성공 확인
         { // 지급 실패 처리 시작
             return false; // 선택 취소 또는 재시도 허용
         } // 지급 실패 처리 종료

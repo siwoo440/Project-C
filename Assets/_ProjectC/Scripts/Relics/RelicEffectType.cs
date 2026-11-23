@@ -185,4 +185,12 @@ public enum RelicEffectType // 유물 효과 종류
     ChandelierThirdTurnPulse, // 매 세 번째 아군 턴 피해와 아군 명중률 약화
     HiddenNamePartyDefeatWard, // 생존 아군별 첫 치명 피해에서 체력 일 생존
     BallroomLastBeatSecondEvade, // 현재 적 턴의 두 번째 실제 회피 뒤 광역 피해
+    ManorWickFortressOpeningBlock, // 실제 성채 조우 개막과 생존 아군 방어도
+    DesertGlassBraceletBlindResistance, // 사막 조우의 적이 거는 실명에 저항
+    DryWaterskinBattleEndHealing, // 승리 또는 도주를 실제로 마친 생존 아군 체력 회복
+    SandBoneFirstBleedingEnemyDamage, // 출혈 적에 대한 전투 최초 유효 직접 타격 증가
+    WeatheredFootprintDesertEventProtection, // 사막 이벤트 선택지의 실제 체력 손실 감소
+    BlackSandBlindChanceBonus, // 아군이 확률로 거는 적 실명 부여 확률 증가
+    CaravanScalesShopRelicDraw, // 상점의 실제 유물 획득에 탐사 드로우 보상 예약
+    DesertKingBraceletOpeningWeakness, // 첫 조우에 무작위 적의 공격력 감소
 }

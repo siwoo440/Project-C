@@ -2249,7 +2249,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 지팡이 상태 판정 종료
     private bool TryRollAuthoredBlind(CardInstance card, BattleUnitRuntime target, int value) // 명시된 실명과 유효한 현재 대상의 선택 확률 확인
     { // 카드 실명 확률 검사 시작
-        return value > 0 && !target.IsDead && card.SourceData.OptionalBlindChancePercent >= 0 && supplyRelics.RollAuthoredBlind(target, card.SourceData.OptionalBlindChancePercent); // 유효한 양의 명시 효과에만 실제 실명 판정
+        return value > 0 && !target.IsDead && card.SourceData.OptionalBlindChancePercent >= 0 && supplyRelics.RollAuthoredBlind(target, card.SourceData.OptionalBlindChancePercent, card.OwnerUnit); // 명시 실명과 실제 아군 출처의 기존 선택 확률 판정
     } // 카드 실명 확률 검사 종료
     private void ApplyCrystalMarkDefenseLoss(CardInstance card, BattleUnitRuntime target, BattleStatusEffectType type, BattleStatusEffectApplyResult result) // 카드 표식 성공으로 실제 적 방어도 약화 처리
     { // 결정눈 표식의 성공 여부 검사 시작
