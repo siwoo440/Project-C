@@ -180,7 +180,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 취소 처리 시작
             CancelSelection(); // 체력 부족 카드 선택 해제
         } // 선택 취소 처리 종료
-        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash || selectedCard?.SourceData.SwordRule == SwordCardRule.BloodTrail) // 조건부 카드의 체력과 출혈 변화 확인
+        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash || selectedCard?.SourceData.SwordRule == SwordCardRule.BloodTrail || selectedCard?.SourceData.SwordRule == SwordCardRule.JudgmentSlash) // 조건부 카드의 체력과 출혈 및 강화 변화 확인
         { // 대상 범위 갱신 시작
             UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
         } // 대상 범위 갱신 종료
@@ -296,6 +296,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.KingsSlash && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition && !cardInstance.OwnerUnit.IsDead) // 전체 공격이 끝난 뒤 추가 타격 가능 여부 확인
+        { // 왕의 후속 타격 시작
+            totalAppliedAmount += ApplyKingsSecondHit(cardInstance); // 살아 있는 적 중 현재 최대 체력이 가장 높은 적 재선택
+        } // 왕의 후속 타격 종료
         starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
         bool discarded = ApplyFollowUpAndDiscard(cardInstance, targetUnits); // 후속 효과 한 번 처리 후 사용 카드 이동
         if (!discarded) // 카드 이동 결과 확인
@@ -317,6 +321,31 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             var result = card.OwnerUnit.ApplyStatusEffect(BattleStatusEffectType.Evasion, value, card.StatusDuration, 1, card.OwnerUnit); // 공격 명중과 무관하게 한 적 턴 회피율 증가
             FindUnitView(card.OwnerUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.Evasion, result); // 실제 회피 상승 표시
         } // 자기 회피 처리 종료
+        if (card.SourceData.SwordRule == SwordCardRule.RageRelease || card.SourceData.SwordRule == SwordCardRule.BattlefieldResolve) // 이번 턴부터 세는 아군 공격력 강화 확인
+        { // 아군별 보조 효과 시작
+            foreach (var target in targets) // 실제 카드를 받은 생존 대상 순회
+            { // 개별 아군 후속 처리 시작
+                if (target.IsDead) // 카드 정산 사이 전투불능 확인
+                { // 사망 대상 제외 시작
+                    continue; // 다음 생존 아군 확인
+                } // 사망 대상 제외 종료
+                target.GetStatusEffect(BattleStatusEffectType.AttackPowerUp)?.ConsumeDurationDecreaseSkip(); // 시전한 아군 턴부터 강화 기간 계산
+                if (card.SourceData.SwordRule == SwordCardRule.RageRelease) // 분노 해방의 자기 물리 방어 약화 확인
+                { // 방어 약화 시작
+                    var result = target.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseDown, value, card.StatusDuration, 1, card.OwnerUnit); // 같은 두 턴 동안 기존 물리 방어 감소 부여
+                    if (result == BattleStatusEffectApplyResult.Applied || result == BattleStatusEffectApplyResult.Stacked) // 실제 약화가 부여된 대상 확인
+                    { // 약화 기간 계산 시작
+                        target.GetStatusEffect(BattleStatusEffectType.PhysicalDefenseDown).ConsumeDurationDecreaseSkip(); // 시전 턴을 첫 번째 약화 턴으로 계산
+                    } // 약화 기간 계산 종료
+                    FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseDown, result); // 약화 적용 또는 면역 표시
+                } // 방어 약화 종료
+                else // 전장의 결의 방어 지급
+                { // 두 시점 방어 지급 시작
+                    target.GainBlock(value); // 카드 사용 직후 동일 대상 방어도 획득
+                    target.ApplyStatusEffect(BattleStatusEffectType.BattlefieldResolve, value, 1, int.MaxValue, card.OwnerUnit); // 사용 횟수만큼 다음 아군 턴 방어도 예약
+                } // 두 시점 방어 지급 종료
+            } // 개별 아군 후속 처리 종료
+        } // 아군별 보조 효과 종료
         switch (card.SourceData.FollowUpEffect) // 카드별 추가 대상과 효과 선택
         { // 효과 구분 시작
             case CardFollowUpEffect.GainOwnerBlock: // 공격한 소유자에게 방어도 지급
@@ -499,10 +528,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
-        if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodTrail && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) == null) // 대상의 현재 출혈 여부 확인
+        if ((cardInstance.SourceData.SwordRule == SwordCardRule.BloodTrail || cardInstance.SourceData.SwordRule == SwordCardRule.BloodBackflow) && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) == null) // 대상의 현재 출혈 여부 확인
         { // 추적 대상 제한 시작
             return false; // 출혈 없는 적의 선택 차단
         } // 추적 대상 제한 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.JudgmentSlash && targetUnit.FirstRemovableBuff() == null) // 단죄로 제거할 일반 강화 확인
+        { // 단죄 대상 제외 시작
+            return false; // 제거할 강화 없는 대상 입력 차단
+        } // 단죄 대상 제외 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher && !SwordCardCombat.IsFinisherTarget(targetUnit)) // 선택한 적의 현재 체력 재검사
         { // 처형 대상 제한 시작
             return false; // 체력 오분의 일을 넘는 적 선택 차단
@@ -831,7 +864,32 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 정리 종료
         return damage; // 실제 체력 피해 합계 반환
     } // 무작위 연타 종료
-    private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 공격 한 타격 적용
+    private int ApplyKingsSecondHit(CardInstance card) // 전체 타격 뒤 최대 체력 기준으로 추가 대상 결정
+    { // 추가 공격 시작
+        BattleUnitRuntime strongest = null; // 현재 가장 높은 최대 체력의 생존 적
+        foreach (var enemy in enemyActions.EnemyUnits) // 실제 전투 배치 앞에서 뒤로 순회
+        { // 적별 최대 체력 비교 시작
+            if (enemy != null && !enemy.IsDead && (strongest == null || enemy.MaxHealth > strongest.MaxHealth)) // 사망 제외 및 동률이면 먼저 나온 적 유지
+            { // 추가 대상 갱신 시작
+                strongest = enemy; // 더 높은 최대 체력의 생존 적 보관
+            } // 추가 대상 갱신 종료
+        } // 적별 최대 체력 비교 종료
+        if (strongest == null) // 전체 공격으로 전멸 확인
+        { // 추가 타격 없음 시작
+            return 0; // 타격 대상 없는 경우 종료
+        } // 추가 타격 없음 종료
+        BattleCardDamageContext.Begin(card, new[] { strongest }); // 다시 고른 적의 약점 문맥 준비
+        try // 후속 타격 뒤 문맥 정리 보장
+        { // 독립 후속 타격 시작
+            return ApplyDamageHit(card, strongest, card.SourceData.SecondaryEffectValue); // 명중과 방어 및 약점을 적용한 추가 물리 타격
+        } // 독립 후속 타격 종료
+        finally // 추가 공격 정리
+        { // 약점 문맥 정리 시작
+            BattleCardDamageContext.Clear(); // 다음 카드로 넘어가는 약점 문맥 해제
+        } // 약점 문맥 정리 종료
+    } // 추가 공격 종료
+
+    private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit, int? additionalBase = null) // 카드 공격 한 타격 적용
     { // 타격 판정 시작
         if (!BattleHitChance.Roll(cardInstance.OwnerUnit, targetUnit)) // 실명 상태의 공격 명중 확인
         { // 카드 공격 빗나감 처리 시작
@@ -843,7 +901,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
-        int baseDamage = (int)Math.Min(int.MaxValue, (long)SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit) + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
+        long printedDamage = additionalBase.HasValue ? (long)additionalBase.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 기본 또는 왕의 추가 타격 수치 조회
+        int baseDamage = (int)Math.Min(int.MaxValue, printedDamage + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
@@ -857,7 +916,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 치명타 표시 종료
         modifiedDamage = ApplyDirectHitRelics(cardInstance, targetUnit, modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
         int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
+        int healthBefore = targetUnit.CurrentHealth; // 카드 타격 직전 대상 체력 보관
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.ExecutionerSword && healthBefore > 0 && damageResult.AppliedDamage == healthBefore && targetUnit.IsDead) // 이 카드의 직접 체력 피해로 적 처치 확인
+        { // 처치 환급 시작
+            sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 공용 행동력 최대치 안에서 환급
+        } // 처치 환급 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.JudgmentSlash && !targetUnit.IsDead) // 명중 후 생존 대상의 강화 하나 해제
+        { // 단죄 강화 해제 시작
+            var buff = targetUnit.FirstRemovableBuff(); // 타격 직후 가장 먼저 부여된 일반 강화 조회
+            if (buff != null && targetUnit.RemoveStatusEffect(buff.EffectType)) // 보호 정신 상태를 제외한 실제 해제 확인
+            { // 해제 피드백 시작
+                FindUnitView(targetUnit)?.ShowStatusFeedback(buff.DisplayName + " 해제", false); // 해제된 강화 이름 표시
+            } // 해제 피드백 종료
+        } // 단죄 강화 해제 종료
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
         { // 돌진 후속 효과 시작
             targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 피격 대상의 다음 턴 물리 방어 약화 예약

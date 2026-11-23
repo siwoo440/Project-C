@@ -24,7 +24,8 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 상태 이�
             string categoryLabel = statusEffect.IsDebuff ? "디버프" : "버프"; // 상태 분류 문구 선택
             detailBuilder.AppendLine($"<color={colorCode}>[{statusEffect.IconLabel}] {statusEffect.DisplayName} · {categoryLabel}</color>"); // 상태 이름과 분류 추가
             string duration = statusEffect.WaitsForAction ? "1회" : $"{statusEffect.RemainingTurns}T"; // 행동 소비 횟수와 남은 턴 구분
-            detailBuilder.AppendLine($"{statusEffect.Description} · {statusEffect.StackCount}/{statusEffect.MaximumStacks}중첩 · {duration}"); // 실제 소모 조건과 함께 상태 효과 표시
+            string stacks = statusEffect.MaximumStacks == int.MaxValue ? $"{statusEffect.StackCount}중첩" : $"{statusEffect.StackCount}/{statusEffect.MaximumStacks}중첩"; // 제한 없는 상태와 일반 중첩 표시
+            detailBuilder.AppendLine($"{statusEffect.Description} · {stacks} · {duration}"); // 실제 소모 조건과 함께 상태 효과 표시
         } // 개별 상태 상세 생성 종료
         detailText.text = detailBuilder.ToString().TrimEnd(); // 상태 상세 텍스트 적용
         tooltipRoot.SetActive(true); // 툴팁 표시

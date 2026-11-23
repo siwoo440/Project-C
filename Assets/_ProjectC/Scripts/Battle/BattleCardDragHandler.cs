@@ -294,10 +294,14 @@ public sealed class BattleCardDragHandler :
             return false;
         }
 
-        if (card.SourceData.SwordRule == SwordCardRule.BloodTrail) // 출혈 적에게만 쓸 수 있는 검 확인
+        if (card.SourceData.SwordRule == SwordCardRule.BloodTrail || card.SourceData.SwordRule == SwordCardRule.BloodBackflow) // 출혈 대상을 요구하는 검 확인
         { // 추적 드롭 검사 시작
             return targetUnit.Team == BattleTeam.Enemy && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) != null; // 실제 출혈이 남은 적의 위치만 허용
         } // 추적 드롭 검사 종료
+        if (card.SourceData.SwordRule == SwordCardRule.JudgmentSlash) // 강화 상태 적을 고르는 단죄 확인
+        { // 단죄 드롭 검사 시작
+            return targetUnit.Team == BattleTeam.Enemy && targetUnit.FirstRemovableBuff() != null; // 제거할 일반 강화가 있는 적의 위치만 허용
+        } // 단죄 드롭 검사 종료
         if (card.SourceData.SwordRule == SwordCardRule.Finisher) // 현재 체력이 낮은 적에게만 쓰는 카드 확인
         { // 처형 드롭 검사 시작
             return SwordCardCombat.IsFinisherTarget(targetUnit); // 클릭 입력과 같은 오분의 일 이하 경계 적용

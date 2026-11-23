@@ -40,7 +40,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회
 
     public int EffectValue =>
-        StatusEffectType == BattleStatusEffectType.BloodOath || StatusEffectType == BattleStatusEffectType.FinishingStance || StatusEffectType == BattleStatusEffectType.BladeMaintenance || StatusEffectType == BattleStatusEffectType.PhysicalRiposte // 원문 고정 보너스와 효과 비율 확인
+        StatusEffectType == BattleStatusEffectType.BladeFrenzy || StatusEffectType == BattleStatusEffectType.BloodOath || StatusEffectType == BattleStatusEffectType.FinishingStance || StatusEffectType == BattleStatusEffectType.BladeMaintenance || StatusEffectType == BattleStatusEffectType.PhysicalRiposte // 원문 고정 보너스와 효과 비율 확인
             ? SourceData.EffectValue // 고정된 준비 수치와 반격 비율 유지
             : CardUpgradeProfileCatalog.CalculateEffectValue(SourceData, SourceData.EffectValue, UpgradeLevel); // 일반 카드의 강화 효과 수치
 

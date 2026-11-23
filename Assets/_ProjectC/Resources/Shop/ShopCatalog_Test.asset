@@ -536,6 +536,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RAGE_RELEASE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: dfdccdc108a25ee0b9e46b633c1261f4, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_EXECUTIONER_SWORD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5dd82527b0835082a23b23fb2a4b9d2e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_RIFT_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 17fffb2d6b825429961c88cec144f7b0, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BATTLEFIELD_RESOLVE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 0852fad43415578fa8697c40088ba630, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLOOD_BACKFLOW
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ff1997b39be95b82af19b1236cddb950, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLADE_FRENZY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: d953719ac6bc5c05b569957de3472555, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_JUDGMENT_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 26448597e4d45385a15d5811028122ab, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_KINGS_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 74c38a3a02fa5ee68a9cce7365900801, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_THRUST
     offerType: 0
     price: 0

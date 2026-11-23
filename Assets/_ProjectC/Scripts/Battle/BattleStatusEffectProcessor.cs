@@ -41,6 +41,11 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 appliedAmount = runtimeUnit.RestoreHealth(statusEffect.EffectiveValue); // 실제 재생 회복 저장
                 wasTriggered = true; // 재생 발동 저장
             } // 재생 처리 종료
+            else if (statusEffect.EffectType == BattleStatusEffectType.BattlefieldResolve) // 다음 아군 턴의 예약 방어 확인
+            { // 예약 방어 지급 시작
+                appliedAmount = runtimeUnit.GainBlock(statusEffect.EffectiveValue); // 기본 방어도 초기화 뒤 예약 방어도 지급
+                wasTriggered = true; // 이번 시작 한 번의 지급 기록
+            } // 예약 방어 지급 종료
             else if (statusEffect.EffectType != BattleStatusEffectType.ChariotMark && statusEffect.EffectType != BattleStatusEffectType.PhysicalRiposte) // 턴 시작에 처리할 효과 확인
             { // 턴 종료 지속 상태 처리 시작
                 continue; // 일반 상태의 지속 턴은 턴 종료에 처리
@@ -50,7 +55,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 processResults.Add(new BattleStatusEffectProcessResult(statusEffect.EffectType, round, previousValue, appliedAmount, previousRemainingTurns, previousRemainingTurns, statusEffect.StackCount, wasTriggered, BattleStatusEffectRemovalReason.UnitDied)); // 피해 이전 수치의 사망 결과 기록
                 break; // 사망 이후 상태 처리 중단
             } // 사망 결과 처리 종료
-            if (statusEffect.EffectType == BattleStatusEffectType.StarReservedHealing || statusEffect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || statusEffect.EffectType == BattleStatusEffectType.ChariotMark || statusEffect.EffectType == BattleStatusEffectType.PhysicalRiposte) // 다음 시작에 소모하는 전용 상태 확인
+            if (statusEffect.EffectType == BattleStatusEffectType.StarReservedHealing || statusEffect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || statusEffect.EffectType == BattleStatusEffectType.ChariotMark || statusEffect.EffectType == BattleStatusEffectType.PhysicalRiposte || statusEffect.EffectType == BattleStatusEffectType.BattlefieldResolve) // 다음 시작에 소모하는 전용 상태 확인
             { // 전용 상태 처리 시작
                 statusEffect.AdvanceDuration(); // 전용 효과의 발동 횟수 감소
                 statusStateChanged = true; // 상태 변경 여부 저장
@@ -86,7 +91,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || effect.EffectType == BattleStatusEffectType.PublicMark) // 다른 시점에 소모되는 상태 제외
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || effect.EffectType == BattleStatusEffectType.PublicMark) // 다른 시점에 소모되는 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료

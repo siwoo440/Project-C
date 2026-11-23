@@ -264,6 +264,18 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 디버프 확인 종료
         return false; // 디버프 없음 반환
     } // 디버프 존재 확인 종료
+    internal BattleStatusEffectInstance FirstRemovableBuff() // 먼저 부여된 일반 강화 조회
+    { // 강화 탐색 시작
+        foreach (var effect in statusEffects) // 상태가 부여된 순서로 확인
+        { // 개별 상태 확인 시작
+            if (!effect.IsDebuff && !effect.IsProtectedMentalState) // 디버프와 강제로 해제할 수 없는 정신 상태 제외
+            { // 제거 대상 발견 시작
+                return effect; // 첫 일반 강화 반환
+            } // 제거 대상 발견 종료
+        } // 개별 상태 확인 종료
+        return null; // 제거 가능한 강화 없음
+    } // 강화 탐색 종료
+
     private bool ContainsRemovableDebuff() // 정화 가능한 디버프 존재 확인
     { // 정화 가능 디버프 확인 시작
         foreach (BattleStatusEffectInstance effect in statusEffects) // 현재 상태 목록 순회

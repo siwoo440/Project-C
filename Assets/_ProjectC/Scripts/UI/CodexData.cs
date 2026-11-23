@@ -89,6 +89,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                         int value = effect == BattleStatusEffectType.BloodOath ? 5 : effect == BattleStatusEffectType.FinishingStance ? 30 : 50; // 시트의 검 피해와 마무리 및 회복 변화 수치
                         description = BattleStatusEffectInstance.GetDescription(effect, value); // 도감의 상태 수치와 전투 안내 일치
                     } // 카드 상태 설명 종료
+                    else if (effect == BattleStatusEffectType.BattlefieldResolve || effect == BattleStatusEffectType.BladeFrenzy) // 다음 턴 방어와 이번 턴 검 피해 강화
+                    { // 특수 검 상태 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 4); // 원본 시트의 방어도와 추가 피해 수치
+                    } // 특수 검 상태 설명 종료
                     else if (effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte) // 검 정비와 반사 상태의 원본 수치 확인
                     { // 검 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.BladeMaintenance ? 3 : 50); // 첫 검 공격과 물리 반사의 상태 설명
