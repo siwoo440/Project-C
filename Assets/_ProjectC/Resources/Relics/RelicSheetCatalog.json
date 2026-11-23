@@ -2940,7 +2940,7 @@
     {
       "sourceRow": 269,
       "name": "낙석 경고패",
-      "description": "불타는 협곡 함정 피해 -15%",
+      "description": "불타는 협곡의 탐사 함정에서 받는 체력 피해를 15% 줄인다.",
       "buyMin": 203,
       "buyMax": 246,
       "buyVariance": 43,
@@ -2951,7 +2951,7 @@
     {
       "sourceRow": 270,
       "name": "흑요석 칼편",
-      "description": "검 카드가 15% 확률로 출혈(2턴) 부여",
+      "description": "아군의 검 카드가 생존 적에게 직접 명중하면 적마다 15% 확률로 적 턴 두 번 동안 출혈 1을 부여한다. 같은 카드의 같은 적은 한 번 판정한다.",
       "buyMin": 220,
       "buyMax": 256,
       "buyVariance": 36,
@@ -2962,7 +2962,7 @@
     {
       "sourceRow": 271,
       "name": "화염 광맥 부스러기",
-      "description": "화상 부여 시 적 저항력 -5% (1턴)",
+      "description": "아군 카드가 적에게 화상을 실제로 부여하면 다음 적 턴 동안 그 적의 마법 피해 저항률이 5%p 낮아진다.",
       "buyMin": 237,
       "buyMax": 280,
       "buyVariance": 43,
@@ -2973,7 +2973,7 @@
     {
       "sourceRow": 272,
       "name": "재먼지 석상 눈",
-      "description": "적 전체 명중률 -5%",
+      "description": "전투 중 모든 생존 적의 명중률이 5%p 낮아진다.",
       "buyMin": 254,
       "buyMax": 290,
       "buyVariance": 36,
@@ -2984,7 +2984,7 @@
     {
       "sourceRow": 273,
       "name": "돌가시 묶음",
-      "description": "피격 시 20% 확률로 공격자에게 3 피해",
+      "description": "적의 직접 공격으로 아군이 방어도나 체력을 잃으면 20% 확률로 그 공격자에게 피해 3을 준다.",
       "buyMin": 271,
       "buyMax": 314,
       "buyVariance": 43,
@@ -2995,7 +2995,7 @@
     {
       "sourceRow": 274,
       "name": "협곡 바람피리",
-      "description": "전투 시작 시 아군 전체 회피율 +8% (2턴)",
+      "description": "전투 시작에 생존 아군 전체의 회피율을 실제 적 턴 두 번 동안 8%p 높인다.",
       "buyMin": 288,
       "buyMax": 324,
       "buyVariance": 36,
@@ -3006,7 +3006,7 @@
     {
       "sourceRow": 275,
       "name": "젖은 갈대매듭",
-      "description": "중독 피해 -1",
+      "description": "아군이 받는 중독 피해를 1 줄인다.",
       "buyMin": 305,
       "buyMax": 348,
       "buyVariance": 43,
@@ -3017,7 +3017,7 @@
     {
       "sourceRow": 276,
       "name": "검은 늪물병",
-      "description": "중독 부여 확률 +10%",
+      "description": "아군 카드의 확률형 중독 부여 성공률을 10%p 높인다.",
       "buyMin": 322,
       "buyMax": 358,
       "buyVariance": 36,

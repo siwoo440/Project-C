@@ -171,6 +171,14 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 자기장 회피 약화의 도감 표시 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 10); // 전투와 같은 10퍼센트포인트 감소 문구
                     } // 자기장 회피 약화의 도감 표시 종료
+                    else if (effect == BattleStatusEffectType.FlameVeinResistanceDown) // 화염 광맥의 실제 저항 약화
+                    { // 화염 광맥의 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 5); // 실제 마법 피해 저항률 감소폭
+                    } // 화염 광맥의 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.CanyonWindEvasionUp) // 협곡 바람의 실제 회피 강화
+                    { // 협곡 바람의 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 8); // 실제 회피율 증가폭
+                    } // 협곡 바람의 도감 설명 종료
                     else if (effect == BattleStatusEffectType.WasteHeatAttackPowerUp) // 폐열을 이용한 아군 공격력 강화
                     { // 폐열 공격력 상태의 도감 표시 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 전투와 같은 실제 공격력 증가량

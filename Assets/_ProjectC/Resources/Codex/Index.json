@@ -1759,6 +1759,54 @@
       "artworkKey": "4fba6d0b53bb5ac3afd0cb4dc79f2872"
     },
     {
+      "category": 3,
+      "name": "낙석 경고패",
+      "description": "불타는 협곡의 탐사 함정에서 받는 체력 피해를 15% 줄인다.",
+      "artworkKey": "6558fd15e3c05566b82f42e3a4c1e174"
+    },
+    {
+      "category": 3,
+      "name": "흑요석 칼편",
+      "description": "아군의 검 카드가 생존 적에게 직접 명중하면 적마다 15% 확률로 적 턴 두 번 동안 출혈 1을 부여한다. 같은 카드의 같은 적은 한 번 판정한다.",
+      "artworkKey": "7227d90ea38a59a3b7ad7fa9c29cc82f"
+    },
+    {
+      "category": 3,
+      "name": "화염 광맥 부스러기",
+      "description": "아군 카드가 적에게 화상을 실제로 부여하면 다음 적 턴 동안 그 적의 마법 피해 저항률이 5%p 낮아진다.",
+      "artworkKey": "91d8a4ca509359a1912a0236bbf7e2ae"
+    },
+    {
+      "category": 3,
+      "name": "재먼지 석상 눈",
+      "description": "전투 중 모든 생존 적의 명중률이 5%p 낮아진다.",
+      "artworkKey": "59fafe2c601150d1802328b550c9b51a"
+    },
+    {
+      "category": 3,
+      "name": "돌가시 묶음",
+      "description": "적의 직접 공격으로 아군이 방어도나 체력을 잃으면 20% 확률로 그 공격자에게 피해 3을 준다.",
+      "artworkKey": "7acf4c6220c251ec9a6f1a847da5abe6"
+    },
+    {
+      "category": 3,
+      "name": "협곡 바람피리",
+      "description": "전투 시작에 생존 아군 전체의 회피율을 실제 적 턴 두 번 동안 8%p 높인다.",
+      "artworkKey": "e037150bbb785918beda96362ad64f25"
+    },
+    {
+      "category": 3,
+      "name": "젖은 갈대매듭",
+      "description": "아군이 받는 중독 피해를 1 줄인다.",
+      "artworkKey": "c09c7ec7e963587384199b40dcf4aae9"
+    },
+    {
+      "category": 3,
+      "name": "검은 늪물병",
+      "description": "아군 카드의 확률형 중독 부여 성공률을 10%p 높인다.",
+      "artworkKey": "85dbb3d0e3f4570e821d4044bfbda5bf"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

@@ -10,6 +10,10 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
         { // 취약 아이콘 조회 시작
             return GetIndividualIcon(type); // VulnerableStatusIcon 원화 반환
         } // 취약 아이콘 조회 종료
+        if (type is BattleStatusEffectType.FlameVeinResistanceDown or BattleStatusEffectType.CanyonWindEvasionUp) // 화염 광맥과 협곡 바람의 독립 전투 상태 확인
+        { // 유물 상태 원화 참조 시작
+            return GetIndividualIcon(type); // 실제 효과를 구별하는 유물별 작은 원화 반환
+        } // 유물 상태 원화 참조 종료
         if (type == BattleStatusEffectType.Awakening || type == BattleStatusEffectType.Collapse || type == BattleStatusEffectType.Evasion || type == BattleStatusEffectType.Disorientation || type == BattleStatusEffectType.CriticalChanceUp || type == BattleStatusEffectType.ChargeDefenseDown || type == BattleStatusEffectType.Bleed || type == BattleStatusEffectType.Stagger || type == BattleStatusEffectType.Stun || type == BattleStatusEffectType.NextAttackDown || type == BattleStatusEffectType.AttackPowerDown || type == BattleStatusEffectType.BladeMaintenance || type == BattleStatusEffectType.PhysicalRiposte || type == BattleStatusEffectType.BloodOath || type == BattleStatusEffectType.Fear || type == BattleStatusEffectType.FinishingStance || type == BattleStatusEffectType.HealingReceivedDown || type == BattleStatusEffectType.BattlefieldResolve || type == BattleStatusEffectType.BladeFrenzy || type == BattleStatusEffectType.PublicMark || type == BattleStatusEffectType.ActionSpeedDown || type == BattleStatusEffectType.DuelMark || type == BattleStatusEffectType.SwordSaintStance || type == BattleStatusEffectType.ShockAbsorption || type == BattleStatusEffectType.ResistanceStance || type == BattleStatusEffectType.ActionSpeedUp || type == BattleStatusEffectType.ShieldBalance || type == BattleStatusEffectType.ShieldCounter || type == BattleStatusEffectType.GuardianCircle || type == BattleStatusEffectType.DangerInterception || type == BattleStatusEffectType.FocusedDefense || type == BattleStatusEffectType.BleedResistance || type == BattleStatusEffectType.UndyingGuard) // 별도 투명 아이콘 확인
         { // 정신 상태 아이콘 조회 시작
             return GetIndividualIcon(type); // 별도 제작한 상태 아이콘 반환

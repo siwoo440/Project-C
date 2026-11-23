@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: ObsidianBladeShard
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_OBSIDIAN_BLADE_SHARD
+  displayName: 흑요석 칼편
+  description: "아군의 검 카드가 생존 적에게 직접 명중하면 적마다 15% 확률로 적 턴 두 번 동안 출혈 1을 부여한다. 같은 카드의 같은 적은 한 번 판정한다."
+  icon: {fileID: 21300000, guid: 7227d90ea38a59a3b7ad7fa9c29cc82f, type: 3}
+  rarity: 0
+  triggerType: 21
+  effectType: 258
+  targetType: 6
+  triggerChancePercent: 15
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 22
+  statusDuration: 2
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

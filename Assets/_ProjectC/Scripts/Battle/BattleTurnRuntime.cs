@@ -276,6 +276,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyWatchPodLensOpeningMark(); // 첫 실제 진영 행동 전에 임의의 살아 있는 적에게 두 적 턴 표식 부여
         ApplyIsolationRoomOpeningMarks(); // 선제와 일반 전투 모두에서 살아 있는 양 진영에 두 자기 턴 표식
         ApplyDesertOpeningAllyEffects(); // 실제 개막 회복과 두 적 턴 회피를 선제 공격 전에 적용
+        ApplyCanyonWindOpeningEvasion(); // 적 선제 전에 생존 아군 전체에게 독립 두 적 차례 회피 부여
         ApplyOpeningCorrosion(); // 선제 공격 전에 실제 생존 적에게 실금석의 마법 저항 약화 적용
         ApplyOpeningStethoscopeMark(); // 기존 첫 턴 준비 중 최대 현재 체력 적에게 청진기 표식 적용
         ApplyOpeningServantContract(); // 적 선제보다 먼저 첫 생존 아군의 두 턴 계약 표식 적용
@@ -550,6 +551,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ClearOpeningAllySpeed(); // 첫 적 턴이 끝나면 배지 속도 회수
         ResolveReflectionCitadel(); // 마지막 적 행동과 일반 턴 종료 효과 뒤 성채 전체 반사 정산
         completedEnemyPhases = Math.Min(2, completedEnemyPhases + 1); // 적 선제와 실제 적 차례의 완료만 기록
+        AdvanceCanyonWindEnemyTurn(); // 실제 적 행동과 종료 효과 이후에만 협곡 바람 기간 차감
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
@@ -778,6 +780,43 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 적 행동 시 회피 적용 종료
         } // 원본 개막 효과별 살아 있는 대상 처리 종료
     } // 첫 진영 행동 전에 영향을 받을 아군 확인 종료
+    private void ApplyCanyonWindOpeningEvasion() // 먼저 행동하는 진영과 별개인 개막 협곡 바람 강화
+    { // 현재 보유한 협곡 회피 원본 확인 시작
+        var whistle = openingRelics?.FindEffect(RelicEffectType.CanyonWindWhistleOpeningEvasion); // 새 협곡 바람피리의 실제 보유와 원본 수치
+        if (whistle is not { EffectValue: > 0, StatusDuration: > 0 }) // 실제 양수 회피 장착과 개막 수명의 필수 확인
+        { // 개막에 부여할 협곡 강화 없음 시작
+            return; // 파티 상태의 원래 수치 유지
+        } // 개막에 부여할 협곡 강화 없음 종료
+        foreach (var ally in allyUnits) // 이번 교전을 시작한 전체 출전 아군 순회
+        { // 원래 개막 시 생존자별 적용 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false }) // 시작 시각에 살아 있는 실제 아군 판정
+            { // 현재 기본 회피와 별도의 강화 등록 시작
+                ally.ApplyStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp, whistle.EffectValue, whistle.StatusDuration, 1); // 원본 팔 퍼센트포인트의 두 실제 적 차례
+            } // 현재 기본 회피와 별도의 강화 등록 종료
+        } // 원래 개막 시 생존자별 적용 종료
+    } // 현재 보유한 협곡 회피 원본 확인 종료
+
+    private void AdvanceCanyonWindEnemyTurn() // 협곡 바람의 적 차례 종료 기간 갱신
+    { // 현재 실제 출전 파티의 남은 적 턴 정리 시작
+        foreach (var ally in allyUnits) // 실제 해당 참가자의 독립 회피 상태 확인
+        { // 원래 협곡 회피의 잔여 기간 갱신 시작
+            var wind = ally?.GetStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp); // 정화나 사망에 의해 이미 없어진 상태도 확인
+            if (wind == null) // 실제 현재 수명을 차감할 상태의 존재 여부
+            { // 없는 협곡 강화의 처리 제외 시작
+                continue; // 다음 아군 상태로 이동
+            } // 없는 협곡 강화의 처리 제외 종료
+            wind.AdvanceDuration(); // 이번에 정상 완료한 실제 적 차례의 수명 한 번 차감
+            if (wind.IsExpired) // 남은 적 차례가 사라지는 실제 경계
+            { // 독립 휘슬의 실제 상태 및 화면 제거 시작
+                ally.RemoveStatusEffect(BattleStatusEffectType.CanyonWindEvasionUp); // 기존 회피 상태는 유지된 상태 정리
+            } // 독립 휘슬의 실제 상태 및 화면 제거 종료
+            else // 다음 실제 적 차례에도 협곡 바람이 남은 경우
+            { // 남은 적 차례의 실제 화면 갱신 시작
+                ally.NotifyStatusEffectsChanged(); // 독립 상태의 새 지속 기간 표시
+            } // 남은 적 차례의 실제 화면 갱신 종료
+        } // 원래 협곡 회피의 잔여 기간 갱신 종료
+    } // 현재 실제 출전 파티의 남은 적 턴 정리 종료
+
     private void ApplySandstormFirstAllyAccuracy() // 선제 여부와 관계없는 첫 실제 아군 명중 약화
     { // 첫 아군 차례 확인 시작
         if (CurrentRound != firstActualAllyTurnRound || openingRelics?.FindEffect(RelicEffectType.SandstormBottleOpeningEvasionAndAccuracy) == null) // 첫 아군 턴과 보유 유물 확인

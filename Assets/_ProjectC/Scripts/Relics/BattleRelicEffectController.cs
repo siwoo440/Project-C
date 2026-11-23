@@ -158,6 +158,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private bool TryExecuteRelic(RelicData relicData, int orderNumber, BattleEventContext eventContext) // 단일 유물 실행 시도
     {
+        if (relicData.EffectType is RelicEffectType.RockfallWarningPlaqueCanyonTrapReduction or RelicEffectType.ObsidianBladeShardSwordBleed or // 실제 탐사 함정과 검 직접 명중 유물
+            RelicEffectType.FlameVeinDebrisBurnResistance or RelicEffectType.AshDustStatueEyeEnemyAccuracyDown or // 상태 실제 부여와 공용 명중 계산 유물
+            RelicEffectType.StoneThornBundleRetaliation or RelicEffectType.CanyonWindWhistleOpeningEvasion or // 실제 직접 피격과 전투 개시 유물
+            RelicEffectType.WetReedKnotPoisonDamageReduction or RelicEffectType.BlackSwampWaterBottlePoisonChance) // 실제 중독 피해와 카드 부여 확률 유물
+        { // 전용 효과를 공용 이벤트에서 건너뛰는 분기 시작
+            return false; // 실제 판정 한 번과 유물 발동 기록 보존
+        } // 전용 효과를 공용 이벤트에서 건너뛰는 분기 종료
+
         if (relicData.EffectType == RelicEffectType.BattleStartCleanseOne) // 전투 시작 향 주머니의 단일 판정 확인
         { // 시작 정화 횟수 확인 시작
             if (startCleanseChecked) // 시작 이벤트 또는 기존 보정 경로의 반복 여부 확인
