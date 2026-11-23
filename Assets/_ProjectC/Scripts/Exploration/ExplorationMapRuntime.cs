@@ -9,6 +9,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
     private const int DefaultEventCount = 2; // 층당 기본 탐사 이벤트 수
+    private const int DefaultHazardRoomCount = 3; // 층당 기본 퇴색 위험 방 수
+    private const int HazardSeedSalt = 135791113; // 퇴색 방 선택 난수 분리값
     private const int BossFloorInterval = 5; // 43일차 테스트용 보스층 간격
     private const float FloorChangeCooldown = 0.5f; // 연속 층 이동 방지 시간
 
@@ -35,8 +37,14 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private readonly Dictionary<string, Vector2Int> eventCoordinates =
         new Dictionary<string, Vector2Int>(); // 런타임 ID별 이벤트 좌표
 
+    private readonly Dictionary<Vector2Int, ExplorationHazardRoomState> hazardRooms =
+        new Dictionary<Vector2Int, ExplorationHazardRoomState>(); // 현재 층 퇴색 위험 방 상태
+
     private ExplorationSessionManager sessionManager; // 탐사 세션 관리자
     private ExplorationTilemapView tilemapView; // 논리 맵 Tilemap 표시기
+    private ExplorationHazardRuntime hazardRuntime; // 퇴색 노출과 환경 피해 처리기
+    private ExplorationHazardOverlayView hazardOverlayView; // 퇴색 방 시각 표시기
+    private ExplorationHazardView hazardView; // 퇴색 위험 HUD 표시기
     private GameObject stairsObject; // 현재 계단 오브젝트
     private float nextFloorChangeAllowedTime; // 다음 층 이동 허용 시각
     private bool initialPlayerPlacementHandled; // 첫 플레이어 위치 처리 여부
@@ -56,6 +64,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         EnsureRuntimeSquareSprite(); // 런타임 사각형 스프라이트 준비
         EnsureTilemapView(); // 실제 Tilemap 표시기 준비
         EnsureCameraFollow(); // 확장된 탐사 공간 카메라 추적 준비
+        EnsureHazardComponents(); // 퇴색 환경 위험 런타임과 UI 준비
         RestoreOrCreateCurrentFloor(); // 현재 층 Seed 복원 또는 신규 생성
         EnsureDebugView(); // 절차 맵 디버그 화면 준비
         ExplorationEventPanelView.EnsureInstance(); // 탐사 이벤트 패널 준비
@@ -133,6 +142,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     {
         ClearEncounterObjects(); // 이전 조우 오브젝트 정리
         ClearEventObjects(); // 이전 이벤트 오브젝트 정리
+        ClearHazards(); // 이전 퇴색 방 표시와 상태 정리
 
         CurrentMap =
             ExplorationMapGenerator.Generate(
@@ -143,6 +153,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             restoredFromSession; // 현재 생성이 복원인지 기록
 
         tilemapView.Build(CurrentMap); // 논리 맵을 실제 방·통로 Tilemap으로 변환
+        GenerateHazards(); // 동일 Seed 기반 퇴색 위험 방 지정과 표시
         RefreshStairs(); // Tilemap 기준 계단 위치 복원 또는 생성
         GenerateEncounters(); // 동일 Seed 기반 조우 배치 복원 또는 생성
         GenerateEvents(); // 동일 Seed 기반 탐사 이벤트 배치 복원 또는 생성
@@ -209,6 +220,38 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             coordinate); // Tilemap 기준 실제 방 중심 위치 반환
     }
 
+    public bool TryGetHazardAt(
+        Vector2Int coordinate,
+        out ExplorationHazardRoomState hazardState) // 지정 방 퇴색 위험 상태 조회
+    {
+        return hazardRooms.TryGetValue(
+            coordinate,
+            out hazardState); // 현재 층 위험 방 상태 반환
+    }
+
+    public bool TryGetPlayerRoomCoordinate(
+        out Vector2Int coordinate) // 플레이어가 실제로 서 있는 방 좌표 조회
+    {
+        coordinate = Vector2Int.zero; // 실패 기본 좌표 지정
+
+        if (tilemapView == null)
+        {
+            return false;
+        }
+
+        ExplorationPlayerController player =
+            FindFirstObjectByType<ExplorationPlayerController>(); // 현재 탐사 플레이어 조회
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        return tilemapView.TryGetRoomCoordinateAtWorldPosition(
+            player.transform.position,
+            out coordinate); // 실제 Floor 기반 현재 방 좌표 반환
+    }
+
     public bool HasEncounterAt(
         Vector2Int coordinate) // 지정 셀 조우 존재 여부 확인
     {
@@ -248,6 +291,103 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                 player.transform.position); // 실제 Tilemap 위치를 논리 좌표 비율로 변환
 
         return true;
+    }
+
+    private void GenerateHazards() // 현재 맵에 Seed 기반 퇴색 위험 방 지정
+    {
+        hazardRooms.Clear(); // 기존 위험 방 상태 초기화
+
+        if (CurrentMap == null)
+        {
+            return;
+        }
+
+        List<ExplorationMapCell> candidates =
+            new List<ExplorationMapCell>(); // 퇴색 위험 방 후보 목록
+
+        foreach (ExplorationMapCell cell in CurrentMap.Cells)
+        {
+            if (cell.Type != ExplorationCellType.Normal)
+            {
+                continue; // 시작 방과 계단 방은 안전 지역으로 유지
+            }
+
+            candidates.Add(
+                cell); // 일반 방만 퇴색 후보 등록
+        }
+
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        System.Random random =
+            new System.Random(
+                CurrentMap.Seed ^
+                HazardSeedSalt); // 현재 Seed 기반 위험 방 난수 생성
+
+        ShuffleCells(
+            candidates,
+            random); // 위험 방 후보 순서 Seed 기반 무작위화
+
+        int hazardCount =
+            Mathf.Min(
+                DefaultHazardRoomCount,
+                candidates.Count); // 현재 층 실제 위험 방 수 계산
+
+        for (int index = 0;
+             index < hazardCount;
+             index++)
+        {
+            ExplorationMapCell cell =
+                candidates[index]; // 현재 위험 방 후보 선택
+
+            int levelRoll =
+                random.Next(100); // 위험도 결정용 0~99 난수 생성
+
+            int hazardLevel =
+                levelRoll < 55
+                    ? 1
+                    : levelRoll < 85
+                        ? 2
+                        : 3; // 위험도 1~3 가중치 선택
+
+            ExplorationHazardRoomState hazardState =
+                new ExplorationHazardRoomState(
+                    ExplorationHazardType.Fade,
+                    hazardLevel); // 퇴색 위험 방 상태 생성
+
+            hazardRooms[cell.Coordinate] =
+                hazardState; // 현재 방 위험 상태 등록
+        }
+
+        if (hazardOverlayView != null)
+        {
+            hazardOverlayView.Build(
+                tilemapView,
+                hazardRooms,
+                runtimeSquareSprite); // 퇴색 방 Floor 시각 오버레이 생성
+        }
+
+        if (hazardRuntime != null)
+        {
+            hazardRuntime.ResetForCurrentFloor(); // 새 층 현재 위험 방 판정 초기화
+        }
+    }
+
+    private void ClearHazards() // 현재 층 퇴색 방 상태와 표시 정리
+    {
+        hazardRooms.Clear(); // 위험 방 상태 초기화
+
+        if (hazardOverlayView != null)
+        {
+            hazardOverlayView.Clear(); // 기존 위험 방 오버레이 제거
+        }
+
+        if (hazardRuntime != null)
+        {
+            hazardRuntime.ResetForCurrentFloor(); // 플레이어 현재 위험 판정 초기화
+        }
     }
 
     private void GenerateEncounters() // 현재 맵에 일반·엘리트·보스 조우 배치
@@ -1053,6 +1193,44 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             stairsObject.GetComponent<ExplorationFloorStairs>(); // 계단 동작 컴포넌트 조회
 
         stairs.Initialize(this); // 현재 맵 런타임 연결
+    }
+
+    private void EnsureHazardComponents() // 퇴색 환경 위험 구성 요소 준비
+    {
+        hazardRuntime =
+            GetComponent<ExplorationHazardRuntime>(); // 기존 위험 런타임 조회
+
+        if (hazardRuntime == null)
+        {
+            hazardRuntime =
+                gameObject.AddComponent<ExplorationHazardRuntime>(); // 위험 런타임 추가
+        }
+
+        hazardOverlayView =
+            GetComponent<ExplorationHazardOverlayView>(); // 기존 위험 오버레이 조회
+
+        if (hazardOverlayView == null)
+        {
+            hazardOverlayView =
+                gameObject.AddComponent<ExplorationHazardOverlayView>(); // 위험 오버레이 추가
+        }
+
+        hazardView =
+            GetComponent<ExplorationHazardView>(); // 기존 위험 HUD 조회
+
+        if (hazardView == null)
+        {
+            hazardView =
+                gameObject.AddComponent<ExplorationHazardView>(); // 위험 HUD 추가
+        }
+
+        hazardRuntime.Configure(
+            this,
+            sessionManager); // 위험 런타임에 현재 맵과 세션 연결
+
+        hazardView.Configure(
+            hazardRuntime,
+            sessionManager); // 위험 HUD에 런타임과 세션 연결
     }
 
     private void EnsureTilemapView() // 논리 맵 Tilemap 표시기 존재 보장

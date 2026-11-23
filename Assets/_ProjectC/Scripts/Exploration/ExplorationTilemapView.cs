@@ -223,6 +223,79 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
             (float)RoomSpacing); // 방과 통로 사이 이동을 포함한 논리 위치 반환
     }
 
+    public bool TryGetRoomCoordinateAtWorldPosition(
+        Vector3 worldPosition,
+        out Vector2Int logicalCoordinate) // World 위치가 실제로 속한 방 좌표 조회
+    {
+        logicalCoordinate = Vector2Int.zero; // 실패 기본 방 좌표 지정
+
+        EnsureTilemapHierarchy(); // Tilemap 존재 보장
+
+        Vector3Int tileCell =
+            floorTilemap.WorldToCell(
+                worldPosition); // 현재 World 위치의 Tile 셀 계산
+
+        foreach (KeyValuePair<Vector2Int, HashSet<Vector3Int>> pair in roomFloorCells)
+        {
+            if (pair.Value == null ||
+                !pair.Value.Contains(tileCell))
+            {
+                continue;
+            }
+
+            logicalCoordinate =
+                pair.Key; // 실제 방 Floor에 포함된 논리 좌표 반환
+
+            return true;
+        }
+
+        return false; // 통로나 방 외부 위치 반환
+    }
+
+    public bool TryGetRoomFloorWorldPositions(
+        Vector2Int logicalCoordinate,
+        List<Vector2> worldPositions) // 지정 방 Floor 타일 중심 World 위치 목록 조회
+    {
+        if (worldPositions == null)
+        {
+            return false;
+        }
+
+        worldPositions.Clear(); // 기존 결과 목록 초기화
+
+        EnsureTilemapHierarchy(); // Tilemap 존재 보장
+
+        if (!roomFloorCells.TryGetValue(
+                logicalCoordinate,
+                out HashSet<Vector3Int> sourceCells) ||
+            sourceCells == null ||
+            sourceCells.Count == 0)
+        {
+            return false;
+        }
+
+        List<Vector3Int> orderedCells =
+            new List<Vector3Int>(
+                sourceCells); // 안정된 출력 순서용 복사
+
+        orderedCells.Sort(
+            CompareTileCells); // 타일 좌표 순서 고정
+
+        foreach (Vector3Int cell in orderedCells)
+        {
+            Vector3 worldPosition =
+                floorTilemap.GetCellCenterWorld(
+                    cell); // Floor 타일 중심 World 위치 계산
+
+            worldPositions.Add(
+                new Vector2(
+                    worldPosition.x,
+                    worldPosition.y)); // 2D World 위치 목록 등록
+        }
+
+        return worldPositions.Count > 0; // 실제 Floor 위치 존재 여부 반환
+    }
+
     private void FillRoom(
         ExplorationMapCell cell,
         int mapSeed) // 논리 셀 하나를 Seed 기반 다양한 형태의 방으로 생성
