@@ -157,8 +157,8 @@ public sealed class BattleDamageDebugView : MonoBehaviour // 카드 피해 계�
                     ? "마법 저항"
                     : "방어"; // 적용 방어 이름 계산
 
-        calculationText.AppendLine(
-            $"[{recordedTargetCount}/{Mathf.Max(1, expectedTargetCount)}] {target.DisplayName}"); // 대상 제목 기록
+        long expectedHits = (long)Mathf.Max(1, expectedTargetCount) * card.SourceData.DamageHitCount; // 대상 수를 포함한 예정 타격 수
+        calculationText.AppendLine($"[{recordedTargetCount}/{expectedHits}] {target.DisplayName}"); // 타격별 대상 제목 기록
 
         calculationText.AppendLine(
             $"카드값 {cardBaseDamage} + 공격 보너스 {attackPowerBonus} = {beforeMentalDamage}"); // 기본 공격 계산 기록
