@@ -6,6 +6,7 @@ public sealed class BattleStatusIconView : MonoBehaviour // 개별 상태 아이
     private Image icon; // 상태 종류 이미지
     private TMP_Text amount; // 오른쪽 아래 효과 수치
     private TMP_Text duration; // 왼쪽 아래 남은 턴
+    private Image countersBackground; // 아래쪽 상태 수치 배경
     public static BattleStatusIconView Create(Transform parent, int index) // 개별 상태 아이콘 생성
     { // 상태 아이콘 생성 시작
         GameObject target = new GameObject("Icon_" + index, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleStatusIconView)); // 정사각형 상태 아이콘 생성
@@ -23,7 +24,8 @@ public sealed class BattleStatusIconView : MonoBehaviour // 개별 상태 아이
         } // 상태 누락 처리 종료
         icon.sprite = BattleStatusIconArt.Get(effect.EffectType); // 상태 종류에 맞는 제작 이미지 적용
         icon.color = icon.sprite != null ? Color.white : new Color(0.22f, 0.22f, 0.22f, 1f); // 이미지 누락 시 구분 가능한 임시 배경 표시
-        amount.text = effect.EffectiveValue.ToString(); // 오른쪽 아래에 실제 전체 효과 수치 표시
+        countersBackground.color = effect.IsProtectedMentalState ? Color.clear : new Color(0f, 0f, 0f, 0.78f); // 정신 상태 아이콘의 투명 배경 유지
+        amount.text = effect.IsProtectedMentalState ? string.Empty : effect.EffectiveValue.ToString(); // 정신 상태는 지속 턴만 표시
         duration.text = effect.RemainingTurns.ToString(); // 왼쪽 아래에 남은 지속 턴 표시
         gameObject.SetActive(true); // 현재 상태 아이콘 표시
     } // 상태 아이콘 연결 종료
@@ -44,9 +46,9 @@ public sealed class BattleStatusIconView : MonoBehaviour // 개별 상태 아이
         backdropRect.anchorMax = new Vector2(1f, 0.42f); // 아래쪽 수치 영역 최대 앵커
         backdropRect.offsetMin = Vector2.zero; // 수치 배경 시작 여백 제거
         backdropRect.offsetMax = Vector2.zero; // 수치 배경 끝 여백 제거
-        Image backdropImage = backdrop.GetComponent<Image>(); // 수치 배경 이미지 조회
-        backdropImage.color = new Color(0f, 0f, 0f, 0.78f); // 작은 수치 대비를 높이는 어두운 배경
-        backdropImage.raycastTarget = false; // 전투 대상 선택 입력 통과
+        countersBackground = backdrop.GetComponent<Image>(); // 수치 배경 이미지 조회
+        countersBackground.color = new Color(0f, 0f, 0f, 0.78f); // 작은 수치 대비를 높이는 어두운 배경
+        countersBackground.raycastTarget = false; // 전투 대상 선택 입력 통과
         duration = CreateCounter("Duration", new Vector2(0f, 0f), new Vector2(0.5f, 0.42f), TextAlignmentOptions.BottomLeft); // 왼쪽 아래 지속 턴 생성
         amount = CreateCounter("Amount", new Vector2(0.5f, 0f), new Vector2(1f, 0.42f), TextAlignmentOptions.BottomRight); // 오른쪽 아래 효과 수치 생성
     } // 상태 아이콘 화면 구성 종료

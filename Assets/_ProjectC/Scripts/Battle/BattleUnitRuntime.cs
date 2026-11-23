@@ -24,6 +24,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
     public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
+    public bool HasRemovableDebuff => ContainsRemovableDebuff(); // 정화 가능한 디버프 존재 여부
     public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
     public int CurrentMental => mentalRuntime.CurrentMental; // 현재 정신력
     public BattleMentalState MentalState => mentalRuntime.CurrentState; // 현재 정신 상태
@@ -60,6 +61,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = false; // 생존 상태 초기화
         CharacterSource = characterSource; // 아군 원본 저장
         EnemySource = enemySource; // 적 원본 저장
+        SyncMentalStatus(); // 초기 정신 상태를 상태 이상 목록에 반영
     } // 생성자 종료
     public static BattleUnitRuntime CreateAlly(CharacterData characterData) // 아군 런타임 생성
     { // 아군 생성 시작
@@ -148,7 +150,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 회복량 계산 종료
     public BattleStatusEffectApplyResult ApplyStatusEffect(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit = null) // 상태 이상 적용
     { // 상태 이상 적용 시작
-        if (IsDead || effectType == BattleStatusEffectType.None || value <= 0 || duration <= 0 || maximumStacks <= 0) // 적용 조건 확인
+        if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
             return BattleStatusEffectApplyResult.Invalid; // 잘못된 적용 결과 반환
         } // 적용 불가 처리 종료
@@ -174,7 +176,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public bool RemoveStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 제거
     { // 상태 이상 제거 시작
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 제거할 상태 이상 조회
-        if (existingEffect == null) // 상태 이상 존재 확인
+        if (existingEffect == null || existingEffect.IsProtectedMentalState) // 상태 존재와 강제 해제 가능 여부 확인
         { // 제거 불가 처리 시작
             return false; // 상태 이상 제거 실패 반환
         } // 제거 불가 처리 종료
@@ -202,7 +204,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 상태 존재 확인 종료
     internal bool RemoveStatusEffectInstance(BattleStatusEffectInstance statusEffect) // 상태 인스턴스 조용히 제거
     { // 상태 제거 시작
-        return statusEffect != null && statusEffects.Remove(statusEffect); // 상태 목록 제거 결과 반환
+        return statusEffect != null && !statusEffect.IsProtectedMentalState && statusEffects.Remove(statusEffect); // 보호 상태를 제외한 제거 결과 반환
     } // 상태 제거 종료
     internal bool MoveDebuffTo(BattleUnitRuntime recipient, BattleStatusEffectInstance effect) // 단일 디버프를 다른 아군에게 이전
     { // 디버프 이동 시작
@@ -254,6 +256,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 디버프 확인 종료
         return false; // 디버프 없음 반환
     } // 디버프 존재 확인 종료
+    private bool ContainsRemovableDebuff() // 정화 가능한 디버프 존재 확인
+    { // 정화 가능 디버프 확인 시작
+        foreach (BattleStatusEffectInstance effect in statusEffects) // 현재 상태 목록 순회
+        { // 정화 가능 상태 확인 시작
+            if (effect.IsDebuff && !effect.IsProtectedMentalState) // 일반 디버프 여부 확인
+            { // 정화 가능 상태 처리 시작
+                return true; // 정화 가능 상태 존재 반환
+            } // 정화 가능 상태 처리 종료
+        } // 정화 가능 상태 확인 종료
+        return false; // 정화 가능 상태 없음 반환
+    } // 정화 가능 디버프 확인 종료
     private int CalculateAttackPowerBonus() // 공격력 증가 합계 계산
     { // 공격력 증가 계산 시작
         int totalBonus = 0; // 전체 공격력 증가 초기화
@@ -283,8 +296,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 상태 없음 처리 시작
             return; // 전체 상태 제거 중단
         } // 상태 없음 처리 종료
-        statusEffects.Clear(); // 상태 이상 목록 초기화
-        StatusEffectsChanged?.Invoke(this); // 상태 이상 제거 알림
+        int removed = statusEffects.RemoveAll(effect => !effect.IsProtectedMentalState); // 보호된 정신 상태를 제외한 상태 제거
+        if (removed > 0) // 실제 상태 제거 여부 확인
+        { // 상태 제거 알림 시작
+            StatusEffectsChanged?.Invoke(this); // 상태 이상 제거 알림
+        } // 상태 제거 알림 종료
     } // 전체 상태 제거 종료
     public int GainBlock(int amount) // 방어도 획득
     { // 방어도 획득 시작
@@ -479,8 +495,41 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 교란 정신력 처리 종료
     private void HandleMentalChanged(BattleMentalChangeResult changeResult) // 정신력 변화 전달
     { // 정신력 변화 전달 시작
+        SyncMentalStatus(); // 정신 상태와 남은 턴을 상태 이상에 동기화
         MentalChanged?.Invoke(this, changeResult); // 유닛 포함 정신력 변화 알림
     } // 정신력 변화 전달 종료
+    private void SyncMentalStatus() // 정신 상태를 실제 상태 이상 목록에 동기화
+    { // 정신 상태 동기화 시작
+        BattleStatusEffectType desired = MentalState == BattleMentalState.Awakening ? BattleStatusEffectType.Awakening : MentalState == BattleMentalState.Collapse ? BattleStatusEffectType.Collapse : BattleStatusEffectType.None; // 현재 정신 상태 종류 계산
+        bool changed = false; // 상태 목록 변경 여부 초기화
+        for (int index = statusEffects.Count - 1; index >= 0; index--) // 기존 상태 목록 역순 확인
+        { // 기존 정신 상태 확인 시작
+            BattleStatusEffectInstance effect = statusEffects[index]; // 현재 상태 조회
+            if (effect.IsProtectedMentalState && effect.EffectType != desired) // 종료되거나 바뀐 정신 상태 확인
+            { // 기존 정신 상태 종료 시작
+                statusEffects.RemoveAt(index); // 정신 상태 만료 또는 전투 종료 반영
+                changed = true; // 상태 목록 변경 기록
+            } // 기존 정신 상태 종료 완료
+        } // 기존 정신 상태 확인 종료
+        if (desired != BattleStatusEffectType.None) // 유지할 정신 상태 확인
+        { // 현재 정신 상태 동기화 시작
+            BattleStatusEffectInstance current = FindStatusEffect(desired); // 기존 정신 상태 조회
+            if (current == null) // 신규 정신 상태 확인
+            { // 신규 정신 상태 추가 시작
+                statusEffects.Add(new BattleStatusEffectInstance(desired, 1, MentalRemainingTurns, 1)); // 실제 정신 상태 이상 추가
+                changed = true; // 상태 목록 변경 기록
+            } // 신규 정신 상태 추가 종료
+            else if (current.RemainingTurns != MentalRemainingTurns) // 남은 턴 변경 확인
+            { // 정신 상태 지속 동기화 시작
+                current.SyncMentalDuration(MentalRemainingTurns); // 실제 정신 상태 남은 턴 적용
+                changed = true; // 상태 턴 변경 기록
+            } // 정신 상태 지속 동기화 종료
+        } // 현재 정신 상태 동기화 종료
+        if (changed) // 실제 상태 목록 변경 확인
+        { // 상태 목록 변경 알림 시작
+            StatusEffectsChanged?.Invoke(this); // 상태 아이콘과 상세 갱신 알림
+        } // 상태 목록 변경 알림 종료
+    } // 정신 상태 동기화 종료
     private static int ApplyPercentage(int baseAmount, int changePercent) // 비율 기반 수치 계산
     { // 비율 계산 시작
         int safeBaseAmount = Mathf.Max(0, baseAmount); // 음수 원본 수치 보정

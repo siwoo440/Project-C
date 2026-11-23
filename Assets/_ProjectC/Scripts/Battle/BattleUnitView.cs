@@ -24,6 +24,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private Outline targetOutline; // 선택 가능 대상 윤곽선
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     private BattleMentalView mentalView; // 정신력 표시 화면
+    private Image mentalStateBacklight; // 각성·붕괴 머리 역광 이미지
     private GameObject blockRoot; // 방어도 표시 배경
     private TMP_Text blockText; // 방어도 수치 텍스트
     private GameObject partnerRoot; // 파트너 표시 배경
@@ -56,6 +57,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         mentalView.Bind(RuntimeUnit); // 정신력 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
+        EnsureMentalStateBacklight(); // 정신 상태 머리 역광 준비
+        RefreshMentalStateBacklight(); // 초기 정신 상태 역광 반영
         RefreshHealth(); // 체력 표시 갱신
         RefreshBlock(); // 방어도 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
@@ -136,6 +139,10 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.MentalChanged -= HandleMentalChanged; // 정신력 변화 이벤트 해제
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
         mentalView?.Unbind(); // 정신력 화면 연결 해제
+        if (mentalStateBacklight != null) // 정신 상태 역광 존재 확인
+        { // 정신 상태 역광 숨김 시작
+            mentalStateBacklight.gameObject.SetActive(false); // 연결 해제 시 역광 숨김
+        } // 정신 상태 역광 숨김 종료
         RuntimeUnit = null; // 런타임 참조 제거
         statusTooltipHovered = false; // 이전 유닛 마우스 상태 초기화
         if (blockRoot != null) // 방어도 화면 존재 확인
@@ -467,6 +474,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 사망 이벤트 무시
         } // 다른 유닛 처리 종료
         RefreshHealth(); // 사망 표시 갱신
+        RefreshMentalStateBacklight(); // 사망 유닛의 역광 표시 갱신
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
         { // 행동 예고 숨김 시작
             enemyIntentRoot.SetActive(false); // 사망 유닛 예고 숨김
@@ -478,6 +486,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         { // 변화 없음 처리 시작
             return; // 피드백 처리 중단
         } // 변화 없음 처리 종료
+        RefreshMentalStateBacklight(); // 정신 상태에 따른 머리 역광 갱신
         if (changeResult.StateStarted) // 특수 상태 시작 확인
         { // 특수 상태 피드백 시작
             bool isCollapse = changeResult.CurrentState == BattleMentalState.Collapse; // 붕괴 여부 계산
@@ -495,6 +504,39 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             ShowStatusFeedback($"정신력 {deltaLabel}", changeResult.AppliedDelta < 0); // 정신력 변화 문구 표시
         } // 정신력 수치 피드백 종료
     } // 정신력 피드백 종료
+    private void EnsureMentalStateBacklight() // 정신 상태의 머리 뒤 역광 준비
+    { // 머리 역광 준비 시작
+        if (mentalStateBacklight != null || portraitImage == null) // 기존 역광과 초상화 확인
+        { // 역광 준비 불필요 처리 시작
+            return; // 중복 생성 또는 초상화 누락 방지
+        } // 역광 준비 불필요 처리 종료
+        GameObject lightObject = new GameObject("MentalStateBacklight", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 투명 역광 화면 생성
+        lightObject.transform.SetParent(transform, false); // 유닛 화면에 역광 연결
+        lightObject.transform.SetSiblingIndex(portraitImage.transform.GetSiblingIndex()); // 캐릭터 초상화 뒤에 역광 배치
+        RectTransform lightRect = lightObject.GetComponent<RectTransform>(); // 역광 영역 조회
+        RectTransform portraitRect = portraitImage.rectTransform; // 캐릭터 초상화 영역 조회
+        lightRect.anchorMin = portraitRect.anchorMin; // 초상화 기준 최소 앵커 설정
+        lightRect.anchorMax = portraitRect.anchorMax; // 초상화 기준 최대 앵커 설정
+        lightRect.anchoredPosition = portraitRect.anchoredPosition + new Vector2(0f, portraitRect.rect.height * 0.33f); // 캐릭터 머리 뒤 위치 설정
+        lightRect.sizeDelta = new Vector2(250f, 180f); // 머리 주위 역광 크기 설정
+        mentalStateBacklight = lightObject.GetComponent<Image>(); // 역광 이미지 조회
+        mentalStateBacklight.enabled = BattleUiArt.Apply(mentalStateBacklight, "MentalStateBacklight"); // 투명 역광 이미지 적용과 누락 처리
+        mentalStateBacklight.raycastTarget = false; // 캐릭터 선택 입력 차단 해제
+        lightObject.SetActive(false); // 기본 역광 숨김
+    } // 머리 역광 준비 종료
+    private void RefreshMentalStateBacklight() // 현재 정신 상태의 머리 역광 갱신
+    { // 머리 역광 갱신 시작
+        if (mentalStateBacklight == null) // 역광 화면 존재 확인
+        { // 역광 화면 없음 처리 시작
+            return; // 역광 갱신 중단
+        } // 역광 화면 없음 처리 종료
+        bool active = RuntimeUnit != null && !RuntimeUnit.IsDead && RuntimeUnit.MentalState != BattleMentalState.Neutral; // 생존한 특수 정신 상태 확인
+        mentalStateBacklight.gameObject.SetActive(active); // 현재 정신 상태에 따른 역광 표시
+        if (active) // 특수 정신 상태 활성 확인
+        { // 정신 상태별 역광 색상 적용 시작
+            mentalStateBacklight.color = RuntimeUnit.MentalState == BattleMentalState.Awakening ? new Color(1f, 0.82f, 0.38f, 0.7f) : new Color(1f, 0.18f, 0.23f, 0.7f); // 각성 금빛과 붕괴 붉은빛 구분
+        } // 정신 상태별 역광 색상 적용 종료
+    } // 머리 역광 갱신 종료
     private void EnsureEnemyIntentView() // 적 행동 예고 화면 준비
     { // 예고 화면 준비 시작
         if (enemyIntentRoot != null) // 기존 예고 화면 확인

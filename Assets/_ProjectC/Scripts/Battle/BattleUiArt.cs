@@ -6,7 +6,7 @@ public static class BattleUiArt // 이미지 생성으로 제작한 전투 UI �
     private static readonly Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>(); // 재사용할 전투 스프라이트 목록
     public static bool Apply(Image target, string name) // 지정한 전투 이미지 적용
     { // 전투 이미지 적용 시작
-        if (target == null || name != "HandPanel" && name != "CardFrame" && name != "CostBadge" && name != "GaugeFrame" && name != "VitalGaugeFrame" && name != "HealthGaugeIcon" && name != "MentalGaugeIcon") // 화면과 지원 이미지 이름 확인
+        if (target == null || name != "HandPanel" && name != "CardFrame" && name != "CostBadge" && name != "GaugeFrame" && name != "VitalGaugeFrame" && name != "HealthGaugeIcon" && name != "MentalGaugeIcon" && name != "MentalStateBacklight") // 화면과 지원 이미지 이름 확인
         { // 이미지 적용 불가 처리 시작
             return false; // 기존 화면 유지
         } // 이미지 적용 불가 처리 종료
@@ -55,6 +55,10 @@ public static class BattleUiArt // 이미지 생성으로 제작한 전투 UI �
         { // 정신력 아이콘 영역 반환 시작
             return new Rect(texture.width * 0.15f, texture.height * 0.16f, texture.width * 0.7f, texture.height * 0.7f); // 정신력 아이콘 그림 영역 반환
         } // 정신력 아이콘 영역 반환 종료
+        if (name == "MentalStateBacklight") // 정신 상태 역광 이미지 확인
+        { // 정신 상태 역광 영역 반환 시작
+            return new Rect(0f, 0f, texture.width, texture.height); // 전체 투명 역광 이미지 영역 반환
+        } // 정신 상태 역광 영역 반환 종료
         return new Rect(texture.width * 0.027f, texture.height * 0.386f, texture.width * 0.946f, texture.height * 0.234f); // 기존 게이지 그림 영역 반환
     } // 그림 영역 조회 종료
 } // 전투 이미지 제공 종료

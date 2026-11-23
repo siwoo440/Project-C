@@ -5,6 +5,10 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
     private static readonly Dictionary<int, Sprite> sprites = new Dictionary<int, Sprite>(); // 재사용할 상태 아이콘 목록
     public static Sprite Get(BattleStatusEffectType type) // 상태 종류별 정사각형 이미지 조회
     { // 상태 이미지 조회 시작
+        if (type == BattleStatusEffectType.Awakening || type == BattleStatusEffectType.Collapse) // 별도 투명 정신 상태 아이콘 확인
+        { // 정신 상태 아이콘 조회 시작
+            return GetMentalStateIcon(type); // 별도 제작한 투명 아이콘 반환
+        } // 정신 상태 아이콘 조회 종료
         int index = GetIndex(type); // 상태 종류에 맞는 이미지 순서 조회
         if (sprites.TryGetValue(index, out Sprite cached) && cached != null) // 기존 상태 이미지 존재 확인
         { // 기존 이미지 반환 시작
@@ -24,6 +28,24 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
         sprites[index] = sprite; // 상태 아이콘 재사용 목록 보관
         return sprite; // 생성한 상태 아이콘 반환
     } // 상태 이미지 조회 종료
+    private static Sprite GetMentalStateIcon(BattleStatusEffectType type) // 정신 상태별 투명 아이콘 조회
+    { // 투명 아이콘 조회 시작
+        int index = type == BattleStatusEffectType.Awakening ? 16 : 17; // 정신 상태별 재사용 번호 설정
+        if (sprites.TryGetValue(index, out Sprite cached) && cached != null) // 기존 아이콘 확인
+        { // 기존 아이콘 반환 시작
+            return cached; // 재사용 아이콘 반환
+        } // 기존 아이콘 반환 종료
+        string name = type == BattleStatusEffectType.Awakening ? "AwakeningStatusIcon" : "CollapseStatusIcon"; // 상태별 이미지 이름 설정
+        Texture2D texture = Resources.Load<Texture2D>("UI/Battle/" + name); // 투명 상태 이미지 조회
+        if (texture == null) // 상태 이미지 누락 확인
+        { // 이미지 누락 처리 시작
+            return null; // 이미지 없음 반환
+        } // 이미지 누락 처리 종료
+        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f)); // 투명 상태 아이콘 생성
+        sprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 아이콘 저장 제외
+        sprites[index] = sprite; // 생성한 아이콘 재사용 등록
+        return sprite; // 정신 상태 아이콘 반환
+    } // 투명 아이콘 조회 종료
     private static int GetIndex(BattleStatusEffectType type) // 상태 종류를 제작 이미지 순서로 변환
     { // 상태 이미지 순서 변환 시작
         switch (type) // 상태 종류 분기

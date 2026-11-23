@@ -14,6 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
+    public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
         if (effectType == BattleStatusEffectType.None) // 상태 이상 종류 확인
@@ -28,6 +29,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 생성자 종료
     public void Refresh(int value, int duration, int maximumStacks) // 동일 상태 이상 재적용
     { // 재적용 시작
+        if (IsProtectedMentalState) // 정신 상태의 외부 재적용 확인
+        { // 정신 상태 재적용 차단 시작
+            return; // 정신력 규칙에 의한 상태 유지
+        } // 정신 상태 재적용 차단 종료
         Value = Math.Max(Value, Math.Max(1, value)); // 높은 효과 수치 유지
         RemainingTurns = Math.Max(RemainingTurns, Math.Max(1, duration)); // 긴 지속 횟수 유지
         MaximumStacks = Math.Max(MaximumStacks, Math.Max(1, maximumStacks)); // 높은 최대 중첩 유지
@@ -39,8 +44,19 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 재적용 종료
     public void AdvanceDuration() // 지속 횟수 감소
     { // 지속 감소 시작
+        if (IsProtectedMentalState) // 정신 상태의 외부 턴 감소 확인
+        { // 정신 상태 외부 감소 차단 시작
+            return; // 정신력 규칙에 의한 턴 진행 유지
+        } // 정신 상태 외부 감소 차단 종료
         RemainingTurns = Math.Max(0, RemainingTurns - 1); // 남은 횟수 한 단계 감소
     } // 지속 감소 종료
+    internal void SyncMentalDuration(int remainingTurns) // 정신 상태의 실제 남은 턴 연결
+    { // 정신 상태 턴 연결 시작
+        if (IsProtectedMentalState) // 보호된 정신 상태 확인
+        { // 정신 상태 턴 동기화 시작
+            RemainingTurns = Math.Max(1, remainingTurns); // 실제 정신 상태 남은 턴 저장
+        } // 정신 상태 턴 동기화 종료
+    } // 정신 상태 턴 연결 종료
     public void SkipNextDurationDecrease() // 자기 턴의 첫 지속 감소 생략 예약
     { // 지속 감소 생략 시작
         skipNextDurationDecrease = true; // 현재 상태의 생략 여부 기록
@@ -108,13 +124,17 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "방어 준비"; // 방어 준비 이름 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
                 return "교란"; // 정신력 교란 이름 반환
+            case BattleStatusEffectType.Awakening: // 각성 종류
+                return "각성"; // 각성 이름 반환
+            case BattleStatusEffectType.Collapse: // 붕괴 종류
+                return "붕괴"; // 붕괴 이름 반환
             default: // 알 수 없는 종류
                 return "없음"; // 기본 이름 반환
         } // 종류 분기 종료
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark; // 감소 상태 포함 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -150,6 +170,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "준"; // 방어 준비 아이콘 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
                 return "란"; // 정신력 교란 아이콘 반환
+            case BattleStatusEffectType.Awakening: // 각성 종류
+                return "각"; // 각성 아이콘 반환
+            case BattleStatusEffectType.Collapse: // 붕괴 종류
+                return "붕"; // 붕괴 아이콘 반환
             default: // 알 수 없는 종류
                 return "?"; // 기본 아이콘 반환
         } // 종류 분기 종료
@@ -158,6 +182,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     { // 상세 설명 조회 시작
         switch (effectType) // 상태 이상 종류 분기
         { // 종류 분기 시작
+            case BattleStatusEffectType.Awakening: // 각성 종류
+                return "정신력 최대 발동, 캐릭터별 피해·회복 변화, 강제 해제 불가"; // 각성 상태 설명 반환
+            case BattleStatusEffectType.Collapse: // 붕괴 종류
+                return "정신력 최소 발동, 캐릭터별 피해·회복 변화, 강제 해제 불가"; // 붕괴 상태 설명 반환
             case BattleStatusEffectType.Poison: // 중독 종류
                 return $"진영 턴 시작에 피해 {effectiveValue}, 중독 수치 1 감소"; // 중독 피해와 감소 설명 반환
             case BattleStatusEffectType.Burn: // 화상 종류
@@ -169,7 +197,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
                 return $"피해 카드 원본 피해 증가 {effectiveValue}"; // 공격 증가 설명 반환
             case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
-                return "새로 적용되는 디버프 차단"; // 상태 면역 설명 반환
+                return "새 일반 디버프 차단, 정신력 붕괴 제외"; // 상태 면역과 붕괴 예외 설명 반환
             case BattleStatusEffectType.PhysicalDefenseUp: // 물리 방어 증가 종류
                 return $"물리 방어력 증가 {effectiveValue}"; // 물리 방어 증가 설명 반환
             case BattleStatusEffectType.PhysicalDefenseDown: // 물리 방어 감소 종류
