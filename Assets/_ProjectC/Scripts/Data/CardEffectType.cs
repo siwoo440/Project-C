@@ -14,5 +14,6 @@ public enum CardEffectType // 카드 효과 종류
     GuardAllyAttack, // 동료의 예정 공격 대신 받기 효과
     ArrangeDrawTop, // 덱 위 카드 순서 정리 효과
     RerollRandomAttack, // 적 무작위 공격 대상 재굴림 효과
-    ShareAllyAttack // 동료의 예정 공격 피해 분담 효과
+    ShareAllyAttack, // 동료의 예정 공격 피해 분담 효과
+    TransferAllyDebuff // 동료의 디버프 하나를 자신에게 이전하는 효과
 } // 열거형 종료

@@ -77,6 +77,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 대상 문구 조회 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 동료 디버프 이전 효과 확인
+        { // 디버프 이전 이름 시작
+            return "동료 디버프 이전"; // 디버프 이전 효과 이름 반환
+        } // 디버프 이전 이름 종료
         if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 무작위 공격 재굴림 확인
         { // 재굴림 이름 시작
             return "공격 대상 재굴림"; // 재굴림 효과 이름 반환
@@ -121,6 +125,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH") // 죽음의 마무리 전용 카드 확인
+        { // 마무리 공격 상세 시작
+            return $"물리 피해 {cardInstance.EffectValue} · 디버프 대상 피해 50% 증가"; // 조건부 피해 상세 반환
+        } // 마무리 공격 상세 종료
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff) // 동료 디버프 이전 효과 확인
+        { // 디버프 이전 상세 시작
+            return "다른 아군의 디버프 하나를 선택해 자신에게 이전"; // 디버프 이전 상세 반환
+        } // 디버프 이전 상세 종료
         if (cardInstance.EffectType == CardEffectType.RerollRandomAttack) // 무작위 공격 재굴림 확인
         { // 재굴림 상세 시작
             return "무작위 공격 대상 재선택. 같은 대상도 선택 가능"; // 재굴림 상세 반환

@@ -310,6 +310,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 분담 대상 없음 처리 시작
             return false; // 피해 분담 카드 사용 차단
         } // 분담 대상 없음 처리 종료
+        if (cardInstance.EffectType == CardEffectType.TransferAllyDebuff && !turnRuntime.HasOtherLivingAlly(cardInstance.OwnerUnit)) // 디버프를 넘길 생존 동료 확인
+        { // 디버프 이전 대상 없음 시작
+            return false; // 디버프 이전 카드 사용 차단
+        } // 디버프 이전 대상 없음 종료
         if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.RecoverDiscard && runtimeDeck.DiscardPileCount == 0) // 회수할 버린 카드 확인
         { // 회수 후보 없음 처리 시작
             return false; // 버린 카드 회수 사용 차단

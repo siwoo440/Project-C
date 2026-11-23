@@ -204,6 +204,29 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 상태 제거 시작
         return statusEffect != null && statusEffects.Remove(statusEffect); // 상태 목록 제거 결과 반환
     } // 상태 제거 종료
+    internal bool MoveDebuffTo(BattleUnitRuntime recipient, BattleStatusEffectInstance effect) // 단일 디버프를 다른 아군에게 이전
+    { // 디버프 이동 시작
+        if (!BattleDebuffTransfer.CanTransfer(this, recipient, effect)) // 이전 조건과 원본 상태 재확인
+        { // 이동 불가 처리 시작
+            return false; // 원래 상태 유지와 실패 반환
+        } // 이동 불가 처리 종료
+        BattleStatusEffectInstance existing = recipient.FindStatusEffect(effect.EffectType); // 받는 쪽의 동일 상태 조회
+        statusEffects.Remove(effect); // 원래 동료의 디버프 제거
+        if (existing == null) // 받는 쪽의 기존 상태 존재 확인
+        { // 신규 상태 이전 시작
+            recipient.statusEffects.Add(effect); // 기존 수치와 지속을 유지한 상태 이동
+        } // 신규 상태 이전 종료
+        else // 받는 쪽의 동일 상태 확인
+        { // 상태 중첩 병합 시작
+            for (int stack = 0; stack < effect.StackCount; stack++) // 이전할 중첩 수만큼 순회
+            { // 개별 중첩 병합 시작
+                existing.Refresh(effect.Value, effect.RemainingTurns, effect.MaximumStacks); // 기존 상태 규칙대로 중첩과 지속 병합
+            } // 개별 중첩 병합 종료
+        } // 상태 중첩 병합 종료
+        StatusEffectsChanged?.Invoke(this); // 원래 동료의 상태 화면 갱신
+        recipient.StatusEffectsChanged?.Invoke(recipient); // 이전받은 동료의 상태 화면 갱신
+        return true; // 디버프 이동 성공 반환
+    } // 디버프 이동 종료
     internal void NotifyStatusEffectsChanged() // 상태 일괄 변경 알림
     { // 상태 알림 시작
         StatusEffectsChanged?.Invoke(this); // 상태 UI와 예고 갱신 알림
