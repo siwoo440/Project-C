@@ -169,4 +169,12 @@ public enum RelicEffectType // 유물 효과 종류
     NobleButtonOpeningTemporaryCard, // 첫 아군 손패에 비용 없는 임시 찌르기 생성
     DanceShoeEvasionDamage, // 아군 실제 회피 뒤 다음 공격의 피해 증가
     LockedDrawerTreasureBonus, // 보물방 완료 시 방별 한 번 추가 골드 판정
+    LibraryBookmarkOpeningPick, // 첫 손패 뒤 덱 위 후보 세 장의 한 장 선택
+    LaughMirrorDebuffReflection, // 살아 있는 적에게 실제 받은 약화의 확률 반사
+    LordsWaxOpeningEnemyWeakness, // 일반전과 정예전 시작에 적 전체 공격력 감소
+    BanquetOilPoisonPulse, // 매 네 번째 아군 턴의 생존 적 전체 중독
+    BlackCutleryBleedStackDraw, // 생존 적의 활성 출혈 세 중첩에 카드 드로우
+    OperaMaskAfraidKillMentalLoss, // 공포 적의 실제 처치 뒤 생존 적 정신력 감소
+    ServantContractOpeningMark, // 시작 생존 아군 한 명의 기간제 공격력 표식
+    ColdWindowBlindEnemyProtection, // 실명 적의 직접 명중으로 받는 피해 감소
 }

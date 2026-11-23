@@ -272,14 +272,14 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 변경된 덱 상태 알림
         return true; // 변경 성공 반환
     } // 덱 순서 변경 종료
-    public IReadOnlyList<CardInstance> PrepareDrawChoices(int maximumChoices) // 덱 위 선택 후보 준비
+    public IReadOnlyList<CardInstance> PrepareDrawChoices(int maximumChoices, bool recycleDiscard = true) // 버린 더미 보충 여부가 있는 덱 위 선택 후보 준비
     { // 선택 후보 준비 시작
         List<CardInstance> choices = new List<CardInstance>(); // 빈 선택 후보 목록 생성
         if (maximumChoices <= 0) // 잘못된 후보 수 확인
         { // 후보 없음 처리 시작
             return choices.AsReadOnly(); // 빈 후보 목록 반환
         } // 후보 없음 처리 종료
-        if (CountDrawable(drawPile) < maximumChoices && CountDrawable(discardPile) > 0) // 생존 후보 부족과 버린 카드 확인
+        if (recycleDiscard && CountDrawable(drawPile) < maximumChoices && CountDrawable(discardPile) > 0) // 재보충 요청과 생존 후보 부족 및 버린 카드 확인
         { // 버린 카드 재구성 시작
             List<CardInstance> recycled = new List<CardInstance>(discardPile); // 버린 카드 복사
             ShuffleList(recycled); // 재구성 카드 순서 섞기
@@ -333,6 +333,17 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 선택 처리 성공 반환
     } // 선택 드로우 종료
+    internal bool TryMoveDrawCardToHand(CardInstance choice) // 뽑을 더미의 지정 실물 카드를 손패로 옮기는 유물 선택
+    { // 원본 카드 이동 시작
+        if (hand.Count >= MaxHandSize || !IsDrawable(choice) || !drawPile.Remove(choice)) // 정상 손패 여유와 현재 유효한 실물 카드 존재 확인
+        { // 손패 이동 실패 시작
+            return false; // 기존 카드 영역의 유지
+        } // 손패 이동 실패 종료
+        hand.Add(choice); // 포함되지 않은 다른 덱 카드의 순서를 보존한 선택 카드 추가
+        EnsureValidState(); // 원래 영역과 카드 총수 검증
+        StateChanged?.Invoke(); // 선택으로 바뀐 실제 덱과 손패 알림
+        return true; // 실제 원본 카드 이동 성공
+    } // 원본 카드 이동 종료
     public bool TryDiscardDrawTop(CardInstance choice) // 뽑을 더미 맨 위 카드 버리기
     { // 맨 위 카드 버리기 시작
         int topIndex = FindTopDrawableIndex(); // 사망 카드를 제외한 맨 위 위치 조회

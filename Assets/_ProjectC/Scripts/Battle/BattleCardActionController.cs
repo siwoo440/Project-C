@@ -53,6 +53,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private CardInstance manaRetrievalSource; // 시전 전에 별도 지팡이 선택을 기다리는 회수 카드
     private CardInstance manaRetrievalDiscard; // 실제 충돌에서 다시 확인하고 버릴 별도 손패 지팡이
     private BattleRemainingCardChoiceView remainingChoiceView; // 남은 카드 처리 선택 화면
+    private BattleDrawChoiceView openingBookmarkView; // 서고 먼지갈피의 실제 선택 화면
     private BattleDebuffChoiceView debuffChoiceView; // 디버프 이전 선택 화면
     private IReadOnlyList<BattleStatusEffectInstance> pendingDebuffChoices; // 이전할 디버프 선택 후보
     private BattleUnitRuntime pendingDebuffSource; // 디버프를 넘길 동료
@@ -99,7 +100,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 거르고 고르는 원소 카드 조건 종료
     private void HandleCardClicked(CardInstance cardInstance) // 카드 클릭 처리
     { // 카드 클릭 처리 시작
-        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 행동 연출 여부 확인
+        if (!turnRuntime.CanAcceptPlayerInput || actionPending || actionSequenceRunner.IsBusy) // 개막 선택을 마친 플레이어 턴과 행동 연출 여부 확인
         { // 플레이어 턴 아님 처리 시작
             return; // 카드 클릭 처리 중단
         } // 플레이어 턴 아님 처리 종료
@@ -194,7 +195,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 클릭 처리 종료
     private void HandleUnitClicked(BattleUnitRuntime runtimeUnit) // 유닛 클릭 처리
     { // 유닛 클릭 처리 시작
-        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 행동 연출 여부 확인
+        if (!turnRuntime.CanAcceptPlayerInput || actionPending || actionSequenceRunner.IsBusy) // 개막 선택을 마친 플레이어 턴과 행동 연출 여부 확인
         { // 플레이어 턴 아님 처리 시작
             return; // 유닛 클릭 처리 중단
         } // 플레이어 턴 아님 처리 종료
@@ -258,6 +259,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 덱 상태 처리 종료
     private void HandleTurnStateChanged() // 턴 상태 변경 처리
     { // 턴 상태 처리 시작
+        UpdateOpeningBookmarkView(); // 현재 개막 선택의 표시와 끝난 선택 화면 정리
         if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 종료 확인
         { // 입력 잠금 처리 시작
             CancelSelection(); // 카드 선택 상태 초기화
@@ -265,6 +267,35 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 입력 잠금 처리 종료
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 턴 상태 처리 종료
+    private void UpdateOpeningBookmarkView() // 실제 개막 선택의 모달 화면과 후보 연결
+    { // 개막 쪽지 화면 정산 시작
+        var choices = turnRuntime.OpeningBookmarkChoices; // 첫 손패가 끝난 실제 후보 조회
+        if (choices == null) // 선택이 없거나 이미 끝난 전투 확인
+        { // 이전 화면 정리 시작
+            if (openingBookmarkView != null) // 활성 화면 객체의 남은 참조 확인
+            { // 남은 모달 제거 시작
+                openingBookmarkView.Close(); // 결과로 끝난 개막 화면 바로 닫기
+                openingBookmarkView = null; // 이전 화면 객체의 참조 제거
+            } // 남은 모달 제거 종료
+            return; // 활성 개막 후보가 없을 때 새 화면 생성 생략
+        } // 이전 화면 정리 종료
+        if (openingBookmarkView != null) // 현재 선택 화면이 이미 열린 상태 확인
+        { // 중복 생성 방지 시작
+            return; // 다음 상태 알림까지 동일한 실제 화면 유지
+        } // 중복 생성 방지 종료
+        var canvas = handView.GetComponentInParent<Canvas>(); // 일반 선택 창을 열 실제 전투 캔버스
+        if (canvas == null) // 실제 화면에 연결할 위치 누락 확인
+        { // 모달을 열 수 없는 경로 시작
+            turnRuntime.ResolveOpeningBookmark(null); // 다른 전투 입력이 영구 잠기지 않도록 선택 취소
+            return; // 캔버스 없는 화면 생성 생략
+        } // 모달을 열 수 없는 경로 종료
+        openingBookmarkView = BattleDrawChoiceView.Show(canvas.transform, choices, ResolveOpeningBookmarkView, "서고 먼지갈피 · 가져올 카드 선택", () => ResolveOpeningBookmarkView(null)); // 현재 후보 및 취소를 기존 선택 화면에 연결
+    } // 개막 쪽지 화면 정산 종료
+    private void ResolveOpeningBookmarkView(CardInstance choice) // 기존 모달의 카드 선택 또는 취소 버튼 처리
+    { // 모달 선택 결과 전달 시작
+        openingBookmarkView = null; // 자체 닫힌 선택 창을 상태 갱신 전에 참조 제거
+        turnRuntime.ResolveOpeningBookmark(choice); // 실제 카드 이동과 일반 전투 입력 복구 요청
+    } // 모달 선택 결과 전달 종료
     private void RefreshPartnerMarkers() // 파트너 화면 표시 갱신
     { // 파트너 표시 갱신 시작
         foreach (BattleUnitView view in allyUnitViews) // 아군 화면 목록 순회
@@ -344,7 +375,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 축복 이전 후보 갱신 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
-        if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 연출 상태 확인
+        if (!turnRuntime.CanAcceptPlayerInput || actionPending || actionSequenceRunner.IsBusy) // 개막 선택 완료와 플레이어 턴과 연출 상태 확인
         { // 실행 불가 처리 시작
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
@@ -2371,6 +2402,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 손패 이벤트 해제 종료
         runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+        if (openingBookmarkView != null) // 씬과 함께 사라질 실제 개막 선택 화면 확인
+        { // 관리 중인 모달 제거 시작
+            openingBookmarkView.Close(); // 전투를 떠날 때 개막 선택 화면 숨김
+            openingBookmarkView = null; // 이전 화면의 실제 참조 해제
+        } // 관리 중인 모달 제거 종료
         UnregisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 해제
         UnregisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 해제
         selectedCard = null; // 선택 카드 참조 제거

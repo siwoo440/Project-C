@@ -57,6 +57,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
+    internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
@@ -225,9 +226,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 맥동핵의 성공 침식 피해 처리 종료
         return result; // 부모 효과에 기존 실제 상태 결과 그대로 반환
     } // 일반 상태 적용 종료
-    internal BattleStatusEffectApplyResult ApplyReflectedDebuff(BattleStatusEffectInstance debuff, BattleUnitRuntime source) // 흐린 거울못의 실제 원래 약화 복사
+    internal BattleStatusEffectApplyResult ApplyReflectedDebuff(BattleStatusEffectInstance debuff, BattleUnitRuntime source) // 두 반사 유물이 공유하는 활성 약화 복사
     { // 반사 약화 적용 시작
-        return ApplyStatusEffectCore(debuff.EffectType, debuff.Value, debuff.RemainingTurns, debuff.MaximumStacks, source, null, allowOutgoingBurnExtension: false); // 다른 유물의 화상 연장 없이 현재 값과 기간을 기존 상태 및 면역 규칙에 전달
+        return ApplyStatusEffectCore(debuff.EffectType, debuff.Value, debuff.RemainingTurns, debuff.MaximumStacks, source, debuff, allowOutgoingBurnExtension: false); // 기존 면역과 함께 실제 값 및 중첩과 기간의 독립 복제 처리
     } // 반사 약화 적용 종료
     internal bool IsTransientTurnBuff(BattleStatusEffectInstance status) // 일반 강화와 독립인 현재 턴 전용 상태 확인
     { // 독립 강화 확인 시작
@@ -558,7 +559,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         long totalBonus = ExplorationAttackPowerBattle?.PermanentAttackPower ?? 0; // 탐사 중인 실제 아군의 기존 영구 공격력과 일반 강화 합산 준비
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
-            if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp) // 일반 강화와 맥박줄의 독립 공격력 증가 확인
+            if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark) // 일반 강화와 맥박줄 및 종복 계약의 독립 공격력 증가 확인
             { // 공격력 증가 누적 시작
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
@@ -601,6 +602,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 전투불능 상태 기록 시작
         IsDead = true; // 피해 이벤트부터 쓰러진 아군 상태 확정
         DefeatedWhileBurning = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 화상 저장
+        DefeatedWhileAfraid = Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false }; // 일반 및 지속 피해의 실제 마지막 체력 시점에 공포 저장
         var seed = Team == BattleTeam.Ally ? GetStatusEffect(BattleStatusEffectType.ResurrectionSeed) : null; // 현재 아군의 부활 씨앗 조회
         pendingSeedRevivalPercent = seed is { IsExpired: false } ? seed.EffectiveValue : 0; // 처치와 사망 알림 뒤 소비할 유효 씨앗만 저장
     } // 전투불능 상태 기록 종료

@@ -471,7 +471,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 파트너 후보 없음 처리 시작
             return false; // 파트너 지정 카드 사용 차단
         } // 파트너 후보 없음 처리 종료
-        return turnRuntime.IsPlayerTurn && SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime); // 턴과 공용 행동력 검사 결과 반환
+        return turnRuntime.CanAcceptPlayerInput && SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime); // 개막 선택 완료 여부와 일반 공용 행동력 및 대상 조건 확인
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
@@ -725,7 +725,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
                 turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
                 break; // 기본 분기 종료
         } // 턴 단계 분기 종료
-        endTurnButton.interactable = turnRuntime.IsPlayerTurn && !interactionLocked; // 플레이어 턴과 입력 잠금 버튼 상태 적용
+        endTurnButton.interactable = turnRuntime.CanAcceptPlayerInput && !interactionLocked; // 개막 선택을 마친 플레이어 턴과 입력 잠금 버튼 상태 적용
         escapeButton.interactable = turnRuntime.CanEscape && !interactionLocked; // 도주 규칙과 입력 잠금 버튼 상태 적용
     } // 턴 상태 갱신 종료
     private void RefreshActionPointStatus() // 공용 행동력 수량 갱신

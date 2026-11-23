@@ -3150,4 +3150,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: c2cc5ae9c19a524299ccce519b61a998, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_DUSTY_LIBRARY_BOOKMARK
+    offerType: 1
+    price: 324
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 8235b4044ff3513ea972ca0ff3e22d3b, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LAUGH_BEHIND_MIRROR
+    offerType: 1
+    price: 345
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 604d1f7afa79504cae38ac439e9a7517, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LORDS_WAX_SEAL
+    offerType: 1
+    price: 208
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 7e861f108b755de391b314b9a9c0a11a, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BANQUET_OIL_LAMP
+    offerType: 1
+    price: 229
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: b1d7651d89e25bc1b7bef10e7fba3725, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_CUTLERY_CASE
+    offerType: 1
+    price: 242
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: fd366163fedd51f184b36392d319b892, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DAMAGED_OPERA_MASK
+    offerType: 1
+    price: 263
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 49262107ee0e55718b079defd96bfdff, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_OLD_SERVANT_CONTRACT
+    offerType: 1
+    price: 276
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 76a0fdc2bb495cc0a5f7758cf80543ee, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_COLD_WINDOW_NAIL
+    offerType: 1
+    price: 297
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: f37d8b8ea6c95c0e816da2f0c09dcd74, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

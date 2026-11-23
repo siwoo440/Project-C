@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ServantContractMark) // 신규 종복 표식 도감 정보 조회
+                    { // 계약 상태 문구 생성 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 5); // 전투와 같은 공격력 증가 수치
+                    } // 계약 상태 문구 생성 종료
                     else if (effect == BattleStatusEffectType.WandOverload || effect == BattleStatusEffectType.IllusionHitReduction) // 지팡이의 두 새 강화 설명 확인
                     { // 도감의 전투 수치 연결 시작
                         int amount = effect == BattleStatusEffectType.WandOverload ? 50 : 5; // 해당 강화의 실제 시트 설정 수치

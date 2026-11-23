@@ -233,6 +233,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마력 보호막"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마력 증폭"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
+                return "종복의 표식"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
                 return "마력 폭주"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
@@ -411,6 +413,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법저항+"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마법피해+"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
+                return "계약"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
                 return "폭주"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
@@ -589,6 +593,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴까지 마법 저항력 수치 {effectiveValue} 증가"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return $"마법 카드 공격력 {effectiveValue} 증가"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
+                return $"표식이 남는 동안 공격력 {effectiveValue} 증가"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
                 return $"이번 아군 턴의 지팡이 마법 공격 피해 {effectiveValue}% 증가"; // 실제 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.IllusionHitReduction: // 이번 지팡이 강화 상태 종류 확인
