@@ -1,26 +1,49 @@
-using UnityEngine;
-
-public sealed class MainMenuController : MonoBehaviour
-{
-    public void StartGame()
-    {
-        if (SceneFlowManager.Instance == null) // SceneFlowManager 존재 여부 확인
-        {
-            Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 출력
+using UnityEngine; // 유니티 기본 기능 사용
+using UnityEngine.EventSystems; // 키보드 메뉴 선택 기능 사용
+public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 연결
+{ // 클래스 시작
+    [SerializeField] private MainMenuView menuView; // 메인 메뉴 화면
+    private void Start() // 메뉴 초기화
+    { // 초기화 시작
+        if (menuView == null) // 씬 화면 연결 확인
+        { // 화면 조회 시작
+            menuView = FindFirstObjectByType<MainMenuView>(); // 기존 메뉴 화면 조회
+        } // 화면 조회 종료
+        if (menuView == null) // 메뉴 화면 누락 확인
+        { // 화면 누락 처리 시작
+            Debug.LogError("[MainMenu] 메인 메뉴 화면이 연결되지 않았습니다."); // 화면 누락 안내
+            return; // 초기화 중단
+        } // 화면 누락 처리 종료
+        menuView.Bind(StartGame, null, OpenSettings, QuitGame, false); // 구현된 메뉴 동작 연결
+        if (EventSystem.current != null) // 입력 관리자 존재 확인
+        { // 첫 버튼 선택 시작
+            EventSystem.current.SetSelectedGameObject(menuView.NewGameButton.gameObject); // 새로하기 기본 선택
+        } // 첫 버튼 선택 종료
+    } // 초기화 종료
+    public void StartGame() // 게임 시작
+    { // 게임 시작 처리
+        if (SceneFlowManager.Instance == null) // 씬 관리자 존재 확인
+        { // 관리자 누락 처리 시작
+            Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 안내
             return; // 게임 시작 중단
-        }
-
-        SceneFlowManager.Instance.LoadScene("20_Lobby"); // 로비 씬 이동
-    }
-
-    public void OpenSettings()
-    {
-        if (SceneFlowManager.Instance == null) // SceneFlowManager 존재 여부 확인
-        {
-            Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 출력
+        } // 관리자 누락 처리 종료
+        SceneFlowManager.Instance.LoadScene("20_Lobby"); // 거점 씬 이동
+    } // 게임 시작 종료
+    public void OpenSettings() // 설정 화면 이동
+    { // 설정 이동 시작
+        if (SceneFlowManager.Instance == null) // 씬 관리자 존재 확인
+        { // 관리자 누락 처리 시작
+            Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 안내
             return; // 설정 이동 중단
-        }
-
+        } // 관리자 누락 처리 종료
         SceneFlowManager.Instance.LoadScene("90_Settings"); // 설정 씬 이동
-    }
-}
+    } // 설정 이동 종료
+    public void QuitGame() // 게임 종료
+    { // 종료 시작
+#if UNITY_EDITOR // 편집기 실행 구분
+        UnityEditor.EditorApplication.isPlaying = false; // 편집기 재생 종료
+#else // 독립 실행 환경 구분
+        Application.Quit(); // 게임 프로그램 종료
+#endif // 실행 환경 분기 종료
+    } // 종료 처리 완료
+} // 클래스 종료
