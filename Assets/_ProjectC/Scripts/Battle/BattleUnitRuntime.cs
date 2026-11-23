@@ -299,6 +299,20 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 획득 처리 종료
         return gained; // 실제 획득량 반환
     } // 방어도 획득 종료
+    public bool CanSpendHealth(int amount) // 사망하지 않는 체력 비용 지불 가능 확인
+    { // 체력 비용 확인 시작
+        return amount > 0 && !IsDead && CurrentHealth > amount; // 양수 비용과 소모 후 생존 여부 반환
+    } // 체력 비용 확인 종료
+    public bool TrySpendHealth(int amount) // 방어도를 소모하지 않는 체력 비용 지불
+    { // 체력 비용 지불 시작
+        if (!CanSpendHealth(amount)) // 유효한 비용과 생존 가능 여부 확인
+        { // 비용 지불 불가 시작
+            return false; // 체력을 유지한 실패 반환
+        } // 비용 지불 불가 종료
+        CurrentHealth -= amount; // 방어도와 무관하게 현재 체력 소모
+        HealthChanged?.Invoke(this); // 체력 화면과 영구 상태 갱신 알림
+        return true; // 체력 비용 지불 성공 반환
+    } // 체력 비용 지불 종료
     public void ClearBlock() // 남은 방어도 제거
     { // 방어도 제거 시작
         if (CurrentBlock <= 0) // 제거할 방어도 확인

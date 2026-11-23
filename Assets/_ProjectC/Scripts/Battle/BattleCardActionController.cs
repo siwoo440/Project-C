@@ -154,6 +154,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 상태 초기화
         } // 소유자 사망 처리 종료
     } // 유닛 사망 처리 종료
+    private void HandleAllyHealthChanged(BattleUnitRuntime runtimeUnit) // 아군 체력 변경 시 카드 사용 상태 갱신
+    { // 아군 체력 변경 처리 시작
+        if (selectedCard != null && selectedCard.OwnerUnit == runtimeUnit && DevilBloodPrice.IsBloodPriceCard(selectedCard) && !DevilBloodPrice.CanPay(selectedCard)) // 선택된 체력 비용 카드의 지불 가능 여부 확인
+        { // 선택 취소 처리 시작
+            CancelSelection(); // 체력 부족 카드 선택 해제
+        } // 선택 취소 처리 종료
+        handView.RefreshCardAvailability(); // 변경된 체력 기준 손패 사용 가능 상태 갱신
+    } // 아군 체력 변경 처리 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
         if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 연출 상태 확인
@@ -366,6 +374,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
+        if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
+        { // 체력 비용 지불 불가 시작
+            return false; // 선택 불가 반환
+        } // 체력 비용 지불 불가 종료
         if (cardInstance.EffectType == CardEffectType.Heal && targetUnit.CurrentHealth >= targetUnit.MaxHealth) // 회복 대상 체력 확인
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
@@ -604,6 +616,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             BattleMentalChangeResult mentalResult = targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 대상 정신력 직접 변경
             return Mathf.Abs(mentalResult.AppliedDelta); // 실제 정신력 변화량 반환
         } // 정신력 효과 처리 종료
+        if (DevilBloodPrice.IsBloodPriceCard(cardInstance)) // 악마 전용 체력 소모 공격 확인
+        { // 체력 비용 지불 시작
+            if (targetUnit == null || targetUnit.IsDead) // 공격 대상의 생존 상태 재확인
+            { // 공격 대상 없음 처리 시작
+                return 0; // 체력 비용 없이 공격 중단
+            } // 공격 대상 없음 처리 종료
+            if (!DevilBloodPrice.TryPay(cardInstance)) // 체력 비용 지불 가능 여부 재확인
+            { // 체력 비용 실패 처리 시작
+                return 0; // 체력과 공격 피해 미적용 반환
+            } // 체력 비용 실패 처리 종료
+            FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 실제 체력 비용 표시
+        } // 체력 비용 지불 종료
         int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
@@ -730,6 +754,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 등록 시작
                     unitView.RuntimeUnit.Died += HandleUnitDied; // 유닛 사망 이벤트 등록
+                    if (unitView.RuntimeUnit.Team == BattleTeam.Ally) // 아군 체력 이벤트 연결 확인
+                    { // 아군 체력 연결 시작
+                        unitView.RuntimeUnit.HealthChanged += HandleAllyHealthChanged; // 체력 비용 카드 갱신 이벤트 등록
+                    } // 아군 체력 연결 종료
                 } // 런타임 이벤트 등록 종료
             } // 유닛 화면 연결 종료
         } // 이벤트 등록 처리 종료
@@ -744,6 +772,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 해제 시작
                     unitView.RuntimeUnit.Died -= HandleUnitDied; // 유닛 사망 이벤트 해제
+                    if (unitView.RuntimeUnit.Team == BattleTeam.Ally) // 아군 체력 이벤트 연결 확인
+                    { // 아군 체력 연결 해제 시작
+                        unitView.RuntimeUnit.HealthChanged -= HandleAllyHealthChanged; // 체력 비용 카드 갱신 이벤트 해제
+                    } // 아군 체력 연결 해제 종료
                 } // 런타임 이벤트 해제 종료
             } // 유닛 화면 연결 해제 종료
         } // 이벤트 해제 처리 종료

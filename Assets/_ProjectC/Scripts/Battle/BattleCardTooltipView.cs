@@ -125,6 +125,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (DevilBloodPrice.IsBloodPriceCard(cardInstance)) // 악마 체력 소모 전용 카드 확인
+        { // 체력 비용 상세 시작
+            return $"체력 {cardInstance.SourceData.SecondaryEffectValue} 소모 · 물리 피해 {cardInstance.EffectValue} · 소모 후 생존 필요"; // 체력 비용과 피해 상세 반환
+        } // 체력 비용 상세 종료
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH") // 죽음의 마무리 전용 카드 확인
         { // 마무리 공격 상세 시작
             return $"물리 피해 {cardInstance.EffectValue} · 디버프 대상 피해 50% 증가"; // 조건부 피해 상세 반환

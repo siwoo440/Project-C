@@ -294,6 +294,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 카드 사용 조건 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 사용 조건 오류 처리 종료
+        if (DevilBloodPrice.IsBloodPriceCard(cardInstance) && !DevilBloodPrice.CanPay(cardInstance)) // 악마 전용 카드의 체력 비용 확인
+        { // 체력 비용 부족 처리 시작
+            return false; // 체력 비용 카드 사용 차단
+        } // 체력 비용 부족 처리 종료
         if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.ChooseDraw && !runtimeDeck.HasDrawableCards) // 생존 소유자의 선택 가능 카드 확인
         { // 선택 후보 없음 처리 시작
             return false; // 선택 드로우 카드 사용 차단
