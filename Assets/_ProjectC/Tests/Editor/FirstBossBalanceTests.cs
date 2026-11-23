@@ -12,23 +12,28 @@ using Object = UnityEngine.Object; // 유니티 객체 검색
 
 public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 계측
 { // 첫 보스 계측 시작
-    private static readonly int[] Seeds = { 20901, 20902, 20903 }; // 고정 탐사와 전투 시드 세 개
+    internal static readonly int[] Seeds = { 20901, 20902, 20903 }; // 고정 탐사와 전투 시드 세 개
     private static readonly string[] PartyIds = { "ARC_00", "ARC_04", "ARC_02", "ARC_07" }; // 바보와 황제와 여사제와 전차 순서
     private const int RoundLimit = 24; // 측정할 마지막 플레이어 라운드
 
     [UnityTest] // 시드별 실제 전투 진행
     public IEnumerator FloorFiveBossUsesStartingDeck([ValueSource(nameof(Seeds))] int seed) // 재현 가능한 보스 승패와 턴 수 측정
+    { // 최초 측정 조건 선택 시작
+        return Run(seed, FirstBossScenario.Original); // 기본 덱으로 기존 측정 경로 실행
+    } // 최초 측정 조건 선택 종료
+
+    internal static IEnumerator Run(int seed, FirstBossScenario scenario) // 같은 전투 측정기의 실행과 저장 격리
     { // 시드 검사 시작
         if (Application.companyName != "ProjectCVerification" || Application.productName != "ProjectCVerification") // 자동 저장 분리 프로필 확인
         { // 실제 플레이어 저장 보호 시작
             Assert.Ignore("ProjectCVerification 검증 복제본에서 실행하세요."); // 일반 프로필 실행 생략
         } // 실제 플레이어 저장 보호 종료
         yield return new EnterPlayMode(); // 실제 게임 시작
-        yield return Measure(seed); // 고정 시드 한 판 측정
+        yield return Measure(seed, scenario); // 지정 조건과 고정 시드 한 판 측정
         yield return new ExitPlayMode(); // 시드별 관리자와 전투 씬 해제
     } // 시드 검사 종료
 
-    private static IEnumerator Measure(int seed) // 탐사 준비와 실제 보스 조우 생성
+    private static IEnumerator Measure(int seed, FirstBossScenario scenario) // 탐사 준비와 실제 보스 조우 생성
     { // 회차 준비 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬에서 정상 관리자 생성
         yield return WaitFor(() => Object.FindFirstObjectByType<MainMenuController>() != null && !SceneFlowManager.Instance.IsLoadingScene, "시작 메뉴"); // 시작 메뉴 준비 대기
@@ -37,11 +42,20 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
         Assert.IsTrue(positions.All(index => index >= 0)); // 네 캐릭터의 실제 등록 확인
         PartyDepartureTestSupport.StartExploration(positions); // 정상 출전과 기본 덱 생성
         ExplorationSessionManager session = ExplorationSessionManager.Instance; // 이번 탐사의 진행 상태 조회
+        if (scenario != FirstBossScenario.Original) // 같은 획득 경로를 통과하는 비교군 확인
+        { // 첫 세 층 비교 준비 시작
+            session.SetCurrentFloorSeed(FirstBossRewardComparisonTests.DepartureSeed); // 첫 탐사 씬이 열리기 전 양쪽의 같은 지도 확정
+            yield return FirstBossRewardComparisonTests.VisitRewardFloors(session, scenario); // 실제 보물과 상점 방의 동일 조건 구성
+        } // 첫 세 층 비교 준비 종료
         while (session.CurrentFloor < 5) // 첫 보스 전까지의 탐사 구간 단축
         { // 층 전진 시작
             session.AdvanceFloor(); // 다음 층으로 정상 진행 상태 변경
         } // 층 전진 종료
         session.SetCurrentFloorSeed(seed); // 탐사 씬이 생성할 5층 지도 시드 설정
+        if (scenario != FirstBossScenario.Original) // 실제 세 번째 층을 방문한 비교군 확인
+        { // 보스 층 재구성 시작
+            SceneFlowManager.Instance.LoadScene("30_Exploration"); // 지정 시드의 실제 다섯 번째 층으로 이동
+        } // 보스 층 재구성 종료
         yield return WaitFor(() => Object.FindFirstObjectByType<ExplorationRoomRoleRuntime>() != null && !SceneFlowManager.Instance.IsLoadingScene, "5층 지도"); // 실제 5층 방 역할 배치 대기
         yield return null; // 이전 조우 오브젝트의 프레임 정리 대기
         ExplorationMapRuntime map = Object.FindFirstObjectByType<ExplorationMapRuntime>(); // 생성된 5층 지도 조회
@@ -74,16 +88,17 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
             Assert.AreEqual(ExplorationDifficultyCalculator.ScaleHealth(boss.EnemySource.MaxHealth, 5, BattleType.Boss), boss.CurrentHealth); // 실제 5층 보스 체력 확인
             CollectionAssert.AreEqual(PartyIds, battle.AllyUnits.Select(unit => unit.UnitId)); // 출전 네 명과 편성 순서 확인
             Assert.IsTrue(battle.AllyUnits.All(unit => unit.CurrentHealth == unit.MaxHealth)); // 사전 피해 없는 출전 조건 확인
-            Assert.AreEqual(12, battle.BattleDeck.CardCount); // 초기 덱 12장 확인
+            bool rewards = scenario == FirstBossScenario.WithRewards; // 실제 카드와 유물을 받은 회차 확인
+            Assert.AreEqual(rewards ? 14 : 12, battle.BattleDeck.CardCount); // 기본 덱과 보상 카드 두 장 확인
             Assert.AreEqual(8, battle.BattleDeck.HandCount); // 첫 손패 8장 확인
             Assert.AreEqual(6, battle.SharedActionPoints.CurrentActionPoints); // 첫 라운드 공용 행동력 확인
-            Assert.AreEqual(0, RelicRunManager.EnsureInstance().Inventory.Count); // 유물 없는 초기 조건 확인
+            Assert.AreEqual(rewards ? 1 : 0, RelicRunManager.EnsureInstance().Inventory.Count); // 보상군의 잿빛 인장 한 개 확인
             Field(typeof(BattleEnemyActionRuntime), "random").SetValue(battle.EnemyActionRuntime, new System.Random(seed)); // 대상과 속도 추첨기만 고정
             battle.EnemyActionRuntime.SetBossPhaseStart(boss, 0); // 미실행 첫 예고의 패턴 순번 복구
             Assert.AreEqual(1, battle.EnemyActionRuntime.PrepareActions()); // 고정 난수로 첫 예고 한 번 생성
             Assert.AreEqual(1, battle.EnemyActionRuntime.FindAction(boss).PatternIndex); // 첫 페이즈 첫 행동 확인
             UnityEngine.Random.InitState(seed); // 실명과 추가 상태 확률의 난수 고정
-            yield return Fight(battle, boss, seed); // 실제 턴과 카드 입력 진행
+            yield return Fight(battle, boss, seed, scenario); // 같은 우선순위로 실제 턴과 카드 입력 진행
         } // 보스전 진입 종료
         finally // 검사 전 설정 복구
         { // 임시 상태 복구 시작
@@ -92,7 +107,7 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
         } // 임시 상태 복구 종료
     } // 회차 준비 종료
 
-    private static IEnumerator Fight(BattleSceneSetup battle, BattleUnitRuntime boss, int seed) // 정상 카드와 턴으로 전투 결과 측정
+    private static IEnumerator Fight(BattleSceneSetup battle, BattleUnitRuntime boss, int seed, FirstBossScenario scenario) // 정상 카드와 턴으로 전투 결과 측정
     { // 전투 계측 시작
         BattleHandView hand = Object.FindFirstObjectByType<BattleHandView>(); // 실제 손패 화면 조회
         Button endTurn = hand.transform.Find("EndTurnButton").GetComponent<Button>(); // 실제 턴 종료 버튼 조회
@@ -104,11 +119,28 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
         int enemyTurns = 0; // 시작한 적 턴 횟수
         int hpAfterTwelve = -1; // 열두 번째 라운드 종료 시 보스 체력
         int startHp = boss.CurrentHealth; // 보스 시작 체력 보관
+        int[] openingBlock = battle.AllyUnits.Select(unit => unit.CurrentBlock).ToArray(); // 첫 카드 입력 전 편성순 방어도 기록
+        var rewardDamage = new Dictionary<string, int>(); // 실제 보상 카드별 보스 체력 피해 보관
+        CardInstance resolving = null; // 피해를 처리 중인 손패 카드 확인
+        void RecordBossDamage(BattleEventContext hit) // 보상 카드 처리 중 직접 보스 체력 피해 기록
+        { // 보상 카드 피해 집계 시작
+            if (resolving == null || hit.TargetUnit != boss || hit.SourceUnit != resolving.OwnerUnit || hit.Phase != BattleTurnPhase.PlayerTurn) // 현재 카드 소유자가 보스에게 가한 직접 피해 확인
+            { // 다른 출처 제외 시작
+                return; // 적 공격과 적 턴 상태 피해 제외
+            } // 다른 출처 제외 종료
+            string id = resolving.SourceData.CardId; // 실제 사용한 카드 식별자 조회
+            if (id == FirstBossRewardComparisonTests.Strike || id == FirstBossRewardComparisonTests.Fireball) // 획득한 두 공격 카드 확인
+            { // 해당 카드 피해 기록 시작
+                rewardDamage.TryGetValue(id, out int before); // 이전 직접 피해량 조회
+                rewardDamage[id] = before + hit.AppliedAmount; // 실제 체력 감소량 누적
+            } // 해당 카드 피해 기록 종료
+        } // 보상 카드 피해 집계 종료
         int firstAttack = battle.EnemyActionRuntime.FindAction(boss).Amount; // 보스 첫 예고 공격력 보관
         double deadline = Time.realtimeSinceStartupAsDouble + 220d; // 연출 정지 감지 제한 시각
         using (battle.BattleEvents.Subscribe(BattleEventType.CardUsed, e => usage[e.Card.SourceData.CardId] = usage.TryGetValue(e.Card.SourceData.CardId, out int n) ? n + 1 : 1)) // 실제 해결된 카드 집계
         using (battle.BattleEvents.Subscribe(BattleEventType.HealingApplied, e => healed += e.TargetUnit.Team == BattleTeam.Ally ? e.AppliedAmount : 0)) // 실제 아군 회복량 집계
         using (battle.BattleEvents.Subscribe(BattleEventType.DamageApplied, e => incoming += e.SourceUnit == boss ? e.AppliedAmount : 0)) // 실제 보스 공격 피해 집계
+        using (battle.BattleEvents.Subscribe(BattleEventType.DamageApplied, RecordBossDamage)) // 추가한 공격의 실제 피해 별도 집계
         using (battle.BattleEvents.Subscribe(BattleEventType.TurnStarted, e => enemyTurns += e.Phase == BattleTurnPhase.EnemyTurn ? 1 : 0)) // 실제 적 턴 시작 집계
         { // 전투 반복 시작
             while (!battle.BattleTurn.IsBattleEnded && battle.BattleTurn.CurrentRound <= RoundLimit) // 승패 확정 또는 제한 라운드까지 진행
@@ -145,11 +177,13 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
                 CardInstance card = Choose(battle, boss, out target); // 현재 손패의 우선 행동 결정
                 if (card == null) // 유효하고 지불할 수 있는 행동 부재 확인
                 { // 턴 종료 입력 시작
+                    resolving = null; // 턴 종료 때 처리 중인 공격 카드 해제
                     Assert.IsTrue(endTurn.interactable); // 정상 턴 종료 가능 여부 확인
                     endTurn.onClick.Invoke(); // 실제 적 턴과 AI 행동 요청
                 } // 턴 종료 입력 종료
                 else // 현재 카드와 대상 사용
                 { // 실제 카드 입력 시작
+                    resolving = card; // 정상 카드 처리에서 발생한 실제 피해 추적
                     int ap = battle.SharedActionPoints.CurrentActionPoints; // 입력 전 공용 행동력 기록
                     hand.GetComponentsInChildren<BattleCardView>().Single(view => view.RuntimeCard == card).OnPointerClick(null); // 실제 손패의 카드 선택
                     if (card.TargetType == CardTargetType.SingleEnemy || card.TargetType == CardTargetType.SingleAlly) // 직접 대상 지정 카드 확인
@@ -170,7 +204,14 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
         Assert.Greater(usage.Values.Sum(), 0); // 실제 카드 해결 확인
         Assert.Greater(incoming, 0); // 실제 보스 공격 피해 발생 확인
         Assert.Greater(minorCards.Count, 0); // 레벨 상승 선택 창 정상 처리 확인
-        Debug.Log($"[Day209] seed={seed} outcome={outcome} rounds={rounds} enemyTurns={enemyTurns} startBossHP={startHp} firstAttack={firstAttack} bossHP12={hpAfterTwelve} bossHP={boss.CurrentHealth} alive={alive} allyHP={health} healed={healed} bossDamage={incoming} cards={usage.Values.Sum()} paidAP={paid} minors={string.Join(",", minorCards)} usage={cards}"); // 재현 가능한 전투 측정 결과 출력
+        string tag = scenario == FirstBossScenario.Original ? "[Day209]" : $"[Day215] condition={scenario}"; // 기존 계측과 같은 시드 보상 비교 구분
+        string extra = scenario == FirstBossScenario.Original ? string.Empty : $" openingBlock={string.Join("/", openingBlock)} strikeUses={usage.GetValueOrDefault(FirstBossRewardComparisonTests.Strike)} strikeDamage={rewardDamage.GetValueOrDefault(FirstBossRewardComparisonTests.Strike)} fireUses={usage.GetValueOrDefault(FirstBossRewardComparisonTests.Fireball)} fireDamage={rewardDamage.GetValueOrDefault(FirstBossRewardComparisonTests.Fireball)}"; // 두 보상 카드와 시작 방어도 기록
+        Debug.Log($"{tag} seed={seed} outcome={outcome} rounds={rounds} enemyTurns={enemyTurns} startBossHP={startHp} firstAttack={firstAttack} bossHP12={hpAfterTwelve} bossHP={boss.CurrentHealth} alive={alive} allyHP={health} healed={healed} bossDamage={incoming} cards={usage.Values.Sum()} paidAP={paid} minors={string.Join(",", minorCards)} usage={cards}{extra}"); // 재현 가능한 전투 측정 결과 출력
+        if (scenario != FirstBossScenario.Original) // 보상 유무에 따른 실제 적용 확인
+        { // 비교 결과 검사 시작
+            int[] expected = scenario == FirstBossScenario.WithRewards ? new[] { 2, 2, 1, 1 } : new[] { 0, 0, 0, 0 }; // 편성순 전투 시작 방어도 기대값
+            CollectionAssert.AreEqual(expected, openingBlock); // 잿빛 인장의 실제 추가 방어도 확인
+        } // 비교 결과 검사 종료
     } // 전투 계측 종료
 
     private static CardInstance Choose(BattleSceneSetup battle, BattleUnitRuntime boss, out BattleUnitRuntime target) // 현재 손패와 공개 예고 기반 선택
@@ -227,7 +268,7 @@ public sealed class FirstBossBalanceTests // 윈터폴 첫 보스 자동 전투 
         return field; // 확인한 난수 설정 반환
     } // 난수 필드 조회 종료
 
-    private static IEnumerator WaitFor(Func<bool> condition, string label) // 실제 씬과 지도 준비 대기
+    internal static IEnumerator WaitFor(Func<bool> condition, string label) // 실제 씬과 지도 준비 대기
     { // 준비 대기 시작
         double deadline = Time.realtimeSinceStartupAsDouble + 35d; // 실제 준비 제한 시각
         while (!condition()) // 준비 조건을 만족할 때까지 반복
