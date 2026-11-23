@@ -6,6 +6,10 @@ using UnityEngine.UI; // 로비 버튼과 배경 사용
 public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 메뉴 화면
 { // 로비 화면 시작
     private PlayerResourceManager resources; // 현재 자원 관리자
+    private CharacterRecoveryManager recovery; // 현재 회복 대기 관리자
+    private BattleResultManager results; // 현재 캐릭터 상태 관리자
+    private CharacterRosterData roster; // 보유 캐릭터 확인 목록
+    private Button emergencyWaitButton; // 전원 출전 불가 시 긴급 대기 버튼
     private TMP_Text goldText; // 골드 표시 문구
     private TMP_Text screwText; // 나사 표시 문구
     private TMP_Text ironText; // 철판 표시 문구
@@ -46,9 +50,16 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), openExpedition); // 탐사 버튼 배치
         CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), () => CodexView.Open(GetComponentInParent<Canvas>())); // 도감 화면 버튼 배치
         CreateButton("FacilityButton", "설비 강화", new Vector2(0.345f, 0.055f), new Vector2(250f, 68f), openFacility); // 넓어진 물자 옆 설비 강화 버튼 배치
+        emergencyWaitButton = CreateButton("EmergencyWaitButton", "긴급 대기", new Vector2(0.49f, 0.055f), new Vector2(240f, 68f), EmergencyWait); // 무료 긴급 대기 버튼 배치
         resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+        recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 대기 관리자 준비
+        results = BattleResultManager.EnsureInstance(); // 캐릭터 상태 관리자 준비
+        roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 보유 캐릭터 원본 목록 조회
         resources.ResourcesChanged += RefreshResources; // 자원 변경 이벤트 연결
+        recovery.RecoveryStateChanged += RefreshEmergencyWait; // 회복 변경 시 긴급 대기 상태 갱신
+        results.PartyStateChanged += RefreshEmergencyWait; // 캐릭터 상태 변경 시 긴급 대기 상태 갱신
         RefreshResources(); // 현재 자원 표시
+        RefreshEmergencyWait(); // 현재 보유 캐릭터 출전 가능 상태 표시
     } // 화면 요소 배치 종료
     private void RefreshResources() // 실제 보유 자원 표시
     { // 자원 표시 시작
@@ -57,12 +68,32 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         ironText.text = resources.IronPlate.ToString(); // 철판 숫자만 표시
         wireText.text = resources.Wire.ToString(); // 전선 숫자만 표시
     } // 자원 표시 종료
+    private void RefreshEmergencyWait() // 전원 출전 불가 시에만 긴급 대기 표시
+    { // 긴급 대기 표시 갱신 시작
+        if (emergencyWaitButton != null && recovery != null) // 버튼과 회복 관리자 확인
+        { // 긴급 대기 표시 설정 시작
+            emergencyWaitButton.gameObject.SetActive(recovery.CanEmergencyWait(roster)); // 보유 캐릭터 전원 출전 불가 시 표시
+        } // 긴급 대기 표시 설정 종료
+    } // 긴급 대기 표시 갱신 종료
+    private void EmergencyWait() // 무료 긴급 대기 실행
+    { // 긴급 대기 실행 시작
+        recovery?.TryEmergencyWait(roster); // 회복 대기 한 회 진행
+        RefreshEmergencyWait(); // 회복된 캐릭터에 맞춰 버튼 갱신
+    } // 긴급 대기 실행 종료
     private void OnDestroy() // 로비 화면 정리
     { // 로비 정리 시작
         if (resources != null) // 자원 관리자 존재 확인
         { // 자원 이벤트 해제 시작
             resources.ResourcesChanged -= RefreshResources; // 자원 변경 이벤트 연결 해제
         } // 자원 이벤트 해제 종료
+        if (recovery != null) // 회복 관리자 존재 확인
+        { // 회복 이벤트 해제 시작
+            recovery.RecoveryStateChanged -= RefreshEmergencyWait; // 회복 상태 변경 연결 해제
+        } // 회복 이벤트 해제 종료
+        if (results != null) // 캐릭터 상태 관리자 존재 확인
+        { // 캐릭터 이벤트 해제 시작
+            results.PartyStateChanged -= RefreshEmergencyWait; // 캐릭터 상태 변경 연결 해제
+        } // 캐릭터 이벤트 해제 종료
     } // 로비 정리 종료
     private void CreatePlate(string objectName, Vector2 anchor, Vector2 size) // 자원 표시 배경 생성
     { // 자원 배경 생성 시작
