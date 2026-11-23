@@ -18,6 +18,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public int StatusMaximumStacks { get; } // 상태 최대 중첩 조회
     public int AdditionalStatusChancePercent => statusChancePercent; // 공격 후 상태 부여 확률 조회
     public int AdditionalStatusValue => statusValue; // 공격 후 상태 효과 수치 조회
+    public int AdditionalMentalChange { get; } // 공격 적중 시 정신력 변화 조회
     public EnemyTargetRule TargetRule { get; } // 대상 선택 규칙 조회
     public string PatternDisplayName { get; } // 패턴 행동 이름 조회
     public int PatternIndex { get; } // 현재 패턴 순번 조회
@@ -50,7 +51,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         int creationOrder, // 생성 순서 전달
         int additionalStatusChancePercent = 0, // 공격 후 상태 부여 확률 전달
         int additionalStatusValue = 1, // 공격 후 상태 효과 수치 전달
-        Func<int> percentRoll = null) // 테스트 가능한 확률 난수 전달
+        Func<int> percentRoll = null, // 테스트 가능한 확률 난수 전달
+        int mentalChangeOnHit = 0) // 적중 시 정신력 변화 전달
     {
         Actor =
             actor ??
@@ -85,6 +87,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         statusChancePercent = Math.Max(0, Math.Min(100, additionalStatusChancePercent)); // 상태 부여 확률 범위 보정
         statusValue = Math.Max(1, additionalStatusValue); // 상태 효과 수치 범위 보정
         rollPercent = percentRoll ?? (() => UnityEngine.Random.Range(0, 100)); // 기본 또는 테스트 난수 저장
+        AdditionalMentalChange = Math.Max(-100, Math.Min(100, mentalChangeOnHit)); // 정신력 변화 범위 보정
     }
 
     public void SetActionOrder(
@@ -226,6 +229,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
         bool applyAdditionalStatus = !Target.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 생존 대상의 공격 후 상태 부여 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? Target.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 공격 후 상태 적용 결과 계산
+        if (!Target.IsDead && AdditionalMentalChange != 0) // 생존 대상의 정신력 추가 변화 확인
+        { // 정신력 압박 적용 시작
+            Target.ChangeMental(AdditionalMentalChange, BattleMentalChangeReason.DisruptReceived); // 공격 적중 시 정신력 변화 적용
+        } // 정신력 압박 적용 종료
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     }
 

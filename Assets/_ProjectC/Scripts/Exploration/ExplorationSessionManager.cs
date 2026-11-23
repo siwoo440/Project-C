@@ -4,7 +4,7 @@ using UnityEngine; // 영구 오브젝트와 위치 기능 사용
 public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사 런 상태 관리자
 {
     private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
-    public const int LatestEncounterPoolVersion = 1; // 새 탐사의 최신 조우 목록 버전
+    public const int LatestEncounterPoolVersion = 2; // 새 탐사의 최신 조우 목록 버전
 
     private static ExplorationSessionManager instance; // 탐사 관리자 인스턴스
     private CharacterUnlockProgress unlockProgress = CharacterUnlockProgress.Shared; // 캐릭터 해금 상태

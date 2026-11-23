@@ -54,6 +54,7 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
 
     [Header("순차 행동 패턴")]
     [SerializeField] private List<EnemyActionPatternData> actionPatterns = new List<EnemyActionPatternData>(); // 순서대로 반복할 행동 목록
+    [SerializeField] private int secondPhasePatternStartIndex; // 보스 두 번째 페이즈 시작 패턴 순번
 
     public string EnemyId => enemyId; // 적 ID 조회
     public string DisplayName => displayName; // 적 이름 조회
@@ -79,6 +80,7 @@ public sealed class EnemyData : ScriptableObject // 적 원본 데이터
     public int MinimumActionSpeed => Mathf.Max(1, minimumActionSpeed); // 보정된 최소 행동 속도 조회
     public int MaximumActionSpeed => Mathf.Max(MinimumActionSpeed, maximumActionSpeed); // 보정된 최대 행동 속도 조회
     public int ActionPatternCount => actionPatterns == null ? 0 : actionPatterns.Count; // 전체 행동 패턴 수 조회
+    public int SecondPhasePatternStartIndex => Mathf.Clamp(secondPhasePatternStartIndex, 0, ActionPatternCount); // 보정된 두 번째 페이즈 시작점 조회
 
     public bool HasWeakness(CardType cardType) // 카드 속성 약점 여부 확인
     {

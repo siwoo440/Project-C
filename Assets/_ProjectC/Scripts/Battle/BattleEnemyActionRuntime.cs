@@ -6,6 +6,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 아군 런타임 목록
     private readonly List<BattleEnemyAction> plannedActions = new List<BattleEnemyAction>(); // 예정 행동 목록
     private readonly Dictionary<BattleUnitRuntime, int> nextPatternIndices = new Dictionary<BattleUnitRuntime, int>(); // 적별 다음 패턴 순번
+    private readonly Dictionary<BattleUnitRuntime, int> phasePatternStarts = new Dictionary<BattleUnitRuntime, int>(); // 적별 현재 페이즈 시작 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
     private BattleEnemyAction executingAction; // 현재 실행 행동
     private bool disposed; // 연결 해제 여부
@@ -39,6 +40,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 적 없음 처리 종료
         enemyUnit.Died -= HandleEnemyDied; // 적 사망 이벤트 해제
         nextPatternIndices.Remove(enemyUnit); // 제거 적 패턴 순번 정리
+        phasePatternStarts.Remove(enemyUnit); // 제거 적 페이즈 시작점 정리
         plannedActions.RemoveAll(action => action.Actor == enemyUnit); // 제거 적 예정 행동 정리
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
@@ -249,6 +251,14 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         plannedActions.Clear(); // 예정 행동 목록 비우기
         StateChanged?.Invoke(); // 예정 행동 변경 알림
     } // 행동 제거 종료
+    public void SetBossPhaseStart(BattleUnitRuntime enemyUnit, int patternIndex) // 보스의 다음 패턴 시작점 지정
+    { // 보스 패턴 시작점 설정 시작
+        if (!disposed && enemyUnit != null && ContainsUnit(enemyUnits, enemyUnit)) // 등록된 적 확인
+        { // 등록 적 처리 시작
+            nextPatternIndices[enemyUnit] = Math.Max(0, patternIndex); // 다음 페이즈의 첫 패턴 순번 저장
+            phasePatternStarts[enemyUnit] = Math.Max(0, patternIndex); // 현재 페이즈의 패턴 시작점 저장
+        } // 등록 적 처리 종료
+    } // 보스 패턴 시작점 설정 종료
     private BattleEnemyAction CreateAction(BattleUnitRuntime enemyUnit, int creationOrder) // 적 예정 행동 생성
     { // 행동 생성 시작
         if (enemyUnit == null || enemyUnit.IsDead || enemyUnit.EnemySource == null) // 적 데이터 유효성 확인
@@ -265,7 +275,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 return null; // 행동 생성 실패 반환
             } // 패턴 대상 없음 처리 종료
             int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed); // 패턴 행동 속도 결정
-            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue); // 순차 패턴과 공격 후 상태 확률 전달
+            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder, patternData.StatusEffectChancePercent, patternData.StatusEffectValue, null, patternData.MentalChangeOnHit); // 순차 패턴과 공격 후 상태 및 정신력 변화 전달
         } // 패턴 행동 생성 종료
         if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
         { // 미지원 행동 처리 시작
@@ -293,17 +303,21 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         { // 첫 패턴 처리 시작
             nextPatternIndex = 0; // 첫 패턴 순번 적용
         } // 첫 패턴 처리 종료
-        nextPatternIndex = Math.Max(0, nextPatternIndex) % patternCount; // 패턴 순번 범위 보정
-        for (int patternOffset = 0; patternOffset < patternCount; patternOffset++) // 전체 패턴 후보 순회
+        int phaseStart = phasePatternStarts.TryGetValue(enemyUnit, out int configuredStart) ? Math.Min(configuredStart, patternCount - 1) : 0; // 현재 페이즈의 시작 순번 조회
+        int secondPhaseStart = enemyData.SecondPhasePatternStartIndex; // 원본의 두 번째 페이즈 시작점 조회
+        int phaseEnd = phaseStart == 0 && secondPhaseStart > 0 && secondPhaseStart < patternCount ? secondPhaseStart : patternCount; // 현재 페이즈 패턴 종료점 계산
+        int phaseCount = phaseEnd - phaseStart; // 현재 페이즈 패턴 개수 계산
+        nextPatternIndex = phaseStart + Math.Max(0, nextPatternIndex - phaseStart) % phaseCount; // 현재 페이즈 안의 순번 보정
+        for (int patternOffset = 0; patternOffset < phaseCount; patternOffset++) // 현재 페이즈 패턴 후보 순회
         { // 유효 패턴 검색 시작
-            int candidateIndex = (nextPatternIndex + patternOffset) % patternCount; // 순환 후보 순번 계산
+            int candidateIndex = phaseStart + (nextPatternIndex - phaseStart + patternOffset) % phaseCount; // 현재 페이즈 순환 후보 계산
             EnemyActionPatternData candidatePattern = enemyData.GetActionPattern(candidateIndex); // 후보 패턴 조회
             if (candidatePattern == null || !candidatePattern.IsValid) // 후보 설정 유효성 확인
             { // 잘못된 후보 처리 시작
                 continue; // 다음 패턴 후보 이동
             } // 잘못된 후보 처리 종료
             patternIndex = candidateIndex + 1; // 화면용 현재 패턴 순번 저장
-            nextPatternIndices[enemyUnit] = (candidateIndex + 1) % patternCount; // 다음 준비 패턴 순번 저장
+            nextPatternIndices[enemyUnit] = phaseStart + (candidateIndex - phaseStart + 1) % phaseCount; // 같은 페이즈의 다음 패턴 저장
             return candidatePattern; // 유효 패턴 반환
         } // 유효 패턴 검색 종료
         patternCount = 1; // 호환 행동 전체 순번 적용

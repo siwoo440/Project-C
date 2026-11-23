@@ -40,10 +40,20 @@ public sealed class WinterfallEncounterCompatibilityTests // 이전 저장과 �
             ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
             Assert.IsNotNull(player); // 탐사 플레이어 존재 확인
             yield return null; // 탐사 상태 초기화 대기
-            Assert.AreEqual(1, ExplorationSessionManager.Instance.EncounterPoolVersion); // 새 탐사의 새 조우 버전 확인
+            Assert.AreEqual(ExplorationSessionManager.LatestEncounterPoolVersion, ExplorationSessionManager.Instance.EncounterPoolVersion); // 새 탐사의 최신 조우 버전 확인
             Assert.IsTrue(ExplorationSaveService.Save(path, player.transform.position)); // 새 탐사 저장 확인
             string json = System.IO.File.ReadAllText(path); // 실제 탐사 저장 읽기
-            string legacy = System.Text.RegularExpressions.Regex.Replace(json, "\\\"encounterPoolVersion\\\"\\s*:\\s*1\\s*,", string.Empty); // 새 필드가 없는 이전 저장 형식 생성
+            string previous = System.Text.RegularExpressions.Regex.Replace(json, "(\\\"encounterPoolVersion\\\"\\s*:\\s*)" + ExplorationSessionManager.LatestEncounterPoolVersion, "${1}1"); // 144일차 조우 버전 저장 생성
+            Assert.AreNotEqual(json, previous); // 이전 버전 저장 변환 확인
+            System.IO.File.WriteAllText(path, previous); // 독립 이전 버전 저장 기록
+            Assert.IsTrue(ExplorationSaveService.Load(path)); // 144일차 저장 복원 확인
+            Assert.AreEqual(1, ExplorationSessionManager.Instance.EncounterPoolVersion); // 144일차 조우 버전 유지 확인
+            Assert.IsTrue(Resources.Load<EncounterData>("Encounters/Encounter_Test_C").IsAvailableForPoolVersion(1)); // 이전 저장의 임시 보스 유지 확인
+            Assert.IsFalse(Resources.Load<EncounterData>("Encounters/Encounter_WF_AshstormCore").IsAvailableForPoolVersion(1)); // 이전 저장의 새 보스 제외 확인
+            Assert.IsTrue(ExplorationSaveService.Save(path, player.transform.position)); // 이전 버전 탐사 재저장 확인
+            Assert.IsTrue(ExplorationSaveService.Load(path)); // 재저장한 이전 버전 탐사 복원 확인
+            Assert.AreEqual(1, ExplorationSessionManager.Instance.EncounterPoolVersion); // 재저장 후 이전 조우 버전 유지 확인
+            string legacy = System.Text.RegularExpressions.Regex.Replace(json, "\\\"encounterPoolVersion\\\"\\s*:\\s*" + ExplorationSessionManager.LatestEncounterPoolVersion + "\\s*,", string.Empty); // 새 필드가 없는 이전 저장 형식 생성
             Assert.AreNotEqual(json, legacy); // 조우 버전 필드 제거 확인
             System.IO.File.WriteAllText(path, legacy); // 독립 이전 저장 기록
             Assert.IsTrue(ExplorationSaveService.Load(path)); // 이전 저장 복원 확인

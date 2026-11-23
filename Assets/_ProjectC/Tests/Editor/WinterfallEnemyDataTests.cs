@@ -17,6 +17,7 @@ public sealed class WinterfallEnemyDataTests // 윈터폴 초기 적 데이터 �
         Assert.IsNotNull(boss); // 임시 보스 존재 확인
         Assert.IsTrue(boss.IsAvailableForPoolVersion(0)); // 이전 탐사의 임시 보스 확인
         Assert.IsTrue(boss.IsAvailableForPoolVersion(1)); // 새 보스 구현 전 임시 보스 유지 확인
+        Assert.IsFalse(boss.IsAvailableForPoolVersion(2)); // 새 보스 적용 탐사의 임시 보스 제외 확인
     } // 조우 버전 확인 종료
     [Test] // 실제 적 행동 생성 시 추가 상태 확인 지정
     public void HunterAction_PreservesBurnChanceAndDuration() // 실제 예정 공격의 화상 예고 값 확인

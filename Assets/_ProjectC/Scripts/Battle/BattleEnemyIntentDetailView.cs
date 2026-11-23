@@ -259,6 +259,10 @@ public sealed class BattleEnemyIntentDetailView : MonoBehaviour // 적 행동 �
                 string effectName = BattleStatusEffectInstance.GetDisplayName(currentAction.StatusEffectType); // 상태 이상 이름 조회
                 builder.AppendLine($"적중 시 : {effectName} {currentAction.AdditionalStatusValue} · {currentAction.StatusDuration}T · {currentAction.AdditionalStatusChancePercent}%"); // 상태 수치와 확률 표시
             } // 추가 상태 안내 종료
+            if (currentAction.AdditionalMentalChange != 0) // 적중 시 정신력 변화 확인
+            { // 정신력 변화 안내 시작
+                builder.AppendLine($"적중 시 정신력 : {currentAction.AdditionalMentalChange:+#;-#;0}"); // 정신력 압박 예고 표시
+            } // 정신력 변화 안내 종료
             if (currentAction.SharedDamageRecipient != null && !currentAction.SharedDamageRecipient.IsDead) // 생존한 피해 분담자 확인
             { // 분담 피해 안내 시작
                 builder.AppendLine($"분담 피해 : {currentAction.SharedDamageRecipient.DisplayName} {currentAction.PreviewSharedDamage()}"); // 분담자의 실제 예상 피해 표시

@@ -16,6 +16,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public BattleResult Result { get; private set; } = BattleResult.None; // 현재 전투 결과 조회
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
+    public bool HasPendingBossPhaseTransition { get; private set; } // 보스 페이즈 전환 예약 여부
     public bool CanEscape => !disposed && BattleType == BattleType.Normal && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 현재 도주 가능 여부
     public bool HasOtherLivingAlly(BattleUnitRuntime owner) // 본인 외 생존 아군 확인
     { // 생존 동료 확인 시작
@@ -67,6 +68,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 종료 불가 처리 시작
             return false; // 턴 종료 실패 반환
         } // 종료 불가 처리 종료
+        CleanupPlayerTurn(); // 일반 손패와 남은 행동력 정리
         PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 종료 알림
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
@@ -80,6 +82,53 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전투 지속 처리 종료
         return true; // 턴 종료 성공 반환
     } // 플레이어 턴 종료 처리 종료
+    public void QueueBossPhaseTransition() // 보스 페이즈 전환 예약
+    { // 전환 예약 시작
+        if (!disposed && !IsBattleEnded && BattleType == BattleType.Boss) // 진행 중인 보스 전투 확인
+        { // 전환 예약 처리 시작
+            HasPendingBossPhaseTransition = true; // 미처리 타격 중단용 예약 저장
+        } // 전환 예약 처리 종료
+    } // 전환 예약 종료
+    public bool ClearBossPhaseTransition() // 완료된 보스 전환 예약 해제
+    { // 예약 해제 시작
+        if (!HasPendingBossPhaseTransition) // 기존 예약 확인
+        { // 예약 없음 처리 시작
+            return false; // 해제 실패 반환
+        } // 예약 없음 처리 종료
+        HasPendingBossPhaseTransition = false; // 전환 예약 해제
+        return true; // 예약 해제 성공 반환
+    } // 예약 해제 종료
+    public bool CompleteBossPhaseTransition() // 적 행동을 건너뛰고 다음 플레이어 턴 시작
+    { // 강제 턴 전환 시작
+        if (disposed || IsBattleEnded || !HasPendingBossPhaseTransition || CurrentPhase != BattleTurnPhase.PlayerTurn) // 전환 가능 상태 확인
+        { // 전환 불가 처리 시작
+            return false; // 전환 실패 반환
+        } // 전환 불가 처리 종료
+        HasPendingBossPhaseTransition = false; // 전환 예약 해제
+        CleanupPlayerTurn(); // 일반 종료와 동일한 손패와 행동력 정리
+        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 아군 턴 종료 효과 한 번 처리
+        if (IsBattleEnded) // 종료 효과로 전투 종료 확인
+        { // 종료된 전투 처리 시작
+            return true; // 확정된 전투 결과 유지
+        } // 종료된 전투 처리 종료
+        ClearRoundBlock(allyUnits); // 라운드 전환 아군 방어도 정리
+        ClearRoundBlock(enemyUnits); // 라운드 전환 적 방어도 정리
+        CurrentRound++; // 다음 라운드 진행
+        CurrentPhase = BattleTurnPhase.PlayerTurn; // 다음 아군 턴 설정
+        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 다음 아군 턴 시작 효과 처리
+        if (!IsBattleEnded) // 시작 효과 처리 후 전투 지속 확인
+        { // 다음 턴 준비 시작
+            sharedActionPoints.Restore(); // 공용 행동력 회복
+            LastDrawnCardCount = runtimeDeck.DrawCards(cardsPerPlayerTurn); // 다음 턴 손패 뽑기
+            StateChanged?.Invoke(); // 전투 화면 갱신 알림
+        } // 다음 턴 준비 종료
+        return true; // 강제 턴 전환 성공 반환
+    } // 강제 턴 전환 종료
+    private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
+    { // 플레이어 턴 정리 시작
+        runtimeDeck.DiscardHand(); // 남은 일반 손패를 버림 더미로 이동
+        sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 이월되지 않는 행동력 소멸
+    } // 플레이어 턴 정리 종료
     public bool CompleteEnemyTurn() // 적 턴 완료
     { // 적 턴 완료 처리 시작
         if (disposed || CurrentPhase != BattleTurnPhase.EnemyTurn) // 적 턴 여부 확인

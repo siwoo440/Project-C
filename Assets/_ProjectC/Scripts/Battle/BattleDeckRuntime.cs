@@ -300,6 +300,19 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 덱 상태 변경 알림
         return true; // 버리기 성공 반환
     } // 카드 버리기 종료
+    public int DiscardHand() // 일반 손패 전체 버리기
+    { // 손패 정리 시작
+        int count = hand.Count; // 정리할 손패 수 기록
+        if (count == 0) // 빈 손패 확인
+        { // 정리 불필요 시작
+            return 0; // 이동 카드 없음 반환
+        } // 정리 불필요 종료
+        discardPile.AddRange(hand); // 일반 손패를 버림 더미로 이동
+        hand.Clear(); // 기존 손패 비우기
+        EnsureValidState(); // 카드 위치 유효성 확인
+        StateChanged?.Invoke(); // 변경된 손패 화면 알림
+        return count; // 정리한 카드 수 반환
+    } // 손패 정리 종료
     public void ShuffleDrawPile() // 뽑을 카드 더미 셔플
     { // 카드 더미 셔플 시작
         ShuffleList(drawPile); // 뽑을 카드 순서 변경
