@@ -11,6 +11,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public static ShopRunManager Instance => instance; // 현재 상점 관리자 조회
     public ShopCatalogData Catalog => catalog; // 현재 카탈로그 조회
+    public string ActiveRoomRuntimeId => activeRoomRuntimeId; // 현재 상점 방 식별자 조회
     public RunDeckManager RunDeck => runDeckManager; // 현재 회차 덱 조회
     public int Gold => PlayerResourceManager.EnsureInstance().Gold; // 현재 상점 골드 조회
     public bool IsReady => catalog != null && runDeckManager != null && transactionService != null; // 상점 준비 상태 조회

@@ -9,6 +9,120 @@ using UnityEngine.TestTools; // 플레이 모드 전환 기능 사용
 using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
+    [System.Serializable] // 탐사 저장 테스트 역직렬화 지정
+    private sealed class ExplorationTestSnapshot // 탐사 저장 검사 자료
+    { // 탐사 검사 자료 시작
+        public int version; // 저장 버전
+        public int floor; // 탐사 층
+        public int seed; // 현재 층 시드
+        public Vector3 position; // 플레이어 위치
+        public string[] party; // 파티 식별자 목록
+        public ExplorationTestCard[] sourceCards; // 시작 카드 목록
+        public ExplorationTestCard[] cards; // 회차 카드 목록
+        public string[] cleared; // 클리어 조우 목록
+        public string[] events; // 처리 이벤트 목록
+        public string[] relics; // 유물 목록
+        public string[] consumables; // 소모품 슬롯 목록
+        public string shopRoom; // 상점 방 식별자
+        public string[] purchasedOffers; // 판매 완료 상품 목록
+        public int hazardHealth; // 대기 체력 피해
+        public int hazardMental; // 대기 정신력 피해
+        public string lobbyJson; // 거점 상태 저장 내용
+    } // 탐사 검사 자료 종료
+    [System.Serializable] // 카드 저장 테스트 역직렬화 지정
+    private sealed class ExplorationTestCard // 회차 카드 검사 자료
+    { // 카드 검사 자료 시작
+        public string card; // 카드 식별자
+        public string owner; // 카드 소유자 식별자
+        public int upgrade; // 카드 강화 단계
+    } // 카드 검사 자료 종료
+    [System.Serializable] // 거점 저장 테스트 역직렬화 지정
+    private sealed class LobbyTestSnapshot // 거점 저장 검사 자료
+    { // 거점 검사 자료 시작
+        public int gold; // 저장 골드
+    } // 거점 검사 자료 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator ExplorationSave_WritesRunStateAndLobbySnapshot() // 탐사 저장 내용 검증
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        System.Type service = typeof(MainMenuController).Assembly.GetType("ExplorationSaveService"); // 탐사 저장 서비스 조회
+        Assert.IsNotNull(service); // 탐사 저장 서비스 존재 확인
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 테스트 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 탐사 저장 검증 시작
+            CharacterData fool = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 파티 캐릭터 조회
+            PartySelection selection = new PartySelection(new CharacterRecoveryDeploymentStatusProvider(CharacterRecoveryManager.EnsureInstance())); // 테스트 파티 선택 생성
+            Assert.IsTrue(selection.TryAdd(fool)); // 테스트 파티원 추가
+            Assert.IsTrue(PartyLoadoutRuntime.Prepare(selection)); // 탐사 편성 생성
+            RunDeckManager deck = RunDeckManager.EnsureInstance(); // 회차 덱 관리자 준비
+            deck.ResetToSource(PartyLoadoutRuntime.Active.Deck); // 탐사 시작 덱 적용
+            Assert.IsTrue(deck.TryUpgradeAt(0)); // 첫 카드 강화
+            ExplorationSessionManager session = ExplorationSessionManager.EnsureInstance(); // 탐사 상태 관리자 준비
+            session.ResetExploration(); // 이전 탐사 상태 제거
+            session.AdvanceFloor(); // 두 번째 층 이동
+            session.SetCurrentFloorSeed(12345); // 현재 층 시드 지정
+            Assert.IsTrue(session.MarkEventResolved("event-test")); // 처리 이벤트 등록
+            EncounterData encounter = Resources.Load<EncounterData>("Encounters/Encounter_Test_A"); // 테스트 조우 조회
+            Assert.IsTrue(session.BeginEncounter("encounter-test", encounter, Vector3.zero, Vector3.right)); // 테스트 조우 시작
+            BattleUnitRuntime ally = BattleUnitRuntime.CreateAlly(fool); // 생존 아군 생성
+            BattleUnitRuntime[] allies = new BattleUnitRuntime[] // 테스트 아군 목록 생성
+            { // 테스트 아군 목록 시작
+                ally // 생존 아군 등록
+            }; // 테스트 아군 목록 종료
+            session.ResolveBattleResult(new BattleResultData(BattleResult.Victory, BattleType.Normal, 1, allies, new string[0])); // 테스트 조우 승리 처리
+            session.AddPendingHazardPenalty(3, 4); // 대기 환경 피해 설정
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            resources.AddResources(100, 0, 0, 0); // 거점 자원 변경
+            ShopCatalogData catalog = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 테스트 상점 목록 조회
+            ShopRunManager shop = ShopRunManager.EnsureInstance(); // 상점 관리자 준비
+            Assert.IsTrue(shop.Prepare(catalog, PartyLoadoutRuntime.Active.Deck)); // 상점 준비
+            shop.BeginRoomVisit("shop-test"); // 테스트 상점 방 방문
+            Assert.AreEqual(ShopPurchaseResult.Success, shop.TryPurchase(catalog.Offers[5])); // 테스트 상품 구매
+            int savedGold = resources.Gold; // 저장 골드 보관
+            RelicData relic = AssetDatabase.LoadAssetAtPath<RelicData>("Assets/_ProjectC/Data/Relics/TEST_MAX_HP.asset"); // 테스트 유물 조회
+            ConsumableItemData potion = AssetDatabase.LoadAssetAtPath<ConsumableItemData>("Assets/_ProjectC/Data/Consumables/POTION_TEST_HEAL.asset"); // 테스트 소모품 조회
+            Assert.AreEqual(RelicAcquireResult.Acquired, RelicRunManager.EnsureInstance().TryAcquire(relic)); // 유물 획득 확인
+            Assert.IsTrue(ConsumableRunManager.EnsureInstance().Inventory.TrySetForDebug(3, potion)); // 지정 슬롯 소모품 배치
+            Vector3 position = new Vector3(12f, -3f, 0f); // 저장할 플레이어 위치
+            Assert.IsTrue((bool)service.GetMethod("Save").Invoke(null, new object[] { path, position })); // 탐사 상태 파일 저장
+            ExplorationTestSnapshot snapshot = JsonUtility.FromJson<ExplorationTestSnapshot>(System.IO.File.ReadAllText(path)); // 탐사 저장 파일 읽기
+            Assert.AreEqual(1, snapshot.version); // 저장 버전 확인
+            Assert.AreEqual(2, snapshot.floor); // 탐사 층 확인
+            Assert.AreEqual(12345, snapshot.seed); // 맵 시드 확인
+            Assert.AreEqual(position, snapshot.position); // 플레이어 위치 확인
+            Assert.AreEqual(1, snapshot.party.Length); // 파티 인원 확인
+            Assert.AreEqual(fool.CharacterId, snapshot.party[0]); // 파티 순서 확인
+            Assert.AreEqual(PartyLoadoutRuntime.Active.Deck.CardCount, snapshot.sourceCards.Length); // 탐사 시작 덱 카드 수 확인
+            Assert.AreEqual(deck.CardCount, snapshot.cards.Length); // 회차 카드 수 확인
+            Assert.AreEqual(deck.Cards[0].Card.CardId, snapshot.cards[0].card); // 첫 카드 식별자 확인
+            Assert.AreEqual(fool.CharacterId, snapshot.cards[0].owner); // 첫 카드 소유자 확인
+            Assert.AreEqual(1, snapshot.cards[0].upgrade); // 첫 카드 강화 확인
+            CollectionAssert.Contains(snapshot.events, "event-test"); // 처리 이벤트 확인
+            CollectionAssert.Contains(snapshot.cleared, "encounter-test"); // 클리어 조우 확인
+            CollectionAssert.Contains(snapshot.relics, relic.RelicId); // 보유 유물 확인
+            Assert.AreEqual(potion.ItemId, snapshot.consumables[3]); // 소모품 슬롯 확인
+            Assert.AreEqual("shop-test", snapshot.shopRoom); // 상점 방 식별자 확인
+            CollectionAssert.Contains(snapshot.purchasedOffers, catalog.Offers[5].OfferId); // 판매 완료 상품 확인
+            Assert.AreEqual(3, snapshot.hazardHealth); // 대기 체력 피해 확인
+            Assert.AreEqual(4, snapshot.hazardMental); // 대기 정신력 피해 확인
+            Assert.AreEqual(savedGold, JsonUtility.FromJson<LobbyTestSnapshot>(snapshot.lobbyJson).gold); // 거점 자원 포함 확인
+            Assert.IsTrue(ExplorationSaveService.Save(path, position)); // 기존 탐사 저장 파일 교체 확인
+            string previousJson = System.IO.File.ReadAllText(path); // 이전 저장 내용 보관
+            Assert.IsFalse(ExplorationSaveService.Save(path, new Vector3(float.NaN, 0f, 0f))); // 잘못된 위치 저장 차단 확인
+            Assert.AreEqual(previousJson, System.IO.File.ReadAllText(path)); // 기존 저장 파일 보존 확인
+            Assert.IsTrue(session.BeginEncounter("pending-test", encounter, Vector3.zero, Vector3.right)); // 전투 진행 상태 생성
+            Assert.IsFalse(ExplorationSaveService.Save(path, position)); // 진행 중 전투 저장 차단 확인
+            Assert.AreEqual(previousJson, System.IO.File.ReadAllText(path)); // 전투 중 기존 저장 보존 확인
+        } // 탐사 저장 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
     public IEnumerator NewGameWarning_CancelKeepsCurrentProgress() // 새 게임 취소 상태 유지 확인
     { // 테스트 시작
