@@ -1,171 +1,134 @@
-# Unity .gitattributes Template
-# Source: https://github.com/gitattributes/gitattributes/blob/master/Unity.gitattributes
-# Last synced: 2026-02-04
-# License: MIT
-#
-# This template is maintained from the gitattributes/gitattributes repository
-# and distributed under MIT License.
+# Project C - Unity 6000.3.21f1
+# Git attributes for a Unity 2D project
 
-# Define macros (only works in top-level gitattributes files)
-[attr]lfs               filter=lfs diff=lfs merge=lfs -text
-[attr]unity-json        eol=lf linguist-language=json
-[attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
+# ------------------------------------------------------------
+# Text normalization
+# ------------------------------------------------------------
 
-# Optionally collapse Unity YAML files on GitHub diffs
-# [attr]unity-yaml        merge=unityyamlmerge text linguist-language=yaml linguist-generated
+* text=auto
 
-# Unity source files
-*.cginc                 text
-*.compute               text linguist-language=hlsl
-*.cs                    text diff=csharp
-*.hlsl                  text linguist-language=hlsl
-*.raytrace              text linguist-language=hlsl
-*.shader                text
+*.cs            text eol=lf diff=csharp
+*.json          text eol=lf
+*.md            text eol=lf
+*.txt           text eol=lf
+*.xml           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
 
-# Unity JSON files
-*.asmdef                unity-json
-*.asmref                unity-json
-*.index                 unity-json
-*.inputactions          unity-json
-*.shadergraph           unity-json
-*.shadersubgraph        unity-json
+# Unity package / project text files
+*.asmdef        text eol=lf
+*.asmref        text eol=lf
+*.cginc         text eol=lf
+*.compute       text eol=lf
+*.hlsl          text eol=lf
+*.shader        text eol=lf
+*.shadergraph   text eol=lf
+*.shadersubgraph text eol=lf
+*.inputactions  text eol=lf
+*.uss           text eol=lf
+*.uxml          text eol=lf
 
-# Unity UI Toolkit files
-*.tss                   text diff=css linguist-language=css
-*.uss                   text diff=css linguist-language=css
-*.uxml                  text linguist-language=xml linguist-detectable
-
+# ------------------------------------------------------------
 # Unity YAML files
-*.anim                  unity-yaml
-*.asset                 unity-yaml
-*.brush                 unity-yaml
-*.controller            unity-yaml
-*.flare                 unity-yaml
-*.fontsettings          unity-yaml
-*.giparams              unity-yaml
-*.guiskin               unity-yaml
-*.lighting              unity-yaml
-*.mask                  unity-yaml
-*.mat                   unity-yaml
-*.meta                  unity-yaml
-*.mixer                 unity-yaml
-*.overrideController    unity-yaml
-*.playable              unity-yaml
-*.prefab                unity-yaml
-*.preset                unity-yaml
-*.renderTexture         unity-yaml
-*.scenetemplate         unity-yaml
-*.shadervariants        unity-yaml
-*.signal                unity-yaml
-*.spriteatlas           unity-yaml
-*.spriteatlasv2         unity-yaml
-*.terrainlayer          unity-yaml
-*.unity                 unity-yaml
+# Keep these as text so Git diffs remain readable.
+# ------------------------------------------------------------
 
-# "physic" for 3D but "physics" for 2D
-*.physicMaterial        unity-yaml
-*.physicsMaterial2D     unity-yaml
+*.anim                  text eol=lf
+*.asset                 text eol=lf
+*.controller            text eol=lf
+*.flare                 text eol=lf
+*.fontsettings          text eol=lf
+*.giparams              text eol=lf
+*.guiskin               text eol=lf
+*.lighting              text eol=lf
+*.mask                  text eol=lf
+*.mat                   text eol=lf
+*.meta                  text eol=lf
+*.mixer                 text eol=lf
+*.overrideController    text eol=lf
+*.playable              text eol=lf
+*.prefab                text eol=lf
+*.preset                text eol=lf
+*.renderTexture         text eol=lf
+*.scenetemplate         text eol=lf
+*.shadervariants        text eol=lf
+*.signal                text eol=lf
+*.spriteatlas           text eol=lf
+*.spriteatlasv2         text eol=lf
+*.terrainlayer          text eol=lf
+*.unity                 text eol=lf
+*.physicsMaterial2D     text eol=lf
+*.physicMaterial        text eol=lf
 
-# Exclude from GitHub stats and diffs: third-party plugins, packages lock file
-Assets/Plugins/**           linguist-generated
-Packages/packages-lock.json linguist-generated
+# ------------------------------------------------------------
+# Git LFS - 2D art / image assets
+# ------------------------------------------------------------
 
-# Unity LFS
-*.cubemap               lfs
-*.unitypackage          lfs
+*.png   filter=lfs diff=lfs merge=lfs -text
+*.jpg   filter=lfs diff=lfs merge=lfs -text
+*.jpeg  filter=lfs diff=lfs merge=lfs -text
+*.psd   filter=lfs diff=lfs merge=lfs -text
+*.psb   filter=lfs diff=lfs merge=lfs -text
+*.tga   filter=lfs diff=lfs merge=lfs -text
+*.tif   filter=lfs diff=lfs merge=lfs -text
+*.tiff  filter=lfs diff=lfs merge=lfs -text
+*.bmp   filter=lfs diff=lfs merge=lfs -text
+*.gif   filter=lfs diff=lfs merge=lfs -text
+*.webp  filter=lfs diff=lfs merge=lfs -text
+*.exr   filter=lfs diff=lfs merge=lfs -text
+*.hdr   filter=lfs diff=lfs merge=lfs -text
+*.ase   filter=lfs diff=lfs merge=lfs -text
+*.aseprite filter=lfs diff=lfs merge=lfs -text
 
-# 3D models
-*.3dm                   lfs
-*.3ds                   lfs
-*.blend                 lfs
-*.blend1                lfs
-*.c4d                   lfs
-*.collada               lfs
-*.dae                   lfs
-*.dxf                   lfs
-*.FBX                   lfs
-*.fbx                   lfs
-*.jas                   lfs
-*.lws                   lfs
-*.lxo                   lfs
-*.ma                    lfs
-*.max                   lfs
-*.mb                    lfs
-*.obj                   lfs
-*.ply                   lfs
-*.skp                   lfs
-*.stl                   lfs
-*.ztl                   lfs
+# ------------------------------------------------------------
+# Git LFS - audio
+# ------------------------------------------------------------
 
-# Audio
-*.aif                   lfs
-*.aiff                  lfs
-*.it                    lfs
-*.mod                   lfs
-*.mp3                   lfs
-*.ogg                   lfs
-*.s3m                   lfs
-*.wav                   lfs
-*.xm                    lfs
+*.wav   filter=lfs diff=lfs merge=lfs -text
+*.mp3   filter=lfs diff=lfs merge=lfs -text
+*.ogg   filter=lfs diff=lfs merge=lfs -text
+*.aif   filter=lfs diff=lfs merge=lfs -text
+*.aiff  filter=lfs diff=lfs merge=lfs -text
+*.flac  filter=lfs diff=lfs merge=lfs -text
 
-# Video
-*.asf                   lfs
-*.avi                   lfs
-*.flv                   lfs
-*.mov                   lfs
-*.mp4                   lfs
-*.mpeg                  lfs
-*.mpg                   lfs
-*.ogv                   lfs
-*.wmv                   lfs
+# ------------------------------------------------------------
+# Git LFS - video
+# ------------------------------------------------------------
 
-# Images
-*.bmp                   lfs
-*.exr                   lfs
-*.gif                   lfs
-*.hdr                   lfs
-*.iff                   lfs
-*.jpeg                  lfs
-*.jpg                   lfs
-*.pict                  lfs
-*.png                   lfs
-*.psd                   lfs
-*.tga                   lfs
-*.tif                   lfs
-*.tiff                  lfs
-*.webp                  lfs
+*.mp4   filter=lfs diff=lfs merge=lfs -text
+*.mov   filter=lfs diff=lfs merge=lfs -text
+*.avi   filter=lfs diff=lfs merge=lfs -text
+*.webm  filter=lfs diff=lfs merge=lfs -text
 
-# Compressed Archive
-*.7z                    lfs
-*.bz2                   lfs
-*.gz                    lfs
-*.rar                   lfs
-*.tar                   lfs
-*.zip                   lfs
+# ------------------------------------------------------------
+# Git LFS - fonts
+# ------------------------------------------------------------
 
-# Compiled Dynamic Library
-*.dll                   lfs
-*.pdb                   lfs
-*.so                    lfs
+*.ttf   filter=lfs diff=lfs merge=lfs -text
+*.otf   filter=lfs diff=lfs merge=lfs -text
+*.woff  filter=lfs diff=lfs merge=lfs -text
+*.woff2 filter=lfs diff=lfs merge=lfs -text
 
-# Fonts
-*.otf                   lfs
-*.ttf                   lfs
+# ------------------------------------------------------------
+# Git LFS - optional 3D assets
+# Kept for future props/effects even though Project C is 2D.
+# ------------------------------------------------------------
 
-# Executable/Installer
-*.apk                   lfs
-*.exe                   lfs
+*.fbx   filter=lfs diff=lfs merge=lfs -text
+*.FBX   filter=lfs diff=lfs merge=lfs -text
+*.obj   filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.glb   filter=lfs diff=lfs merge=lfs -text
+*.gltf  filter=lfs diff=lfs merge=lfs -text
 
-# Documents
-*.pdf                   lfs
+# ------------------------------------------------------------
+# Git LFS - packaged / binary files
+# ------------------------------------------------------------
 
-# ETC
-*.a                     lfs
-*.reason                lfs
-*.rns                   lfs
-
-# Spine export file for Unity
-*.skel.bytes            lfs
-
-# Exceptions for .asset files such as lightning pre-baking
-LightingData.asset     binary
+*.unitypackage filter=lfs diff=lfs merge=lfs -text
+*.zip          filter=lfs diff=lfs merge=lfs -text
+*.7z           filter=lfs diff=lfs merge=lfs -text
+*.rar          filter=lfs diff=lfs merge=lfs -text
+*.dll          filter=lfs diff=lfs merge=lfs -text
+*.so           filter=lfs diff=lfs merge=lfs -text
+*.dylib        filter=lfs diff=lfs merge=lfs -text
