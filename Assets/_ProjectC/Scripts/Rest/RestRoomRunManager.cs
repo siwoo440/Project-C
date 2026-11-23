@@ -41,6 +41,12 @@ public sealed class RestRoomRunManager : MonoBehaviour // 57일차 휴식 방 �
         DontDestroyOnLoad(gameObject); // Scene 전환 상태 유지
     }
 
+    public void ResetSession() // 이전 휴식 회차 초기화
+    { // 휴식 회차 초기화 시작
+        sourceDeck = null; // 이전 회차 덱 연결 해제
+        isUsed = false; // 이전 휴식 사용 상태 제거
+    } // 휴식 회차 초기화 종료
+
     public bool Prepare(DeckData deckData) // 현재 탐사 휴식 기능 준비
     {
         if (deckData == null) // 원본 덱 누락 확인
