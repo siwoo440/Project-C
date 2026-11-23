@@ -44,7 +44,7 @@ public sealed class LobbyLayoutView : MonoBehaviour // 로비 자원과 주요 �
         CreateButton("CharacterButton", "캐릭터", new Vector2(0.88f, 0.73f), new Vector2(300f, 140f), () => CharacterListView.Open(GetComponentInParent<Canvas>())); // 캐릭터 목록 버튼 배치
         CreateButton("FormationButton", "편성", new Vector2(0.88f, 0.55f), new Vector2(300f, 140f), null); // 편성 버튼 배치
         CreateButton("ExpeditionButton", "탐사", new Vector2(0.87f, 0.33f), new Vector2(350f, 180f), openExpedition); // 탐사 버튼 배치
-        CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), null); // 도감 버튼 배치
+        CreateButton("CodexButton", "도감", new Vector2(0.085f, 0.15f), new Vector2(230f, 65f), () => CodexView.Open(GetComponentInParent<Canvas>())); // 도감 화면 버튼 배치
         CreateButton("FacilityButton", "설비 강화", new Vector2(0.296f, 0.055f), new Vector2(250f, 68f), openFacility); // 축소된 물자 옆 설비 강화 버튼 배치
         resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
         resources.ResourcesChanged += RefreshResources; // 자원 변경 이벤트 연결
