@@ -52,4 +52,12 @@ public enum RelicEffectType // 유물 효과 종류
     OpeningCardDiscount, // 소모성 첫 아군 턴 비용 할인
     OpeningPentacleDraw, // 첫 펜타클 손패의 추가 드로우
     OpeningSwordCapacity, // 첫 검 손패의 추가 행동력
+    LowHealthHealing, // 낮은 체력인 아군의 받는 회복량 증가
+    HighHealthCardDamage, // 높은 체력인 아군의 첫 카드 명중 피해 증가
+    DefeatDraw, // 아군 턴 적 처치에 따른 카드 드로우
+    DiscountNextPaidCard, // 행동력을 사용한 뒤 다음 유료 고정 카드 할인
+    GuaranteeOptionalCardEffect, // 명중 시 확률 약화 한 번 보장
+    FavorTwelveDamage, // 피해 6·12 중 12의 정수 확률 증가
+    ExtraHandCapacity, // 해당 전투의 최대 손패 증가
+    SingleAttackDamage, // 단일 한 타격 카드의 피해 증가
 }

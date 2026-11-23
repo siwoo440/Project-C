@@ -15,6 +15,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
     private int bandageBonus; // 현재 카드의 원래 회복 대상별 추가량
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
+    private readonly BattleSupplyRelics supplyRelics = new BattleSupplyRelics(); // 이번 전투의 심장핀과 구슬 발동 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
@@ -238,6 +239,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         List<BattleUnitRuntime> targetSnapshot = new List<BattleUnitRuntime>(targetUnits); // 연출 중 유지할 대상 목록 복사
         actionPending = true; // 카드 행동 진행 상태 저장
         CancelSelection(); // 카드 선택과 대상 강조 해제
+        turnRuntime.RecordCardPayment(cardInstance, cost); // 실제 카드 사용의 행동력으로 스프링 예약 정산
         Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot); // 충돌 시 카드 효과 처리 생성
         bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
         if (started) // 연출 시작 결과 확인
@@ -249,7 +251,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         impactAction.Invoke(); // 카드 효과 즉시 적용
         HandleActionSequenceCompleted(); // 즉시 적용 후 선택 화면과 상태 갱신
     } // 카드 실행 종료
-    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
+    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 손패 사용이 끝날 때까지 처치 드로우 보류
+    { // 카드 정산 범위 시작
+        turnRuntime.BeginCardResolution(); // 손패에 아직 사용 카드가 남았음을 기록
+        try // 카드 효과와 이동 완료까지 정산 범위 유지
+        { // 카드 충돌 처리 시작
+            ApplyCardImpact(cardInstance, targetUnits); // 실제 전투 효과와 사용 카드 이동 처리
+        } // 카드 충돌 처리 종료
+        finally // 충돌 처리 종료에 예약 드로우 정리 보장
+        { // 카드 정산 범위 정리 시작
+            turnRuntime.EndCardResolution(); // 비워진 손패 자리에 처치 보상 지급
+        } // 카드 정산 범위 정리 종료
+    } // 카드 정산 범위 종료
+
+    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
     { // 카드 충돌 처리 시작
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
         if (!usedFirstHealingCard && (cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 사용 확인
@@ -955,7 +970,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 다음 공격 판정 종료
             return 0; // 첫 공격 피해 없음 반환
         } // 카드 공격 빗나감 처리 종료
-        long printedDamage = additionalBase.HasValue ? (long)additionalBase.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 기본 또는 왕의 추가 타격 수치 조회
+        int? baseOverride = additionalBase; // 명시적인 추가 타격의 피해 수치 우선 사용
+        if (!baseOverride.HasValue && cardInstance.SourceData.HasRandomDamage) // 실제로 두 피해 중 하나를 고르는 원본 확인
+        { // 무작위 피해 굴림 시작
+            baseOverride = BattleSupplyRelics.RollDamage(cardInstance); // 흑철 구슬과 강화가 반영된 정수 피해 선택
+        } // 무작위 피해 굴림 종료
+        long printedDamage = baseOverride.HasValue ? (long)baseOverride.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 가변 또는 고정 카드의 공격력 합산
         int baseDamage = (int)Math.Min(int.MaxValue, printedDamage + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
@@ -993,7 +1013,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 기존 면역과 지속 피해 처리에 화상 전달
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
         } // 화상 부여 종료
-        var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, out var statusResult); // 실제 명중 후 검 전용 상태 확인
+        var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, supplyRelics, out var statusResult); // 실제 명중과 보유 구슬을 반영한 후속 상태 확인
         if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
         { // 검 전용 상태 피드백 시작
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(appliedStatus, statusResult); // 명중 후 상태 부여 결과 표시
@@ -1018,6 +1038,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
         int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
         int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk)); // 기존 검집과 지팡이 심의 명중 보너스
+        result = supplyRelics.AddAttackDamage(card, target, result, turnRuntime.CurrentRound); // 심장핀과 탄약띠의 실제 명중 피해 가산
         if (card.OwnerUnit.CurrentMental > 30 || lastBlackRoseRound == turnRuntime.CurrentRound) // 공격자의 정신력과 파티 공용 턴 횟수 확인
         { // 추가 피해 없음 처리 시작
             return result; // 원래 공격 수치 반환

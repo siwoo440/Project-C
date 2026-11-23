@@ -8,6 +8,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private readonly List<CardInstance> discardPile = new List<CardInstance>(); // 버린 카드 더미
     private readonly List<CardInstance> excludedPile = new List<CardInstance>(); // 이번 전투에서만 제외된 카드 목록
     private int relicApDiscount; // 현재 턴의 모든 카드에 적용하는 비용 감소량
+    private int nextCardRelicApDiscount; // 다음 유료 카드 한 장에 적용하는 비용 감소량
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
@@ -32,7 +33,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private BattleDeckRuntime(DeckData sourceData, int maxHandSize, int? shuffleSeed) // 런타임 덱 생성자
     { // 생성자 시작
         SourceData = sourceData; // 덱 원본 저장
-        MaxHandSize = maxHandSize; // 최대 손패 수 저장
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.ExtraHandCapacity)?.EffectValue ?? 0; // 전투에 가져온 얇은 금속 실의 손패 가산량
+        MaxHandSize = (int)Math.Min(int.MaxValue, (long)maxHandSize + bonus); // 전투가 끝날 때까지 유지할 최대 손패 수 저장
         random = shuffleSeed.HasValue ? new Random(shuffleSeed.Value) : new Random(); // 셔플 무작위 생성기 준비
     } // 생성자 종료
     public static BattleDeckRuntime Create(DeckData deckData, IReadOnlyList<BattleUnitRuntime> allyUnits, int maxHandSize = 5, int? shuffleSeed = null) // 런타임 덱 생성
@@ -304,6 +306,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 복사 불가 종료
         battleCopy = CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 비용과 소유자 및 강화 단계 복사
         battleCopy.RelicApDiscount = relicApDiscount; // 현재 첫 턴의 유물 할인 물려주기
+        battleCopy.NextCardRelicApDiscount = nextCardRelicApDiscount; // 다음 카드 유물 할인 물려주기
         cards.Add(battleCopy); // 전투 전용 카드 등록
         hand.Add(battleCopy); // 복사본을 실제 손패에 추가
         StateChanged?.Invoke(); // 변경된 손패 표시
@@ -408,6 +411,19 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 개별 비용 갱신 종료
         StateChanged?.Invoke(); // 손패 비용 표시 갱신
     } // 유물 할인 종료
+    internal void SetNextCardRelicApDiscount(int amount) // 첫 유료 사용 이후 다음 카드 할인 적용 또는 제거
+    { // 다음 카드 할인 갱신 시작
+        if (nextCardRelicApDiscount == amount) // 기존 표시와 같은 할인인지 확인
+        { // 중복 갱신 방지 시작
+            return; // 비용에 변화가 없으면 갱신 생략
+        } // 중복 갱신 방지 종료
+        nextCardRelicApDiscount = amount; // 복사본에도 적용할 다음 카드 비용 기록
+        foreach (var card in cards) // 보관 중인 모든 카드에 다음 사용 할인 반영
+        { // 카드의 다음 사용 표시 갱신 시작
+            card.NextCardRelicApDiscount = amount; // 해당 카드가 다음 사용일 때의 유물 할인
+        } // 카드의 다음 사용 표시 갱신 종료
+        StateChanged?.Invoke(); // 현재 손패의 비용 숫자와 사용 가능 여부 갱신
+    } // 다음 카드 할인 갱신 종료
     public int DiscardHand() // 일반 손패 전체 버리기
     { // 손패 정리 시작
         int count = hand.Count; // 정리할 손패 수 기록

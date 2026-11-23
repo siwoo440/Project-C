@@ -531,7 +531,7 @@
     {
       "sourceRow": 50,
       "name": "은빛 심장핀",
-      "description": "체력이 30% 이하일 때 회복량 +2",
+      "description": "전투 중 회복받는 아군의 현재 체력이 최대치의 30% 이하면 회복량이 2 증가한다.",
       "buyMin": 244,
       "buyMax": 293,
       "buyVariance": 49,
@@ -542,7 +542,7 @@
     {
       "sourceRow": 51,
       "name": "검은 심장핀",
-      "description": "체력이 70% 이상일 때 피해 +2(턴당 1회)",
+      "description": "현재 체력이 최대치의 70% 이상인 아군이 적에게 직접 카드 공격을 명중시키면 피해가 2 증가한다. 아군 턴당 첫 유효 타격에 적용한다.",
       "buyMin": 233,
       "buyMax": 282,
       "buyVariance": 49,
@@ -553,7 +553,7 @@
     {
       "sourceRow": 52,
       "name": "회전 깃발",
-      "description": "적 1명 처치 시 드로우 +1(턴당 1회)",
+      "description": "아군 턴에 아군이 적을 처치하면 손패 상한까지 카드 한 장을 뽑는다. 아군 턴당 한 번 발동한다.",
       "buyMin": 251,
       "buyMax": 300,
       "buyVariance": 49,
@@ -564,7 +564,7 @@
     {
       "sourceRow": 53,
       "name": "붉은 스프링",
-      "description": "행동력 소모 카드 사용 후 다음 카드 코스트 -1(턴당 1회)",
+      "description": "아군 턴에 처음 행동력을 소비한 뒤, 그 턴의 다음 유료 고정 비용 카드 한 장의 행동력 비용을 1 낮춘다.",
       "buyMin": 262,
       "buyMax": 309,
       "buyVariance": 47,
@@ -575,7 +575,7 @@
     {
       "sourceRow": 54,
       "name": "유리 구슬",
-      "description": "랜덤 효과가 0~1회일 때 1회로 고정(전투당 1회)",
+      "description": "명중 후 확률로 0회 또는 1회 적용되는 상태 효과의 첫 유효 판정을 전투당 한 번 성공으로 고정한다.",
       "buyMin": 264,
       "buyMax": 312,
       "buyVariance": 48,
@@ -586,7 +586,7 @@
     {
       "sourceRow": 55,
       "name": "흑철 구슬",
-      "description": "랜덤 피해가 ‘6 또는 12’이면 12 확률 증가(정수 보정)",
+      "description": "기본 피해가 6 또는 12인 무작위 공격에서 12가 나올 확률을 50%에서 75%로 높인다.",
       "buyMin": 271,
       "buyMax": 319,
       "buyVariance": 48,
@@ -597,7 +597,7 @@
     {
       "sourceRow": 56,
       "name": "얇은 금속 실",
-      "description": "손패 최대치 +1",
+      "description": "전투 손패에 보유할 수 있는 카드의 최대 장수가 1 증가한다.",
       "buyMin": 262,
       "buyMax": 311,
       "buyVariance": 49,
@@ -608,7 +608,7 @@
     {
       "sourceRow": 57,
       "name": "구식 탄약띠",
-      "description": "단일 공격 카드 피해 +1",
+      "description": "적 한 명을 선택해 한 번만 공격하는 카드의 직접 명중 피해가 1 증가한다.",
       "buyMin": 271,
       "buyMax": 320,
       "buyVariance": 49,

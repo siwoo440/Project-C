@@ -24,6 +24,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private int damageHitCount = 1; // 같은 대상에 대한 공격 횟수
     [SerializeField] private SwordCardRule swordRule; // 검 카드의 추가 공격 규칙
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
+    [SerializeField, Min(0)] private int randomDamageHighValue; // 선택적으로 굴리는 두 번째 기본 피해 수치
     [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
     [SerializeField] private bool grantsBlockToEachAlly; // 아군 전원에게 표시된 방어도를 각각 지급할지 선택
 
@@ -58,6 +59,8 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public int DamageHitCount => effectType == CardEffectType.Damage ? Mathf.Max(1, damageHitCount) : 1; // 이전 원본을 포함한 실제 타격 수
     public SwordCardRule SwordRule => swordRule; // 검 카드 추가 규칙 조회
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
+    public int RandomDamageHighValue => randomDamageHighValue; // 무작위 피해의 높은 기본값 조회
+    public bool HasRandomDamage => effectType == CardEffectType.Damage && randomDamageHighValue > effectValue; // 특정 카드에 설정한 두 피해 여부
     public CardFollowUpEffect FollowUpEffect => followUpEffect; // 카드의 후속 효과 조회
     public bool GrantsBlockToEachAlly => grantsBlockToEachAlly; // 아군별 방어도 지급 여부 조회
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
