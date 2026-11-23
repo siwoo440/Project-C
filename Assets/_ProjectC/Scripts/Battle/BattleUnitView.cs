@@ -21,6 +21,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
     private TMP_Text enemyIntentText; // 적 행동 예고 텍스트
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
+    private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -38,6 +39,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
         EnsureMotionView(); // 유닛 움직임 화면 준비
+        EnsureStatusEffectView(); // 상태 이상 화면 준비
+        statusEffectView.Bind(RuntimeUnit); // 상태 이상 화면 연결
         ApplyStaticData(); // 고정 표시 정보 적용
         RefreshHealth(); // 체력 표시 갱신
         SetEnemyIntent(null); // 행동 예고 초기화
@@ -52,6 +55,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RuntimeUnit.DamageTaken -= HandleDamageTaken; // 피해 적용 이벤트 해제
         RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
+        statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
         RuntimeUnit = null; // 런타임 참조 제거
         ResetMotion(); // 유닛 움직임 복구
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
@@ -264,6 +268,18 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         RectTransform portraitRect = portraitImage == null ? null : portraitImage.rectTransform; // 초상화 사각형 조회
         motionView.Initialize(portraitRect); // 움직임 대상 초상화 연결
     } // 움직임 준비 종료
+    private void EnsureStatusEffectView() // 상태 이상 화면 준비
+    { // 상태 화면 준비 시작
+        if (statusEffectView != null) // 기존 상태 화면 확인
+        { // 기존 화면 처리 시작
+            return; // 상태 화면 생성 중단
+        } // 기존 화면 처리 종료
+        statusEffectView = GetComponent<BattleStatusEffectView>(); // 기존 상태 화면 컴포넌트 조회
+        if (statusEffectView == null) // 상태 화면 컴포넌트 누락 확인
+        { // 상태 화면 추가 시작
+            statusEffectView = gameObject.AddComponent<BattleStatusEffectView>(); // 런타임 상태 화면 컴포넌트 추가
+        } // 상태 화면 추가 종료
+    } // 상태 화면 준비 종료
     private void OnDestroy() // 오브젝트 제거 처리
     { // 제거 처리 시작
         Unbind(); // 이벤트 연결 해제

@@ -40,6 +40,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleActionPointRuntime sharedActionPoints; // 생성된 공용 행동력
     private BattleTurnRuntime battleTurn; // 생성된 전투 턴 관리자
     private BattleCardActionController cardActionController; // 카드 행동 관리자
+    private BattleStatusEffectController statusEffectController; // 상태 이상 발동 관리자
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
@@ -91,6 +92,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 행동 연출 실행기 생성 종료
         actionSequenceRunner.BusyStateChanged += handView.SetInteractionLocked; // 행동 연출 입력 잠금 연결
         cardActionController = new BattleCardActionController(battleDeck, sharedActionPoints, battleTurn, handView, actionSequenceRunner, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
+        statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits); // 상태 이상 발동 관리자 생성
         enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
         battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
@@ -622,6 +624,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             StopCoroutine(enemyTurnCoroutine); // 적 턴 코루틴 중단
             enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
         } // 적 턴 중단 종료
+        statusEffectController?.Dispose(); // 상태 이상 관리자 연결 해제
+        statusEffectController = null; // 상태 이상 관리자 참조 제거
         if (actionSequenceRunner != null) // 행동 연출 실행기 확인
         { // 행동 연출 연결 해제 시작
             actionSequenceRunner.BusyStateChanged -= handView.SetInteractionLocked; // 손패 입력 잠금 연결 해제

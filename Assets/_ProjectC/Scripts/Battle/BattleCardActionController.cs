@@ -158,7 +158,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         actionPending = true; // 카드 행동 진행 상태 저장
         CancelSelection(); // 카드 선택과 대상 강조 해제
         Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot); // 충돌 시 카드 효과 처리 생성
-        bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
+        bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
         if (started) // 연출 시작 결과 확인
         { // 연출 시작 성공 처리 시작
             return; // 충돌 시점까지 카드 실행 대기
@@ -180,7 +180,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
         } // 카드 이동 실패 처리 종료
-        string effectLabel = cardInstance.EffectType == CardEffectType.Heal ? "회복" : cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 카드 효과 로그 문구 생성
+        string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
     private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
@@ -242,7 +242,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal; // 피해와 회복 지원 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -279,11 +279,29 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 효과 처리 시작
             return targetUnit.RestoreHealth(cardInstance.EffectValue); // 실제 회복량 반환
         } // 회복 효과 처리 종료
-        BattleDamageResult damageResult = targetUnit.TakeDamage(cardInstance.EffectValue, cardInstance.DamageType); // 카드 피해 계산과 적용
+        if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
+        { // 상태 이상 처리 시작
+            bool applied = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks); // 대상 상태 이상 적용
+            return applied ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
+        } // 상태 이상 처리 종료
+        int modifiedDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
+        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType); // 카드 피해 계산과 적용
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 단일 효과 적용 종료
+    private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
+    { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
+        { // 회복 문구 처리 시작
+            return "회복"; // 회복 문구 반환
+        } // 회복 문구 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
+        { // 상태 이상 문구 처리 시작
+            return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
+        } // 상태 이상 문구 처리 종료
+        return cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 피해 종류 문구 반환
+    } // 효과 문구 조회 종료
     private static List<BattleUnitRuntime> CreateSingleTargetList(BattleUnitRuntime targetUnit) // 단일 대상 목록 생성
     { // 단일 대상 생성 시작
         return new List<BattleUnitRuntime> { targetUnit }; // 단일 대상 목록 반환

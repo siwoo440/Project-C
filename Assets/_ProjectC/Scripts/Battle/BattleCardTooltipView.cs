@@ -22,7 +22,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         titleText.text = cardInstance.DisplayName; // 카드 이름 표시
         string targetLabel = GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
         string effectLabel = GetEffectLabel(cardInstance); // 효과 표시 문구 생성
-        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectLabel} {cardInstance.EffectValue}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
+        string durationLabel = cardInstance.EffectType == CardEffectType.ApplyStatusEffect ? $"  |  지속 {cardInstance.StatusDuration}T  |  최대 {cardInstance.StatusMaximumStacks}중첩" : string.Empty; // 상태 이상 지속 정보 생성
+        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectLabel} {cardInstance.EffectValue}{durationLabel}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
     } // 툴팁 표시 종료
@@ -81,6 +82,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 회복 효과 처리 시작
             return "체력 회복"; // 회복 문구 반환
         } // 회복 효과 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
+        { // 상태 이상 처리 시작
+            return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
+        } // 상태 이상 처리 종료
         if (cardInstance.DamageType == BattleDamageType.Magical) // 마법 피해 확인
         { // 마법 피해 처리 시작
             return "마법 피해"; // 마법 피해 문구 반환

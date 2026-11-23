@@ -20,6 +20,13 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [Min(0)] // 카드 효과값 최소값
     [SerializeField] private int effectValue = 10; // 카드 효과 수치
 
+    [Header("상태 이상 규칙")] // 상태 이상 규칙 구역
+    [SerializeField] private BattleStatusEffectType statusEffectType; // 적용 상태 이상 종류
+    [Min(1)] // 지속 횟수 최소값
+    [SerializeField] private int statusDuration = 2; // 상태 이상 지속 횟수
+    [Min(1)] // 최대 중첩 최소값
+    [SerializeField] private int statusMaximumStacks = 1; // 상태 이상 최대 중첩 수
+
     public string CardId => cardId; // 카드 ID 조회
     public string DisplayName => displayName; // 카드 이름 조회
     public string Description => description; // 카드 설명 조회
@@ -30,4 +37,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public CardEffectType EffectType => effectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => damageType; // 카드 피해 종류 조회
     public int EffectValue => effectValue; // 카드 효과 수치 조회
+    public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
+    public int StatusDuration => statusDuration; // 상태 이상 지속 횟수 조회
+    public int StatusMaximumStacks => statusMaximumStacks; // 상태 이상 최대 중첩 조회
 } // 클래스 종료
