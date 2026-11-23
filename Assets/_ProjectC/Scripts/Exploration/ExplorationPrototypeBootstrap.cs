@@ -131,6 +131,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
         scaler.matchWidthOrHeight = 0.5f; // 가로세로 중간 비율 설정
 
         ExplorationInventoryView.Create(canvas, ConsumableRunManager.EnsureInstance().Inventory); // 실제 보유 아이템 다섯 칸 두 줄 표시
+        ExplorationRelicWindow.Create(canvas, RelicRunManager.EnsureInstance().Inventory); // 실제 보유 유물 버튼과 목록 표시
 
         CreateProgressText(
             canvasObject.transform); // 영구 진행 HUD 생성
