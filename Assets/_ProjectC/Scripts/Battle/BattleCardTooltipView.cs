@@ -216,6 +216,12 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         var support = cardInstance.SourceData.PentacleRule; // 이번 지원 효과의 분리된 실제 수치 확인
         switch (support) // 펜타클 지원 카드의 실제 두 효과 표시
         { // 지원 카드의 상세 효과 시작
+            case PentacleCardRule.RuneRecording: // 다른 턴에도 남는 실제 한 번의 기본 비용 할인
+                return $"시전자의 다음 유효 카드 기본 비용 -{cardInstance.EffectValue}"; // 실제 소유자와 한 번 행동력 할인 안내
+            case PentacleCardRule.EmergencyFunds: // 다음 실제 아군 턴에 예약하는 일시 상한과 현재치
+                return $"다음 아군 턴 최대·현재 행동력 +{cardInstance.EffectValue}"; // 실제 다음 턴에 지급할 현재 행동력 및 최대치
+            case PentacleCardRule.SeizeOpportunity: // 다른 무료 카드도 포함한 실제 팀의 첫 카드 여부
+                return $"이번 턴 첫 사용 카드라면 행동력 +{cardInstance.EffectValue}"; // 이 원본이 첫 실제 아군 카드일 때만 받을 환급 안내
             case PentacleCardRule.Ritual: // 실체력을 지불하는 자기 대상 의식 확인
                 return $"시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue} · 행동력 +{cardInstance.EffectValue}"; // 현재 실제 체력 대가와 공용 행동력 증가
             case PentacleCardRule.FusionOfPower: // 아군과 적을 동시에 처리하는 일반 광역 효과

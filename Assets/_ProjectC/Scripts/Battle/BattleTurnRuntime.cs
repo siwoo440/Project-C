@@ -41,6 +41,8 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly object activeRunEncounter; // 전투를 시작한 고유 탐사 조우 토큰
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
     private int nextPlayerTurnActionPointLoss; // 거인의 방패 사용으로 다음 아군 턴에 차감할 행동력
+    private int pendingEmergencyActionPoints; // 다음 실제 아군 턴에만 지급할 예비 자금의 누적 행동력
+    private int lastCompletedCardRound; // 아군 전체의 실제 원본 사용이 마지막으로 완료된 라운드
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private bool openingTemporaryCardChecked; // 첫 아군 손패의 단추 생성 기회 처리 여부
     internal IReadOnlyList<CardInstance> OpeningBookmarkChoices { get; private set; } // 현재 선택에 보여 준 실제 드로우 더미의 개막 후보
@@ -376,6 +378,38 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         return changed ? amount : 0; // 실제 변경된 현재 턴의 새 할인량
     } // 현재 아군과 이후 생성 카드의 비용 갱신 종료
 
+    internal int SetRuneRecordingDiscount(BattleUnitRuntime owner, int amount) // 이 소유자의 다음 유효 기본 비용에 한 번 적용하는 룬 기록
+    { // 실제 카드 소유자의 할인 예약 갱신 시작
+        amount = Math.Max(0, amount); // 새 원본 할인과 사용 완료 초기화에 맞는 정수 수치
+        if (owner == null || owner.Team != BattleTeam.Ally || owner.RuneRecordingApDiscount == amount) // 실제 소유 아군과 이전 예약 차이 확인
+        { // 이전 룬 기록 상태 보존 시작
+            return 0; // 중복 비용 알림과 할인 중첩 생략
+        } // 이전 룬 기록 상태 보존 종료
+        owner.RuneRecordingApDiscount = amount; // 해당 아군의 다음 실제 일반 비용에만 한 번 반영
+        runtimeDeck.NotifyCardCostsChanged(); // 지금 손패와 바로 이후 드로우에서 보이는 실제 비용 갱신
+        return amount; // 새로 예약되어 표시할 실제 할인량
+    } // 실제 카드 소유자의 할인 예약 갱신 종료
+    internal bool RecordCompletedPlayerCardUse() // 이번 실제 아군 턴의 첫 완료 카드를 한 번만 확인
+    { // 아군 턴의 실제 카드 사용 기록 시작
+        if (!IsPlayerTurn || IsBattleEnded) // 종료 화면과 실제 아군 입력을 벗어난 효과 제외
+        { // 기록 대상이 아닌 전투 흐름 확인 시작
+            return false; // 실제 카드 선택이나 적 턴의 수치 변경 생략
+        } // 기록 대상이 아닌 전투 흐름 확인 종료
+        bool first = lastCompletedCardRound != CurrentRound; // 비용과 속성에 상관없는 첫 진짜 카드 사용 확인
+        lastCompletedCardRound = CurrentRound; // 이 아군 턴에서 다음 성공부터는 첫 카드가 아닌 기록
+        return first; // 실제 이번 원본이 턴에서 처음인지 정산에 전달
+    } // 아군 턴의 실제 카드 사용 기록 종료
+    private void ClearEconomyReservations() // 전투가 끝난 경우의 소유자 룬 예약과 예비 자금 초기화
+    { // 전투 한정 자원 정리 시작
+        pendingEmergencyActionPoints = 0; // 사용하지 않고 전투가 끝난 다음 행동력 제거
+        foreach (var ally in allyUnits) // 같은 전투에 실제 참가한 모든 소유 아군 순회
+        { // 아군별 전투 할인 정리 시작
+            if (ally != null) // 이전 전투에 연결된 실제 참가자 확인
+            { // 지난 전투의 실제 예약 제거 시작
+                ally.RuneRecordingApDiscount = 0; // 새 전투로 넘어갈 이전의 룬 기록 제거
+            } // 지난 전투의 실제 예약 제거 종료
+        } // 아군별 전투 할인 정리 종료
+    } // 전투 한정 자원 정리 종료
     private void CleanupPlayerTurn() // 일반 플레이어 턴 종료 공통 정리
     { // 플레이어 턴 정리 시작
         SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 펜타클 기본 할인 복원
@@ -873,11 +907,24 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             nextPlayerTurnActionPointLoss = (int)Math.Min(int.MaxValue, (long)nextPlayerTurnActionPointLoss + amount); // 여러 사용의 행동력 차감을 정수 범위에서 누적
         } // 개별 카드의 차감 예약 종료
     } // 다음 아군 턴 행동력 예약 종료
+    internal int QueueEmergencyActionPoints(int amount) // 다음 실제 아군 턴에 사용할 예비 자금 한 건 예약
+    { // 원본 행동력 준비 수치 누적 시작
+        int addition = Math.Clamp(amount, 0, int.MaxValue - pendingEmergencyActionPoints); // 여러 실제 사용의 정수 누적 범위 확인
+        pendingEmergencyActionPoints += addition; // 적 턴에는 지급하지 않고 다음 아군 손패까지 보존
+        return addition; // 실제로 늘어난 예약 수치 확인
+    } // 원본 행동력 준비 수치 누적 종료
+    private void ApplyEmergencyActionPoints() // 다음 플레이어 손패가 준비될 때 실제 최대치와 현재치 지급
+    { // 이번 아군 턴의 예비 자금 처리 시작
+        int amount = pendingEmergencyActionPoints; // 같은 전투에서 앞선 실제 카드들이 예약한 현재 수치
+        pendingEmergencyActionPoints = 0; // 공용 행동력 알림과 이후 아군 턴 전에 이미 쓴 예약 초기화
+        sharedActionPoints.AddTurnCapacity(amount); // 원래 상한의 이번 턴 한정 임시 증가 및 현재 행동력 지급
+    } // 이번 아군 턴의 예비 자금 처리 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
         int actionPointLoss = nextPlayerTurnActionPointLoss; // 현재 턴에 적용할 이전 카드의 차감량
         nextPlayerTurnActionPointLoss = 0; // 행동력 변경 알림 전에 예약 초기화
         sharedActionPoints.ReduceTurnCapacity(actionPointLoss); // 기본 회복 뒤 현재와 최대 행동력의 일시 차감
+        ApplyEmergencyActionPoints(); // 다음 실제 아군 턴에만 이전 카드가 예약한 공용 행동력 확장
         int specimenActionPoints = openingSpecimenActionPoints; // 실제 아군 턴에 지급할 행동력 확보
         openingSpecimenActionPoints = 0; // 발동 알림 전에 재지급 방지
         int bottleActionPoints = openingBottleActionPoints; // 실제 첫 아군 턴에서 사용할 별도 유물 보상 확보
@@ -1264,7 +1311,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 결투 기간 처리 종료
             foreach (var enemy in enemyUnits) // 적별 활성 약화 확인
             { // 개별 약화 해제 시작
-                enemy?.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 해당 아군 턴이 끝나면 공명 표식 해제
+                if (enemy?.GetStatusEffect(BattleStatusEffectType.PublicMark) is { PublicMarkCountsEnemyTurns: false }) // 원래 수신기 방식의 공명 표식만 실제 아군 턴 종료에 해제
+                { // 기존 공명 표식 해제 시작
+                    enemy.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 새로운 전술 적 턴 시계는 원래 상태 처리기에 유지
+                } // 기존 공명 표식 해제 종료
                 var stethoscope = enemy?.GetStatusEffect(BattleStatusEffectType.StethoscopeMark); // 이번 아군 턴까지 적용된 독립 청진기 표식 조회
                 if (stethoscope != null) // 해당 적에게 청진기 표식이 적용됐는지 확인
                 { // 실제 청진기 기간 차감 시작
@@ -1623,6 +1673,21 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             } // 현재 손실 체력의 정수 비용 지불 종료
         } // 서약의 생존 체력 비용 계산 종료
     } // 전투 종료 서약 처리 종료
+    private void ClearTacticalCardStatuses() // 현재 전투에서만 남겨야 하는 전술 카드 상태 정리
+    { // 전술 표식 및 미사용 도구 손질 해제 시작
+        foreach (var ally in allyUnits) // 남은 가산을 가진 원래 아군 참가자 순회
+        { // 전투 종료의 아군 강화 정리 시작
+            ally?.RemoveStatusEffect(BattleStatusEffectType.ToolMaintenanceAttackUp); // 다른 다음 명중에 이어가지 않는 미사용 강화 해제
+        } // 전투 종료의 아군 강화 정리 종료
+        foreach (var enemy in enemyUnits) // 상태를 유지하고 있을 실제 적 참가자 순회
+        { // 전술 카드에서 온 표식만 종료 처리 시작
+            if (enemy?.GetStatusEffect(BattleStatusEffectType.PublicMark) is { PublicMarkCountsEnemyTurns: true }) // 기존 별도 원본과 다른 카드 전술 표식 확인
+            { // 실제 전술 표식 종료 시작
+                enemy.RemoveStatusEffect(BattleStatusEffectType.PublicMark); // 남은 적 턴이 있어도 실제 전투 종료와 함께 제거
+            } // 실제 전술 표식 종료 종료
+        } // 전술 카드에서 온 표식만 종료 처리 종료
+    } // 전술 표식 및 미사용 도구 손질 해제 종료
+
     private void ClearDistributionStatuses() // 이번 전투의 원본과 복사 분배 상태를 종료 시 해제
     { // 참가한 모든 아군의 지속 상태 해제 시작
         foreach (var ally in allyUnits) // 선택 대상과 강화를 복사한 생존 여부 무관 아군 조회
@@ -1643,9 +1708,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 미사용 씨앗 제거 시작
             ally?.RemoveStatusEffect(BattleStatusEffectType.ResurrectionSeed); // 결과 확정 이후 부활을 예약하지 않는 전투 상태 정리
         } // 미사용 씨앗 제거 종료
+        ClearTacticalCardStatuses(); // 실제 결과 확정 때 전술 카드의 남은 전투 효과 종료
         ClearDistributionStatuses(); // 승리와 패배 및 도주 결과 확정 뒤 분배 상태 종료
         SetEfficientUseDiscount(0); // 승리 및 패배와 도주 뒤 남은 턴 할인 제거
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
+        ClearEconomyReservations(); // 새 교전에 이월되지 않을 카드 할인과 예약 행동력 제거
         pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
         OpeningBookmarkChoices = null; // 이미 끝난 전투에서는 대기 중인 개막 선택 제거
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
@@ -1924,8 +1991,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
+        ClearTacticalCardStatuses(); // 실제 전투 관리 해제 때 쓰지 않은 전술 카드 효과 회수
         ClearDistributionStatuses(); // 장면 해제나 새 전투에도 현재 분배 수치가 남지 않는 정리
         SetEfficientUseDiscount(0); // 전투 관리자 해제 후 아군 소유자 할인 회수
+        ClearEconomyReservations(); // 장면 해제 중에도 같은 교전의 룬 할인과 다음 행동력 예약 제거
         OpeningBookmarkChoices = null; // 해제 뒤 이전 전투의 개막 선택 후보 회수
         runtimeDeck.ClearBattleRelicCards(); // 결과 이전에 전투 해제할 때도 덱의 모든 전투 한정 카드 회수
         foreach (BattleUnitRuntime ally in allyUnits) // 이번 탐사 전투의 아군 공격력 연결 확인

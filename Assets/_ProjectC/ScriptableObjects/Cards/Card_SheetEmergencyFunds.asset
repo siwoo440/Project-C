@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetEmergencyFunds
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_EMERGENCY_FUNDS
+  displayName: "비상금"
+  description: "다음 아군 턴의 시작에 그 턴의 최대 행동력과 현재 행동력을 각각 1 높인다."
+  artwork: {fileID: 21300000, guid: c7268f5683085298831faefbc5992c40, type: 3}
+  cardType: 3
+  targetType: 0
+  apCost: 0
+  effectType: 22
+  damageType: 0
+  effectValue: 1
+  mentalChangeValue: 0
+  pentacleRule: 21
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

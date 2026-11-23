@@ -27,7 +27,9 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SpendsAllActionPoints ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => IsBattleOnlySingleUse ? 0 : (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount + SourceData.AdditionalActionPointCost); // 전투 임시 찌르기의 고정 무료 및 기존 원본 카드 비용
+    public int ApCost => IsBattleOnlySingleUse ? 0 : (int)Math.Min(int.MaxValue, RemainingFixedApCost - EffectiveFirstDefenseDiscount - EffectiveRuneRecordingDiscount + SourceData.AdditionalActionPointCost); // 무료 전투 카드와 일반 비용 할인 및 별도 필수 비용의 실제 결제
+    internal int EffectiveRuneRecordingDiscount => SourceData.SpendsAllActionPoints || IsBattleOnlySingleUse ? 0 : // 가변 비용과 전투 임시 무료 카드의 기록 할인 소모 제외
+        (int)Math.Min(OwnerUnit.RuneRecordingApDiscount, RemainingFixedApCost - EffectiveFirstDefenseDiscount); // 다른 기본 할인을 거치고도 지불할 양수 일반 비용만 감소
     private long RemainingFixedApCost => Math.Max(0L, (long)ApCostBeforeNextCardDiscount - NextCardRelicApDiscount - ShieldBalanceDiscount); // 기존 할인을 먼저 적용한 고정 기본 비용
     internal int EffectiveFirstDefenseDiscount => FirstDefensiveRelicApDiscount > 0 && !SourceData.SpendsAllActionPoints && HasAuthoredDefense ? (int)Math.Min(FirstDefensiveRelicApDiscount, RemainingFixedApCost) : 0; // 지불할 기본 비용 안에서만 실제 방패끈 할인 적용
     internal bool HasDefensivePrimaryEffect => EffectType is CardEffectType.GainBlock or CardEffectType.GuardAllyAttack || // 직접 방어도와 동료 보호 효과 확인

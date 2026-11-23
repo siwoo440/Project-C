@@ -3053,6 +3053,54 @@
       "name": "임시 보급",
       "description": "선택한 생존 아군의 체력을 4 회복한다. 별도로 30% 확률로 행동력을 1 회복한다.",
       "artworkKey": "4eedb2ac99dc56d99334adb57ece396a"
+    },
+    {
+      "category": 7,
+      "name": "교환 제안",
+      "description": "손패의 다른 카드 한 장을 골라 버린 뒤 공용 손패에 카드 두 장을 뽑는다.",
+      "artworkKey": "c4c11709e3c1561c86b1ea9b21063ca7"
+    },
+    {
+      "category": 7,
+      "name": "룬 기록",
+      "description": "시전자가 다음에 사용하는 기본 행동력 비용이 있는 일반 카드의 기본 비용을 1 낮춘다. 사용 전까지 턴이 바뀌어도 유지된다.",
+      "artworkKey": "6851d2b2eb52590c9d603f5f1e71c461"
+    },
+    {
+      "category": 7,
+      "name": "전술 표시",
+      "description": "선택한 생존 적 한 명에게 두 적 턴 동안 표식을 부여한다.",
+      "artworkKey": "d759fbb94c425fa38ce18846ab21671e"
+    },
+    {
+      "category": 7,
+      "name": "임기응변",
+      "description": "시전자가 소유한 일반 등급 무작위 카드 한 장을 이번 전투의 손패에 생성한다.",
+      "artworkKey": "6092bc88fecc5e1ea87e26af789288ab"
+    },
+    {
+      "category": 7,
+      "name": "비상금",
+      "description": "다음 아군 턴의 시작에 그 턴의 최대 행동력과 현재 행동력을 각각 1 높인다.",
+      "artworkKey": "c7268f5683085298831faefbc5992c40"
+    },
+    {
+      "category": 7,
+      "name": "도구 손질",
+      "description": "선택한 아군이 다음에 명중시키는 유효한 직접 공격 타격의 피해를 4 높인다.",
+      "artworkKey": "9e9342da490259c7b4ab8af034b0b144"
+    },
+    {
+      "category": 7,
+      "name": "패 정리",
+      "description": "손패의 다른 카드 한 장 또는 두 장을 골라 버린 뒤 같은 수만큼 공용 손패에 카드가 들어온다.",
+      "artworkKey": "369bbe8fd4895c67a6dc93546b3680d2"
+    },
+    {
+      "category": 7,
+      "name": "기회 포착",
+      "description": "이 카드가 이번 아군 턴에 처음 실제로 사용한 카드라면 사용을 마친 후 행동력을 1 회복한다.",
+      "artworkKey": "608ceef1c6215314bd8b114f752d93dc"
     }
   ]
 }
