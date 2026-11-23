@@ -1,7 +1,6 @@
 using System.Collections.Generic; // 파티 카드 UI 목록 사용
 using TMPro; // 한글 TMP 텍스트 사용
 using UnityEngine; // 런타임 UI와 색상 사용
-using UnityEngine.InputSystem; // F7 개발 부활 입력 사용
 using UnityEngine.UI; // Canvas와 Image UI 사용
 
 public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하단 출전 파티 상태 HUD
@@ -23,7 +22,6 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
         new List<MemberView>(); // 현재 출전 파티 HUD 목록
 
     private BattleResultManager resultManager; // 파티 영구 상태 관리자
-    private ExplorationSessionManager sessionManager; // 탐사 완료 상태 관리자
     private GameObject canvasObject; // 런타임 파티 HUD Canvas
     private RectTransform partyRoot; // 좌하단 파티 카드 부모
     private PartyData boundParty; // 현재 표시 중인 파티
@@ -41,9 +39,6 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
         resultManager =
             targetResultManager; // 파티 상태 관리자 저장
 
-        sessionManager =
-            targetSessionManager; // 탐사 상태 관리자 저장
-
         if (resultManager != null)
         {
             resultManager.PartyStateChanged += HandlePartyStateChanged; // 파티 상태 변경 즉시 갱신 등록
@@ -54,7 +49,7 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
         RefreshAll(); // 최초 상태 표시
     }
 
-    private void Update() // 파티 상태 보조 갱신과 개발 부활 입력
+    private void Update() // 파티 상태 보조 갱신
     {
         if (resultManager == null)
         {
@@ -73,16 +68,6 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
             RefreshAll(); // 현재 HP·정신력·사망 표시 갱신
         }
 
-        Keyboard keyboard =
-            Keyboard.current; // 현재 키보드 조회
-
-        if (keyboard != null &&
-            keyboard.f7Key.wasPressedThisFrame &&
-            (sessionManager == null ||
-             !sessionManager.IsExplorationCompleted))
-        {
-            resultManager.ReviveFirstDeadAlly(); // F7 개발 테스트용 첫 사망 파티원 30% 부활
-        }
     }
 
     private void OnDestroy() // 파티 HUD 제거 처리

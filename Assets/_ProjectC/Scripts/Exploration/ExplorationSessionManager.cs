@@ -489,7 +489,6 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         runIronPlateGained = 0; // 런 철판 합계 초기화
         runWireGained = 0; // 런 전선 합계 초기화
         ClearPendingHazardPenalty(); // 탐사 환경 피해 대기 상태 초기화
-        BattleResultManager.Instance?.ResetSavedPartyState(); // 다음 탐사용 파티 HP·정신력·사망 기록 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
 
         Debug.Log(
