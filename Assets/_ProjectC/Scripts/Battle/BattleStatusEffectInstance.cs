@@ -57,6 +57,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 저항 약화"; // 마법 저항 감소 이름 반환
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
                 return "표식"; // 전차 표식 이름 반환
+            case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
+                return "예약 회복"; // 예약 회복 이름 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return "방어 준비"; // 방어 준비 이름 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
@@ -91,6 +93,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마-"; // 마법 저항 감소 아이콘 반환
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
                 return "표"; // 전차 표식 아이콘 반환
+            case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
+                return "별"; // 예약 회복 아이콘 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return "준"; // 방어 준비 아이콘 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류
@@ -121,6 +125,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
             case BattleStatusEffectType.ChariotMark: // 전차 표식 종류
                 return $"전차의 후속 공격 원본 피해 증가 {effectiveValue}"; // 전차 표식 설명 반환
+            case BattleStatusEffectType.StarReservedHealing: // 별 예약 회복 종류
+                return $"다음 아군 턴 시작 체력 회복 {effectiveValue}"; // 예약 회복 설명 반환
             case BattleStatusEffectType.GuardPreparation: // 적 공격 대비 종류
                 return $"다음 적 공격의 방어력 증가 {effectiveValue}"; // 방어 준비 설명 반환
             case BattleStatusEffectType.Disrupt: // 정신력 교란 종류

@@ -29,7 +29,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 appliedAmount = damageResult.AppliedDamage; // 실제 중독 피해 저장
                 wasTriggered = true; // 중독 발동 저장
             } // 중독 처리 종료
-            else if (statusEffect.EffectType == BattleStatusEffectType.Regeneration) // 재생 상태 확인
+            else if (statusEffect.EffectType == BattleStatusEffectType.Regeneration || statusEffect.EffectType == BattleStatusEffectType.StarReservedHealing) // 재생과 예약 회복 확인
             { // 재생 처리 시작
                 appliedAmount = runtimeUnit.RestoreHealth(statusEffect.EffectiveValue); // 실제 재생 회복 저장
                 wasTriggered = true; // 재생 발동 저장

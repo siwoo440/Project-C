@@ -753,4 +753,77 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsNull(target.GetStatusEffect(BattleStatusEffectType.GuardPreparation)); // 첫 공격 후 준비 소모 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator StarCard_ReservesNextTurnHealing() // 별 캐릭터 예약 회복 카드 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[17].onClick.Invoke(); // 별 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        BattleUnitRuntime target = battle.AllyUnits[0]; // 회복 대상 아군 조회
+        target.TakeDamage(20, BattleDamageType.None); // 테스트용 아군 체력 감소
+        int healthBefore = target.CurrentHealth; // 회복 전 체력 저장
+        target.ApplyStatusEffect(BattleStatusEffectType.Regeneration, 2, 2, 1); // 기존 재생 효과 적용
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView cardView = null; // 별 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 전용 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_17_HEAL" && candidate.gameObject.activeInHierarchy) // 별 카드 확인
+            { // 전용 카드 발견 시작
+                cardView = candidate; // 별 카드 화면 저장
+                Assert.AreSame(battle.AllyUnits[1], candidate.RuntimeCard.OwnerUnit); // 별 카드 소유자 확인
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(cardView); // 별 전용 카드 존재 확인
+        BattleUnitView targetView = null; // 회복 대상 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 유닛 화면 순회
+        { // 아군 화면 검색 시작
+            if (candidate.RuntimeUnit == target) // 회복 대상 화면 확인
+            { // 대상 화면 발견 시작
+                targetView = candidate; // 대상 화면 저장
+                break; // 화면 검색 종료
+            } // 대상 화면 발견 종료
+        } // 아군 화면 검색 종료
+        Assert.IsNotNull(targetView); // 회복 대상 화면 존재 확인
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        cardView.OnPointerClick(null); // 별 카드 선택
+        targetView.OnPointerClick(null); // 회복 예약 대상 선택
+        float deadline = Time.realtimeSinceStartup + 5f; // 예약 적용 제한 시간 설정
+        while (Time.realtimeSinceStartup < deadline && target.GetStatusEffect(BattleStatusEffectType.StarReservedHealing) == null) // 회복 예약 적용 대기
+        { // 예약 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 예약 대기 종료
+        Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.StarReservedHealing)); // 회복 예약 상태 확인
+        Assert.AreEqual(healthBefore, target.CurrentHealth); // 카드 사용 시 즉시 회복 없음 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 카드 행동력 소비 확인
+        new BattleStatusEffectProcessor().ProcessPhaseStart(target, 2); // 다음 아군 턴 시작 상태 처리
+        Assert.AreEqual(healthBefore + 8, target.CurrentHealth); // 기존 재생과 예약 회복 합계 확인
+        Assert.IsNotNull(target.GetStatusEffect(BattleStatusEffectType.Regeneration)); // 기존 재생 효과 독립 유지 확인
+        Assert.IsNull(target.GetStatusEffect(BattleStatusEffectType.StarReservedHealing)); // 한 번 발동 후 예약 소멸 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료
