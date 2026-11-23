@@ -47,7 +47,13 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
     public IReadOnlyList<RunDeckCardEntry> GetActiveCards(DeckData deckData) // 현재 전투용 카드 목록 조회
     {
         EnsureInitialized(deckData); // 원본 덱 기반 초기화 보장
-        return cards; // 현재 보유 카드 반환
+
+        if (!BattleCombatRosterRuntime.ShouldFilterCurrentScene)
+        {
+            return cards; // 탐사·상점에서는 회차 카드 전체 반환
+        }
+
+        return BattleCombatRosterBuilder.FilterDeployableRunDeckCards(cards); // 전투 Scene에서는 실제 출전 캐릭터 카드만 반환
     }
 
     public bool TryAddCard(CardData cardData, CharacterData ownerData) // 상점 카드 추가 시도

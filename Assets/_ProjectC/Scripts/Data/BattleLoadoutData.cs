@@ -34,4 +34,24 @@ public sealed class BattleLoadoutData : ScriptableObject
 
         return true; // 정상 전투 편성 반환
     }
+
+    public PartyDeploymentValidationResult ValidateDeployment() // 현재 저장 상태 포함 출전 가능 여부 검증
+    {
+        if (!IsValidLoadout())
+        {
+            return new PartyDeploymentValidationResult(
+                false,
+                PartyDeploymentBlockReason.InvalidLoadout,
+                null,
+                0); // 구조적으로 잘못된 Loadout 차단
+        }
+
+        return PartyDeploymentValidator.Validate(
+            party); // 사망·회복 상태 포함 파티 출전 검증
+    }
+
+    public bool IsDeployableLoadout() // 파티 편성 UI와 탐사 진입용 최종 출전 가능 여부 조회
+    {
+        return ValidateDeployment().CanDeploy; // 현재 런타임 상태 포함 출전 가능 반환
+    }
 }

@@ -29,6 +29,13 @@ public sealed class ExplorationBattleResultReceiver : MonoBehaviour // 전투 �
         sessionManager.ResolveBattleResult(
             ReceivedResult); // 맵 생성 전에 클리어 상태 반영
 
+        if (resultManager.IsActivePartyWiped() &&
+            !sessionManager.IsExplorationCompleted)
+        {
+            sessionManager.CompleteExplorationFailure(
+                "저장된 파티 HP 기준 출전 파티가 전멸했습니다."); // 영속 상태 기준 전멸 누락 방지
+        }
+
         string rewardLabel =
             ReceivedResult.CanReceiveReward
                 ? "보상 가능"
