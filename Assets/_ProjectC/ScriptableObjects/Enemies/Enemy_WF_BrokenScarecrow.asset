@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\uB9DD\uAC00\uC9C4 \uD5C8\uC218\uC544\uBE44"
   description: "\uBD88\uD0C4 \uB18D\uC9C0\uB97C \uC9C0\uD0A4\uBA70 \uB0AB\uC744 \uD718\uB450\uB974\uB294
     \uD5C8\uC218\uC544\uBE44"
-  portrait: {fileID: 21300000, guid: 3c15d9a98f24914449f3654f7ba4e91c, type: 3}
+  portrait: {fileID: 21300000, guid: 7262118e1ee04b8ca6f567ce8247f81a, type: 3}
   maxHealth: 58
   physicalDefense: 4
   magicalResistance: 10
