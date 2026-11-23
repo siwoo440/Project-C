@@ -9,6 +9,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
     private RunDeckManager runDeckManager; // 탐사 회차 덱 관리자
     private ShopTransactionService transactionService; // 상점 거래 서비스
     private string activeRoomRuntimeId; // 57일차 현재 상점 방 런타임 ID
+    private RelicSheetCatalog relicSheetCatalog; // 시트 유물 가격 목록
 
     public static ShopRunManager Instance => instance; // 현재 상점 관리자 조회
     public ShopCatalogData Catalog => catalog; // 현재 카탈로그 조회
@@ -117,10 +118,32 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상품 정보가 올바르지 않습니다."); // 잘못된 상품 완료 반환
         } // 잘못된 상품 처리 종료
 
-        ShopPurchaseResult result = transactionService.TryPurchase(offer.OfferId, offer.Price, () => CanDeliver(offer), () => Deliver(offer)); // 원자 상품 거래 실행
+        ShopPurchaseResult result = transactionService.TryPurchase(offer.OfferId, GetOfferPrice(offer), () => CanDeliver(offer), () => Deliver(offer)); // 표시 가격으로 원자 상품 거래 실행
         string message = BuildPurchaseMessage(result, offer.DisplayName); // 거래 결과 문구 생성
         return CompleteTransaction(result, message); // 거래 결과 알림과 반환
     } // 상품 구매 종료
+
+    public int GetOfferPrice(ShopOfferData offer) // 현재 상점의 상품 가격 조회
+    { // 상품 가격 조회 시작
+        if (offer == null) // 빈 상품 확인
+        { // 빈 상품 처리 시작
+            return 0; // 가격 없음 반환
+        } // 빈 상품 처리 종료
+        if (offer.OfferType != ShopOfferType.Relic || offer.Relic == null || string.IsNullOrWhiteSpace(activeRoomRuntimeId)) // 시트 유물 가격 적용 조건 확인
+        { // 기존 가격 처리 시작
+            return offer.Price; // 기존 상품 가격 반환
+        } // 기존 가격 처리 종료
+        if (relicSheetCatalog == null) // 시트 가격 목록 미로드 확인
+        { // 시트 목록 로드 시작
+            relicSheetCatalog = RelicSheetCatalog.Load(); // 유물 시트 목록 불러오기
+        } // 시트 목록 로드 종료
+        RelicSheetEntry entry = relicSheetCatalog?.FindByName(offer.Relic.DisplayName); // 유물 이름에 맞는 가격 조회
+        if (entry == null || entry.BuyMin < 0 || entry.BuyMax < entry.BuyMin || (long)entry.BuyMax - entry.BuyMin >= int.MaxValue) // 시트 가격 유효성 확인
+        { // 시트 가격 없음 처리 시작
+            return offer.Price; // 기존 상품 가격 반환
+        } // 시트 가격 없음 처리 종료
+        return RelicShopPricing.Calculate(entry, activeRoomRuntimeId, offer.OfferId); // 상점별 시트 범위 가격 반환
+    } // 상품 가격 조회 종료
 
     public ShopPurchaseResult TryRemoveCard(int cardIndex) // 지정 보유 카드 제거 시도
     { // 카드 제거 시작
