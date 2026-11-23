@@ -186,22 +186,22 @@ public sealed class SaveMenuController : MonoBehaviour // 슬롯 화면과 저�
         WarningUiArt.ApplyBackdrop(backdropObject.GetComponent<Image>()); // 제작 경고 배경 적용
         confirmationText = CreateText("Message", confirmation.transform, string.Empty, 30f); // 확인 안내 문구 생성
         Place(confirmationText.rectTransform, new Vector2(0.5f, 0.57f), Vector2.zero, new Vector2(900f, 120f)); // 확인 문구 위치 설정
-        CreateConfirmationButton("ConfirmButton", "확인", -115f, Confirm); // 확인 버튼 생성
-        CreateConfirmationButton("CancelButton", "취소", 115f, Cancel); // 취소 버튼 생성
+        CreateConfirmationButton("ConfirmButton", "확인", -175f, Confirm); // 확인 버튼 생성
+        CreateConfirmationButton("CancelButton", "취소", 175f, Cancel); // 취소 버튼 생성
         confirmation.SetActive(false); // 확인 화면 초기 숨김
     } // 확인창 생성 종료
     private void CreateConfirmationButton(string name, string label, float x, Action action) // 확인창 버튼 생성
     { // 확인 버튼 생성 시작
         GameObject target = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)); // 확인 버튼 객체 생성
         target.transform.SetParent(confirmation.transform, false); // 확인 화면 자식 배치
-        Place(target.GetComponent<RectTransform>(), new Vector2(0.5f, 0.42f), new Vector2(x, 0f), new Vector2(200f, 64f)); // 확인 버튼 위치 설정
+        Place(target.GetComponent<RectTransform>(), new Vector2(0.5f, 0.42f), new Vector2(x, 0f), new Vector2(300f, 96f)); // 확인 버튼 위치와 1.5배 크기 설정
         Image background = target.GetComponent<Image>(); // 버튼 배경 조회
         background.color = new Color(0.28f, 0.29f, 0.30f, 1f); // 버튼 배경 색상 설정
         WarningUiArt.ApplyButton(background); // 제작 경고 버튼 이미지 적용
         Button button = target.GetComponent<Button>(); // 버튼 입력 조회
         button.targetGraphic = background; // 버튼 색상 대상 연결
         button.onClick.AddListener(() => action()); // 버튼 확인 동작 연결
-        TMP_Text text = CreateText("Label", target.transform, label, 24f); // 버튼 문구 생성
+        TMP_Text text = CreateText("Label", target.transform, label, 28f); // 버튼 문구 생성
         RectTransform rect = text.rectTransform; // 버튼 문구 영역 조회
         rect.anchorMin = Vector2.zero; // 문구 시작 앵커 설정
         rect.anchorMax = Vector2.one; // 문구 끝 앵커 설정

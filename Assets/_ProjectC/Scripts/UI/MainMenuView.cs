@@ -79,10 +79,10 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         message.fontSizeMin = 18f; // 최소 글자 크기 설정
         message.fontSizeMax = 26f; // 최대 글자 크기 설정
         message.alignment = TextAlignmentOptions.Center; // 경고 문구 가운데 정렬
-        message.text = "새로 시작하시겠습니까?\n현재 진행 상황과 저장되지 않은 데이터가 사라지고 처음부터 시작합니다.\n기존 저장 데이터도 새 게임으로 덮어씁니다."; // 새 게임 초기화 경고 문구
+        message.text = "새로 시작하시겠습니까?\n저장되지 않은 진행 상황이 사라지고\n처음부터 다시 시작합니다.\n자동 저장은 덮어쓰고 수동 저장은 유지합니다."; // 새 게임 초기화 경고 문구
         message.raycastTarget = false; // 문구의 입력 차단 해제
-        confirmButton = CreateConfirmationButton("ConfirmNewGame", "새로 시작", -120f); // 새 게임 확인 버튼 생성
-        cancelButton = CreateConfirmationButton("CancelNewGame", "취소", 120f); // 새 게임 취소 버튼 생성
+        confirmButton = CreateConfirmationButton("ConfirmNewGame", "새로 시작", -175f); // 새 게임 확인 버튼 생성
+        cancelButton = CreateConfirmationButton("CancelNewGame", "취소", 175f); // 새 게임 취소 버튼 생성
         confirmButton.onClick.AddListener(ConfirmNewGame); // 확인 동작 연결
         cancelButton.onClick.AddListener(HideNewGameConfirmation); // 취소 동작 연결
         confirmationPanel.SetActive(false); // 생성 직후 경고 숨김
@@ -95,7 +95,7 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         rect.anchorMin = new Vector2(0.5f, 0.5f); // 버튼 시작 앵커 설정
         rect.anchorMax = new Vector2(0.5f, 0.5f); // 버튼 끝 앵커 설정
         rect.anchoredPosition = new Vector2(horizontalOffset, -110f); // 버튼 위치 설정
-        rect.sizeDelta = new Vector2(200f, 64f); // 버튼 크기 설정
+        rect.sizeDelta = new Vector2(300f, 96f); // 버튼 크기 1.5배 설정
         Image image = buttonObject.GetComponent<Image>(); // 버튼 배경 조회
         image.color = new Color(0.32f, 0.40f, 0.45f, 1f); // 버튼 배경 색상
         WarningUiArt.ApplyButton(image); // 제작 경고 버튼 이미지 적용
@@ -110,7 +110,7 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         labelRect.offsetMax = Vector2.zero; // 글자 끝 여백 제거
         TMP_Text text = labelObject.GetComponent<TMP_Text>(); // 버튼 글자 컴포넌트 조회
         text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 글꼴 연결
-        text.fontSize = 24f; // 버튼 글자 크기 설정
+        text.fontSize = 28f; // 버튼 글자 크기 설정
         text.alignment = TextAlignmentOptions.Center; // 버튼 글자 가운데 정렬
         text.text = label; // 버튼 문구 설정
         text.raycastTarget = false; // 글자의 입력 차단 해제
