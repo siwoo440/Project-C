@@ -4,5 +4,6 @@ public enum CardType
     Wand, // 지팡이 카드
     Cup, // 성배 카드
     Pentacle, // 펜타클 카드
-    Shield // 방패 카드
+    Shield, // 방패 카드
+    Curse // 사건 전용 저주 카드
 }

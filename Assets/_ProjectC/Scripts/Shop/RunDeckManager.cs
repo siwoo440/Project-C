@@ -87,6 +87,18 @@ public sealed class RunDeckManager : MonoBehaviour // 탐사 회차 덱 관리�
         return true; // 카드 제거 성공 반환
     }
 
+    public bool TryRemoveAshCurse(CharacterData owner) // 허수아비 소각으로 행동자의 저주 한 장 제거
+    { // 저주 소각 시작
+        int index = cards.FindIndex(entry => owner != null && entry.Owner == owner && entry.Card.CardId == WinterfallRiskCardReward.CurseCardId); // 행동자 자신의 저주 위치 조회
+        if (index < 0) // 지정 소유자의 저주 누락 확인
+        { // 저주 없음 처리 시작
+            return false; // 제거한 저주 없음
+        } // 저주 없음 처리 종료
+        cards.RemoveAt(index); // 상점 판매와 별개인 사건 저주 한 장 제거
+        Changed?.Invoke(); // 탐사 덱 변경 알림
+        return true; // 저주 한 장 제거 성공
+    } // 저주 소각 종료
+
     public bool CanUpgradeAt(int cardIndex) // 지정 카드 강화 가능 여부
     {
         return cardIndex >= 0 &&

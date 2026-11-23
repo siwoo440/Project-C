@@ -17,5 +17,6 @@ public enum CardEffectType // 카드 효과 종류
     ShareAllyAttack, // 동료의 예정 공격 피해 분담 효과
     TransferAllyDebuff, // 동료의 디버프 하나를 자신에게 이전하는 효과
     DrawThenDiscard, // 덱에서 뽑은 뒤 손패 하나를 선택해 버리는 효과
-    RemoveOneDebuff // 먼저 적용된 디버프 하나 해제
+    RemoveOneDebuff, // 먼저 적용된 디버프 하나 해제
+    Unplayable // 손패에서 사용할 수 없는 카드
 } // 열거형 종료

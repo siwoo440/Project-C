@@ -195,6 +195,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "다음 일반 전투 40% 회피 · 1회", "정신력 +2 · 나사 +1", "변화 없음" }; // 선택 전 확인할 실제 효과
                 label += "   " + effects[index]; // 기획 행동과 결과 요약 표시
             } // 지도 조각 효과 표시 종료
+            else if (currentEventData.EventId == BurntScarecrowEvent.Id) // 허수아비 조사와 소각 비용 안내
+            { // 허수아비 효과 표시 시작
+                string[] effects = { "정신력 -4 · 희귀 카드 50% / 잿빛 저주 50%", "체력 -4 · 자신의 잿빛 저주 1장 제거", "변화 없음" }; // 원문 선택 비용과 획득 확률
+                label += "   " + effects[index]; // 행동 확정 전 실제 효과 안내
+            } // 허수아비 효과 표시 종료
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
@@ -214,6 +219,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return; // 잘못된 클릭 또는 중복 선택 차단
         }
 
+        if (currentEventData.EventId == BurntScarecrowEvent.Id) // 타버린 허수아비 원본 확인
+        { // 허수아비 선택 시작
+            string hint = choiceIndex == BurntScarecrowEvent.Investigate ? "정신력 4를 잃고 카드 한 장을 받을 생존자를 선택하세요." : choiceIndex == BurntScarecrowEvent.Burn ? "체력 4를 잃고 자신의 잿빛 저주 한 장을 제거할 생존자를 선택하세요." : null; // 허수아비 비용에 맞는 대상 선택 안내
+            SelectActorEventChoice(choiceIndex, hint, BurntScarecrowEvent.TryResolve); // 생존자 지정 또는 지나침 확정
+            return; // 기본 자원 선택 처리 제외
+        } // 허수아비 선택 종료
         if (currentEventData.EventId == AshstormEyeEvent.Id) // 행동자 지정이 필요한 재폭풍의 눈 확인
         { // 행동자 선택 시작
             SelectAshstormActor(choiceIndex); // 행동 확정 전 대상 선택 표시
@@ -361,6 +372,40 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         SaveStoryResult(BuildResultMessage(currentEventData.Choices[choice].ResultText, summary)); // 원문과 실제 상태 변경을 함께 저장
         return true; // 지도 조각 행동 완료
     } // 지도 선택 확정 종료
+
+    private delegate bool ActorEventResolver(string runtimeId, int choice, CharacterData actor, out string summary); // 생존자 한 명이 수행하는 사건 결과 처리
+
+    private void SelectActorEventChoice(int choice, string hint, ActorEventResolver resolve) // 행동자 선택 또는 대상 없는 선택 확정
+    { // 사건 선택 시작
+        string runtimeId = currentRuntimeEventId; // 선택을 받은 방 식별자 보관
+        string eventId = currentEventData.EventId; // 입력을 받은 사건 원본 보관
+        if (string.IsNullOrEmpty(hint)) // 행동자 없는 선택 확인
+        { // 대상 없는 확정 시작
+            CommitActorEventChoice(runtimeId, eventId, choice, null, resolve); // 생존자 선택 없이 확정
+            return; // 파티원 선택 생략
+        } // 대상 없는 확정 종료
+        var party = BattleResultManager.EnsureInstance(); // 현재 파티 생존 상태 조회
+        ExplorationRewardOwnerView.OpenPartyMember(transform, party.ActiveParty, currentEventData.Choices[choice].ChoiceText, hint, "선택 취소", party.IsLivingPartyMember, actor => CommitActorEventChoice(runtimeId, eventId, choice, actor, resolve)); // 행동자 확정 후 결과 반영
+    } // 사건 선택 종료
+
+    private bool CommitActorEventChoice(string runtimeId, string eventId, int choice, CharacterData actor, ActorEventResolver resolve) // 방과 사건을 다시 확인한 뒤 선택 확정
+    { // 행동자 선택 확정 시작
+        if (choiceCommitted || currentRuntimeEventId != runtimeId || currentEventData == null || currentEventData.EventId != eventId) // 현재 방과 사건 및 처리 여부 확인
+        { // 이전 입력 처리 시작
+            return false; // 오래된 선택과 중복 입력 차단
+        } // 이전 입력 처리 종료
+        if (!resolve(runtimeId, choice, actor, out string summary)) // 사건별 지급과 비용 처리 확인
+        { // 결과 실패 처리 시작
+            if (!string.IsNullOrEmpty(summary)) // 선택 실패 사유 확인
+            { // 안내 표시 시작
+                bodyText.text = summary; // 다른 선택이나 재시도 안내
+            } // 안내 표시 종료
+            return false; // 미처리 상태 보존
+        } // 결과 실패 처리 종료
+        choiceCommitted = true; // 이번 방 중복 입력 차단
+        SaveStoryResult(BuildResultMessage(currentEventData.Choices[choice].ResultText, summary)); // 원문 결말과 실제 결과 저장
+        return true; // 행동자 선택 창 닫기
+    } // 행동자 선택 확정 종료
 
     private void SaveStoryResult(string story) // 확정 결과만 저장하고 실패 시 같은 상태로 재시도
     { // 결과 저장 시작

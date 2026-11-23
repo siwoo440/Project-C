@@ -130,6 +130,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.Unplayable) // 손패에 남는 사용 불가 카드 확인
+        { // 저주 상세 시작
+            return "사용 불가"; // 실제 사용 제한 안내
+        } // 저주 상세 종료
         if (cardInstance.EffectType == CardEffectType.Heal && cardInstance.SourceData.StatusRemovedByHealing != BattleStatusEffectType.None) // 지정 상태를 제거하는 회복 확인
         { // 복합 회복 상세 시작
             return $"{BattleStatusEffectInstance.GetDisplayName(cardInstance.SourceData.StatusRemovedByHealing)} 해제 · 체력 {cardInstance.EffectValue} 회복"; // 해제 상태와 실제 회복 수치 반환
