@@ -289,6 +289,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Assert.IsTrue(RelicRunManager.Instance.Inventory.ContainsRelic(relic.RelicId)); // 복원 유물 확인
             Assert.AreEqual(potion.ItemId, ConsumableRunManager.Instance.Inventory.GetItem(3).ItemId); // 복원 소모품 슬롯 확인
             Assert.IsTrue(shop.IsPurchased(catalog.Offers[5])); // 복원 상점 판매 상태 확인
+            System.IO.File.Delete(path + ".bak"); // 복구본 없이 잘못된 저장 검증 준비
             System.IO.File.WriteAllText(path, previousJson.Replace(snapshot.cards[0].card, "INVALID_CARD_ID")); // 알 수 없는 카드 저장 작성
             Assert.IsFalse((bool)load.Invoke(null, new object[] { path })); // 잘못된 카드 복원 차단 확인
             Assert.AreEqual(savedGold, resources.Gold); // 복원 실패 시 기존 골드 유지 확인
@@ -296,6 +297,10 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         } // 탐사 저장 검증 종료
         finally // 테스트 파일 정리
         { // 정리 시작
+            if (System.IO.File.Exists(path + ".bak")) // 테스트 복구본 존재 확인
+            { // 복구본 제거 시작
+                System.IO.File.Delete(path + ".bak"); // 테스트 복구본 제거
+            } // 복구본 제거 종료
             if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
             { // 파일 제거 시작
                 System.IO.File.Delete(path); // 테스트 파일 제거

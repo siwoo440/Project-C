@@ -42,8 +42,21 @@ public sealed class SaveSlotService // 자동 저장과 수동 슬롯 관리
         { // 잘못된 번호 처리 시작
             return false; // 파일 없음 반환
         } // 잘못된 번호 처리 종료
-        return index == 0 ? File.Exists(autoLobbyPath) || File.Exists(autoExplorationPath) : File.Exists(ManualPath(index)); // 손상 파일을 포함한 존재 여부 반환
+        return index == 0 ? SaveFileStorage.Exists(autoLobbyPath) || SaveFileStorage.Exists(autoExplorationPath) : SaveFileStorage.Exists(ManualPath(index)); // 원본과 복구본을 포함한 존재 여부 반환
     } // 슬롯 파일 확인 종료
+    public bool IsRecovery(int index) // 이전 정상 복구본 사용 여부 확인
+    { // 복구본 사용 확인 시작
+        string path = GetReadablePath(index); // 현재 슬롯의 저장 경로 조회
+        return path != null && SaveFileStorage.TryRead(path, SaveFileStorage.IsKnownValid, out string ignored, out string actualPath) && actualPath == SaveFileStorage.BackupPath(path); // 복구본 경로 사용 여부 반환
+    } // 복구본 사용 확인 종료
+    public bool IsUnsupportedVersion(int index) // 지원하지 않는 새 버전 저장 여부 확인
+    { // 저장 버전 확인 시작
+        if (!IsValidIndex(index) || GetReadablePath(index) != null) // 유효한 슬롯과 복원 가능 파일 확인
+        { // 새 버전 표시 불필요 처리 시작
+            return false; // 지원하지 않는 버전 표시 생략
+        } // 새 버전 표시 불필요 처리 종료
+        return index == 0 ? SaveFileStorage.IsUnsupportedVersion(autoLobbyPath) || SaveFileStorage.IsUnsupportedVersion(autoExplorationPath) : SaveFileStorage.IsUnsupportedVersion(ManualPath(index)); // 새 버전 원본 존재 여부 반환
+    } // 저장 버전 확인 종료
     public bool Load(int index) // 슬롯 저장 상태 복원
     { // 슬롯 복원 시작
         string path = GetReadablePath(index); // 유효한 저장 경로 조회
@@ -87,7 +100,7 @@ public sealed class SaveSlotService // 자동 저장과 수동 슬롯 관리
         } // 저장 없음 처리 종료
         try // 파일 시각 오류 처리 시작
         { // 저장 시각 읽기 시작
-            return File.GetLastWriteTime(path).ToString("yyyy/MM/dd HH:mm"); // 현지 저장 시각 반환
+            return SaveFileStorage.TryRead(path, SaveFileStorage.IsKnownValid, out string ignored, out string actualPath) ? File.GetLastWriteTime(actualPath).ToString("yyyy/MM/dd HH:mm") : string.Empty; // 실제 원본 또는 복구본의 저장 시각 반환
         } // 저장 시각 읽기 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 시각 오류 확인
         { // 시각 오류 처리 시작
@@ -105,6 +118,10 @@ public sealed class SaveSlotService // 자동 저장과 수동 슬롯 관리
             string path = ManualPath(index); // 수동 파일 경로 조회
             return IsValidSave(path) ? path : null; // 유효한 수동 파일 반환
         } // 수동 경로 검사 종료
+        if (SaveFileStorage.IsUnsupportedVersion(autoLobbyPath) || SaveFileStorage.IsUnsupportedVersion(autoExplorationPath)) // 자동 저장 중 새 버전 원본 존재 확인
+        { // 새 버전 자동 저장 보호 시작
+            return null; // 다른 이전 자동 저장으로의 임의 복원 차단
+        } // 새 버전 자동 저장 보호 종료
         bool lobbyValid = LobbySaveService.CanLoad(autoLobbyPath); // 자동 거점 저장 검사
         bool explorationValid = ExplorationSaveService.CanLoad(autoExplorationPath); // 자동 탐사 저장 검사
         if (!lobbyValid || !explorationValid) // 한쪽 저장만 유효한지 확인
@@ -113,7 +130,9 @@ public sealed class SaveSlotService // 자동 저장과 수동 슬롯 관리
         } // 단일 유효 저장 처리 종료
         try // 저장 시각 오류 처리 시작
         { // 자동 저장 시각 비교 시작
-            return File.GetLastWriteTimeUtc(autoExplorationPath) >= File.GetLastWriteTimeUtc(autoLobbyPath) ? autoExplorationPath : autoLobbyPath; // 최근 자동 저장 경로 반환
+            SaveFileStorage.TryRead(autoExplorationPath, ExplorationSaveService.CanLoadJson, out string runJson, out string runPath); // 실제 탐사 원본 또는 복구본 경로 확인
+            SaveFileStorage.TryRead(autoLobbyPath, LobbySaveService.CanLoadJson, out string lobbyJson, out string lobbyPath); // 실제 거점 원본 또는 복구본 경로 확인
+            return File.GetLastWriteTimeUtc(runPath) >= File.GetLastWriteTimeUtc(lobbyPath) ? autoExplorationPath : autoLobbyPath; // 실제 파일 시각 기준 최근 자동 저장 반환
         } // 자동 저장 시각 비교 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 시각 오류 확인
         { // 시각 오류 처리 시작
@@ -142,6 +161,11 @@ public sealed class SaveSlotService // 자동 저장과 수동 슬롯 관리
     } // 저장 파일 검사 종료
     private static void DeleteFile(string path) // 지정 파일 삭제
     { // 파일 삭제 시작
+        string backup = SaveFileStorage.BackupPath(path); // 지정 저장의 복구본 경로 조회
+        if (!string.IsNullOrWhiteSpace(backup) && File.Exists(backup)) // 복구본 존재 여부 확인
+        { // 복구본 삭제 시작
+            File.Delete(backup); // 이전 정상 복구본 삭제
+        } // 복구본 삭제 종료
         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path)) // 실제 파일 존재 확인
         { // 파일 제거 시작
             File.Delete(path); // 지정 저장 파일 제거

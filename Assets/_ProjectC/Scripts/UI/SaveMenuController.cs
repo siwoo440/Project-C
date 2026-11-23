@@ -57,9 +57,10 @@ public sealed class SaveMenuController : MonoBehaviour // 슬롯 화면과 저�
         { // 슬롯 표시 시작
             bool valid = service.CanLoad(index); // 복원 가능한 저장 확인
             bool hasFile = service.HasFile(index); // 손상 파일 포함 저장 존재 확인
-            string description = valid ? service.IsExploration(index) ? "탐사" : "거점" : "손상된 저장 데이터"; // 저장 상태 설명 선택
+            bool unsupported = service.IsUnsupportedVersion(index); // 지원하지 않는 저장 버전 확인
+            string description = valid ? (service.IsRecovery(index) ? "이전 저장 복구 · " : string.Empty) + (service.IsExploration(index) ? "탐사" : "거점") : unsupported ? "지원하지 않는 저장 버전" : "손상된 저장 데이터"; // 저장 종류와 복구 상태 표시
             view.SetSlotState(index, description, service.GetTimestamp(index), hasFile); // 슬롯 설명과 시간 표시
-            view.SetSlotActions(index, canSave, valid && onLoad != null, hasFile); // 슬롯별 버튼 사용 상태 적용
+            view.SetSlotActions(index, canSave && !unsupported, valid && onLoad != null, hasFile); // 새 버전 덮어쓰기 차단과 슬롯 버튼 상태 적용
         } // 슬롯 표시 종료
     } // 슬롯 갱신 종료
     private void RequestSave(int index) // 슬롯 저장 요청
@@ -90,6 +91,21 @@ public sealed class SaveMenuController : MonoBehaviour // 슬롯 화면과 저�
             RefreshSlots(); // 변경된 슬롯 상태 갱신
             return; // 불러오기 중단
         } // 복원 불가 처리 종료
+        if (service.IsRecovery(index)) // 이전 정상 복구본 사용 여부 확인
+        { // 복구본 불러오기 확인 시작
+            ShowConfirmation("현재 저장을 읽을 수 없어 이전 저장을 불러옵니다. 계속하시겠습니까?", () => LoadSelected(index)); // 이전 시점 복원 안내
+            return; // 확인 전 복원 중단
+        } // 복구본 불러오기 확인 종료
+        LoadSelected(index); // 정상 저장 즉시 불러오기
+    } // 불러오기 요청 종료
+    private void LoadSelected(int index) // 확인한 슬롯 불러오기 실행
+    { // 슬롯 불러오기 실행 시작
+        if (!service.CanLoad(index) || onLoad == null) // 확인 후 저장 파일과 동작 재검사
+        { // 복원 불가 처리 시작
+            message.text = "저장 데이터를 불러올 수 없습니다."; // 변경된 저장 상태 안내
+            RefreshSlots(); // 슬롯 표시 갱신
+            return; // 복원 중단
+        } // 복원 불가 처리 종료
         Func<int, bool> action = onLoad; // 불러오기 동작 보관
         ReleasePause(); // 씬 전환 전 게임 일시 정지 해제
         if (!action(index)) // 선택 슬롯 불러오기 실행과 결과 확인
@@ -105,7 +121,7 @@ public sealed class SaveMenuController : MonoBehaviour // 슬롯 화면과 저�
                 pauseApplied = true; // 일시 정지 적용 기록
             } // 탐사 일시 정지 재설정 종료
         } // 불러오기 실패 처리 종료
-    } // 불러오기 요청 종료
+    } // 슬롯 불러오기 실행 종료
     private void RequestDelete(int index) // 슬롯 삭제 요청
     { // 삭제 요청 시작
         if (service.HasFile(index)) // 저장 파일 존재 확인

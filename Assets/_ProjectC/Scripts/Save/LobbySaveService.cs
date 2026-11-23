@@ -106,64 +106,15 @@ public static class LobbySaveService // 거점 상태 저장 서비스
     } // 거점 상태 수집 종료
     public static bool Save(string path) // 현재 거점 상태 저장
     { // 저장 시작
-        string temporaryPath = null; // 임시 저장 경로 준비
-        try // 파일 오류 처리 시작
-        { // 저장 처리 시작
-            if (string.IsNullOrWhiteSpace(path) || !TryCapture(out string json)) // 저장 경로와 현재 상태 확인
-            { // 저장 불가 처리 시작
-                return false; // 기존 저장 유지
-            } // 저장 불가 처리 종료
-            string fullPath = Path.GetFullPath(path); // 절대 저장 경로 계산
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)); // 저장 폴더 준비
-            temporaryPath = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp"; // 고유 임시 파일 경로 생성
-            File.WriteAllText(temporaryPath, json); // 임시 파일에 저장 내용 기록
-            if (File.Exists(fullPath)) // 기존 저장 파일 존재 확인
-            { // 기존 저장 교체 시작
-                File.Replace(temporaryPath, fullPath, null); // 기존 파일 원자적 교체
-            } // 기존 저장 교체 종료
-            else // 기존 저장 파일 없음 확인
-            { // 첫 저장 시작
-                File.Move(temporaryPath, fullPath); // 임시 파일을 저장 파일로 이동
-            } // 첫 저장 종료
-            temporaryPath = null; // 임시 파일 이동 완료 표시
-            return true; // 저장 성공 반환
-        } // 저장 처리 종료
-        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 경로와 입출력 오류 확인
-        { // 저장 오류 시작
-            Debug.LogWarning("[LobbySave] 저장 실패: " + exception.Message); // 저장 오류 안내
-            return false; // 저장 실패 반환
-        } // 저장 오류 종료
-        finally // 임시 파일 정리 보장
-        { // 임시 파일 정리 시작
-            if (temporaryPath != null && File.Exists(temporaryPath)) // 남은 임시 파일 확인
-            { // 남은 파일 정리 시작
-                try // 임시 파일 제거 시도
-                { // 임시 파일 제거 시작
-                    File.Delete(temporaryPath); // 남은 임시 파일 제거
-                } // 임시 파일 제거 종료
-                catch (IOException) // 파일 오류 확인
-                { // 파일 오류 처리 시작
-                } // 파일 오류 처리 종료
-                catch (UnauthorizedAccessException) // 권한 오류 확인
-                { // 권한 오류 처리 시작
-                } // 권한 오류 처리 종료
-            } // 남은 파일 정리 종료
-        } // 임시 파일 정리 종료
+        if (string.IsNullOrWhiteSpace(path) || !TryCapture(out string json)) // 저장 경로와 현재 상태 확인
+        { // 저장 불가 처리 시작
+            return false; // 기존 저장 유지
+        } // 저장 불가 처리 종료
+        return SaveFileStorage.Write(path, json); // 이전 정상본을 보존하며 거점 저장
     } // 저장 종료
     public static bool CanLoad(string path) // 저장 파일 복원 가능 여부 검사
     { // 저장 검사 시작
-        try // 파일 오류 처리 시작
-        { // 저장 검사 처리 시작
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) // 저장 파일 존재 확인
-            { // 파일 없음 처리 시작
-                return false; // 복원 불가 반환
-            } // 파일 없음 처리 종료
-            return CanLoadJson(File.ReadAllText(path)); // 저장 내용 유효성 반환
-        } // 저장 검사 처리 종료
-        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
-        { // 검사 오류 처리 시작
-            return false; // 복원 불가 반환
-        } // 검사 오류 처리 종료
+        return SaveFileStorage.TryRead(path, CanLoadJson, out string ignored, out string actualPath); // 원본 또는 이전 정상본 유효성 반환
     } // 저장 검사 종료
     public static bool CanLoadJson(string json) // 거점 저장 내용 복원 가능 여부 검사
     { // 저장 내용 검사 시작
@@ -180,19 +131,7 @@ public static class LobbySaveService // 거점 상태 저장 서비스
     } // 저장 내용 검사 종료
     public static bool Load(string path) // 저장된 거점 상태 복원
     { // 복원 시작
-        try // 파일 오류 처리 시작
-        { // 복원 처리 시작
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) // 저장 파일 존재 확인
-            { // 파일 없음 시작
-                return false; // 복원 실패 반환
-            } // 파일 없음 종료
-            return LoadJson(File.ReadAllText(path)); // 저장 내용 복원 결과 반환
-        } // 파일 복원 처리 종료
-        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
-        { // 파일 복원 오류 시작
-            Debug.LogWarning("[LobbySave] 복원 실패: " + exception.Message); // 복원 오류 안내
-            return false; // 복원 실패 반환
-        } // 파일 복원 오류 종료
+        return SaveFileStorage.TryRead(path, CanLoadJson, out string json, out string actualPath) && LoadJson(json); // 검증된 원본 또는 이전 정상본 복원
     } // 파일 복원 종료
     public static bool LoadJson(string json) // 거점 저장 내용 복원
     { // 저장 내용 복원 시작

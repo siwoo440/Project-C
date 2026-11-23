@@ -52,7 +52,6 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
     } // 검증 결과 종료
     public static bool Save(string path, Vector3 position) // 현재 탐사 상태 파일 저장
     { // 탐사 저장 시작
-        string temporaryPath = null; // 임시 저장 경로 준비
         try // 저장 오류 처리 시작
         { // 저장 처리 시작
             ExplorationSessionManager session = ExplorationSessionManager.Instance; // 현재 탐사 상태 조회
@@ -169,42 +168,13 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 runWire = session.RunWireGained, // 탐사 획득 전선 설정
                 lobbyJson = lobbyJson // 동일 시점 거점 상태 설정
             }; // 탐사 저장 정보 설정 종료
-            string fullPath = Path.GetFullPath(path); // 절대 저장 경로 계산
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)); // 저장 폴더 준비
-            temporaryPath = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp"; // 고유 임시 파일 경로 생성
-            File.WriteAllText(temporaryPath, JsonUtility.ToJson(snapshot)); // 임시 파일에 탐사 상태 기록
-            if (File.Exists(fullPath)) // 기존 저장 파일 존재 확인
-            { // 기존 저장 교체 시작
-                File.Replace(temporaryPath, fullPath, null); // 기존 파일 원자적 교체
-            } // 기존 저장 교체 종료
-            else // 첫 저장 여부 확인
-            { // 첫 저장 시작
-                File.Move(temporaryPath, fullPath); // 임시 파일을 저장 파일로 이동
-            } // 첫 저장 종료
-            temporaryPath = null; // 임시 파일 이동 완료 표시
-            return true; // 탐사 저장 성공 반환
+            return SaveFileStorage.Write(path, JsonUtility.ToJson(snapshot)); // 이전 정상본을 보존하며 탐사 저장
         } // 저장 처리 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 경로와 입출력 오류 확인
         { // 저장 오류 시작
             Debug.LogWarning("[ExplorationSave] 저장 실패: " + exception.Message); // 저장 오류 안내
             return false; // 저장 실패 반환
         } // 저장 오류 종료
-        finally // 임시 파일 정리 보장
-        { // 임시 파일 정리 시작
-            if (temporaryPath != null && File.Exists(temporaryPath)) // 남은 임시 파일 확인
-            { // 남은 파일 정리 시작
-                try // 임시 파일 제거 시도
-                { // 임시 파일 제거 시작
-                    File.Delete(temporaryPath); // 남은 임시 파일 제거
-                } // 임시 파일 제거 종료
-                catch (IOException) // 파일 오류 확인
-                { // 파일 오류 처리 시작
-                } // 파일 오류 처리 종료
-                catch (UnauthorizedAccessException) // 권한 오류 확인
-                { // 권한 오류 처리 시작
-                } // 권한 오류 처리 종료
-            } // 남은 파일 정리 종료
-        } // 임시 파일 정리 종료
     } // 탐사 저장 종료
     public static bool Remove(string path) // 이전 탐사 저장 제거
     { // 탐사 저장 제거 시작
@@ -214,6 +184,11 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             { // 경로 누락 처리 시작
                 return false; // 제거 실패 반환
             } // 경로 누락 처리 종료
+            string backup = SaveFileStorage.BackupPath(path); // 이전 정상 탐사 저장 경로 조회
+            if (File.Exists(backup)) // 이전 정상 탐사 저장 존재 확인
+            { // 이전 정상 저장 정리 시작
+                File.Delete(backup); // 복구본 재생성 방지를 위한 이전 저장 삭제
+            } // 이전 정상 저장 정리 종료
             if (File.Exists(path)) // 탐사 저장 파일 존재 확인
             { // 기존 저장 제거 시작
                 File.Delete(path); // 지정 탐사 저장 파일 제거
@@ -230,6 +205,18 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
     { // 탐사 저장 검사 시작
         return TryRead(path, out ResolvedRun ignored); // 전체 저장 검증 결과 반환
     } // 탐사 저장 검사 종료
+    public static bool CanLoadJson(string json) // 탐사 저장 내용의 복원 가능 여부 확인
+    { // 탐사 저장 내용 검사 시작
+        try // 저장 형식 오류 처리
+        { // 탐사 저장 내용 분석 시작
+            RunSnapshot snapshot = JsonUtility.FromJson<RunSnapshot>(json); // 탐사 저장 내용 역직렬화
+            return TryResolve(snapshot, out ResolvedRun ignored); // 실제 원본 기준 전체 탐사 상태 검증
+        } // 탐사 저장 내용 분석 종료
+        catch (ArgumentException) // 잘못된 저장 형식 확인
+        { // 저장 형식 오류 처리 시작
+            return false; // 복원 불가 반환
+        } // 저장 형식 오류 처리 종료
+    } // 탐사 저장 내용 검사 종료
     public static bool Load(string path) // 저장된 탐사 상태 복원
     { // 탐사 복원 시작
         if (!TryRead(path, out ResolvedRun run)) // 저장 파일 전체 검증
@@ -281,11 +268,11 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         run = null; // 실패 기본값 설정
         try // 파일 오류 처리 시작
         { // 파일 읽기 시작
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) // 저장 파일 존재 확인
+            if (!SaveFileStorage.TryRead(path, CanLoadJson, out string json, out string actualPath)) // 정상 탐사 원본 또는 복구본 확인
             { // 저장 파일 없음 처리 시작
                 return false; // 복원 불가 반환
             } // 저장 파일 없음 처리 종료
-            RunSnapshot snapshot = JsonUtility.FromJson<RunSnapshot>(File.ReadAllText(path)); // 저장 파일 역직렬화
+            RunSnapshot snapshot = JsonUtility.FromJson<RunSnapshot>(json); // 검증된 탐사 저장 내용 역직렬화
             return TryResolve(snapshot, out run); // 전체 저장 검증 결과 반환
         } // 파일 읽기 종료
         catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인

@@ -81,6 +81,11 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
     } // 메뉴 상태 갱신 종료
     public void ContinueGame() // 저장된 게임 이어하기
     { // 이어하기 시작
+        if (SaveFileStorage.IsUnsupportedVersion(savePath) || SaveFileStorage.IsUnsupportedVersion(explorationSavePath)) // 지원하지 않는 새 저장 버전 확인
+        { // 새 저장 버전 보호 시작
+            Debug.LogWarning("[MainMenu] 지원하지 않는 저장 버전입니다."); // 잘못된 이전 저장 사용 방지 안내
+            return; // 이전 저장으로 임의 복원 차단
+        } // 새 저장 버전 보호 종료
         bool resumeExploration = IsExplorationLatest(); // 최근 유효 탐사 저장 확인
         string targetScene = resumeExploration ? "30_Exploration" : "20_Lobby"; // 복원 대상 씬 결정
         if (SceneFlowManager.Instance == null || SceneFlowManager.Instance.IsLoadingScene || !Application.CanStreamedLevelBeLoaded(targetScene)) // 대상 씬 이동 가능 여부 확인
@@ -125,7 +130,9 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         } // 거점 저장 없음 처리 종료
         try // 파일 시간 조회 오류 처리 시작
         { // 저장 시간 비교 시작
-            return File.GetLastWriteTimeUtc(explorationSavePath) >= File.GetLastWriteTimeUtc(savePath); // 최근 탐사 저장 여부 반환
+            SaveFileStorage.TryRead(explorationSavePath, ExplorationSaveService.CanLoadJson, out string runJson, out string runPath); // 실제 탐사 원본 또는 복구본 경로 확인
+            SaveFileStorage.TryRead(savePath, LobbySaveService.CanLoadJson, out string lobbyJson, out string lobbyPath); // 실제 거점 원본 또는 복구본 경로 확인
+            return File.GetLastWriteTimeUtc(runPath) >= File.GetLastWriteTimeUtc(lobbyPath); // 실제 파일 시각 기준 최근 탐사 저장 여부 반환
         } // 저장 시간 비교 종료
         catch (IOException) // 저장 시간 읽기 오류 확인
         { // 시간 읽기 오류 처리 시작
@@ -135,6 +142,10 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         { // 시간 접근 오류 처리 시작
             return false; // 거점 저장 사용
         } // 시간 접근 오류 처리 종료
+        catch (System.ArgumentException) // 저장 경로 변경 오류 확인
+        { // 저장 경로 오류 처리 시작
+            return false; // 거점 저장 사용
+        } // 저장 경로 오류 처리 종료
     } // 최근 탐사 저장 확인 종료
     public static void ResetRunState() // 탐사 회차 상태 정리
     { // 회차 상태 정리 시작
