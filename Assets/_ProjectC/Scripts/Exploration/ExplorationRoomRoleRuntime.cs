@@ -149,7 +149,15 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
                     break;
 
                 case ExplorationRoomType.Boss:
-                    CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random); // 보스 전투 생성
+                    EncounterData optionalBoss = mapRuntime.GetOptionalBossEncounter(cell.Coordinate); // 현재 방에 확정한 선택 보스 여부
+                    if (optionalBoss != null) // 재의 파수꾼 전용 선택 원본 확인
+                    { // 선택 조우 배치 시작
+                        CreateEncounterForRoom(cell, BattleType.Normal, normalEncounters, allEncounters, random, optionalBoss); // 원래 일반 방 난수와 전용 조우 연결
+                    } // 선택 조우 배치 종료
+                    else // 기존 필수 관문 보스 배치 경로
+                    { // 보스 관문 조우 배치 시작
+                        CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random); // 기존 보스 관문 원본 선택
+                    } // 보스 관문 조우 배치 종료
                     bossCount += 1; // 보스 방 수 증가
                     break;
             }
@@ -169,10 +177,11 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
         ExplorationMapCell cell,
         BattleType requestedType,
         List<EncounterData> requestedPool,
-        List<EncounterData> fallbackPool,
-        System.Random random) // 방 역할에 맞는 전투 조우 생성
-    {
-        if (cell == null || fallbackPool.Count == 0) // 방과 조우 데이터 존재 확인
+        List<EncounterData> fallbackPool, // 현재 층의 대체 가능 조우 목록
+        System.Random random, // 원래 방 역할의 추첨 난수
+        EncounterData fixedEncounter = null) // 선택 방의 전용 고정 원본
+    { // 방 역할 조우 생성 시작
+        if (cell == null || fallbackPool.Count == 0 && fixedEncounter == null) // 방과 실제로 사용할 수 있는 조우 확인
         {
             return; // 조우 생성 불가 처리
         }
@@ -182,7 +191,12 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
                 ? requestedPool
                 : fallbackPool; // 요청 등급 데이터 누락 시 전체 유효 조우 대체
 
-        EncounterData encounterData = sourcePool[random.Next(sourcePool.Count)]; // Seed 기반 조우 데이터 선택
+        EncounterData encounterData = sourcePool.Count > 0 ? sourcePool[random.Next(sourcePool.Count)] : null; // 기존 방에서 사용했을 난수와 조우 원본 선택
+        if (fixedEncounter != null) // 선택된 방에만 전용 보스 사용 확인
+        { // 선택 보스 실물 배치 시작
+            mapRuntime.CreateEncounterObject(cell, fixedEncounter); // 같은 접촉과 전투 흐름의 보스 배치
+            return; // 나머지 방의 기존 난수 순서 보존
+        } // 선택 보스 실물 배치 종료
 
         if (requestedPool.Count == 0) // 요청 등급 대체 여부 확인
         {

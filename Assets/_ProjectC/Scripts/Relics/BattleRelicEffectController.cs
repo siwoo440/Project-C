@@ -16,6 +16,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly Dictionary<string, int> battleTriggerCounts = new Dictionary<string, int>(); // 현재 전투 유물 발동 횟수
     private readonly Queue<KeyValuePair<RelicTriggerType, BattleEventContext>> pendingTriggers = new Queue<KeyValuePair<RelicTriggerType, BattleEventContext>>(); // 중첩 유물 발동 대기열
     private bool journalVictoryChecked; // 한 전투 승리에서 이미 시도한 일지 추첨
+    private bool endCleanseChecked; // 실제 전투 종료에서 이미 시도한 손수건 추첨
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
@@ -148,6 +149,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private bool TryExecuteRelic(RelicData relicData, int orderNumber, BattleEventContext eventContext) // 단일 유물 실행 시도
     {
+        if (relicData.EffectType == RelicEffectType.BattleEndCleanseOne) // 순백 손수건의 실제 종료 추첨 확인
+        { // 전투 종료 정화 판정 시작
+            if (endCleanseChecked || eventContext == null || eventContext.Result == BattleResult.None) // 유효한 실제 종료와 한 번의 판정 확인
+            { // 잘못된 정화 판정 시작
+                return false; // 같은 결과 또는 결과 없는 신호의 무작위 소비 차단
+            } // 잘못된 정화 판정 종료
+            endCleanseChecked = true; // 성공과 실패 모두 한 전투의 추첨 기회 기록
+        } // 전투 종료 정화 판정 종료
         if (relicData.EffectType == RelicEffectType.JournalCardRemoval) // 승리 시 일지의 확률 판정 확인
         { // 승리 추첨 시작
             if (journalVictoryChecked || eventContext?.Result != BattleResult.Victory) // 도주와 패배 및 같은 승리의 중복 신호 확인
@@ -182,6 +191,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 조건부 효과 시작
         switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
         { // 효과 선택 시작
+            case RelicEffectType.BattleEndCleanseOne: // 손수건의 실제 종료 디버프 정화
+                return TryCleanseOneStatusAfterBattle(); // 모든 생존 아군의 제거 가능한 상태에서 한 개 추첨
             case RelicEffectType.HealthDamageBlock: // 파열된 방울의 실제 체력 피해 반응
                 var injured = context?.TargetUnit; // 방어도를 받을 실제 피격 아군
                 return injured != null && injured.Team == BattleTeam.Ally && !injured.IsDead && context.AppliedAmount > 0 && injured.GainBlock(relic.EffectValue) > 0; // 생존자에게 방어도를 지급한 경우만 전투 횟수 소모
@@ -258,6 +269,30 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return true; // 기존 유물 발동 완료
         } // 효과 선택 종료
     } // 조건부 효과 종료
+    private bool TryCleanseOneStatusAfterBattle() // 생존 아군의 실제 제거 가능한 약화 한 가지 정화
+    { // 종료 정화 후보 준비 시작
+        var candidates = new List<(BattleUnitRuntime Ally, BattleStatusEffectType Type)>(); // 아군별 약화가 각각 같은 확률을 갖는 후보 목록
+        foreach (var ally in allyUnits) // 전투에 참가한 아군 순회
+        { // 정화 대상 확인 시작
+            if (ally == null || ally.Team != BattleTeam.Ally || ally.IsDead) // 제거 가능한 생존 아군인지 확인
+            { // 무효 아군 건너뛰기 시작
+                continue; // 다음 생존 아군 조회
+            } // 무효 아군 건너뛰기 종료
+            foreach (var effect in ally.StatusEffects) // 해당 아군의 현재 상태 순회
+            { // 보호 상태 구분 시작
+                if (effect.IsDebuff && !effect.IsProtectedMentalState && !effect.IsExpired) // 제외 가능한 활성 일반 약화 확인
+                { // 실제 정화 후보 보관 시작
+                    candidates.Add((ally, effect.EffectType)); // 무작위 정화의 대상과 상태 기록
+                } // 실제 정화 후보 보관 종료
+            } // 보호 상태 구분 종료
+        } // 정화 대상 확인 종료
+        if (candidates.Count == 0) // 실제 제거할 일반 약화 존재 확인
+        { // 후보 없음 처리 시작
+            return false; // 전투 상태 보존
+        } // 후보 없음 처리 종료
+        var selected = candidates[UnityEngine.Random.Range(0, candidates.Count)]; // 현재 모든 약화 인스턴스 가운데 하나 균등 선택
+        return selected.Ally.RemoveStatusEffect(selected.Type); // 기존 정화 경로에 따른 한 가지 제거
+    } // 종료 정화 후보 준비 종료
     private bool CanTrigger(RelicData relicData) // 유물 발동 제한 검사
     {
         if (relicData == null || !relicData.IsValidData()) // 유물 데이터 유효성 확인

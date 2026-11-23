@@ -98,12 +98,17 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         return runtimeDeck; // 생성된 런타임 덱 반환
     } // 보유 카드 덱 생성 종료
     public int DrawCards(int requestedCount) // 지정 수만큼 카드 드로우
+    { // 일반 카드 드로우 연결 시작
+        return DrawCards(requestedCount, 0, out _); // 기본 아군 턴 집계 없이 드로우 실행
+    } // 일반 카드 드로우 연결 종료
+    private int DrawCards(int requestedCount, int baseDrawLimit, out int baseDrawnCount) // 실제 손패 도착 및 기본 아군 턴 드로우 수 집계
     { // 카드 드로우 시작
+        baseDrawnCount = 0; // 기본 드로우 실제 도착 수 초기화
         if (requestedCount <= 0) // 잘못된 요청 수 확인
         { // 잘못된 요청 처리 시작
             return 0; // 드로우 없음 반환
         } // 잘못된 요청 처리 종료
-        int drawnCount = DrawCardsCore(requestedCount, out int processedCount); // 요청 카드 드로우 처리
+        int drawnCount = DrawCardsCore(requestedCount, out int processedCount, baseDrawLimit, out baseDrawnCount); // 같은 요청에서 일반 및 추가 드로우 구분
         EnsureValidState(); // 드로우 후 덱 상태 검증
         if (processedCount > 0) // 카드 이동 여부 확인
         { // 상태 알림 시작
@@ -120,7 +125,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 사용 불가 처리 종료
         try // 사용 카드 위치 복구 보장
         { // 드로우 처리 시작
-            drawnCount = DrawCardsCore(Math.Max(0, requestedCount), out _); // 사용 카드 공간을 제외한 드로우
+            drawnCount = DrawCardsCore(Math.Max(0, requestedCount), out _, 0, out _); // 기본 턴 집계가 없는 카드 효과 드로우
         } // 드로우 처리 종료
         finally // 사용한 카드 이동 보장
         { // 사용 카드 이동 시작
@@ -130,9 +135,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         StateChanged?.Invoke(); // 사용과 드로우 결과 알림
         return true; // 사용 성공 반환
     } // 사용과 드로우 처리 종료
-    private int DrawCardsCore(int requestedCount, out int processedCount) // 카드 영역 변경만 처리
+    private int DrawCardsCore(int requestedCount, out int processedCount, int baseDrawLimit, out int baseDrawnCount) // 카드 영역 변경과 원래 기본 시도 안의 실제 도착 집계
     { // 공통 드로우 시작
         int drawnCount = 0; // 실제 드로우 수 초기화
+        baseDrawnCount = 0; // 실제 기본 드로우 수 초기화
         processedCount = 0; // 처리한 카드 수 초기화
         List<CardInstance> discardedCards = new List<CardInstance>(); // 같은 요청의 재순환에서 제외할 카드 목록
         while (processedCount < requestedCount) // 요청 수까지 반복
@@ -151,6 +157,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             if (TryAddDrawnCardToHand(drawnCard)) // 상한과 봉인 판정 후 손패 이동 확인
             { // 손패 추가 시작
                 drawnCount++; // 실제 드로우 수 증가
+                if (processedCount < baseDrawLimit) // 보너스 이전의 원래 기본 시도 확인
+                { // 기본 도착 수 집계 시작
+                    baseDrawnCount++; // 유효 손패에 도착한 기본 드로우만 기록
+                } // 기본 도착 수 집계 종료
             } // 손패 추가 종료
             else // 초과 또는 봉인 카드 확인
             { // 드로우 버림 처리 시작
@@ -407,11 +417,12 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     { // 드로우 예약 시작
         nextPlayerTurnDraw = (int)Math.Clamp((long)nextPlayerTurnDraw + count, 0L, int.MaxValue); // 정수 범위에서 추가 드로우 합산
     } // 드로우 예약 종료
-    internal int DrawForPlayerTurn(int count) // 아군 턴의 기본 수량과 예약 수량 함께 드로우
+    internal int DrawForPlayerTurn(int baseCount, int additionalCount, out int baseDrawnCount) // 기본과 추가 및 예약 드로우를 한 번에 적용
     { // 턴 드로우 시작
         int bonus = nextPlayerTurnDraw; // 이번 턴 보너스 보관
         nextPlayerTurnDraw = 0; // 드로우 알림 전 중복 예약 소비 차단
-        return DrawCards((int)Math.Clamp((long)count + bonus, 0L, int.MaxValue)); // 정수 범위와 손패 상한에 따른 실제 드로우 반환
+        int requested = (int)Math.Clamp((long)baseCount + additionalCount + bonus, 0L, int.MaxValue); // 세 종류의 드로우를 안전한 한 요청으로 합산
+        return DrawCards(requested, baseCount, out baseDrawnCount); // 카드가 손패에 도착한 실제 기본 및 전체 수 반환
     } // 턴 드로우 종료
     internal void RetainRandomOpeningHandCard() // 첫 실제 손패의 일반 버림을 한 번 면제할 카드 선택
     { // 핸드벨 카드 선택 시작

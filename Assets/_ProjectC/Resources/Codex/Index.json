@@ -751,6 +751,54 @@
       "artworkKey": "43d0630f58ec592897682d71bdc83fe9"
     },
     {
+      "category": 3,
+      "name": "녹슨 표지판",
+      "description": "새 일반 층에서 통로 끝의 선택 곁방에 추가 보스가 나타날 확률이 5%포인트 증가한다.",
+      "artworkKey": "1ff7df7f1e2d526b9aa46ffe0b83b4de"
+    },
+    {
+      "category": 3,
+      "name": "순백 손수건",
+      "description": "전투가 끝날 때 30% 확률로 생존 아군에게 남은 해제 가능한 디버프 중 무작위 하나를 해제한다.",
+      "artworkKey": "cc2a5abb92c05cc3b0c7d37c8597a1be"
+    },
+    {
+      "category": 3,
+      "name": "은빛 톱니",
+      "description": "아군 턴 시작에 기본 드로우로 실제 카드 2장 이상이 손에 들어오면 첫 생존 아군이 방어도 2를 얻는다.",
+      "artworkKey": "afe3c787a9e15b9eaf867be453990153"
+    },
+    {
+      "category": 3,
+      "name": "구겨진 포스터",
+      "description": "전투가 시작하면 생존 적 전체에게 공포를 부여한다. 첫 아군 턴이 끝날 때 해제된다.",
+      "artworkKey": "9d3b0a6f073c5640a53a5a17c7b263f1"
+    },
+    {
+      "category": 3,
+      "name": "끊어진 기도 끈",
+      "description": "전투 시작 시 생존 아군 각자의 정신력이 최대치까지 3 회복된다.",
+      "artworkKey": "2d365128ce6f5bdaa483a3f391404451"
+    },
+    {
+      "category": 3,
+      "name": "마른 잉크병",
+      "description": "스킬 카드 한 장의 사용과 선택을 마치면 20% 확률로 카드 한 장을 뽑는다.",
+      "artworkKey": "b517b09884ef5f70ad3cc2615a34fa0a"
+    },
+    {
+      "category": 3,
+      "name": "구부러진 은못",
+      "description": "표식이 있는 적에게 직접 카드 공격이 명중할 때마다 피해가 2 증가한다.",
+      "artworkKey": "ace26aa07f9f5581938509f6e2340c3a"
+    },
+    {
+      "category": 3,
+      "name": "닳은 가죽 장갑",
+      "description": "방어도를 부여하거나 아군을 보호하는 카드를 사용하면 그 카드의 소유자가 방어도 2를 얻는다.",
+      "artworkKey": "bcbe514dec4159c8a6e7a8ae036d8ac1"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

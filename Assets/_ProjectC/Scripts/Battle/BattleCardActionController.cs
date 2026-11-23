@@ -17,6 +17,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private int lastRetainedDamageRound = -1; // 검은 깃털 펜던트의 마지막 발동 라운드
     private bool usedFirstCardDamageBonus; // 붉은 잉크병의 전투당 한 번 발동 기록
     private int pendingPentacleDraw; // 카드 선택이 끝난 뒤 받을 펜타클 드로우 수
+    private CardInstance pendingSkillRelicCard; // 카드 이동과 마지막 선택이 끝난 뒤 검사할 스킬 카드
     private bool usedFirstCardDrawBonus; // 이번 전투 최초 카드 드로우 증가 사용 기록
     private bool usedFirstHealingCard; // 파티가 이번 전투에 첫 회복 카드를 사용한 기록
     private int bandageBonus; // 현재 카드의 원래 회복 대상별 추가량
@@ -337,9 +338,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 적별 방어도 제거 종료
         } // 전체 적 방어도 제거 종료
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
+        bool defensiveCard = HasDefensivePrimaryEffect(cardInstance); // 방어 성격인 기본 카드 효과 확인
+        bool appliedDefense = false; // 살아 있는 아군에게 실제 방어 효과를 주었는지 기록
         if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
+            appliedDefense = totalAppliedAmount > 0; // 실제 공용 방어도 분배 성공 확인
         } // 효과 적용 종료
         else if (cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance || cardInstance.SourceData.SwordRule == SwordCardRule.TwinBladeFlurry) // 지정된 적 범위에서 매 타격 재추첨
         { // 무작위 연속 공격 시작
@@ -353,7 +357,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 { // 남은 타격 취소 시작
                     break; // 미처리 대상 효과 취소
                 } // 남은 타격 취소 종료
-                totalAppliedAmount += ApplyCardEffect(cardInstance, targetUnit); // 카드 효과 적용량 누적
+                int applied = ApplyCardEffect(cardInstance, targetUnit); // 현재 카드 대상의 실제 적용량
+                totalAppliedAmount += applied; // 카드 효과 적용량 누적
+                appliedDefense |= defensiveCard && applied > 0 && targetUnit?.Team == BattleTeam.Ally; // 실제 아군에게 적용한 기본 방어 효과 기록
             } // 대상별 효과 적용 종료
         } // 일반 효과 처리 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.KingsSlash && !turnRuntime.IsBattleEnded && !turnRuntime.HasPendingBossPhaseTransition && !cardInstance.OwnerUnit.IsDead) // 전체 공격이 끝난 뒤 추가 타격 가능 여부 확인
@@ -361,7 +367,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             totalAppliedAmount += ApplyKingsSecondHit(cardInstance); // 살아 있는 적 중 현재 최대 체력이 가장 높은 적 재선택
         } // 왕의 후속 타격 종료
         starRecoveryPassive.TryApply(cardInstance, targetUnits); // 별의 회복 카드 사용 시 추가 회복 예약
-        bool discarded = ApplyFollowUpAndDiscard(cardInstance, targetUnits); // 후속 효과 한 번 처리 후 사용 카드 이동
+        bool discarded = ApplyFollowUpAndDiscard(cardInstance, targetUnits, out bool followUpDefense); // 후속 효과와 실제 방어 및 사용 카드 이동 확인
         if (!discarded) // 카드 이동 결과 확인
         { // 카드 이동 실패 처리 시작
             Debug.LogError($"[BattleCardActionController] 사용 카드 이동에 실패했습니다: {cardInstance.DisplayName}"); // 이동 실패 출력
@@ -376,13 +382,29 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             { // 다음 턴 행동력 감소 예약 시작
                 turnRuntime.QueueNextPlayerTurnActionPointLoss(cardInstance.SourceData.SecondaryEffectValue); // 다음 아군 턴 한 번의 공용 행동력 감소 예약
             } // 다음 턴 행동력 감소 예약 종료
+            bool movedFromHand = !ContainsHandCard(cardInstance); // 기존 보너스로 다시 뽑기 전 실제 손패 이탈 확인
             QueuePentacleUseDraw(cardInstance); // 카드 사용 위치 정산 뒤 펜타클 보너스 확인
+            if (movedFromHand) // 독립 보너스 지급 전 확인한 실제 사용 정산
+            { // 스킬 드로우 예약 시작
+                QueueSkillRelicDraw(cardInstance); // 기존 카드 이동을 마친 스킬의 잉크병 판정 예약
+            } // 스킬 드로우 예약 종료
+            if ((appliedDefense || followUpDefense) && turnRuntime.IsPlayerTurn && !cardInstance.OwnerUnit.IsDead) // 완료된 방어 카드와 생존한 원래 소유자 확인
+            { // 방어 카드 장갑 처리 시작
+                int block = BattleSupplyRelics.Find(RelicEffectType.ResolvedDefenseBlock)?.EffectValue ?? 0; // 장갑이 주는 소유자 전용 추가 방어도
+                cardInstance.OwnerUnit.GainBlock(block); // 여러 대상이어도 카드 소유자에게 한 번만 지급
+            } // 방어 카드 장갑 처리 종료
         } // 사용 후 드로우 유물 처리 종료
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
-    private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets) // 기본 효과 후 보조 대상과 카드 이동 처리
+    private static bool HasDefensivePrimaryEffect(CardInstance card) // 실제 적용량을 방어 효과로 셀 수 있는 카드 확인
+    { // 카드 방어 성격 확인 시작
+        return card.EffectType == CardEffectType.GainBlock || card.EffectType == CardEffectType.GuardAllyAttack || // 실제 방어도 또는 동료 직접 보호 효과
+            card.EffectType == CardEffectType.ApplyStatusEffect && card.CardType == CardType.Shield && card.StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(card.StatusEffectType); // 아군에게 적용한 양의 방패 상태
+    } // 카드 방어 성격 확인 종료
+    private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets, out bool appliedDefense) // 보조 방어 처리 결과를 포함한 카드 이동
     { // 후속 효과 처리 시작
+        appliedDefense = false; // 명시적 후속 방어도의 성공 여부 초기화
         int value = card.SourceData.SecondaryEffectValue; // 원본의 후속 수치 조회
         if (card.SourceData.SwordRule == SwordCardRule.CheckSlash) // 적을 견제한 소유자의 회피 증가 확인
         { // 자기 회피 처리 시작
@@ -417,7 +439,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         switch (card.SourceData.FollowUpEffect) // 카드별 추가 대상과 효과 선택
         { // 효과 구분 시작
             case CardFollowUpEffect.GainOwnerBlock: // 공격한 소유자에게 방어도 지급
-                card.OwnerUnit.GainBlock(value); // 소유자만 방어도 획득
+                appliedDefense = card.OwnerUnit.GainBlock(value) > 0; // 소유자에게 실제로 발생한 명시적 후속 방어도
                 break; // 방어 처리 종료
             case CardFollowUpEffect.HealAllAllies: // 공격 후 모든 생존 아군 회복
                 int healing = GetDirectCardHealing(card, value); // 일반 회복과 같은 소유자 보정 적용
@@ -429,7 +451,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             case CardFollowUpEffect.GainTargetBlock: // 선택한 아군에게 방어도 지급
                 foreach (BattleUnitRuntime target in targets) // 치료한 대상 순회
                 { // 대상 방어 시작
-                    target.GainBlock(value); // 치료 대상만 방어도 획득
+                    int gained = target.GainBlock(value); // 선택된 대상이 실제 얻은 방어도
+                    appliedDefense |= target.Team == BattleTeam.Ally && gained > 0; // 아군에게 실제로 적용한 명시적 후속 방어도 기록
                 } // 대상 방어 종료
                 break; // 대상 방어 처리 종료
             case CardFollowUpEffect.DrawCards: // 사용한 카드 자리를 비운 뒤 드로우
@@ -447,6 +470,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             ApplyPendingPentacleDraw(); // 후보 없이 끝난 카드 사용의 예약 지급
         } // 대기 드로우 처리 종료
         ShowPendingDebuffChoices(); // 대기 중인 디버프 선택 화면 표시
+        if (drawChoiceView == null && debuffChoiceView == null && remainingChoiceView == null) // 선택을 더 기다릴 필요가 없는 실제 정산 확인
+        { // 스킬 카드 추가 드로우 처리 시작
+            ApplyPendingSkillRelicDraw(); // 선택 없이 최종 정산된 스킬 카드의 예약 처리
+        } // 스킬 카드 추가 드로우 처리 종료
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 연출 완료 처리 종료
     private void ShowPendingDebuffChoices() // 대기 중인 디버프 이전 선택 표시
@@ -465,6 +492,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             pendingDebuffSource = null; // 디버프 원래 대상 정리
             pendingDebuffRecipient = null; // 디버프 이전 대상 정리
             Debug.LogError("[BattleCardActionController] 디버프 선택 화면을 표시할 캔버스가 없습니다."); // 선택 화면 누락 안내
+            pendingSkillRelicCard = null; // 표시할 수 없는 선택을 정상 정산으로 집계하지 않도록 초기화
             return; // 선택 화면 표시 중단
         } // 캔버스 없음 처리 종료
         debuffChoiceView = BattleDebuffChoiceView.Show(canvas.transform, pendingDebuffChoices, HandleDebuffChoiceSelected); // 디버프 한 가지 선택 화면 생성
@@ -472,11 +500,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 디버프 선택 표시 종료
     private void HandleDebuffChoiceSelected(BattleStatusEffectInstance effect) // 선택한 디버프 이전 처리
     { // 선택 디버프 처리 시작
-        BattleDebuffTransfer.TryTransfer(pendingDebuffSource, pendingDebuffRecipient, effect); // 선택한 디버프 한 가지 이전
+        if (!BattleDebuffTransfer.TryTransfer(pendingDebuffSource, pendingDebuffRecipient, effect)) // 선택한 디버프의 실제 이전 여부 확인
+        { // 선택 실패 처리 시작
+            pendingSkillRelicCard = null; // 실패한 마지막 선택의 스킬 드로우 차단
+        } // 선택 실패 처리 종료
         pendingDebuffChoices = null; // 디버프 후보 정리
         pendingDebuffSource = null; // 원래 동료 참조 정리
         pendingDebuffRecipient = null; // 디버프 이전 대상 참조 정리
         debuffChoiceView = null; // 닫힌 선택 화면 참조 정리
+        ApplyPendingSkillRelicDraw(); // 디버프 이전 선택까지 마친 스킬 드로우 처리
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 디버프 처리 종료
     private void ShowPendingCardChoices() // 대기 중인 선택 드로우 표시
@@ -491,6 +523,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 화면 누락 처리 시작
             pendingCardChoices = null; // 대기 후보 정리
             Debug.LogError("[BattleCardActionController] 선택 드로우 화면을 표시할 캔버스가 없습니다."); // 화면 생성 실패 출력
+            pendingSkillRelicCard = null; // 요청한 카드 선택을 끝낼 수 없는 경우 잉크병 예약 해제
             return; // 선택 화면 표시 중단
         } // 화면 누락 처리 종료
         string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : pendingChoiceEffect == CardEffectType.ArrangeDrawTop ? "다음에 뽑을 카드 선택" : pendingChoiceEffect == CardEffectType.DrawThenDiscard ? "버릴 손패 한 장 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
@@ -540,6 +573,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 선택 드로우 종료
         pendingCardChoices = null; // 대기 후보 정리
         drawChoiceView = null; // 닫힌 선택 화면 참조 정리
+        if (!processed) // 실제 카드 선택 적용 실패 확인
+        { // 실패한 카드 선택 처리 시작
+            pendingSkillRelicCard = null; // 실패한 카드 선택의 스킬 드로우 차단
+        } // 실패한 카드 선택 처리 종료
         if (processed && pendingFoolPassive && runtimeDeck.IsTopDrawable(remaining)) // 남은 유효 카드 패시브 발동 확인
         { // 남은 카드 처리 선택 시작
             pendingFoolPassive = false; // 대기 패시브 해제
@@ -552,6 +589,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         pendingFoolPassive = false; // 대기 패시브 해제
         ApplyInspectionDraw(); // 남은 카드 처리 없는 확인 보너스 즉시 지급
         ApplyPendingPentacleDraw(); // 카드 선택과 기존 확인 드로우 뒤 펜타클 보너스 지급
+        ApplyPendingSkillRelicDraw(); // 일반 카드 선택까지 완료한 스킬의 드로우 판정
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 처리 종료
     private void HandleRemainingCardSelected(bool discard) // 남은 카드 처리 선택
@@ -564,12 +602,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         ApplyPendingPentacleDraw(); // 남은 카드 결정 뒤 펜타클 보너스 지급
         remainingChoiceCard = null; // 남은 카드 참조 정리
         remainingChoiceView = null; // 닫힌 선택 화면 참조 정리
+        ApplyPendingSkillRelicDraw(); // 남은 카드에 대한 마지막 선택까지 완료한 스킬 확인
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
         pendingInspectionDraw = 0; // 전투 종료나 선택 강제 해제 뒤 남은 드로우 예약 정리
         pendingPentacleDraw = 0; // 전투 종료나 선택 강제 해제 뒤 펜타클 예약 정리
+        pendingSkillRelicCard = null; // 종료나 강제 취소된 선택의 잉크병 예약 정리
         pendingCardChoices = null; // 대기 후보 정리
         pendingFoolPassive = false; // 대기 패시브 해제
         remainingChoiceCard = null; // 남은 카드 참조 정리
@@ -1218,7 +1258,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
         int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
         int pin = marked && card.DamageType == BattleDamageType.Magical ? BattleSupplyRelics.Find(RelicEffectType.MarkedMagicalCardDamage)?.EffectValue ?? 0 : 0; // 기존 표식이 있는 적을 명중한 직접 마법 타격의 가산 피해
-        int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk + pin)); // 표식 유물 합계와 기존 속성별 명중 보너스
+        int nail = marked ? BattleSupplyRelics.Find(RelicEffectType.MarkedHitDamageBonus)?.EffectValue ?? 0 : 0; // 표식 적에게 명중한 각 직접 타격의 은못 추가 피해
+        int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk + pin + nail)); // 기존 표식 유물과 은못 및 속성 명중 효과 합산
         result = supplyRelics.AddAttackDamage(card, target, result, turnRuntime.CurrentRound); // 심장핀과 탄약띠의 실제 명중 피해 가산
         if (card.OwnerUnit.CurrentMental > 30 || lastBlackRoseRound == turnRuntime.CurrentRound) // 공격자의 정신력과 파티 공용 턴 횟수 확인
         { // 추가 피해 없음 처리 시작
@@ -1282,6 +1323,32 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             runtimeDeck.DrawCards(count); // 기존 덱과 손패 규칙을 따르는 유물 드로우
         } // 펜타클 드로우 실행 종료
     } // 드로우 예약 처리 종료
+    private void QueueSkillRelicDraw(CardInstance card) // 이동을 마친 스킬의 독립 드로우 판정 예약
+    { // 스킬 카드 드로우 확인 시작
+        if ((card.SourceData.CardTags & CardTag.Skill) == 0 || BattleSupplyRelics.Find(RelicEffectType.ResolvedSkillDraw) == null) // 실제 스킬 태그와 보유 잉크병 확인
+        { // 미발동 처리 시작
+            return; // 일반 카드나 유물 미보유 상태 유지
+        } // 미발동 처리 종료
+        pendingSkillRelicCard = card; // 가능한 선택이 끝난 뒤 한 번 판정할 카드 보관
+        if ((pendingCardChoices == null || pendingCardChoices.Count == 0) && (pendingDebuffChoices == null || pendingDebuffChoices.Count == 0)) // 기존 카드 및 효과 선택을 기다릴지 확인
+        { // 즉시 최종 정산 처리 시작
+            ApplyPendingSkillRelicDraw(); // 일반 카드 이동이 해결된 스킬의 확률 드로우 처리
+        } // 즉시 최종 정산 처리 종료
+    } // 스킬 카드 드로우 확인 종료
+    private void ApplyPendingSkillRelicDraw() // 마지막 카드 선택 뒤 한 번만 잉크병 드로우 판정
+    { // 보관한 스킬 드로우 처리 시작
+        var card = pendingSkillRelicCard; // 정산할 스킬 카드와 예약 보관
+        pendingSkillRelicCard = null; // 덱 알림과 후속 신호보다 먼저 중복 판정 차단
+        if (card == null || !turnRuntime.IsPlayerTurn || turnRuntime.IsBattleEnded) // 실제 이동을 확인했던 스킬의 유효한 아군 턴 확인
+        { // 실제 정산 제외 시작
+            return; // 수동 효과와 전투 종료 및 미이동 카드 제외
+        } // 실제 정산 제외 종료
+        var ink = BattleSupplyRelics.Find(RelicEffectType.ResolvedSkillDraw); // 정산 시점에 보유한 마른 잉크병 조회
+        if (ink != null && ink.TriggerChancePercent > 0 && (ink.TriggerChancePercent >= 100 || UnityEngine.Random.Range(0, 100) < ink.TriggerChancePercent)) // 실제 원본 확률로 스킬 드로우 한 번 판정
+        { // 잉크병 드로우 지급 시작
+            runtimeDeck.DrawCards(ink.EffectValue); // 기존 펜타클과 독립인 실제 드로우 지급
+        } // 잉크병 드로우 지급 종료
+    } // 보관한 스킬 드로우 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
         BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, // 다른 적의 독립 명중 처리

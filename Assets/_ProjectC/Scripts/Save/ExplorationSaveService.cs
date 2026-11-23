@@ -14,6 +14,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public int eventPoolVersion; // 현재 층 이벤트 목록 버전과 이전 저장의 기본값 영
         public int floor; // 현재 탐사 층
         public int seed; // 현재 층 생성 시드
+        public bool hasOptionalBossRoom; // 선택 보스 방 존재와 구버전 기본값 거짓
+        public Vector2Int optionalBossRoom; // 현재 층에서 확정한 선택 보스 좌표
         public Vector3 position; // 플레이어 위치
         public string[] party; // 출전 파티 순서
         public RunCard[] sourceCards; // 탐사 시작 덱 목록
@@ -194,6 +196,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 encounterPoolVersion = session.EncounterPoolVersion, // 현재 탐사의 고정 조우 목록 버전 저장
                 floor = session.CurrentFloor, // 현재 탐사 층 설정
                 seed = session.CurrentFloorSeed, // 현재 층 시드 설정
+                hasOptionalBossRoom = session.CurrentFloorOptionalBossRoom.HasValue, // 현재 층에서 선택 보스 판정 성공 여부
+                optionalBossRoom = session.CurrentFloorOptionalBossRoom.GetValueOrDefault(), // 생성 시 확정한 선택 방 좌표
                 eventPoolVersion = session.EventPoolVersion, // 현재 층 이벤트 구성 저장
                 position = position, // 플레이어 위치 설정
                 party = party.ToArray(), // 출전 파티 설정
@@ -423,6 +427,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 손상된 우물 기록 처리 시작
             return false; // 잘못된 효과 보유자와 완료 방 복원 차단
         } // 손상된 우물 기록 처리 종료
+        if (snapshot.hasOptionalBossRoom && ExplorationFloorRules.IsBossFloor(snapshot.floor)) // 필수 보스 층에 선택 보스가 섞인 저장 확인
+        { // 선택 보스층 불일치 처리 시작
+            return false; // 잘못된 층 배치 복원 차단
+        } // 선택 보스층 불일치 처리 종료
         if (!string.IsNullOrEmpty(snapshot.pendingMapFragment) && Array.IndexOf(snapshot.events, snapshot.pendingMapFragment) < 0) // 조각을 준 이벤트의 완료 기록 확인
         { // 잘못된 조각 복원 차단 시작
             return false; // 원본 방이 없는 보관 조각 차단
