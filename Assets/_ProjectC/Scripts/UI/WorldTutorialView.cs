@@ -97,8 +97,10 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
         } // 거점 안내 내용 설정 종료
         else // 탐사 안내 종류 확인
         { // 탐사 안내 내용 설정 시작
-            SetExplorationText(progress.StepIndex); // 탐사 단계별 문구 표시
-            panelLayout.SetExample("Exploration"); // 탐사 화면 예시 또는 임시 이미지 표시
+            var page = progress.ExplorationPage; // 현재 탐사 안내 한 장 조회
+            title.text = page.Title; // 방 종류와 이동 안내 제목 표시
+            description.text = page.Text; // 현재 화면에서 가능한 행동 안내
+            panelLayout.SetExample(page.Example); // 해당 방의 실제 화면 표시
         } // 탐사 안내 내용 설정 종료
         nextButton.interactable = progress.CanAdvance; // 실제 이동을 반영한 다음 버튼 설정
         panelLayout.SetPage(progress.StepIndex + 1, progress.StepCount, progress.CanGoBack, progress.CanAdvance); // 현재 안내 페이지와 이동 버튼 갱신
@@ -131,24 +133,6 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
                 break; // 탐사 출발 안내 종료
         } // 거점 단계 분기 종료
     } // 거점 문구 설정 종료
-    private void SetExplorationText(int step) // 탐사 단계별 안내 문구 설정
-    { // 탐사 문구 설정 시작
-        switch (step) // 탐사 안내 단계 분기
-        { // 탐사 단계 분기 시작
-            case 0: // 실제 탐사 이동 안내
-                title.text = "탐사 이동"; // 탐사 이동 안내 제목 설정
-                description.text = "WASD 또는 방향키로 방과 복도를 이동하세요. 실제로 움직이면 다음 안내를 볼 수 있습니다."; // 현재 이동 조작 설명 설정
-                break; // 이동 안내 종료
-            case 1: // 실제 접촉 상호작용 안내
-                title.text = "조우와 상호작용"; // 상호작용 안내 제목 설정
-                description.text = "현재 전투, 이벤트와 특수 방은 표시된 대상에 접촉하면 실행됩니다. 이벤트와 상점에서는 화면의 선택지를 누르세요."; // 현재 접촉 방식 설명 설정
-                break; // 상호작용 안내 종료
-            default: // 탐사 방 종류 안내
-                title.text = "탐사 방"; // 탐사 방 안내 제목 설정
-                description.text = "탐사 중 전투, 보물, 휴식과 상점을 만날 수 있습니다. 진행 상황과 파티 상태를 살피며 이동하세요."; // 현재 구현된 방 종류 설명 설정
-                break; // 탐사 방 안내 종료
-        } // 탐사 단계 분기 종료
-    } // 탐사 문구 설정 종료
     private void LateUpdate() // 실제 탐사 이동과 화면 위치 감시
     { // 늦은 안내 갱신 시작
         if (progress != null && progress.IsActive) // 진행 중인 안내 확인

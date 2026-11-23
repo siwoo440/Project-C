@@ -7,13 +7,22 @@ public enum WorldTutorialKind // 거점과 탐사 안내 종류
 } // 안내 종류 종료
 public sealed class WorldTutorialProgress // 거점과 탐사 안내 진행 상태
 { // 안내 진행 상태 시작
+    private static readonly (string Title, string Text, string Example)[] ExplorationPages = // 탐사 순서별 제목과 안내 및 화면 이름
+    { // 탐사 안내 목록 시작
+        ("탐사 이동", "WASD 또는 방향키로 바닥을 따라 이동하세요. 한 걸음 움직이면 다음 안내가 열립니다.", "Exploration"), // 실제 이동과 지도 안내
+        ("이벤트", "이벤트 표식에 접촉하면 선택지가 열립니다. 선택 하나를 누른 뒤 결과를 확인하세요.", "Event"), // 접촉과 이벤트 선택 안내
+        ("보물", "보물 방의 표식에 닿으면 보상을 얻습니다. 공용 카드가 나왔다면 카드를 받을 파티원을 선택하세요. 나중에 선택을 누르면 이 방에서 다시 받을 수 있습니다.", "Treasure"), // 보상과 소유자 선택 안내
+        ("휴식", "휴식 방에서는 파티의 체력과 정신력을 회복하고 카드를 강화할 수 있습니다. 화면에 표시된 휴식 위험도를 확인하세요.", "Rest"), // 휴식과 강화 안내
+        ("상점", "상점 방에서 상품과 가격을 확인하세요. 공용 카드를 살 때는 받을 파티원을 고릅니다. 유물 판매 목록에서는 보유 유물의 판매 가격을 볼 수 있습니다.", "Shop") // 상점 거래 안내
+    }; // 탐사 안내 목록 종료
+    internal (string Title, string Text, string Example) ExplorationPage => ExplorationPages[StepIndex]; // 현재 탐사 안내 내용 조회
     private readonly ISettingsStore store; // 기기별 안내 완료 저장소
     private readonly string completionKey; // 안내별 완료 기록 이름
     private Vector2 startingPosition; // 탐사 안내 시작 위치
     private bool movementObserved; // 실제 이동 확인 여부
     public WorldTutorialKind Kind { get; } // 현재 안내 종류 조회
     public int StepIndex { get; private set; } // 현재 안내 단계 번호
-    public int StepCount => Kind == WorldTutorialKind.Lobby ? 5 : 3; // 안내 종류별 단계 수
+    public int StepCount => Kind == WorldTutorialKind.Lobby ? 5 : ExplorationPages.Length; // 안내 종류별 단계 수
     public bool IsActive { get; private set; } // 안내 표시 여부
     public bool CanAdvance => IsActive && (Kind != WorldTutorialKind.Exploration || StepIndex != 0 || movementObserved); // 실제 이동을 반영한 다음 단계 허용 여부
     public bool CanGoBack => IsActive && StepIndex > 0; // 이전 안내 페이지 이동 가능 여부

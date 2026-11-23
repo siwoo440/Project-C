@@ -18,8 +18,11 @@ public sealed class WorldTutorialProgressTests // 탐사와 거점 안내 규칙
         tutorial.ObservePosition(new Vector2(10.2f, 10f)); // 실제 이동 거리 전달
         Assert.IsTrue(tutorial.CanAdvance); // 실제 이동 확인 후 다음 단계 허용 확인
         Assert.IsTrue(tutorial.Advance()); // 접촉 상호작용 안내 이동
-        tutorial.Advance(); // 탐사 방 종류 안내 이동
-        tutorial.Advance(); // 탐사 안내 완료
+        for (int index = 1; index < tutorial.StepCount; index++) // 남은 모든 방 안내 순회
+        { // 페이지 진행 검사 시작
+            Assert.AreEqual(index, tutorial.StepIndex); // 현재 방 안내 번호 확인
+            Assert.IsTrue(tutorial.Advance()); // 다음 방이나 완료로 이동 확인
+        } // 페이지 진행 검사 종료
         Assert.IsFalse(tutorial.IsActive); // 탐사 안내 종료 확인
         Assert.AreEqual(1, store.Read("explorationTutorialCompleted", 0)); // 탐사 완료 기록 확인
         Assert.AreEqual(0, store.Read("lobbyTutorialCompleted", 0)); // 거점 안내 기록과 분리 확인
