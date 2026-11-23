@@ -57,3 +57,9 @@ MonoBehaviour:
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
   - card: {fileID: 11400000, guid: f4ef8103e4dd42488d22b9c6c9c9e317, type: 2}
     owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
+  - card: {fileID: 11400000, guid: 06da76c80212497f95ed5ca2c2857985, type: 2}
+    owner: {fileID: 11400000, guid: cb761010fd4be11468266536d8d9d37c, type: 2}
