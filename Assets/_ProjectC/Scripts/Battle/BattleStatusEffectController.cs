@@ -5,12 +5,15 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
     private readonly BattleTurnRuntime turnRuntime; // 연결된 턴 관리자
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 아군 유닛 목록
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 적 유닛 목록
+    private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
     private bool disposed; // 연결 해제 여부
-    public BattleStatusEffectController(BattleTurnRuntime battleTurn, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies) // 상태 이상 관리자 생성
+    public event Action<BattleUnitRuntime, IReadOnlyList<BattleStatusEffectProcessResult>> StatusEffectsProcessed; // 유닛 상태 처리 완료 이벤트
+    public BattleStatusEffectController(BattleTurnRuntime battleTurn, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleStatusEffectProcessor processor) // 상태 이상 관리자 생성
     { // 생성자 시작
         turnRuntime = battleTurn ?? throw new ArgumentNullException(nameof(battleTurn)); // 턴 관리자 저장
         allyUnits = allies ?? throw new ArgumentNullException(nameof(allies)); // 아군 목록 저장
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
+        statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
         turnRuntime.PhaseStarted += HandlePhaseStarted; // 진영 턴 시작 이벤트 등록
     } // 생성자 종료
     private void HandlePhaseStarted(BattleTurnPhase phase, int round) // 진영 턴 시작 처리
@@ -41,7 +44,11 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
             { // 처리 제외 시작
                 continue; // 다음 유닛 이동
             } // 처리 제외 종료
-            runtimeUnit.ProcessStatusEffectsAtPhaseStart(round); // 현재 유닛 상태 이상 발동
+            IReadOnlyList<BattleStatusEffectProcessResult> processResults = statusEffectProcessor.ProcessPhaseStart(runtimeUnit, round); // 현재 유닛 상태 통합 처리
+            if (processResults.Count > 0) // 실제 처리 결과 확인
+            { // 처리 완료 알림 시작
+                StatusEffectsProcessed?.Invoke(runtimeUnit, processResults); // 상태 처리 결과 전달
+            } // 처리 완료 알림 종료
         } // 유닛 상태 처리 종료
     } // 일괄 처리 종료
     public void Dispose() // 상태 이상 관리자 연결 해제
