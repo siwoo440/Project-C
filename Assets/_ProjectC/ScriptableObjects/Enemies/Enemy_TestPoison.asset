@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_TestPoison
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_TEST_POISON
+  displayName: "중독 실험체"
+  description: "무작위 아군에게 중독을 부여하는 테스트 적"
+  portrait: {fileID: 0}
+  maxHealth: 42
+  physicalDefense: 2
+  magicalResistance: 3
+  actionType: 2
+  basicAttackPower: 0
+  damageType: 0
+  statusEffectType: 1
+  statusEffectValue: 4
+  statusEffectDuration: 2
+  statusEffectMaximumStacks: 3
+  targetRule: 2
+  minimumActionSpeed: 3
+  maximumActionSpeed: 7

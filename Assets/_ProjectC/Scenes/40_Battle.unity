@@ -519,6 +519,7 @@ MonoBehaviour:
   battleLoadout: {fileID: 11400000, guid: daa38a44d01608342adf9a680d7209d8, type: 2}
   enemies:
   - {fileID: 11400000, guid: a5fbf174b853f374e9aca12b53d630ac, type: 2}
+  - {fileID: 11400000, guid: e2f80ec4bd474b88ba71359930b17d05, type: 2}
   battleType: 0
   unitViewPrefab: {fileID: 4072380188688632060, guid: fc991930e4d14a44b9a29d15f776d075, type: 3}
   allyUnitRoot: {fileID: 675924956}

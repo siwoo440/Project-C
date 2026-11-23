@@ -9,8 +9,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public BattleTeam Team { get; } // 유닛 진영
     public Sprite Portrait { get; } // 유닛 초상화
     public int MaxHealth { get; } // 최대 체력
-    public int PhysicalDefense { get; } // 물리 방어력
-    public int MagicalResistance { get; } // 마법 저항력
+    public int BasePhysicalDefense { get; } // 기본 물리 방어력
+    public int BaseMagicalResistance { get; } // 기본 마법 저항력
+    public int PhysicalDefense => CalculateDefense(BasePhysicalDefense, BattleStatusEffectType.PhysicalDefenseUp, BattleStatusEffectType.PhysicalDefenseDown); // 현재 물리 방어력
+    public int MagicalResistance => CalculateDefense(BaseMagicalResistance, BattleStatusEffectType.MagicalResistanceUp, BattleStatusEffectType.MagicalResistanceDown); // 현재 마법 저항력
     public int CurrentHealth { get; private set; } // 현재 체력
     public bool IsDead { get; private set; } // 사망 여부
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
@@ -31,8 +33,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         Team = team; // 진영 저장
         Portrait = portrait; // 초상화 저장
         MaxHealth = Mathf.Max(1, maxHealth); // 최소 최대 체력 보정
-        PhysicalDefense = Mathf.Max(0, physicalDefense); // 물리 방어력 보정
-        MagicalResistance = Mathf.Max(0, magicalResistance); // 마법 저항력 보정
+        BasePhysicalDefense = Mathf.Max(0, physicalDefense); // 기본 물리 방어력 보정
+        BaseMagicalResistance = Mathf.Max(0, magicalResistance); // 기본 마법 저항력 보정
         CurrentHealth = MaxHealth; // 현재 체력 초기화
         IsDead = false; // 생존 상태 초기화
         CharacterSource = characterSource; // 아군 원본 저장
@@ -178,6 +180,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 공격력 상태 확인 종료
         return totalBonus; // 전체 공격력 증가 반환
     } // 공격력 증가 계산 종료
+    private int CalculateDefense(int baseDefense, BattleStatusEffectType increaseType, BattleStatusEffectType decreaseType) // 현재 방어력 계산
+    { // 방어력 계산 시작
+        int increasedDefense = GetStatusEffectValue(increaseType); // 방어 증가 수치 조회
+        int decreasedDefense = GetStatusEffectValue(decreaseType); // 방어 감소 수치 조회
+        return Mathf.Max(0, baseDefense + increasedDefense - decreasedDefense); // 영 이상 현재 방어력 반환
+    } // 방어력 계산 종료
+    private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
+    { // 상태 수치 조회 시작
+        BattleStatusEffectInstance statusEffect = FindStatusEffect(effectType); // 지정 상태 이상 조회
+        return statusEffect == null ? 0 : statusEffect.EffectiveValue; // 상태 이상 전체 수치 반환
+    } // 상태 수치 조회 종료
     private void ClearStatusEffects() // 모든 상태 이상 제거
     { // 전체 상태 제거 시작
         if (statusEffects.Count < 1) // 상태 이상 존재 확인

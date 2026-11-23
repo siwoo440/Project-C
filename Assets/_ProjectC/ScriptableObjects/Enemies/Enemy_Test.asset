@@ -22,6 +22,10 @@ MonoBehaviour:
   actionType: 1
   basicAttackPower: 8
   damageType: 1
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
   targetRule: 0
   minimumActionSpeed: 1
   maximumActionSpeed: 10

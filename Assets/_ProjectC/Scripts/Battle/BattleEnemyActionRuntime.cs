@@ -60,18 +60,18 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         StateChanged?.Invoke(); // 예정 행동 변경 알림
         return plannedActions.Count; // 생성 행동 수 반환
     } // 행동 준비 종료
-    public BattleDamageResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
+    public BattleEnemyActionResult ExecuteAction(BattleEnemyAction action) // 적 행동 실행
     { // 행동 실행 시작
         if (disposed || action == null || !plannedActions.Contains(action)) // 실행 대상 유효성 확인
         { // 실행 불가 처리 시작
-            return BattleDamageResult.Empty(action == null ? BattleDamageType.None : action.DamageType); // 적용 피해 없음 반환
+            return BattleEnemyActionResult.Empty(action == null ? EnemyActionType.None : action.ActionType, action == null ? BattleDamageType.None : action.DamageType); // 적용 행동 없음 반환
         } // 실행 불가 처리 종료
         if (action.Actor.IsDead) // 행동 적 사망 확인
         { // 사망 적 처리 시작
             plannedActions.Remove(action); // 예정 행동 제거
             ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
             StateChanged?.Invoke(); // 예정 행동 변경 알림
-            return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
+            return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
         } // 사망 적 처리 종료
         if (action.Target == null || action.Target.IsDead) // 기존 대상 상태 확인
         { // 대상 재선택 시작
@@ -81,16 +81,16 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 plannedActions.Remove(action); // 실행 불가 행동 제거
                 ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
                 StateChanged?.Invoke(); // 예정 행동 변경 알림
-                return BattleDamageResult.Empty(action.DamageType); // 적용 피해 없음 반환
+                return BattleEnemyActionResult.Empty(action.ActionType, action.DamageType); // 적용 행동 없음 반환
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
         executingAction = action; // 현재 실행 행동 저장
-        BattleDamageResult damageResult = action.Execute(); // 적 공격 피해 적용
+        BattleEnemyActionResult actionResult = action.Execute(); // 적 행동 효과 적용
         executingAction = null; // 현재 실행 행동 제거
         plannedActions.Remove(action); // 실행 완료 행동 제거
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
-        return damageResult; // 피해 계산 결과 반환
+        return actionResult; // 행동 실행 결과 반환
     } // 행동 실행 종료
     public BattleEnemyAction FindAction(BattleUnitRuntime enemyUnit) // 적 예정 행동 조회
     { // 행동 조회 시작
@@ -119,7 +119,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return null; // 행동 생성 실패 반환
         } // 잘못된 적 처리 종료
         EnemyData enemyData = enemyUnit.EnemySource; // 적 원본 데이터 조회
-        if (enemyData.ActionType != EnemyActionType.Attack || enemyData.BasicAttackPower < 1) // 지원 행동 확인
+        if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
         { // 미지원 행동 처리 시작
             return null; // 행동 생성 실패 반환
         } // 미지원 행동 처리 종료
@@ -129,8 +129,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return null; // 행동 생성 실패 반환
         } // 대상 없음 처리 종료
         int actionSpeed = RollActionSpeed(enemyData); // 이번 턴 행동 속도 결정
-        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, enemyData.BasicAttackPower, actionSpeed, creationOrder); // 예정 공격 반환
+        int actionAmount = enemyData.ActionType == EnemyActionType.Attack ? enemyData.BasicAttackPower : enemyData.StatusEffectValue; // 행동 종류별 수치 결정
+        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, actionSpeed, creationOrder); // 예정 행동 반환
     } // 행동 생성 종료
+    private static bool IsActionConfigurationValid(EnemyData enemyData) // 적 행동 설정 유효성 확인
+    { // 설정 확인 시작
+        if (enemyData.ActionType == EnemyActionType.Attack) // 공격 행동 확인
+        { // 공격 설정 처리 시작
+            return enemyData.BasicAttackPower > 0; // 공격 수치 유효성 반환
+        } // 공격 설정 처리 종료
+        return enemyData.ActionType == EnemyActionType.ApplyStatusEffect && enemyData.StatusEffectType != BattleStatusEffectType.None && enemyData.StatusEffectValue > 0 && enemyData.StatusEffectDuration > 0 && enemyData.StatusEffectMaximumStacks > 0; // 상태 행동 설정 유효성 반환
+    } // 설정 확인 종료
     private int RollActionSpeed(EnemyData enemyData) // 적 행동 속도 결정
     { // 속도 결정 시작
         int minimumSpeed = enemyData.MinimumActionSpeed; // 최소 행동 속도 조회

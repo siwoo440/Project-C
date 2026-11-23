@@ -95,6 +95,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         statusEffectController = new BattleStatusEffectController(battleTurn, allyUnits, enemyUnits); // 상태 이상 발동 관리자 생성
         enemyActionRuntime = new BattleEnemyActionRuntime(enemyUnits, allyUnits); // 적 행동 관리자 생성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
+        RegisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 등록
         battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         IsInitialized = true; // 초기화 완료 저장
         if (!battleTurn.StartBattle(initialHandSize)) // 전투 시작 처리 확인
@@ -544,6 +545,30 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             enemyView.SetEnemyIntent(plannedAction); // 적 행동 예고 적용
         } // 적 행동 예고 갱신 종료
     } // 적 행동 변경 처리 종료
+    private void HandleAllyStatusEffectsChanged(BattleUnitRuntime allyUnit) // 아군 상태 변경 처리
+    { // 아군 상태 변경 시작
+        HandleEnemyActionStateChanged(); // 방어력과 면역 포함 적 예고 갱신
+    } // 아군 상태 변경 종료
+    private void RegisterAllyStatusIntentEvents() // 아군 상태 변경 이벤트 등록
+    { // 상태 이벤트 등록 시작
+        foreach (BattleUnitRuntime allyUnit in allyUnits) // 아군 런타임 목록 순회
+        { // 개별 이벤트 등록 시작
+            if (allyUnit != null) // 아군 존재 확인
+            { // 유효 아군 처리 시작
+                allyUnit.StatusEffectsChanged += HandleAllyStatusEffectsChanged; // 상태 변경 예고 갱신 연결
+            } // 유효 아군 처리 종료
+        } // 개별 이벤트 등록 종료
+    } // 상태 이벤트 등록 종료
+    private void UnregisterAllyStatusIntentEvents() // 아군 상태 변경 이벤트 해제
+    { // 상태 이벤트 해제 시작
+        foreach (BattleUnitRuntime allyUnit in allyUnits) // 아군 런타임 목록 순회
+        { // 개별 이벤트 해제 시작
+            if (allyUnit != null) // 아군 존재 확인
+            { // 유효 아군 처리 시작
+                allyUnit.StatusEffectsChanged -= HandleAllyStatusEffectsChanged; // 상태 변경 예고 갱신 해제
+            } // 유효 아군 처리 종료
+        } // 개별 이벤트 해제 종료
+    } // 상태 이벤트 해제 종료
     private IEnumerator ExecuteEnemyTurn() // 적 턴 행동 실행
     { // 적 턴 실행 시작
         if (enemyActionRuntime == null) // 적 행동 관리자 확인
@@ -562,7 +587,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 적 행동 대기 시작
                 yield return new WaitForSeconds(enemyTurnDelay); // 설정 시간만큼 대기
             } // 적 행동 대기 종료
-            BattleDamageResult damageResult = BattleDamageResult.Empty(enemyAction.DamageType); // 적 피해 결과 초기화
+            BattleEnemyActionResult actionResult = BattleEnemyActionResult.Empty(enemyAction.ActionType, enemyAction.DamageType); // 적 행동 결과 초기화
             BattleUnitView actorView = FindUnitView(enemyAction.Actor, enemyUnitViews); // 행동 적 화면 조회
             BattleUnitView targetView = FindUnitView(enemyAction.Target, allyUnitViews); // 대상 아군 화면 조회
             List<BattleUnitView> targetViews = new List<BattleUnitView>(); // 적 행동 대상 화면 목록 생성
@@ -570,7 +595,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 대상 화면 추가 시작
                 targetViews.Add(targetView); // 적 행동 대상 화면 추가
             } // 대상 화면 추가 종료
-            System.Action impactAction = () => damageResult = enemyActionRuntime.ExecuteAction(enemyAction); // 충돌 시 적 공격 처리 생성
+            System.Action impactAction = () => actionResult = enemyActionRuntime.ExecuteAction(enemyAction); // 충돌 시 적 행동 처리 생성
             if (actionSequenceRunner != null) // 행동 연출 실행기 확인
             { // 적 행동 연출 시작
                 yield return actionSequenceRunner.RunEnemyAction(actorView, targetViews, impactAction); // 적 공격 순서 연출 실행
@@ -579,8 +604,18 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             { // 즉시 공격 처리 시작
                 impactAction.Invoke(); // 적 공격 즉시 적용
             } // 즉시 공격 처리 종료
-            string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-            Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
+            if (actionResult.IsStatusAction) // 상태 적용 행동 결과 확인
+            { // 상태 결과 처리 시작
+                targetView?.ShowStatusApplyFeedback(enemyAction.StatusEffectType, actionResult.StatusApplyResult); // 상태 적용 결과 화면 표시
+                string effectName = BattleStatusEffectInstance.GetDisplayName(enemyAction.StatusEffectType); // 상태 이상 이름 조회
+                Debug.Log($"[BattleStatus] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {effectName} / 수치 {enemyAction.Amount} / 지속 {enemyAction.StatusDuration} / 결과 {actionResult.StatusApplyResult}", this); // 적 상태 적용 상세 출력
+            } // 상태 결과 처리 종료
+            else // 공격 행동 결과 처리
+            { // 피해 결과 처리 시작
+                BattleDamageResult damageResult = actionResult.DamageResult; // 적 피해 결과 조회
+                string damageLabel = enemyAction.DamageType == BattleDamageType.Magical ? "마법" : enemyAction.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
+                Debug.Log($"[BattleDamage] 적 / {enemyAction.Actor.DisplayName} / 대상 {enemyAction.Target.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}", this); // 적 피해 상세 출력
+            } // 피해 결과 처리 종료
         } // 개별 적 행동 종료
         enemyTurnCoroutine = null; // 적 턴 코루틴 참조 제거
         if (battleTurn == null || battleTurn.IsBattleEnded) // 전투 종료 여부 확인
@@ -626,6 +661,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 턴 중단 종료
         statusEffectController?.Dispose(); // 상태 이상 관리자 연결 해제
         statusEffectController = null; // 상태 이상 관리자 참조 제거
+        UnregisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 해제
         if (actionSequenceRunner != null) // 행동 연출 실행기 확인
         { // 행동 연출 연결 해제 시작
             actionSequenceRunner.BusyStateChanged -= handView.SetInteractionLocked; // 손패 입력 잠금 연결 해제

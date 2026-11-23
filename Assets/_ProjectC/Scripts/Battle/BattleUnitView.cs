@@ -100,6 +100,28 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
         combatFeedbackView.ShowStatusMessage(message, isDebuff); // 상태 결과 플로팅 문구 표시
     } // 상태 피드백 종료
+    public void ShowStatusApplyFeedback(BattleStatusEffectType effectType, BattleStatusEffectApplyResult applyResult) // 상태 적용 결과 피드백 표시
+    { // 적용 결과 표시 시작
+        string effectName = BattleStatusEffectInstance.GetDisplayName(effectType); // 상태 이상 이름 조회
+        if (applyResult == BattleStatusEffectApplyResult.Applied) // 신규 적용 결과 확인
+        { // 신규 적용 표시 시작
+            ShowStatusFeedback($"{effectName} 적용", BattleStatusEffectInstance.IsDebuffType(effectType)); // 신규 적용 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 신규 적용 표시 종료
+        if (applyResult == BattleStatusEffectApplyResult.Stacked) // 중첩 결과 확인
+        { // 중첩 표시 시작
+            BattleStatusEffectInstance statusEffect = RuntimeUnit == null ? null : RuntimeUnit.GetStatusEffect(effectType); // 적용된 상태 이상 조회
+            int stackCount = statusEffect == null ? 0 : statusEffect.StackCount; // 현재 중첩 수 조회
+            ShowStatusFeedback($"{effectName} {stackCount}중첩", BattleStatusEffectInstance.IsDebuffType(effectType)); // 중첩 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 중첩 표시 종료
+        if (applyResult == BattleStatusEffectApplyResult.BlockedByImmunity) // 면역 차단 결과 확인
+        { // 면역 표시 시작
+            ShowStatusFeedback("면역", false); // 면역 차단 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 면역 표시 종료
+        ShowStatusFeedback("적용 실패", true); // 잘못된 적용 문구 표시
+    } // 적용 결과 표시 종료
     public void ResetMotion() // 유닛 움직임 초기화
     { // 움직임 초기화 시작
         motionView?.ResetMotion(); // 초상화 위치와 크기 복구
@@ -115,9 +137,19 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 행동 예고 표시 중단
         } // 행동 예고 숨김 종료
         EnsureEnemyIntentView(); // 행동 예고 화면 준비
-        string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-        BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
-        enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 행동 순서 포함 예고 내용 적용
+        if (action.ActionType == EnemyActionType.ApplyStatusEffect) // 상태 적용 행동 확인
+        { // 상태 예고 처리 시작
+            string effectName = BattleStatusEffectInstance.GetDisplayName(action.StatusEffectType); // 상태 이상 이름 조회
+            bool blockedByImmunity = BattleStatusEffectInstance.IsDebuffType(action.StatusEffectType) && action.Target.HasStatusImmunity; // 면역 차단 예상 여부 계산
+            string statusPreview = blockedByImmunity ? "면역 예상" : $"{effectName} {action.Amount} · {action.StatusDuration}T"; // 상태 적용 예고 문구 계산
+            enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {statusPreview}\n→ {action.Target.DisplayName}"; // 상태 행동 예고 내용 적용
+        } // 상태 예고 처리 종료
+        else // 공격 행동 처리
+        { // 공격 예고 처리 시작
+            string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
+            BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
+            enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
+        } // 공격 예고 처리 종료
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
     } // 행동 예고 표시 종료
