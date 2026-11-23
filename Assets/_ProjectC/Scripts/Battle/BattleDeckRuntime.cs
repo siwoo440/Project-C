@@ -117,6 +117,11 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 상태 알림 종료
         return drawnCount; // 실제 드로우 수 반환
     } // 카드 드로우 종료
+    internal int DrawRelicCardsIntoHand(int requestedCount) // 추가 유물의 손패 공간 내 안전한 드로우
+    { // 제한 드로우 시작
+        int handSpace = MaxHandSize - HandCount; // 실제로 새 카드가 들어갈 수 있는 손패 여유
+        return handSpace > 0 && HasDrawableCards ? DrawCards(Math.Min(requestedCount, handSpace)) : 0; // 초과 버림 없이 가능한 카드만 드로우
+    } // 제한 드로우 종료
     public bool TryPlayAndDraw(CardInstance playedCard, int requestedCount, out int drawnCount) // 사용 카드를 제외하고 드로우
     { // 사용과 드로우 처리 시작
         drawnCount = 0; // 실제 드로우 수 초기화

@@ -9,6 +9,35 @@ using Random = UnityEngine.Random; // 실제 유물의 시작 추첨 재현
 
 public sealed class WinterfallCorrosionAndTurnRelicTests // 시작과 주기의 세 가지 전투 유물 회귀 검사
 { // 전투 시작 유물 검사 시작
+    [UnityTest] // 청진기 표식의 실제 시작 대상과 두 아군 턴 검사
+    public IEnumerator StethoscopeMarksHighestCurrentHealthAndExpiresAfterTwoAllyTurns() // 현재 체력과 적 선제 및 일반 면역 확인
+    { // 실제 전투 상황 검사 시작
+        yield return new EnterPlayMode(); // 보유 유물 런타임을 사용하는 실제 플레이 모드 시작
+        VerifyStethoscopeMark(); // 선택한 적과 상태 종료 경계 검증
+        yield return new ExitPlayMode(); // 전투 시작 상태에서 에디터 복귀
+    } // 실제 전투 상황 검사 종료
+
+    private static void VerifyStethoscopeMark() // 생존 적의 순서와 두 번의 실제 아군 종료 확인
+    { // 시작 표식 검사 시작
+        Acquire("BlackenedStethoscope"); // 실제 상점과 회차에 등록한 원본 청진기 획득
+        using var battle = new OpeningBattle(); // 넷의 실제 적이 있는 대조 전투 구성
+        battle.Enemies[0].TakeDamage(1000, BattleDamageType.None); // 첫 적이 실제로 쓰러지도록 무속성 피해 적용
+        var selected = battle.Enemies[1]; // 현재 체력이 가장 높은 동률 중 앞선 생존 적
+        selected.TakeDamage(selected.CurrentHealth - 155, BattleDamageType.None); // 선택할 적의 현재 체력을 실제 피해로 준비
+        battle.Enemies[2].TakeDamage(battle.Enemies[2].CurrentHealth - 155, BattleDamageType.None); // 선택 적과 실제로 동일한 현재 체력
+        battle.Enemies[3].TakeDamage(battle.Enemies[3].CurrentHealth - 100, BattleDamageType.None); // 낮은 현재 체력을 가진 실제 생존 적
+        Assert.True(battle.Enemies[0].IsDead && selected.CurrentHealth == 155 && battle.Enemies[2].CurrentHealth == 155 && battle.Enemies[3].CurrentHealth == 100); // 실제 후보의 전투불능과 현재 체력 순서 확인
+        Assert.True(battle.Turns.StartBattle(0, true)); // 적 선제의 실제 전투 시작
+        Assert.AreEqual(2, selected.GetStatusEffect(BattleStatusEffectType.StethoscopeMark)?.RemainingTurns); // 아군 턴이 시작하기 전에도 원본 기간으로 한 적에 표시
+        Assert.AreEqual(1, battle.Enemies.Count(enemy => enemy.GetStatusEffect(BattleStatusEffectType.StethoscopeMark) != null)); // 동률의 다른 적과 아무 적에게도 중복 미적용
+        Assert.True(battle.Turns.CompleteEnemyTurn()); // 선제 적 턴 완료 후 첫 아군 턴 진입
+        Assert.AreEqual(2, selected.GetStatusEffect(BattleStatusEffectType.StethoscopeMark)?.RemainingTurns); // 선제 적 턴을 표식의 아군 기간에 포함하지 않음 확인
+        Assert.True(battle.Turns.EndPlayerTurn()); // 첫 실제 아군 턴 완료
+        Assert.AreEqual(1, selected.GetStatusEffect(BattleStatusEffectType.StethoscopeMark)?.RemainingTurns); // 첫 아군 턴에 기간 하나 감소
+        Assert.True(battle.Turns.CompleteEnemyTurn() && battle.Turns.EndPlayerTurn()); // 두 번째 실제 아군 턴 완료
+        Assert.IsNull(selected.GetStatusEffect(BattleStatusEffectType.StethoscopeMark)); // 두 번째 아군 턴 경계에서 상태 제거 확인
+    } // 시작 표식 검사 종료
+
     [UnityTest] // 전투 시작 저항 약화와 실제 적 턴 만료 검사
     public IEnumerator FractureStoneReducesMagicalMitigationAcrossTwoEnemyTurns() // 선제 중 약화 적용과 기존 방어 계산 경계 확인
     { // 실금석 검사 모드 시작

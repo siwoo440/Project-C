@@ -129,4 +129,12 @@ public enum RelicEffectType // 유물 효과 종류
     OpeningPulseCord, // 무작위 시작 아군의 정신력 비용과 공격력
     MarkPhysicalDefenseLoss, // 유효한 카드 표식에 따르는 별도 물리 방어 약화
     SutureCorrosionHealing, // 침식으로 체력을 잃은 생존 아군의 전투 종료 회복
+    MagicalHitMentalLoss, // 아군이 준 마법 체력 피해의 정신력 감소
+    LowHealthOutgoingDamage, // 저체력 아군의 출처가 명시된 적 피해 증가
+    ActionPreventingStatusDraw, // 적 행동 불가가 실제 부여된 시점의 카드 드로우
+    AfraidEnemyAttackReduction, // 공포 적의 실제 공격력 감소
+    EnemyBleedDamageBonus, // 적에게 발동하는 출혈 피해 증가
+    OpeningStethoscopeMark, // 시작의 최고 체력 생존 적에게 표식 부여
+    FifthEnemyDebuffHeal, // 다섯 번째 유효한 적 약화마다 생존 아군 회복
+    EnemyMentalLossActionPoint, // 아군이 적에게 준 정신력 손실의 행동력 회복
 }

@@ -47,7 +47,8 @@ public sealed class BattleRelicBootstrap : MonoBehaviour
             battleSceneSetup.AllyUnits,
             battleSceneSetup.EnemyUnits, // 실제 적 목록 연결
             battleSceneSetup.BattleDeck, // 유물 드로우용 실제 전투 덱 연결
-            battleSceneSetup.SharedActionPoints); // 처치 유물의 공용 행동력 연결
+            battleSceneSetup.SharedActionPoints, // 공용 행동력을 변경하는 유물의 실제 저장소 연결
+            battleSceneSetup.CardActions.TryDrawEventRelicCards); // 카드 해결과 모든 선택 이후의 안전한 상태 유물 드로우 연결
 
         if (runManager.Inventory.Count == 0)
         {

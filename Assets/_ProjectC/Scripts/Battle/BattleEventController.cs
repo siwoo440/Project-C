@@ -88,7 +88,7 @@ public sealed class BattleEventController : IDisposable // 기존 전투 신호 
     private void HandleMentalChanged(BattleUnitRuntime targetUnit, BattleMentalChangeResult mentalResult) // 정신력 변화 신호 처리
     { // 정신력 신호 처리 시작
         int appliedAmount = mentalResult == null ? 0 : mentalResult.AppliedDelta; // 실제 정신력 변화량 조회
-        dispatcher.Publish(new BattleEventContext(BattleEventType.MentalChanged, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, targetUnit: targetUnit, appliedAmount: appliedAmount, mentalResult: mentalResult)); // 정신력 변화 공용 이벤트 발행
+        dispatcher.Publish(new BattleEventContext(BattleEventType.MentalChanged, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, sourceUnit: mentalResult?.SourceUnit, targetUnit: targetUnit, appliedAmount: appliedAmount, mentalResult: mentalResult)); // 정신력 변화 공용 이벤트 발행
     } // 정신력 신호 처리 종료
     private void HandleUnitDefeated(BattleUnitRuntime sourceUnit, BattleUnitRuntime defeatedUnit) // 유닛 처치 신호 처리
     { // 처치 신호 처리 시작

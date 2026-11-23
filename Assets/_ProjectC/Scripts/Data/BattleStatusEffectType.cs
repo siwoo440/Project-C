@@ -70,5 +70,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     MiracleEcho = 67, // 현재 아군 턴의 직접 카드 회복 증가
     CorrosionResistanceDown = 68, // 실금석의 마법 피해 저항률 감소 상태
     PulseCordAttackPowerUp = 69, // 맥박줄이 지정한 아군의 별도 공격력 증가
-    CrystalMarkDefenseDown = 70 // 결정눈이 부여하는 별도 표식 방어 약화
+    CrystalMarkDefenseDown = 70, // 결정눈이 부여하는 별도 표식 방어 약화
+    StethoscopeMark = 71 // 청진기가 고른 적의 독립 전투 시작 표식
 } // 열거형 종료

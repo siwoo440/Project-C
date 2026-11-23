@@ -991,6 +991,54 @@
       "artworkKey": "bc240791e5aa50b59a643da91a3a47a8"
     },
     {
+      "category": 3,
+      "name": "검은 별가루",
+      "description": "아군이 마법 피해로 적의 체력을 실제로 줄이면 20% 확률로 그 적의 정신력을 2 낮춘다.",
+      "artworkKey": "2e4f9a226ca55738a4d2f60e69f62352"
+    },
+    {
+      "category": 3,
+      "name": "어긋난 심장파편",
+      "description": "현재 체력이 최대값의 50% 이하인 생존 아군이 적에게 주는 피해를 15% 높인다.",
+      "artworkKey": "1e5367cbce385a288d0dd4548eeb732d"
+    },
+    {
+      "category": 3,
+      "name": "어비스 밀랍인장",
+      "description": "아군이 적에게 행동 불가 상태를 실제로 부여하면 카드 한 장을 뽑는다.",
+      "artworkKey": "8a4f0f251592551cb8ba634b842e4fd7"
+    },
+    {
+      "category": 3,
+      "name": "침묵 결정종",
+      "description": "공포 상태인 적의 공격력을 추가로 1 낮춘다.",
+      "artworkKey": "f4b5b22303b85fa4a92da23a97b24bd3"
+    },
+    {
+      "category": 3,
+      "name": "붉은 균열섬유",
+      "description": "적의 출혈이 발동할 때 출혈 피해를 1 높인다.",
+      "artworkKey": "ee7701465cf75b28a3893a9fd00e6523"
+    },
+    {
+      "category": 3,
+      "name": "검게 물든 청진기",
+      "description": "전투 시작에 현재 체력이 가장 높은 생존 적 하나에게 아군 턴 두 번 동안 표식을 부여한다.",
+      "artworkKey": "51973d70c6095c98a3e8b81be5feaee0"
+    },
+    {
+      "category": 3,
+      "name": "공허의 잔뿌리",
+      "description": "적이 약화를 새로 받거나 중첩하는 횟수가 전투 중 5회 늘어날 때마다 생존 아군의 체력을 각각 3 회복한다.",
+      "artworkKey": "3574a774c8365256965a609834beadf1"
+    },
+    {
+      "category": 3,
+      "name": "침식 방울목걸이",
+      "description": "아군 턴에 아군이 적의 정신력을 실제로 줄이면 25% 확률로 현재 행동력을 1 회복한다.",
+      "artworkKey": "8f09b548afe75cea82ec92577950398b"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

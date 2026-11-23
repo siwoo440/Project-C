@@ -44,7 +44,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
     public BattleStatusEffectType BlockingStatus => Actor.GetStatusEffect(BattleStatusEffectType.Stun) != null ? BattleStatusEffectType.Stun : Actor.GetStatusEffect(BattleStatusEffectType.Stagger) != null ? BattleStatusEffectType.Stagger : BattleStatusEffectType.None; // 이번 행동을 막는 실제 상태
     private int TurnAttackPenalty => DamageType == BattleDamageType.Physical || DamageType == BattleDamageType.Magical ? Actor.GetStatusEffect(BattleStatusEffectType.AttackPowerDown)?.EffectiveValue ?? 0 : 0; // 물리·마법 공격에만 적용할 경보 약화
-    public int AttackAmount => Math.Max(0, Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty); // 정신 상태와 다음 공격 약화를 반영한 원본 피해
+    private int FearAttackPenalty => Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && Actor.GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false } // 실제 공포가 있는 적의 공격인지 확인
+        ? BattleSupplyRelics.Find(RelicEffectType.AfraidEnemyAttackReduction)?.EffectValue ?? 0 // 보유한 침묵 결정종의 추가 공격력 감소량
+        : 0; // 다른 행동과 만료된 공포에 적용하는 감소 없음
+    public int AttackAmount => (int)Math.Max(0L, (long)Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty - FearAttackPenalty); // 실제 공격과 예고에 생존한 공포 및 기존 약화의 합 반영
 
     public bool IsExecutable =>
         Actor != null &&

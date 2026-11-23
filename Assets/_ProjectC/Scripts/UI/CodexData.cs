@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.StethoscopeMark) // 신규 청진기 원본의 도감 분류
+                    { // 명칭과 표시 설명 준비
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 실제 청진기 표식의 독립 설명
+                    } // 도감 설명 준비 종료
                     else if (effect == BattleStatusEffectType.CorrosionResistanceDown || effect == BattleStatusEffectType.PulseCordAttackPowerUp || effect == BattleStatusEffectType.CrystalMarkDefenseDown) // 침식 전용 약화와 일시 공격력 조회
                     { // 침식 상태 기본 설명 준비 시작
                         int amount = effect == BattleStatusEffectType.CorrosionResistanceDown ? 5 : effect == BattleStatusEffectType.PulseCordAttackPowerUp ? 2 : 1; // 실제 시트 발동 수치

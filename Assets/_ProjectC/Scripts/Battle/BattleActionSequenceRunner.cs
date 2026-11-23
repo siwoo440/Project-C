@@ -13,6 +13,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
     private BattleUnitView activeActorView;
     private Coroutine playerSequenceCoroutine;
     private Action playerCompletion;
+    private BattleMagicMissileEffect magicMissile; // 현재 전투에서 재사용할 마력탄 효과
 
     public bool IsBusy { get; private set; }
 
@@ -37,7 +38,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         CardEffectType effectType,
         BattleStatusEffectType statusEffectType,
         Action impactAction,
-        Action completionAction)
+        Action completionAction,
+        bool useMagicMissileEffect = false) // 원본 마력탄 시전과 비행 표시 여부
     {
         if (!CanStartAction(actorView, targetViews, effectType == CardEffectType.ReviveAlly) || // 부활 대상이 전투불능 상태인지 확인
             impactAction == null)
@@ -55,7 +57,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                     targetViews,
                     effectType,
                     statusEffectType,
-                    impactAction));
+                    impactAction,
+                    useMagicMissileEffect)); // 전투 카드의 시각 효과 선택 전달
 
         return true;
     }
@@ -104,6 +107,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
             playerCompletion;
 
         playerCompletion = null;
+        magicMissile?.Reset(); // 중단된 카드의 투명 효과를 즉시 숨김
 
         ResetActiveMotion();
         SetBusy(false);
@@ -116,14 +120,16 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         IReadOnlyList<BattleUnitView> targetViews,
         CardEffectType effectType,
         BattleStatusEffectType statusEffectType,
-        Action impactAction)
+        Action impactAction,
+        bool useMagicMissileEffect) // 플레이어 마력탄 연출 선택
     {
         yield return RunSequence(
             actorView,
             targetViews,
             effectType,
             statusEffectType,
-            impactAction);
+            impactAction,
+            useMagicMissileEffect); // 마력탄의 연출 선택과 원래 정산 콜백
 
         playerSequenceCoroutine = null;
 
@@ -140,7 +146,8 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         IReadOnlyList<BattleUnitView> targetViews,
         CardEffectType effectType,
         BattleStatusEffectType statusEffectType,
-        Action impactAction)
+        Action impactAction,
+        bool useMagicMissileEffect = false) // 적 행동의 기존 연출 기본값 유지
     {
         StoreActiveViews(
             actorView,
@@ -148,6 +155,15 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
 
         try
         {
+            if (useMagicMissileEffect && targetViews.Count == 1 && PrepareMagicMissile(actorView)) // 원본 마력탄과 실제 전투 원화 확인
+            { // 마력탄 전용 시전과 피해 확인 시작
+                yield return actorView.PlayCastAnticipation(); // 시전자의 기존 준비 움직임 재사용
+                yield return magicMissile.Travel(actorView, targetViews[0]); // 같은 실제 카드 대상에게 마력탄 비행
+                impactAction.Invoke(); // 원래 카드의 명중과 피해 및 비용 정상 정산
+                yield return magicMissile.React(); // 실제 명중 피드백 또는 빗나감 자막 대기
+                yield break; // 공용 근접 공격 움직임 대신 전용 순서 종료
+            } // 마력탄 전용 시전과 피해 확인 종료
+
             bool isSupportAction =
                 effectType == CardEffectType.RecoverDiscard || // 버린 카드 회수 지원 연출
                 effectType == CardEffectType.ChooseDraw || // 선택 드로우 지원 연출
@@ -194,10 +210,25 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         }
         finally
         {
+            magicMissile?.Reset(); // 전투 연출이 끝날 때 모든 마력탄 이미지 숨김
             ResetActiveMotion();
             SetBusy(false);
         }
     }
+
+    internal void RecordMagicMissileImpact(BattleUnitView target) // 원본 카드의 실제 명중을 화면에 전달
+    { // 현재 전투의 표시 기록 시작
+        magicMissile?.RecordImpact(target); // 타격 판정에 통과한 적의 실제 위치 기록
+    } // 현재 전투의 표시 기록 종료
+
+    private bool PrepareMagicMissile(BattleUnitView actor) // 현재 캔버스에서 표시 층 조회 또는 한 번 설치
+    { // 시각 효과 리소스 확인 시작
+        if (magicMissile == null || !magicMissile.IsAttached) // 아직 없거나 이전 씬의 표시 층인지 확인
+        { // 현재 전투 표시 층 설치 시작
+            magicMissile = BattleMagicMissileEffect.Create(actor); // 실제 전투 원화와 좌표 계산 준비
+        } // 현재 전투 표시 층 설치 종료
+        return magicMissile != null; // 누락된 원화가 있으면 기존 움직임 사용
+    } // 시각 효과 리소스 확인 종료
 
     private void StoreActiveViews(
         BattleUnitView actorView,
