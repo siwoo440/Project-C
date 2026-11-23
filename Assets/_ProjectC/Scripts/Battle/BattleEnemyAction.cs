@@ -289,17 +289,19 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
             { // 광역 대상 확인 시작
                 if (target != null && !target.IsDead) // 각 피격 시점의 실제 생존 대상 확인
                 { // 개별 광역 타격 시작
-                    areaHitResults.Add((target, ExecuteHit(target, attackDamage, preventHealthDamage, reduceHealthDamage, null))); // 같은 원본 피해로 현재 대상의 명중과 손실 처리
+                    BattleEnemyActionResult hit = ExecuteHit(target, attackDamage, preventHealthDamage, reduceHealthDamage, null, out BattleUnitRuntime recipient); // 명중 뒤 수호 전환을 포함한 광역 개별 결과
+                    areaHitResults.Add((recipient, hit)); // 실제로 피해와 후속 효과를 받은 아군 기록
                 } // 개별 광역 타격 종료
             } // 광역 대상 확인 종료
             return areaHitResults.Count > 0 ? areaHitResults[0].Result : BattleEnemyActionResult.Empty(ActionType, DamageType); // 기존 호출용 대표 광역 결과
         } // 광역 공격 종료
         BattleUnitRuntime attackTarget = attackDamage > 0 && guard != null && !guard.IsDead ? guard : prioritizedTarget; // 도발 또는 보호 상태의 최종 대상 선택
         executedAttackTarget = attackTarget; // 연출과 결과 표시용 피격 대상 고정
-        return ExecuteHit(attackTarget, attackDamage, preventHealthDamage, reduceHealthDamage, attackTarget != prioritizedTarget ? consumeBodyGuard : null); // 기존 단일 공격의 실제 피격 처리
+        return ExecuteHit(attackTarget, attackDamage, preventHealthDamage, reduceHealthDamage, attackTarget != prioritizedTarget ? consumeBodyGuard : null, out _); // 단일 공격의 실제 피격 처리
     } // 보호 포함 실행 종료
-    private BattleEnemyActionResult ExecuteHit(BattleUnitRuntime attackTarget, int attackDamage, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, Action consumeBodyGuard) // 개별 대상의 명중과 실제 피해 처리
+    private BattleEnemyActionResult ExecuteHit(BattleUnitRuntime attackTarget, int attackDamage, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, Action consumeBodyGuard, out BattleUnitRuntime recipient) // 개별 명중과 실제 피격 대상의 피해 처리
     { // 개별 피격 처리 시작
+        recipient = attackTarget; // 빗나가거나 전환되지 않은 공격의 대상 기록
         int hitChance = BattleHitChance.GetPercent(Actor, attackTarget); // 실제 대상 회피를 포함한 명중률
         if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), attackTarget)) // 실제 대상에 대한 명중 판정
         { // 공격 빗나감 처리 시작
@@ -307,7 +309,18 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         } // 공격 빗나감 처리 종료
 
         consumeBodyGuard?.Invoke(); // 대신 받기로 실제로 명중한 경우 보호 한 번 소모
-        BattleDamageResult damageResult = attackTarget.TakeDamage(attackDamage, DamageType, Actor, IsAreaAttack ? null : SharedDamageRecipient, preventHealthDamage, reduceHealthDamage: reduceHealthDamage, enemyDirectAttack: true, enemyAreaAttack: IsAreaAttack); // 대상과 광역 의도를 반영한 실제 피해
+        BattleUnitRuntime finalTarget = attackTarget; // 수호 전환이 없을 때의 실제 피격 대상
+        void RecordRedirect(BattleUnitRuntime protector) // 치명 피해를 대신 받는 대상 기록
+        { // 명중 후 대상 전환 시작
+            finalTarget = protector; // 새로 피해와 후속 효과를 받는 수호자 기록
+            if (!IsAreaAttack) // 단일 행동의 실제 대상 갱신이 필요한지 확인
+            { // 단일 피격 대상 기록 시작
+                executedAttackTarget = protector; // 피해 이벤트와 후속 연출에 실제 대상 전달
+            } // 단일 피격 대상 기록 종료
+        } // 명중 후 대상 전환 종료
+        BattleDamageResult damageResult = attackTarget.TakeEnemyHit(attackDamage, DamageType, Actor, IsAreaAttack ? null : SharedDamageRecipient, preventHealthDamage, reduceHealthDamage, IsAreaAttack, RecordRedirect); // 실제 치명 피해에서만 수호 전환 처리
+        attackTarget = finalTarget; // 추가 상태와 응징의 실제 피격 대상 복원
+        recipient = finalTarget; // 광역 공격 결과에도 수호 전환된 대상 전달
 
         bool applyAdditionalStatus = !attackTarget.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 실제 피격 대상의 추가 상태 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? attackTarget.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 실제 피격 대상의 추가 상태 적용

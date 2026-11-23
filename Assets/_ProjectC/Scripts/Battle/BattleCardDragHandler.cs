@@ -294,7 +294,7 @@ public sealed class BattleCardDragHandler :
             return false;
         }
 
-        if (card.SourceData.ShieldRule is ShieldCardRule.BodyGuard or ShieldCardRule.ShieldOath) // 시전자 밖의 동료를 선택하는 방패 카드 확인
+        if (card.SourceData.ShieldRule is ShieldCardRule.BodyGuard or ShieldCardRule.ShieldOath or ShieldCardRule.GuardianHeart) // 시전자 밖의 생존 동료를 선택하는 방패 카드 확인
         { // 실제 드롭 보호 대상 검사 시작
             return targetUnit.Team == BattleTeam.Ally && targetUnit != card.OwnerUnit; // 다른 생존 아군 한 명에게만 적용
         } // 실제 드롭 보호 대상 검사 종료

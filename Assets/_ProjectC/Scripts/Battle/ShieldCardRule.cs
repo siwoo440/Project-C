@@ -16,5 +16,8 @@ public enum ShieldCardRule // 방패 카드의 전용 전투 규칙
     Fortify, // 생존 아군 전체의 물리 방어력과 마법 피해 저항 증가
     IndomitableFront, // 생존 아군 전체 방어도와 공포 제거
     Impenetrable, // 생존 아군 전체 방어도와 개별 피해 무효
-    GiantsShield // 자기 방어도와 다음 아군 턴 행동력 감소
+    GiantsShield, // 자기 방어도와 다음 아군 턴 행동력 감소
+    FinalRampart, // 생존 아군의 체력 경계 조건과 전체 방어도
+    EternalShield, // 기간제 직접 피해와 별도 마법 피해 경감
+    GuardianHeart // 지정 아군의 다음 치명적인 직접 공격을 대신 받기
 } // 방패 규칙 목록 종료

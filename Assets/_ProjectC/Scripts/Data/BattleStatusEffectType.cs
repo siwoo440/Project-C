@@ -53,5 +53,9 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     DamageNullification = 50, // 양수 다음 피해 한 번 무효
     DistributedDefense = 51, // 지정 적 턴의 광역 피해만 경감
     RetributionBulwark = 52, // 생존 아군을 직접 공격한 적에게 고정 피해
-    FortifyResistance = 53 // 요새화의 독립적인 마법 피해 경감
+    FortifyResistance = 53, // 요새화의 독립적인 마법 피해 경감
+    EternalShield = 54, // 정해진 적 턴 동안 받는 직접 피해 경감
+    EternalShieldResistance = 55, // 영원의 방패의 독립적인 받는 마법 피해 경감
+    ReflectionCitadel = 56, // 실제 받은 피해를 해당 적 턴 종료에 한 번 반사
+    GuardianHeart = 57 // 아군이 쓰러지려 할 때 생존하는 치명 피해 대체
 } // 열거형 종료

@@ -1745,6 +1745,30 @@
       "name": "거인의 방패",
       "description": "자신에게 방어도 40을 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 감소한다.",
       "artworkKey": "f843359bde1d5d3890553444cfcb041e"
+    },
+    {
+      "category": 7,
+      "name": "최후 방벽",
+      "description": "모든 생존 아군의 체력이 각각 최대치의 30% 이하이면 생존 아군 모두에게 각각 방어도 25를 부여한다.",
+      "artworkKey": "78a8a273c7ee51d2a1a995e98dece322"
+    },
+    {
+      "category": 7,
+      "name": "수호자의 심장",
+      "description": "지정한 아군이 적의 직접 공격으로 쓰러질 때 그 공격을 한 번 대신 받고 체력 1 이상으로 생존한다.",
+      "artworkKey": "c5b29cefc8d85c978894f1e4ab2ac289"
+    },
+    {
+      "category": 7,
+      "name": "반사의 성채",
+      "description": "다음 적 턴에 아군이 적의 직접 공격으로 잃은 체력을 합산한다. 적 턴이 끝날 때 합계의 절반만큼 모든 생존 적에게 고정 물리 피해를 준다.",
+      "artworkKey": "ef63ee36fa6152b98ac87141b19c6256"
+    },
+    {
+      "category": 7,
+      "name": "영원의 방패",
+      "description": "3회 적 턴 동안 생존 아군 전체가 받는 직접 피해가 30% 줄고 마법 피해 저항이 20% 높아진다.",
+      "artworkKey": "e7732255a3b054df8e700ba716bc9bd9"
     }
   ]
 }

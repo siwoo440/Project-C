@@ -68,7 +68,9 @@ public sealed class BattleEventController : IDisposable // 기존 전투 신호 
     private void HandleDamageResolved(BattleUnitRuntime sourceUnit, BattleUnitRuntime targetUnit, BattleDamageResult damageResult) // 피해 완료 신호 처리
     { // 피해 신호 처리 시작
         int appliedAmount = damageResult.AppliedDamage; // 실제 피해량 조회
-        dispatcher.Publish(new BattleEventContext(BattleEventType.DamageApplied, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, sourceUnit, targetUnit, appliedAmount: appliedAmount, damageResult: damageResult)); // 피해 적용 공용 이벤트 발행
+        var damageFrame = new BattleEventContext(BattleEventType.DamageApplied, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, sourceUnit, targetUnit, appliedAmount: appliedAmount, damageResult: damageResult); // 유닛이 확인한 실제 피해의 공용 이벤트
+        turnRuntime.RecordReflectionCitadelDamage(damageFrame); // 동일한 확정 피해 프레임으로 이번 적 턴의 체력 손실 집계
+        dispatcher.Publish(damageFrame); // 기존 피해 적용 공용 이벤트 발행
         var session = ExplorationSessionManager.Instance; // 현재 탐사 전투의 우물 상태 조회
         if (session != null && session.ActiveEncounter != null && !session.IsExplorationCompleted) // 실제 진행 중인 탐사 조우 확인
         { // 우물 물 확인 시작

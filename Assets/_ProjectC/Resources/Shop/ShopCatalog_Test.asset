@@ -680,6 +680,42 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FINAL_RAMPART
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a202980df43c55a191cbff09613f0fb6, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GUARDIAN_HEART
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 2bbceae7ba1c56fea75ccd480a6a0c1e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_REFLECTION_CITADEL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: faf8958c5b375a638896293cae005778, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ETERNAL_SHIELD
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ab731778364b5e1da866788465184f3a, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

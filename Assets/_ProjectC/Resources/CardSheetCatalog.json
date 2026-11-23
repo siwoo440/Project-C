@@ -1040,7 +1040,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 체력이 30% 이하이면 방어도 +25",
+      "description": "모든 생존 아군의 체력이 각각 최대치의 30% 이하이면 생존 아군 모두에게 각각 방어도 25를 부여한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "최후 방벽.png"
@@ -1051,7 +1051,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "5",
-      "description": "쓰러진 아군 대신 자신이 피해를 받고 체력 1로 생존",
+      "description": "지정한 아군이 적의 직접 공격으로 쓰러질 때 그 공격을 한 번 대신 받고 체력 1 이상으로 생존한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "수호자의 심장.png"
@@ -1062,7 +1062,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "5",
-      "description": "이번 턴 아군이 받은 피해의 50%를 적 전체에 반사",
+      "description": "다음 적 턴에 아군이 적의 직접 공격으로 잃은 체력을 합산한다. 적 턴이 끝날 때 합계의 절반만큼 모든 생존 적에게 고정 물리 피해를 준다.",
       "area": "전체",
       "targets": "적/아군",
       "imageFileName": "반사의 성채.png"
@@ -1073,7 +1073,7 @@
       "attribute": "방패",
       "rarity": "전설",
       "cost": "6",
-      "description": "아군 전체 받는 피해 -30% (3턴), 저항력 +20%",
+      "description": "3회 적 턴 동안 생존 아군 전체가 받는 직접 피해가 30% 줄고 마법 피해 저항이 20% 높아진다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "영원의 방패.png"

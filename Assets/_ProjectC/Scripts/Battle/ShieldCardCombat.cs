@@ -36,6 +36,17 @@ internal static class ShieldCardCombat // 겨울몰락 방패 카드의 복합 �
         return block; // 아군의 실제 방어도 획득량 기록
     } // 난공불락 적용 종료
 
+    internal static int ApplyEternalShield(CardInstance card, BattleUnitRuntime ally, BattleUnitView view) // 영원의 방패 직접 피해 경감과 마법 저항 적용
+    { // 영원의 방패 적용 시작
+        if (!IsLivingAlly(ally)) // 생존 아군 대상 여부 확인
+        { // 유효한 보호 대상 없음 처리 시작
+            return 0; // 적용 가능한 경감 없음 반환
+        } // 유효한 보호 대상 없음 처리 종료
+        bool applied = ApplyStatus(card, ally, view, BattleStatusEffectType.EternalShield, card.EffectValue); // 직접 피해 경감과 개별 적용 결과
+        ApplyStatus(card, ally, view, BattleStatusEffectType.EternalShieldResistance, card.SourceData.SecondaryEffectValue); // 마법 피해 경감의 별도 상태 적용
+        return applied ? card.EffectValue : 0; // 직접 피해 경감의 적용 결과 기록
+    } // 영원의 방패 적용 종료
+
     private static bool IsLivingAlly(BattleUnitRuntime unit) // 효과 정산 순간의 아군 생존 여부
     { // 아군 대상 확인 시작
         return unit != null && !unit.IsDead && unit.Team == BattleTeam.Ally; // 살아 있는 아군만 유효

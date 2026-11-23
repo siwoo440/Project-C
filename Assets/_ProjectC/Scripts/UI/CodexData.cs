@@ -147,6 +147,22 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 요새화 저항 도감 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 10); // 요새화 저항의 실제 카드 기본 수치와 설명
                     } // 요새화 저항 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.EternalShield) // 영원의 방패 상태 확인
+                    { // 영원의 방패 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 30); // 영원의 방패의 실제 카드 기본 수치와 설명
+                    } // 영원의 방패 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.EternalShieldResistance) // 영원의 방패 저항 상태 확인
+                    { // 영원의 방패 저항 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 20); // 영원의 방패 저항의 실제 카드 기본 수치와 설명
+                    } // 영원의 방패 저항 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.ReflectionCitadel) // 반사의 성채 상태 확인
+                    { // 반사의 성채 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 50); // 반사의 성채의 실제 카드 기본 수치와 설명
+                    } // 반사의 성채 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.GuardianHeart) // 수호자의 심장 상태 확인
+                    { // 수호자의 심장 도감 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 1); // 수호자의 심장의 실제 카드 기본 수치와 설명
+                    } // 수호자의 심장 도감 설명 종료
                     else if (effect == BattleStatusEffectType.Vulnerable) // 검은 왕관의 받는 피해 증가 확인
                     { // 취약 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 검은 왕관의 기본 취약 20퍼센트 설명

@@ -141,6 +141,8 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.BleedResistance); // 출혈 부여 저항의 남은 적 턴 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.UndyingGuard); // 사용하지 않은 불굴의 남은 적 턴 차감
                 AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.DistributedDefense); // 광역 방어가 지속될 남은 적 턴 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.EternalShield); // 영원의 방패 직접 피해 경감의 남은 적 턴 차감
+                AdvanceEnemyTurnDefense(ally, BattleStatusEffectType.EternalShieldResistance); // 영원의 방패 마법 저항의 남은 적 턴 차감
             } // 준비 제거 종료
         } // 준비 만료 처리 종료
     } // 턴 종료 처리 종료

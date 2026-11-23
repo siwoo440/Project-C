@@ -91,10 +91,18 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
+            if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance) // 적 턴 종료에만 차감할 영원의 방패 상태 확인
+            { // 개별 유닛 턴의 지속 시간 처리 제외 시작
+                continue; // 다음 상태 확인
+            } // 개별 유닛 턴의 지속 시간 처리 제외 종료
             if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.DuelMark || effect.EffectType == BattleStatusEffectType.BattlefieldResolve || effect.EffectType == BattleStatusEffectType.PhysicalRiposte || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.EffectType == BattleStatusEffectType.ShockAbsorption || effect.EffectType == BattleStatusEffectType.ResistanceStance || effect.EffectType == BattleStatusEffectType.ActionSpeedUp || effect.EffectType == BattleStatusEffectType.ShieldCounter || effect.EffectType == BattleStatusEffectType.RetributionBulwark || effect.EffectType == BattleStatusEffectType.GuardianCircle || effect.EffectType == BattleStatusEffectType.FocusedDefense || effect.EffectType == BattleStatusEffectType.BleedResistance || effect.EffectType == BattleStatusEffectType.UndyingGuard || effect.EffectType == BattleStatusEffectType.DistributedDefense || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark || effect.EffectType == BattleStatusEffectType.PublicMark) // 분산 방어처럼 별도 시점에 해제하는 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
+            if (effect.EffectType == BattleStatusEffectType.ReflectionCitadel) // 실제 적 턴 정산이 끝날 때 유지할 반사 상태 확인
+            { // 반사의 성채 일반 지속 처리 제외 시작
+                continue; // 다음 아군 턴 전에 반사 지급과 함께 제거
+            } // 반사의 성채 일반 지속 처리 제외 종료
             int previousTurns = effect.RemainingTurns; // 처리 전 지속 횟수 저장
             int previousValue = effect.EffectiveValue; // 처리 전 효과 수치 저장
             int applied = 0; // 실제 피해 초기화
