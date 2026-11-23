@@ -205,6 +205,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "정신력 -4 · 희귀 카드 50% / 잿빛 저주 50%", "체력 -4 · 자신의 잿빛 저주 1장 제거", "변화 없음" }; // 원문 선택 비용과 획득 확률
                 label += "   " + effects[index]; // 행동 확정 전 실제 효과 안내
             } // 허수아비 효과 표시 종료
+            if (currentEventData.EventId == BurntCartEvent.Id) // 수레 선택의 비용과 결과 안내
+            { // 수레 안내 시작
+                string[] effects = { "철판·나사 각 1개 60% / 사냥꾼 추가 매복 40%", "지정 생존자 체력 -3 · 철판·나사·전선 각 1개", "다음 상점 첫 상품 10% 할인" }; // 수레 선택별 조건
+                label += "   " + effects[index]; // 실제 선택 전에 비용과 보상 표시
+            } // 수레 안내 종료
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
@@ -236,6 +241,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             SelectActorEventChoice(choiceIndex, hint, BurntScarecrowEvent.TryResolve); // 생존자 지정 또는 지나침 확정
             return; // 기본 자원 선택 처리 제외
         } // 허수아비 선택 종료
+        if (currentEventData.EventId == BurntCartEvent.Id) // 수레의 세 선택 확인
+        { // 수레 선택 시작
+            string hint = choiceIndex == BurntCartEvent.Salvage ? "체력 3을 잃고 수레를 해체할 생존자를 선택하세요." : null; // 해체할 때만 행동자 지정
+            SelectActorEventChoice(choiceIndex, hint, BurntCartEvent.TryResolve); // 현재 방의 선택과 결말 확정
+            return; // 기본 보상 처리 제외
+        } // 수레 선택 종료
         if (currentEventData.EventId == AshstormEyeEvent.Id) // 행동자 지정이 필요한 재폭풍의 눈 확인
         { // 행동자 선택 시작
             SelectAshstormActor(choiceIndex); // 행동 확정 전 대상 선택 표시
@@ -601,6 +612,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         { // 이벤트 잠금 해제 시작
             instance.currentEventView.ResetInteraction(); // 복원 전 오브젝트 상호작용 해제
         } // 이벤트 잠금 해제 종료
+        instance.choiceCommitted = false; // 저장 교체 중 이전 수레 결말의 전투 예약 차단
         instance.CloseCurrentEvent(); // 열린 선택지와 탐사 이동 잠금 해제
     } // 열려 있는 이벤트 정리 종료
 
@@ -608,6 +620,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     {
         HidePanelImmediate(); // 패널 즉시 닫기
         ExplorationPlayerController.SetInputBlocked(false); // 플레이어 이동 잠금 해제
+        var session = ExplorationSessionManager.Instance; // 결말을 확정한 수레 방 확인
+        if (choiceCommitted && session != null && currentRuntimeEventId != null && session.Cart.AmbushRoom == currentRuntimeEventId) // 매복 결말 확인 후 전투 진입
+        { // 매복 진입 예약 시작
+            StartCoroutine(BurntCartEvent.ResumeAmbush()); // 저장한 일반 조우와 사냥꾼의 전투 시작
+        } // 매복 진입 예약 종료
         currentEventView = null; // 현재 이벤트 뷰 참조 정리
         currentEventData = null; // 현재 이벤트 데이터 정리
         currentRuntimeEventId = null; // 현재 이벤트 ID 정리
@@ -1105,6 +1122,10 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
         if (instance == this)
         {
+            if (currentEventData != null) // 열린 이벤트를 남긴 채 저장 씬 교체 확인
+            { // 이전 화면 입력 잠금 정리 시작
+                ExplorationPlayerController.SetInputBlocked(false); // 사라진 이벤트 화면의 이동 잠금 해제
+            } // 이전 화면 입력 잠금 정리 종료
             instance = null; // 정적 인스턴스 정리
         }
     }

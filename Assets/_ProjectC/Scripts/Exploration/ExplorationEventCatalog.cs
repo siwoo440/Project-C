@@ -5,7 +5,8 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public const int CurrentVersion = 5; // 유리화된 들판까지 포함하는 최신 이벤트 버전
+    public const int CurrentVersion = 6; // 불탄 수레까지 포함하는 최신 이벤트 버전
+    private static List<ExplorationEventData> cartEvents; // 수레를 포함한 새 층 후보
     private static List<ExplorationEventData> ashstormEvents; // 재폭풍의 눈까지 포함한 이전 목록
     private static List<ExplorationEventData> ashPileEvents; // 잿더미 조사까지 포함한 이전 목록
     private static List<ExplorationEventData> mapFragmentEvents; // 지도 조각까지 포함한 이전 목록
@@ -14,6 +15,16 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
     { // 버전별 이벤트 조회 시작
+        if (version >= 6) // 수레를 포함한 층 버전 확인
+        { // 새 층 목록 준비 시작
+            if (cartEvents == null) // 새 목록 첫 사용 확인
+            { // 수레 후보 생성 시작
+                cartEvents = new List<ExplorationEventData>(LoadEvents(5)); // 저장 버전 다섯의 후보 복사
+                cartEvents.Add(BurntCartEvent.Create()); // 수레 이벤트 추가
+                cartEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 고정 시드의 후보 순서 보존
+            } // 수레 후보 생성 종료
+            return cartEvents; // 수레를 포함한 목록 반환
+        } // 새 층 목록 준비 종료
         IReadOnlyList<ExplorationEventData> original = LoadOriginalEvents(); // 기존 세 이벤트의 순서 유지
         if (version == 0) // 이전 탐사 저장 여부 확인
         { // 이전 목록 선택 시작

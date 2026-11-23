@@ -3,6 +3,7 @@ using UnityEngine; // Trigger와 Scene 전환 기능 사용
 public sealed class ExplorationEncounterView : MonoBehaviour // 탐사 조우 표시와 전투 진입 처리
 {
     private EncounterData encounterData; // 실제 전투 조우 데이터
+    public EncounterData Data => encounterData; // 현재 층에 배치된 원본 적 편성 조회
     private string runtimeEncounterId; // 현재 배치의 런타임 조우 ID
     private bool transitionRequested; // 전투 Scene 이동 요청 여부
 

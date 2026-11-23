@@ -186,7 +186,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
 
         ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
 
-        if (sessionManager.IsEventResolved(runtimeId)) // 사용 완료 특수 방 확인
+        if (sessionManager.IsEventResolved(runtimeId) && !sessionManager.Cart.IsMarkedShop(runtimeId)) // 결제 전 표식 상점의 재방문 허용
         {
             return; // 일회성 특수 방 재생성 제외
         }

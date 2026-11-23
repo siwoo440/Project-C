@@ -7,6 +7,7 @@ using UnityEngine.UI; // 전투 배경 이미지 사용
 public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
 { // 클래스 시작
     private const int MaximumEnemyCount = 4; // 최대 동시 적 수
+    internal bool HasCartAmbushSlot { get; set; } // 수레 매복에만 허용하는 추가 초기 출전 자리
     private const float BattlefieldUnitScale = 0.85f; // 배경 영역에 맞춘 전투 유닛 배율
     private const float BattlefieldVerticalOffset = -55f; // 배경 영역에 맞춘 전투 유닛 세로 이동
     [Header("전투 데이터")] // 전투 데이터 구역
@@ -316,9 +317,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 출전할 적이 없습니다.", this); // 적 누락 출력
             return false; // 검사 실패 반환
         } // 빈 적 목록 처리 종료
-        if (enemies.Count > MaximumEnemyCount) // 최대 적 수 초과 확인
+        int initialEnemyLimit = HasCartAmbushSlot ? MaximumEnemyCount + 1 : MaximumEnemyCount; // 일반 초기 편성과 매복 추가 자리 계산
+        if (enemies.Count > initialEnemyLimit) // 초기 적 수 초과 확인
         { // 적 수 초과 처리 시작
-            Debug.LogError($"[BattleSceneSetup] 출전 적은 최대 {MaximumEnemyCount}명입니다.", this); // 적 수 초과 오류 출력
+            Debug.LogError($"[BattleSceneSetup] 출전 적은 최대 {initialEnemyLimit}명입니다.", this); // 현재 전투의 최대 출전 인원 표시
             return false; // 검사 실패 반환
         } // 적 수 초과 처리 종료
         foreach (EnemyData enemyData in enemies) // 적 목록 순회
