@@ -125,6 +125,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.CardId == "CRD_ARC_16_SHATTER") // 탑의 광역 방어도 파괴 카드 확인
+        { // 광역 방어도 파괴 상세 시작
+            return $"모든 적의 방어도 {cardInstance.SourceData.SecondaryEffectValue} 제거 후 물리 피해 {cardInstance.EffectValue}"; // 제거 순서와 피해 상세 반환
+        } // 광역 방어도 파괴 상세 종료
         if (DevilBloodPrice.IsBloodPriceCard(cardInstance)) // 악마 체력 소모 전용 카드 확인
         { // 체력 비용 상세 시작
             return $"체력 {cardInstance.SourceData.SecondaryEffectValue} 소모 · 물리 피해 {cardInstance.EffectValue} · 소모 후 생존 필요"; // 체력 비용과 피해 상세 반환

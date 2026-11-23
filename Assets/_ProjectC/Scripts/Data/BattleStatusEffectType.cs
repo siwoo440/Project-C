@@ -12,5 +12,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Disrupt, // 정신력 교란
     ChariotMark, // 전차 집중 공격 표식
     GuardPreparation, // 다음 적 공격 대비
-    StarReservedHealing // 별의 다음 턴 예약 회복
+    StarReservedHealing, // 별의 다음 턴 예약 회복
+    StarPassiveReservedHealing // 별 패시브의 별도 예약 회복
 } // 열거형 종료
