@@ -222,10 +222,11 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
     {
         EncounterData[] loadedData = Resources.LoadAll<EncounterData>("Encounters"); // 전체 조우 리소스 로드
         List<EncounterData> result = new List<EncounterData>(); // 유효 조우 목록 생성
+        int poolVersion = ExplorationSessionManager.EnsureInstance().EncounterPoolVersion; // 현재 탐사에 고정된 조우 목록 버전 조회
 
         foreach (EncounterData data in loadedData) // 전체 조우 데이터 순회
         {
-            if (data != null && data.IsValidData()) // 유효 조우 데이터 확인
+            if (data != null && data.IsValidData() && data.IsAvailableForPoolVersion(poolVersion)) // 유효성과 저장 조우 버전 확인
             {
                 result.Add(data); // 유효 조우 목록 등록
             }

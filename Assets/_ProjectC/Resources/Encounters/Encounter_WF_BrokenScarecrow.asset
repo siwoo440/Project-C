@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9682775985224b5fb72eaffb83f64fdf, type: 3}
+  m_Name: Encounter_WF_BrokenScarecrow
+  m_EditorClassIdentifier: Assembly-CSharp::EncounterData
+  encounterId: ENC_WF_BROKENSCARECROW
+  displayName: "\uC708\uD130\uD3F4 \xB7 \uB9DD\uAC00\uC9C4 \uD5C8\uC218\uC544\uBE44"
+  battleType: 0
+  minimumEncounterPoolVersion: 1
+  explorationPosition: {x: 0, y: 0}
+  enemies:
+  - {fileID: 11400000, guid: d263a039e09554849a312aa96146c260, type: 2}
+  characterExperienceReward: 10
+  goldReward: 50
+  screwReward: 25
+  ironPlateReward: 20
+  wireReward: 15

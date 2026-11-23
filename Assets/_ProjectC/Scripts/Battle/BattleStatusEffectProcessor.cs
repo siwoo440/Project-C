@@ -20,6 +20,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 제거 상태 제외 시작
                 continue; // 다음 상태 이동
             } // 제거 상태 제외 종료
+            if (statusEffect.EffectType == BattleStatusEffectType.Burn || statusEffect.EffectType == BattleStatusEffectType.Blind) // 턴 종료에 처리하는 상태 확인
+            { // 턴 종료 상태 유지 시작
+                continue; // 턴 시작 지속 감소 생략
+            } // 턴 종료 상태 유지 종료
             int previousRemainingTurns = statusEffect.RemainingTurns; // 처리 전 지속 횟수 저장
             int appliedAmount = 0; // 실제 적용 수치 초기화
             bool wasTriggered = false; // 발동 여부 초기화
@@ -55,6 +59,53 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
         } // 상태 알림 종료
         return processResults; // 전체 처리 결과 반환
     } // 상태 처리 종료
+    public IReadOnlyList<BattleStatusEffectProcessResult> ProcessPhaseEnd(BattleUnitRuntime runtimeUnit, int round) // 진영 턴 종료 상태 처리
+    { // 턴 종료 상태 처리 시작
+        List<BattleStatusEffectProcessResult> results = new List<BattleStatusEffectProcessResult>(); // 처리 결과 목록 생성
+        if (runtimeUnit == null || runtimeUnit.IsDead) // 유효한 생존 대상 확인
+        { // 처리 불가 시작
+            return results; // 빈 결과 반환
+        } // 처리 불가 종료
+        List<BattleStatusEffectInstance> snapshot = runtimeUnit.CreateStatusEffectSnapshot(); // 변경 대비 상태 목록 복사
+        foreach (BattleStatusEffectInstance effect in snapshot) // 대상 상태 순회
+        { // 턴 종료 효과 확인 시작
+            if (runtimeUnit.IsDead) // 이전 효과로 사망 확인
+            { // 사망 처리 시작
+                break; // 나머지 효과 처리 중단
+            } // 사망 처리 종료
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType != BattleStatusEffectType.Burn && effect.EffectType != BattleStatusEffectType.Blind) // 턴 종료 대상 상태 확인
+            { // 처리 제외 시작
+                continue; // 다음 상태 확인
+            } // 처리 제외 종료
+            int previousTurns = effect.RemainingTurns; // 처리 전 지속 횟수 저장
+            int previousValue = effect.EffectiveValue; // 처리 전 효과 수치 저장
+            int applied = 0; // 실제 피해 초기화
+            bool triggered = effect.EffectType == BattleStatusEffectType.Burn; // 화상 피해 발동 여부 기록
+            if (triggered) // 화상 종료 피해 확인
+            { // 화상 피해 처리 시작
+                applied = runtimeUnit.TakeDamage(previousValue, BattleDamageType.None).AppliedDamage; // 화상 수치만큼 피해 적용
+            } // 화상 피해 처리 종료
+            if (runtimeUnit.IsDead) // 화상 피해로 사망 확인
+            { // 사망 결과 처리 시작
+                results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, previousTurns, effect.StackCount, triggered, BattleStatusEffectRemovalReason.UnitDied)); // 사망 처리 결과 기록
+                break; // 나머지 상태 처리 중단
+            } // 사망 결과 처리 종료
+            effect.DecayBurn(); // 화상 수치 한 점 감소
+            effect.AdvanceDuration(); // 남은 지속 턴 감소
+            BattleStatusEffectRemovalReason reason = BattleStatusEffectRemovalReason.None; // 기본 제거 원인 초기화
+            if (effect.IsExpired) // 지속 종료 또는 화상 소진 확인
+            { // 상태 만료 처리 시작
+                runtimeUnit.RemoveStatusEffectInstance(effect); // 만료 상태 제거
+                reason = BattleStatusEffectRemovalReason.DurationExpired; // 만료 원인 기록
+            } // 상태 만료 처리 종료
+            results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, effect.RemainingTurns, effect.StackCount, triggered, reason)); // 턴 종료 처리 결과 기록
+        } // 턴 종료 효과 확인 종료
+        if (results.Count > 0 && !runtimeUnit.IsDead) // 실제 상태 변경 여부 확인
+        { // 상태 변경 알림 시작
+            runtimeUnit.NotifyStatusEffectsChanged(); // 상태 화면 갱신 알림
+        } // 상태 변경 알림 종료
+        return results; // 턴 종료 처리 결과 반환
+    } // 턴 종료 상태 처리 종료
     public IReadOnlyList<BattleStatusEffectProcessResult> CleanseDebuffs(BattleUnitRuntime runtimeUnit) // 디버프 정화 통합 처리
     { // 정화 처리 시작
         List<BattleStatusEffectProcessResult> processResults = new List<BattleStatusEffectProcessResult>(); // 빈 정화 결과 목록 생성

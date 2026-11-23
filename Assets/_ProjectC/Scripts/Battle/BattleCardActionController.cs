@@ -676,6 +676,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 체력 비용 실패 처리 종료
             FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 실제 체력 비용 표시
         } // 체력 비용 지불 종료
+        if (!BattleHitChance.Roll(cardInstance.OwnerUnit)) // 실명 상태의 공격 명중 확인
+        { // 카드 공격 빗나감 처리 시작
+            BattleCardDamageContext.TryConsume(out _, out _); // 빗나간 대상의 카드 피해 문맥 소비
+            FindUnitView(targetUnit)?.ShowStatusFeedback("빗나감", false); // 선택 대상의 빗나감 표시
+            if (SunChainAttack.IsChainCard(cardInstance)) // 태양의 독립 연속 공격 확인
+            { // 다음 공격 판정 시작
+                ApplySunChain(cardInstance, targetUnit); // 첫 공격과 독립적인 두 번째 공격 실행
+            } // 다음 공격 판정 종료
+            return 0; // 첫 공격 피해 없음 반환
+        } // 카드 공격 빗나감 처리 종료
         int baseDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
         { // 약화 대상 추가 피해 시작
@@ -685,13 +695,21 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit); // 카드 피해 계산과 적용
         if (SunChainAttack.IsChainCard(cardInstance)) // 태양의 서로 다른 적 연속 공격 확인
         { // 태양 추가 공격 시작
-            SunChainAttack.TryAttack(cardInstance, targetUnit, enemyActions.EnemyUnits); // 다른 생존 적에게 두 번째 공격 적용
+            ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용
         } // 태양 추가 공격 종료
         chariotConcentration.RecordAttack(cardInstance, targetUnit); // 전차의 대상별 공격과 표식 처리
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 단일 효과 적용 종료
+    private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
+    { // 태양 연속 공격 시작
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed); // 다른 적의 독립 명중과 피해 처리
+        if (target != null && missed) // 추가 공격 빗나감 확인
+        { // 추가 공격 피드백 시작
+            FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시
+        } // 추가 공격 피드백 종료
+    } // 태양 연속 공격 종료
     private static void LogCleanseResults(BattleUnitRuntime targetUnit, IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults) // 정화 상세 결과 출력
     { // 정화 로그 시작
         foreach (BattleStatusEffectProcessResult cleanseResult in cleanseResults) // 정화 결과 목록 순회

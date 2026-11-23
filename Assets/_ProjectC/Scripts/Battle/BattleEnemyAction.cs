@@ -4,6 +4,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 {
     private Func<BattleEnemyAction, bool> canPreviewPreparation; // 방어 준비 예고 순서 확인
     private Func<BattleEnemyAction, int> getPreviewBlock; // 공격 순서별 남은 방어도 조회
+    private readonly Func<int> rollPercent; // 명중과 추가 상태 확률 난수
+    private readonly int statusChancePercent; // 공격 후 상태 부여 확률
+    private readonly int statusValue; // 공격 후 상태 효과 수치
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
     public BattleUnitRuntime Target { get; private set; } // 대상 아군 조회
     public BattleUnitRuntime SharedDamageRecipient { get; private set; } // 피해 분담 동료 조회
@@ -13,6 +16,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public BattleStatusEffectType StatusEffectType { get; } // 적용 상태 이상 종류 조회
     public int StatusDuration { get; } // 상태 지속 횟수 조회
     public int StatusMaximumStacks { get; } // 상태 최대 중첩 조회
+    public int AdditionalStatusChancePercent => statusChancePercent; // 공격 후 상태 부여 확률 조회
+    public int AdditionalStatusValue => statusValue; // 공격 후 상태 효과 수치 조회
     public EnemyTargetRule TargetRule { get; } // 대상 선택 규칙 조회
     public string PatternDisplayName { get; } // 패턴 행동 이름 조회
     public int PatternIndex { get; } // 현재 패턴 순번 조회
@@ -42,7 +47,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         int patternIndex,
         int patternCount,
         int actionSpeed,
-        int creationOrder) // 예정 행동 생성
+        int creationOrder, // 생성 순서 전달
+        int additionalStatusChancePercent = 0, // 공격 후 상태 부여 확률 전달
+        int additionalStatusValue = 1, // 공격 후 상태 효과 수치 전달
+        Func<int> percentRoll = null) // 테스트 가능한 확률 난수 전달
     {
         Actor =
             actor ??
@@ -74,6 +82,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         PatternCount = Math.Max(PatternIndex, patternCount); // 보정된 전체 패턴 수 저장
         ActionSpeed = Math.Max(1, actionSpeed); // 보정된 행동 속도 저장
         CreationOrder = Math.Max(0, creationOrder); // 보정된 생성 순서 저장
+        statusChancePercent = Math.Max(0, Math.Min(100, additionalStatusChancePercent)); // 상태 부여 확률 범위 보정
+        statusValue = Math.Max(1, additionalStatusValue); // 상태 효과 수치 범위 보정
+        rollPercent = percentRoll ?? (() => UnityEngine.Random.Range(0, 100)); // 기본 또는 테스트 난수 저장
     }
 
     public void SetActionOrder(
@@ -197,6 +208,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 applyResult); // 상태 적용 결과 반환
         }
 
+        if (Actor.GetStatusEffect(BattleStatusEffectType.Blind) != null && !BattleHitChance.Hits(Actor, rollPercent())) // 실명 공격의 명중 판정
+        { // 공격 빗나감 처리 시작
+            return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
+        } // 공격 빗나감 처리 종료
+
         int modifiedAmount =
             Actor.ModifyOutgoingDamage(
                 Amount); // 정신 상태 포함 적 피해량 계산
@@ -208,8 +224,9 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 Actor, // 공격 적 전달
                 SharedDamageRecipient); // 생존 분담자를 포함한 대상 피해 적용
 
-        return BattleEnemyActionResult.FromDamage(
-            damageResult); // 피해 행동 결과 반환
+        bool applyAdditionalStatus = !Target.IsDead && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 생존 대상의 공격 후 상태 부여 판정
+        BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? Target.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 공격 후 상태 적용 결과 계산
+        return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     }
 
     private static int GetScaledActionAmount(

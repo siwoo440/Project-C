@@ -418,8 +418,9 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
 
         foreach (EncounterData data in loadedData)
         {
-            if (data == null ||
-                !data.IsValidData())
+            if (data == null || // 빈 조우 확인
+                !data.IsValidData() || // 조우 데이터 유효성 확인
+                !data.IsAvailableForPoolVersion(sessionManager.EncounterPoolVersion)) // 저장된 조우 목록 버전 확인
             {
                 continue;
             }
