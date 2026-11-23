@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: ResolveRibbon
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_RESOLVE_RIBBON
+  displayName: "결단의 리본"
+  description: "확인으로 고른 카드의 결정 추가 효과가 실제로 발동하면 공용 행동력 +1. 턴당 1회이며 결정 카드 추가 후 발동한다."
+  icon: {fileID: 21300000, guid: feb9f4bc813355fabff49a3cec71cd2b, type: 3}
+  rarity: 0
+  triggerType: 24
+  effectType: 31
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 1
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

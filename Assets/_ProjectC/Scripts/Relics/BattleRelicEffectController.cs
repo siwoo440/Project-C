@@ -51,6 +51,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.TurnEnded, HandleBattleEvent)); // 턴 종료 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.CardUsed, HandleBattleEvent)); // 카드 사용 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.BeforeHandDiscard, HandleBattleEvent)); // 손패 버림 직전 이벤트 구독
+        subscriptions.Add(dispatcher.Subscribe(BattleEventType.DecisionResolved, HandleBattleEvent)); // 선택 카드의 결정 추가 효과 성공 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.DamageApplied, HandleBattleEvent)); // 피해 적용 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.HealingApplied, HandleBattleEvent)); // 회복 적용 이벤트 구독
         subscriptions.Add(dispatcher.Subscribe(BattleEventType.StatusApplied, HandleBattleEvent)); // 상태 적용 이벤트 구독
@@ -172,6 +173,9 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 조건부 효과 시작
         switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
         { // 효과 선택 시작
+            case RelicEffectType.DecisionActionPoint: // 확인으로 고른 카드의 별도 결정 효과 성공
+                var decisionOwner = context?.Card?.OwnerUnit; // 결정 효과가 발동한 카드 소유자
+                return context?.Phase == BattleTurnPhase.PlayerTurn && decisionOwner != null && decisionOwner == context.SourceUnit && !decisionOwner.IsDead && decisionOwner.Team == BattleTeam.Ally && actionPoints != null && actionPoints.Gain(relic.EffectValue) > 0; // 실제 회복했을 때만 턴당 횟수 소모
             case RelicEffectType.EnemyTurnAttackLoss: // 적 턴 시작 무작위 적 한 명의 공격 약화
                 if (context?.Phase != BattleTurnPhase.EnemyTurn) // 적 턴 확인
                 { // 아군 턴 제외 시작
@@ -438,6 +442,8 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return RelicTriggerType.TurnEnded; // 턴 종료 유물 시점 반환
             case BattleEventType.CardUsed: // 카드 사용 이벤트
                 return RelicTriggerType.CardUsed; // 카드 사용 유물 시점 반환
+            case BattleEventType.DecisionResolved: // 단순 선택 뒤 별도 결정 효과까지 성공한 이벤트
+                return RelicTriggerType.DecisionDraw; // 결정 성공 유물 발동
             case BattleEventType.BeforeHandDiscard: // 손패 버림 직전 이벤트
                 return RelicTriggerType.BeforeHandDiscard; // 효과와 턴 종료의 버림 직전 반환
             case BattleEventType.DamageApplied: // 피해 적용 이벤트

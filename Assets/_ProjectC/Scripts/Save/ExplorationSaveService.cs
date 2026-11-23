@@ -21,6 +21,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string[] cleared; // 클리어 조우 목록
         public string[] events; // 처리한 이벤트와 특수 방 목록
         public string pendingMapFragment; // 사용 대기 중인 지도 조각의 원본 이벤트
+        public bool usedSealedMap; // 이번 탐사의 봉인된 지도 사용 여부
         public GlassFieldEffect glassFieldEffects; // 다음 교전의 회피와 실명 보관
         public WandererCryRunState wandererCry; // 교전 전 추적과 세 카드 및 귀 막기 보관
         public CrackedCompassRunState compass; // 첫 일반 방 사용 여부와 발견한 사건
@@ -65,6 +66,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public ShopCatalogData shopCatalog; // 복원할 상점 원본
     } // 검증 결과 종료
     public static bool Save(string path, Vector3 position) // 현재 탐사 상태 파일 저장
+    { // 일반 탐사 저장 시작
+        return Save(path, position, null); // 보유 유물을 그대로 기록
+    } // 일반 탐사 저장 종료
+    internal static bool Save(string path, Vector3 position, RelicData consumedMap) // 지도 이동 성공 상태와 소모할 유물 함께 저장
     { // 탐사 저장 시작
         try // 저장 오류 처리 시작
         { // 저장 처리 시작
@@ -133,7 +138,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             { // 유물 수집 시작
                 foreach (RelicData relic in RelicRunManager.Instance.Inventory.OwnedRelics) // 획득 순서 유물 순회
                 { // 유물 기록 시작
-                    relics.Add(relic.RelicId); // 유물 식별자 보관
+                    if (relic != consumedMap) // 이동과 함께 소모하는 지도 확인
+                    { // 남은 유물 기록 시작
+                        relics.Add(relic.RelicId); // 나머지 유물의 보유 순서 보존
+                    } // 남은 유물 기록 종료
                 } // 유물 기록 종료
             } // 유물 수집 종료
             string[] consumables = new string[ConsumableRunManager.Instance?.Inventory.Capacity ?? ConsumableInventoryRuntime.SlotCount]; // 실제 보관칸 수를 포함한 저장 목록
@@ -172,6 +180,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 cleared = cleared.ToArray(), // 클리어 조우 설정
                 events = events.ToArray(), // 처리 이벤트 설정
                 pendingMapFragment = session.PendingMapFragmentId, // 보관 중인 일회성 지도 조각 저장
+                usedSealedMap = consumedMap != null || session.UsedSealedMap, // 이동과 소모를 같은 저장에 반영
                 well = session.Well, // 우물 회복과 봉인 판정 기록
                 cart = session.Cart, // 수레가 남긴 매복과 미사용 할인 기록
                 glassFieldEffects = session.PendingGlassFieldEffects, // 들판 선택의 미사용 전투 효과 저장

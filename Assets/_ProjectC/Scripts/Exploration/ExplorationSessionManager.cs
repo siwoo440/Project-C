@@ -16,6 +16,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         new HashSet<string>(); // 처리 완료 이벤트 ID 목록
     private readonly HashSet<string> avoidedEncounterIds = new HashSet<string>(); // 승리와 보상을 제외한 지도 조각 회피 기록
     private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
+    public bool UsedSealedMap { get; private set; } // 현재 탐사에서 봉인된 지도 사용 여부
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
@@ -142,6 +143,33 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         return true; // 보관 성공 반환
     } // 조각 보관 종료
 
+    public bool CanUseSealedMap(ExplorationMapRuntime map) // 현재 층에서 출발 방으로 귀환 가능한지 확인
+    { // 지도 이동 검사 시작
+        if (UsedSealedMap || IsExplorationCompleted || ActiveEncounter != null || !HasCurrentFloorSeed || map?.CurrentMap == null || map.CurrentMap.Seed != CurrentFloorSeed || RelicRunManager.Instance?.Inventory.FindEffect(RelicEffectType.ReselectExplorationRoute) == null) // 진행 중인 층과 미소모 지도 확인
+        { // 사용할 수 없는 지도 처리 시작
+            return false; // 탐사 종료와 전투 및 재획득 후 재사용 차단
+        } // 사용할 수 없는 지도 처리 종료
+        return map.TryGetPlayerLogicalPosition(out _) && (!map.TryGetPlayerRoomCoordinate(out var room) || room != map.CurrentMap.StartCoordinate); // 출발 방 밖의 방이나 복도에서 사용 허용
+    } // 지도 이동 검사 종료
+    public bool TryUseSealedMap(ExplorationMapRuntime map, string runPath = null) // 같은 층의 출발 방으로 한 번 이동
+    { // 지도 사용 시작
+        var player = FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
+        if (player == null || !CanUseSealedMap(map)) // 이동 직전 보유와 현재 위치 재검사
+        { // 잘못된 이동 처리 시작
+            return false; // 비용 없는 위치와 사용 기회 보존
+        } // 잘못된 이동 처리 종료
+        var relics = RelicRunManager.Instance; // 실제 보유 관리자
+        var sealedMap = relics.Inventory.FindEffect(RelicEffectType.ReselectExplorationRoute); // 소모할 지도 원본
+        Vector2 start = map.GetWorldPosition(map.CurrentMap.StartCoordinate); // 현재 층의 기존 출발 방 중심
+        if (!ExplorationSaveService.Save(runPath ?? ExplorationSaveService.DefaultPath, start, sealedMap)) // 이동 위치와 소모 결과를 한 번에 저장
+        { // 저장 실패 처리 시작
+            return false; // 지도와 기존 보유 순서 및 위치 유지
+        } // 저장 실패 처리 종료
+        UsedSealedMap = true; // 유물 제거 알림 전 재사용 차단
+        relics.TryRemove(sealedMap.RelicId); // 저장과 동일한 지도 한 개 소모
+        player.Teleport(start); // 기존 층과 완료 기록을 유지한 채 실제 플레이어 이동
+        return true; // 귀환 성공 반환
+    } // 지도 사용 종료
     public MapFragmentContact ResolveMapFragmentContact(string runtimeId, EncounterData encounter, Vector3 position, string runPath = null) // 일반 조우의 일회성 회피 판정과 저장
     { // 지도 조각 사용 시작
         if (string.IsNullOrEmpty(pendingMapFragmentId) || !CanBeginEncounter(runtimeId, encounter) || encounter.BattleType != BattleType.Normal) // 사용 가능한 일반 전투와 조각 확인
@@ -555,6 +583,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.UnionWith(snapshot.cleared); // 클리어 조우 목록 복원
         resolvedEventIds.UnionWith(snapshot.events); // 처리 이벤트 목록 복원
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
+        UsedSealedMap = snapshot.usedSealedMap; // 기존 저장의 기본값 또는 사용한 지도 기록 복원
         Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
         WandererCry = snapshot.wandererCry ?? new WandererCryRunState(); // 이전 저장은 방랑자 효과 없이 복원
@@ -587,6 +616,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
+        UsedSealedMap = false; // 새 탐사에서 지도 사용 기회 복원
         Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
         WandererCry = new WandererCryRunState(); // 새 탐사의 추적과 카드 후보 초기화
@@ -637,8 +667,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         int experienceReward =
             encounterData.CharacterExperienceReward; // 현재 조우 경험치 보상 저장
 
-        int goldReward =
-            encounterData.GoldReward; // 현재 조우 골드 보상 저장
+        int bonusPercent = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.VictoryGoldPercent)?.EffectValue ?? 0; // 보유한 동전지갑의 승리 골드 증가율
+        int goldReward = (int)System.Math.Min(int.MaxValue, (long)encounterData.GoldReward * (100L + bonusPercent) / 100L); // 기본 골드에만 비율 가산 후 소수점 버림
 
         int baseScrewReward =
             encounterData.ScrewReward; // 현재 조우 기본 나사 보상 저장

@@ -395,7 +395,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -420,6 +420,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 최초 직접 피해 무효 처리 시작
             damageResult = damageResult.WithAppliedDamage(0); // 소모한 방어도와 명중 상태를 유지하고 체력 손실만 제거
         } // 최초 직접 피해 무효 처리 종료
+        else if (damageResult.AppliedDamage > 0 && reduceHealthDamage != null) // 군번줄 미발동 및 실제 주 대상 체력 피해 확인
+        { // 철제 장화 경감 시작
+            int incoming = Math.Max(0, damageResult.FinalDamage - damageResult.AbsorbedDamage - sharedDamage); // 방어와 분담 뒤의 실제 원본 피해
+            damageResult = damageResult.WithAppliedDamage(Math.Min(CurrentHealth, reduceHealthDamage(incoming))); // 체력 상한 적용 전에 장화 한 점 경감
+        } // 철제 장화 경감 종료
         LoseHealth(damageResult.AppliedDamage); // 현재 체력 감소
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산

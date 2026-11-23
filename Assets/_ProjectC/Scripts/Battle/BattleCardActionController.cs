@@ -9,6 +9,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
+    private int lastBlackRoseRound = -1; // 검은 장미 코사지의 파티 공용 마지막 발동 라운드
+    private int lastPencilRound = -1; // 흑연 연필의 마지막 성공 라운드
+    private int pendingInspectionDraw; // 바보의 남은 카드 처리 뒤 받을 추가 드로우 수
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
@@ -307,7 +310,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 card.OwnerUnit.GainBlock(value); // 소유자만 방어도 획득
                 break; // 방어 처리 종료
             case CardFollowUpEffect.HealAllAllies: // 공격 후 모든 생존 아군 회복
-                int healing = card.OwnerUnit.ModifyOutgoingHealing(value); // 일반 회복과 같은 소유자 보정 적용
+                int healing = GetDirectCardHealing(card, value); // 일반 회복과 같은 소유자 보정 적용
                 foreach (BattleUnitRuntime ally in enemyActions.AllyUnits) // 전투에 참여한 아군 순회
                 { // 동료 회복 시작
                     ally?.RestoreHealth(healing, card.OwnerUnit); // 생존 여부와 최대 체력에 맞춘 회복
@@ -411,6 +414,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         else // 덱 위 카드 선택 확인
         { // 선택 드로우 시작
             processed = runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
+            if (processed && pendingChoiceEffect == CardEffectType.ChooseDraw && lastPencilRound != turnRuntime.CurrentRound) // 현재 턴의 실제 확인 드로우 성공
+            { // 연필 보너스 준비 시작
+                var pencil = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.InspectCardDraw); // 실제 보유한 흑연 연필
+                if (pencil != null) // 보유 상태 확인
+                { // 추가 드로우 예약 시작
+                    lastPencilRound = turnRuntime.CurrentRound; // 이번 턴 추가 지급 기회 소모
+                    pendingInspectionDraw = pencil.EffectValue; // 바보의 남은 카드 선택 우선 보존
+                } // 추가 드로우 예약 종료
+            } // 연필 보너스 준비 종료
         } // 선택 드로우 종료
         pendingCardChoices = null; // 대기 후보 정리
         drawChoiceView = null; // 닫힌 선택 화면 참조 정리
@@ -424,6 +436,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 남은 카드 선택까지 입력 잠금 유지
         } // 남은 카드 처리 선택 종료
         pendingFoolPassive = false; // 대기 패시브 해제
+        ApplyInspectionDraw(); // 남은 카드 처리 없는 확인 보너스 즉시 지급
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 선택 처리 종료
     private void HandleRemainingCardSelected(bool discard) // 남은 카드 처리 선택
@@ -432,12 +445,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 남은 카드 버리기 시작
             runtimeDeck.TryDiscardDrawTop(remainingChoiceCard); // 남은 맨 위 카드 버리기
         } // 남은 카드 버리기 종료
+        ApplyInspectionDraw(); // 남은 카드를 유지하거나 버린 뒤 확인 보너스 지급
         remainingChoiceCard = null; // 남은 카드 참조 정리
         remainingChoiceView = null; // 닫힌 선택 화면 참조 정리
         handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
     } // 남은 카드 처리 종료
     private void CloseCardChoice() // 대기 선택 화면 정리
     { // 선택 화면 정리 시작
+        pendingInspectionDraw = 0; // 전투 종료나 선택 강제 해제 뒤 남은 드로우 예약 정리
         pendingCardChoices = null; // 대기 후보 정리
         pendingFoolPassive = false; // 대기 패시브 해제
         remainingChoiceCard = null; // 남은 카드 참조 정리
@@ -717,7 +732,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 FindUnitView(targetUnit)?.ShowStatusFeedback(BattleStatusEffectInstance.GetDisplayName(removed) + " 해제", false); // 지정한 상태 해제 표시
             } // 상태 해제 표시 종료
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
-            int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(baseHealing); // 정신 상태 포함 회복량 계산
+            int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
             return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
         } // 회복 효과 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
@@ -822,7 +837,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 치명타 표시 시작
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
         } // 치명타 표시 종료
-        modifiedDamage = suitHitRelics.ApplyHitBonus(modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
+        modifiedDamage = ApplyDirectHitRelics(cardInstance, modifiedDamage); // 방어 판정 전 첫 직접 명중에만 가산
         int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
         if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.Charge) // 명중한 돌진과 생존 대상 확인
@@ -848,9 +863,39 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 타격 판정 종료
+    private static int GetDirectCardHealing(CardInstance card, int healing) // 회복자의 정신력 기준 직접 카드 회복 총량
+    { // 직접 회복 보정 시작
+        int modified = card.OwnerUnit.ModifyOutgoingHealing(healing); // 기존 정신 상태의 비율 보정
+        int bonus = healing > 0 && card.OwnerUnit.CurrentMental >= 50 ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.HighMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이상인 회복자의 흰 장미 가산량
+        return (int)Math.Min(int.MaxValue, (long)modified + bonus); // 최대 체력을 적용하기 전 직접 회복 수치
+    } // 직접 회복 보정 종료
+    private int ApplyDirectHitRelics(CardInstance card, int damage) // 명중한 한 타격의 소유 유물 보정
+    { // 실제 명중 보정 시작
+        int result = suitHitRelics.ApplyHitBonus(damage); // 기존 검집과 지팡이 심의 명중 보너스
+        if (card.OwnerUnit.CurrentMental > 30 || lastBlackRoseRound == turnRuntime.CurrentRound) // 공격자의 정신력과 파티 공용 턴 횟수 확인
+        { // 추가 피해 없음 처리 시작
+            return result; // 원래 공격 수치 반환
+        } // 추가 피해 없음 처리 종료
+        var relic = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.LowMentalCardDamage); // 실제로 가진 검은 장미 조회
+        if (relic == null) // 미보유 상태 확인
+        { // 미보유 처리 시작
+            return result; // 이번 턴 발동 기회 보존
+        } // 미보유 처리 종료
+        lastBlackRoseRound = turnRuntime.CurrentRound; // 이번 아군 턴 한 타격만 발동
+        return (int)Math.Min(int.MaxValue, (long)result + relic.EffectValue); // 명중한 직접 카드 피해에만 가산
+    } // 실제 명중 보정 종료
+    private void ApplyInspectionDraw() // 바보의 남은 카드 선택까지 끝난 뒤 연필 보너스 적용
+    { // 추가 드로우 처리 시작
+        int count = pendingInspectionDraw; // 성공한 확인에 예약된 지급량
+        pendingInspectionDraw = 0; // 덱 변경 이벤트보다 먼저 중복 지급 차단
+        if (count > 0) // 실제 예약된 추가 카드 확인
+        { // 추가 카드 지급 시작
+            runtimeDeck.DrawCards(count); // 기존 덱과 손패 규칙으로 추가 드로우
+        } // 추가 카드 지급 종료
+    } // 추가 드로우 처리 종료
     private void ApplySunChain(CardInstance card, BattleUnitRuntime primary) // 태양의 다른 적 연속 공격 처리
     { // 태양 연속 공격 시작
-        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, suitHitRelics.ApplyHitBonus, preparedSwordDamage); // 다른 적의 독립 명중과 피해 처리
+        BattleUnitRuntime target = SunChainAttack.TryAttack(card, primary, enemyActions.EnemyUnits, out bool missed, damage => ApplyDirectHitRelics(card, damage), preparedSwordDamage); // 다른 적의 독립 명중과 피해 처리
         if (target != null && missed) // 추가 공격 빗나감 확인
         { // 추가 공격 피드백 시작
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시

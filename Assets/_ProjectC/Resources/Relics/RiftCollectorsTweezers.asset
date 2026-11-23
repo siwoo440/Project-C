@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: RiftCollectorsTweezers
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_RIFT_COLLECTORS_TWEEZERS
+  displayName: "균열 채집용 핀셋"
+  description: "「잿더미 속에서 빛나는 것」에서 유물 획득에 성공한 뒤 30% 확률로 미보유 유물 후보 하나를 추가한다. 후보 두 개 중 하나를 고른다."
+  icon: {fileID: 21300000, guid: 317cdcceee1a58238c86f26c48f51f34, type: 3}
+  rarity: 0
+  triggerType: 22
+  effectType: 29
+  targetType: 0
+  triggerChancePercent: 30
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
