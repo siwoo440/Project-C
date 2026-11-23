@@ -19,6 +19,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
+    public CharredWellRunState Well { get; private set; } = new CharredWellRunState(); // 회차의 우물 물과 봉인 상태
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
 
     private EncounterData activeEncounter; // 현재 전투 조우 데이터
@@ -523,6 +524,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         currentFloor += 1; // 현재 층 증가
+        Well.AdvanceFloor(); // 이전 층 봉인 만료와 새 층 봉인 적용
         Cart.LeaveFloor(); // 미구매 할인을 다음 층 첫 상점으로 이월
         activeEncounter = null; // 진행 중 조우 초기화
         activeRuntimeEncounterId = null; // 진행 중 런타임 조우 초기화
@@ -552,6 +554,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
         Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
+        Well = snapshot.well ?? new CharredWellRunState(); // 이전 저장의 빈 기본값 또는 우물 상태 복원
         if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
         { // 회피 목록 복원 시작
             avoidedEncounterIds.UnionWith(snapshot.avoidedEncounters); // 회피 조우 재등장 방지 기록 복원
@@ -581,6 +584,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
         Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
+        Well = new CharredWellRunState(); // 새 탐사의 우물 회복과 봉인 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화
         activeRuntimeEncounterId = null; // 런타임 조우 초기화

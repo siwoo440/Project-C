@@ -5,7 +5,8 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 {
     private static List<ExplorationEventData> cachedEvents; // 캐시된 이벤트 목록
 
-    public const int CurrentVersion = 6; // 불탄 수레까지 포함하는 최신 이벤트 버전
+    public const int CurrentVersion = 7; // 검게 탄 우물까지 포함하는 최신 이벤트 버전
+    private static List<ExplorationEventData> wellEvents; // 우물까지 포함한 층의 후보
     private static List<ExplorationEventData> cartEvents; // 수레를 포함한 새 층 후보
     private static List<ExplorationEventData> ashstormEvents; // 재폭풍의 눈까지 포함한 이전 목록
     private static List<ExplorationEventData> ashPileEvents; // 잿더미 조사까지 포함한 이전 목록
@@ -15,9 +16,19 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
 
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
     { // 버전별 이벤트 조회 시작
+        if (version >= 7) // 우물이 포함된 층 버전 확인
+        { // 우물 목록 준비 시작
+            if (NeedsReload(wellEvents)) // 최신 목록 첫 사용 확인
+            { // 우물 후보 생성 시작
+                wellEvents = new List<ExplorationEventData>(LoadEvents(6)); // 이전 수레까지의 이벤트 복사
+                wellEvents.Add(CharredWellEvent.Create()); // 검게 탄 우물 추가
+                wellEvents.Sort((left, right) => string.CompareOrdinal(left.EventId, right.EventId)); // 같은 층 배치 순서 고정
+            } // 우물 후보 생성 종료
+            return wellEvents; // 저장 버전에 맞는 후보 반환
+        } // 우물 목록 준비 종료
         if (version >= 6) // 수레를 포함한 층 버전 확인
         { // 새 층 목록 준비 시작
-            if (cartEvents == null) // 새 목록 첫 사용 확인
+            if (NeedsReload(cartEvents)) // 새 목록 첫 사용 확인
             { // 수레 후보 생성 시작
                 cartEvents = new List<ExplorationEventData>(LoadEvents(5)); // 저장 버전 다섯의 후보 복사
                 cartEvents.Add(BurntCartEvent.Create()); // 수레 이벤트 추가
@@ -30,7 +41,7 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 목록 선택 시작
             return original; // 기존 층의 이벤트 배치 유지
         } // 이전 목록 선택 종료
-        if (ashstormEvents == null) // 재폭풍의 눈 목록 최초 생성 여부 확인
+        if (NeedsReload(ashstormEvents)) // 재폭풍의 눈 목록 최초 생성 여부 확인
         { // 이전 목록 구성 시작
             ashstormEvents = new List<ExplorationEventData>(original); // 최초 이벤트 목록 복사
             ashstormEvents.Add(AshstormEyeEvent.Create()); // 재폭풍의 눈 추가
@@ -40,7 +51,7 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 버전 반환 시작
             return ashstormEvents; // 같은 층의 기존 네 이벤트 보존
         } // 이전 버전 반환 종료
-        if (ashPileEvents == null) // 204일차 잿더미 목록 최초 생성 확인
+        if (NeedsReload(ashPileEvents)) // 204일차 잿더미 목록 최초 생성 확인
         { // 잿더미 목록 생성 시작
             ashPileEvents = new List<ExplorationEventData>(ashstormEvents); // 재폭풍까지의 후보 복사
             ashPileEvents.Add(AshPileEvent.Create()); // 잿더미 조사 추가
@@ -50,7 +61,7 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 층 보존 시작
             return ashPileEvents; // 같은 층의 다섯 후보 고정
         } // 이전 층 보존 종료
-        if (mapFragmentEvents == null) // 이전 지도 조각 목록 생성 여부 확인
+        if (NeedsReload(mapFragmentEvents)) // 이전 지도 조각 목록 생성 여부 확인
         { // 이전 지도 목록 생성 시작
             mapFragmentEvents = new List<ExplorationEventData>(ashPileEvents); // 잿더미까지의 후보 복사
             mapFragmentEvents.Add(AshMapFragmentEvent.Create()); // 윈터폴 지도 조각 추가
@@ -60,7 +71,7 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 층 반환 시작
             return mapFragmentEvents; // 기존 여섯 후보 반환
         } // 이전 층 반환 종료
-        if (scarecrowEvents == null) // 이전 허수아비 목록의 최초 생성 여부 확인
+        if (NeedsReload(scarecrowEvents)) // 이전 허수아비 목록의 최초 생성 여부 확인
         { // 이전 목록 구성 시작
             scarecrowEvents = new List<ExplorationEventData>(mapFragmentEvents); // 지도 조각까지의 후보 복사
             scarecrowEvents.Add(BurntScarecrowEvent.Create()); // 타버린 허수아비 추가
@@ -70,7 +81,7 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         { // 이전 층 후보 반환 시작
             return scarecrowEvents; // 들판 추가 전 일곱 후보 유지
         } // 이전 층 후보 반환 종료
-        if (currentEvents == null) // 최신 목록 최초 생성 여부 확인
+        if (NeedsReload(currentEvents)) // 최신 목록 최초 생성 여부 확인
         { // 새 목록 생성 시작
             currentEvents = new List<ExplorationEventData>(scarecrowEvents); // 허수아비까지의 후보 복사
             currentEvents.Add(GlassFieldEvent.Create()); // 유리화된 들판 추가
@@ -79,9 +90,14 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
         return currentEvents; // 새 층의 이벤트 목록 반환
     } // 버전별 이벤트 조회 종료
 
+    private static bool NeedsReload(List<ExplorationEventData> events) // 캐시에 기록한 유니티 원본의 수명 확인
+    { // 원본 확인 시작
+        return events == null || events.Exists(item => item == null); // 첫 사용 또는 원본이 파괴된 목록 재생성
+    } // 원본 확인 종료
+
     private static IReadOnlyList<ExplorationEventData> LoadOriginalEvents() // 이전 버전 이벤트 목록 구성
     { // 기존 이벤트 구성 시작
-        if (cachedEvents != null)
+        if (!NeedsReload(cachedEvents)) // 기존 사건의 실제 원본 생존 확인
         {
             return cachedEvents; // 기존 이벤트 캐시 반환
         }
