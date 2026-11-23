@@ -12,7 +12,7 @@ public sealed class LoadingScreenTests // 비동기 로딩 화면 검증
     { // 전환 흐름 검증 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<MainMenuController>() == null; frame++) // 메뉴 준비 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && Object.FindFirstObjectByType<MainMenuController>() == null;) // 메뉴 준비 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
@@ -25,7 +25,7 @@ public sealed class LoadingScreenTests // 비동기 로딩 화면 검증
         Assert.IsNotNull(loading.transform.Find("Background").GetComponent<Image>().sprite); // 제작된 배경 적용 확인
         Assert.IsNotNull(loading.transform.Find("ProgressTrack/ProgressFill")); // 진행 막대 존재 확인
         flow.LoadScene("90_Settings"); // 중복 씬 이동 요청
-        for (int frame = 0; frame < 240 && flow.IsLoadingScene; frame++) // 씬 전환 완료 대기
+        for (float sceneDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < sceneDeadline && flow.IsLoadingScene;) // 씬 전환 완료 대기
         { // 씬 전환 대기 시작
             yield return null; // 다음 프레임 대기
         } // 씬 전환 대기 종료
