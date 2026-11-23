@@ -167,6 +167,14 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.HealingReceivedUp) // 잔잔한 축복의 조건과 수치 확인
+                    { // 받는 회복량 증가 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 카드의 받는 회복량 기본 수치
+                    } // 받는 회복량 증가 설명 종료
+                    else if (effect == BattleStatusEffectType.Renewal) // 새 턴 종료 재생의 카드 효과 확인
+                    { // 실제 턴 종료 회복 설명 시작
+                        description = BattleStatusEffectInstance.GetDescription(effect, 5); // 카드의 기본 턴 종료 회복량 표시
+                    } // 실제 턴 종료 회복 설명 종료
                     else if (effect == BattleStatusEffectType.Vulnerable) // 검은 왕관의 받는 피해 증가 확인
                     { // 취약 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 20); // 실제 검은 왕관의 기본 취약 20퍼센트 설명

@@ -773,15 +773,16 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int bonus = BattleSupplyRelics.Find(RelicEffectType.LowHealthHealing)?.EffectValue ?? 0; // 실제 보유한 은빛 심장핀의 수치 조회
             healAmount = (int)Math.Min(int.MaxValue, (long)healAmount + bonus); // 받는 회복 감소 처리 전 가산
         } // 저체력 회복 가산 종료
-        var reduction = GetStatusEffect(BattleStatusEffectType.HealingReceivedDown); // 회복 대상이 보유한 받는 회복 감소 조회
-        if (reduction != null) // 회복 감쇠 상태 적용 확인
-        { // 받는 회복 감소 시작
-            healAmount = (int)((long)healAmount * (100 - Math.Min(100, reduction.EffectiveValue)) / 100); // 최종 받을 회복량 감소 후 내림
-            if (healAmount == 0) // 실제 회복이 없는 경우 확인
+        int increase = GetStatusEffectValue(BattleStatusEffectType.HealingReceivedUp); // 대상에 적용된 잔잔한 축복의 수신 회복 증가율
+        int reduction = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.HealingReceivedDown)); // 기존 수신 회복 감소율과 최대 백 보정
+        if (increase > 0 || reduction > 0) // 현재 대상에게 적용할 수신 회복 보정 확인
+        { // 수신 회복 증가와 감소 공통 처리 시작
+            healAmount = (int)Math.Min(int.MaxValue, (decimal)healAmount * (100L + increase) * (100 - reduction) / 10_000m); // 모든 수신 비율을 곱한 뒤 한 번 내림과 정수 상한
+            if (healAmount == 0) // 실제 적용할 회복량이 없는 조건 확인
             { // 미회복 처리 시작
-                return 0; // 회복 정신력과 알림 미발동
+                return 0; // 기존 회복 알림과 정신력 미발동
             } // 미회복 처리 종료
-        } // 받는 회복 감소 종료
+        } // 수신 회복 증가와 감소 공통 처리 종료
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
         CurrentHealth += Mathf.Min(healAmount, MaxHealth - CurrentHealth); // 남은 체력만큼만 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산

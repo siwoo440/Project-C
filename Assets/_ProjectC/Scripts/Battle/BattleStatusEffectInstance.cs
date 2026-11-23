@@ -191,6 +191,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호자의 심장"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "전투불능 방지"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
+                return "받는 회복량 증가"; // 게임에 표시되는 받는 회복량 증가 설명
+            case BattleStatusEffectType.Renewal: // 재생 종류 확인
+                return "재생"; // 게임에 표시되는 재생 설명
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -319,6 +323,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "생존"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
+                return "회복+"; // 게임에 표시되는 받는 회복량 증가 설명
+            case BattleStatusEffectType.Renewal: // 재생 종류 확인
+                return "재생"; // 게임에 표시되는 재생 설명
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -447,6 +455,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "이 아군이 적의 직접 피해로 쓰러지려 하면 사용자가 한 번 대신 맞고 체력 1 이상으로 생존"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "치명 피해를 한 번 막아 체력 1로 생존"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
+                return $"받는 체력 회복량 {effectiveValue}% 증가"; // 게임에 표시되는 받는 회복량 증가 설명
+            case BattleStatusEffectType.Renewal: // 재생 종류 확인
+                return $"아군 턴 종료마다 체력 {effectiveValue} 회복"; // 게임에 표시되는 재생 설명
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.Vulnerable: // 방어도 적용 전 받는 피해 증가

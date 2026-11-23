@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetCalming
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_CALMING
+  displayName: "진정"
+  description: "지정 아군의 공포를 제거하고 정신력을 4 회복한다."
+  artwork: {fileID: 21300000, guid: 15a5d1aac641550ab122d3abf0c33b2d, type: 3}
+  cardType: 2
+  targetType: 1
+  apCost: 1
+  effectType: 4
+  damageType: 0
+  effectValue: 4
+  cupRule: 4
+  mentalChangeValue: 4
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

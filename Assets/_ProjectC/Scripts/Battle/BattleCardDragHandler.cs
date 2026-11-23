@@ -84,7 +84,7 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
-        if (cardView.IsSelected) // 클릭으로 먼저 선택된 카드인지 확인
+        if (cardView.IsSelected && cardView.RuntimeCard.TargetType != CardTargetType.EnemyAndAlly) // 기존 카드만 드래그 전 단일 선택 해제
         { // 드래그 입력 시작 상태 정리
             cardView.OnPointerClick(eventData); // 기존 클릭 선택 해제 후 새 드롭 대상으로 결정
         } // 기존 선택 정리 종료
@@ -175,6 +175,10 @@ public sealed class BattleCardDragHandler :
 
         if (!validDrop)
         {
+            if (draggedCard?.TargetType == CardTargetType.EnemyAndAlly && cardView.IsSelected) // 잘못된 두 번째 드롭이나 드래그 취소 확인
+            { // 복합 카드의 미확정 선택 정리 시작
+                cardView.OnPointerClick(eventData); // 비용을 지불하지 않은 두 대상 선택 취소
+            } // 복합 카드의 미확정 선택 정리 종료
             Debug.Log(
                 "[Battle][Day47] 유효하지 않은 위치에 카드를 놓아 사용을 취소했습니다."); // 잘못된 드롭 취소 로그
             return;
@@ -302,6 +306,12 @@ public sealed class BattleCardDragHandler :
         { // 전투불능 대상 차단 시작
             return false; // 일반 카드 드롭 거절
         } // 전투불능 대상 차단 종료
+        if (card.TargetType == CardTargetType.EnemyAndAlly) // 두 단계 카드의 현재 드롭 진영 확인
+        { // 복합 대상 드롭 검사 시작
+            BattleHandView hand = cardView.GetComponentInParent<BattleHandView>(); // 선택 단계를 보여 주는 현재 손패 확인
+            BattleTeam team = cardView.IsSelected && hand?.MixedTargetStage == BattleTeam.Ally ? BattleTeam.Ally : BattleTeam.Enemy; // 선택한 카드의 두 번째 단계만 아군으로 제한
+            return card.EffectType == CardEffectType.Damage && hand?.TurnRuntime?.CanSelectLivingUnit(targetUnit, team) == true; // 클릭과 같은 실제 전투 생존 대상 조건 적용
+        } // 복합 대상 드롭 검사 종료
         if (card.SourceData.ShieldRule is ShieldCardRule.BodyGuard or ShieldCardRule.ShieldOath or ShieldCardRule.GuardianHeart) // 시전자 밖의 생존 동료를 선택하는 방패 카드 확인
         { // 실제 드롭 보호 대상 검사 시작
             return targetUnit.Team == BattleTeam.Ally && targetUnit != card.OwnerUnit; // 다른 생존 아군 한 명에게만 적용
@@ -323,6 +333,8 @@ public sealed class BattleCardDragHandler :
             case CardTargetType.Self:
                 return targetUnit == card.OwnerUnit;
 
+            case CardTargetType.LowestHealthAlly: // 클릭과 같은 최저 현재 체력 아군 대상
+                return targetUnit == cardView.GetComponentInParent<BattleHandView>()?.TurnRuntime?.GetLowestHealthLivingAlly(); // 자동 선정된 아군만 드롭 위치로 허용
             case CardTargetType.SingleAlly:
             case CardTargetType.AllAllies:
                 return targetUnit.Team == BattleTeam.Ally;
@@ -349,10 +361,13 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
-        cardView.OnPointerClick(
-            eventData); // 기존 카드 선택·AP 검사 흐름 호출
+        if (card.TargetType != CardTargetType.EnemyAndAlly || !cardView.IsSelected) // 두 번째 혼합 드롭에서 기존 카드 선택 유지
+        { // 카드 선택 연결 시작
+            cardView.OnPointerClick(eventData); // 기존 카드 선택과 비용 검사 흐름 호출
+        } // 카드 선택 연결 종료
 
-        if (card.TargetType == CardTargetType.FallenAlly || // 전투불능 아군의 드롭을 실제 클릭으로 연결
+        if (card.TargetType == CardTargetType.EnemyAndAlly || // 단계마다 적 또는 아군 드롭을 클릭 입력으로 연결
+            card.TargetType == CardTargetType.FallenAlly || // 전투불능 아군의 드롭을 실제 클릭으로 연결
             card.TargetType == CardTargetType.SingleAlly || // 단일 생존 아군 확인
             card.TargetType == CardTargetType.SingleEnemy)
         {

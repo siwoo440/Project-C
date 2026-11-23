@@ -77,7 +77,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
         bool ownPhase = target.Team == BattleTeam.Ally ? turnRuntime.CurrentPhase == BattleTurnPhase.PlayerTurn : turnRuntime.CurrentPhase == BattleTurnPhase.EnemyTurn; // 대상의 자기 턴 여부 확인
         bool alreadyProcessed = processedEndPhase == turnRuntime.CurrentPhase && processedEndRound == turnRuntime.CurrentRound; // 현재 턴의 지속 처리 완료 확인
         bool targetAwaitingEnd = alreadyProcessed && processingEndUnits && !endProcessedUnits.Contains(target); // 종료 처리 대기 중인 대상 확인
-        if (type != BattleStatusEffectType.BladeFrenzy && type != BattleStatusEffectType.BloodOath && type != BattleStatusEffectType.FinishingStance && type != BattleStatusEffectType.BladeMaintenance && type != BattleStatusEffectType.AttackPowerDown && ownPhase && (!alreadyProcessed || targetAwaitingEnd)) // 자기 턴 대상의 지속 처리 전 상태 적용 확인
+        if (type != BattleStatusEffectType.BladeFrenzy && type != BattleStatusEffectType.BloodOath && type != BattleStatusEffectType.FinishingStance && type != BattleStatusEffectType.BladeMaintenance && type != BattleStatusEffectType.AttackPowerDown && type != BattleStatusEffectType.Renewal && type != BattleStatusEffectType.HealingReceivedUp && ownPhase && (!alreadyProcessed || targetAwaitingEnd)) // 이번 아군 턴부터 처리하는 두 회복 상태의 생략 제외
         { // 첫 감소 생략 예약 시작
             target.DeferNewStatusDurationDecrease(type); // 이번 턴 전용 은총을 제외한 일반 상태의 첫 지속 감소 생략
         } // 첫 감소 생략 예약 종료

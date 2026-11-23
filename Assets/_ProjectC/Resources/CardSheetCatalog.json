@@ -1260,7 +1260,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 공포 제거, 정신력 4 회복",
+      "description": "지정 아군의 공포를 제거하고 정신력을 4 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "진정.png"
@@ -1271,7 +1271,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 5 피해, 불사형이면 추가 5 피해",
+      "description": "적 하나에게 마법 피해 5를 준다. 명중한 대상이 불사형이면 피해가 5 증가한다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "성수 뿌리기.png"
@@ -1282,7 +1282,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "체력이 가장 낮은 아군 회복 8",
+      "description": "현재 체력 수치가 가장 낮은 생존 아군 하나를 찾아 체력을 8 회복시킨다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "회복 기도.png"
@@ -1293,7 +1293,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 디버프 1개 제거, 저항력 +5% (1턴)",
+      "description": "지정 아군에게서 제거 가능한 디버프 하나를 해제하고, 다음 적 턴 동안 마법 피해 저항을 5% 높인다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "정화의 손길.png"
@@ -1304,7 +1304,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 회복량 +20% (2턴)",
+      "description": "지정 아군이 받는 체력 회복량을 2턴 동안 20% 높인다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "잔잔한 축복.png"
@@ -1315,7 +1315,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "적에게 6 피해, 아군 1명 체력 3 회복",
+      "description": "적 하나와 아군 하나를 차례로 선택한다. 적에게 마법 피해 6을 주고 아군의 체력을 3 회복시킨다.",
       "area": "단일/단일",
       "targets": "적/아군",
       "imageFileName": "빛의 조각.png"
@@ -1326,7 +1326,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명 턴 종료 시 체력 5 회복 (3턴)",
+      "description": "지정 아군의 체력을 이번 아군 턴부터 3회 아군 턴 종료마다 5씩 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "재생.png"
@@ -1348,7 +1348,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명 체력 14 회복, 출혈 모두 제거",
+      "description": "지정 아군의 모든 출혈을 해제하고 체력을 14 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "상처 봉합.png"

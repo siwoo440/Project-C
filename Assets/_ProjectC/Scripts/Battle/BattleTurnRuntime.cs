@@ -23,6 +23,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool springReady; // 다음 유료 고정 카드에 남은 할인
     private int pendingSwordThenShieldBlock; // 검 사용 뒤 다음 방패에 예약한 소유자 방어도
     private bool resolvingCard; // 사용 카드가 손패를 떠날 때까지의 정산 상태
+    private bool deferVictoryUntilCardResolved; // 지정된 피해와 회복을 모두 적용할 때까지의 승리 정산 예약
     private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
     private long reflectionDamageNumerator; // 이번 적 턴에 누적한 체력 피해와 반사 비율의 곱
     private BattleUnitRuntime reflectionSource; // 처음 반사 대상으로 기록한 피격 아군
@@ -37,10 +38,16 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
     public bool HasPendingBossPhaseTransition { get; private set; } // 보스 페이즈 전환 예약 여부
     public bool CanEscape => !disposed && (BattleType == BattleType.Normal || BattleType == BattleType.Elite) && CurrentPhase == BattleTurnPhase.PlayerTurn && !IsBattleEnded; // 일반과 정예 전투의 도주 가능 여부
-    private bool CanReviveInCurrentPhase => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 진행 중인 아군 턴의 부활 가능 여부
+    private bool CanSelectDuringPlayerTurn => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition; // 현재 아군 턴의 카드 대상 선택 가능 여부
+    internal bool HasSelectableEnemy => CanSelectDuringPlayerTurn && HasLivingUnit(enemyUnits); // 현재 적 대상으로 고를 생존 참가자 확인
+    internal bool CanSelectLivingUnit(BattleUnitRuntime unit, BattleTeam team) // 현재 전투의 진영별 생존 대상 선택 확인
+    { // 생존 참가자 검사 시작
+        return CanSelectDuringPlayerTurn && unit?.Team == team && !unit.IsDead && // 카드 대상 선택이 가능한 진행 상태와 진영 확인
+            ContainsUnit(team == BattleTeam.Ally ? allyUnits : enemyUnits, unit); // 실제 전투에 등록된 동일 유닛 확인
+    } // 생존 참가자 검사 종료
     internal bool HasFallenAlly() // 손패 카드가 부활시킬 수 있는 아군 존재 확인
     { // 전투불능 아군 검사 시작
-        if (CanReviveInCurrentPhase) // 이번 턴 부활 가능 여부 확인
+        if (CanSelectDuringPlayerTurn) // 이번 턴 부활 가능 여부 확인
         { // 전투 참가 명단 검사 시작
             foreach (BattleUnitRuntime ally in allyUnits) // 현재 전투 아군 순회
             { // 개별 아군 검사 시작
@@ -54,7 +61,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     } // 전투불능 아군 검사 종료
     internal bool CanReviveFallenAlly(BattleUnitRuntime ally) // 클릭과 드래그가 공유하는 실제 부활 조건
     { // 대상 검증 시작
-        return CanReviveInCurrentPhase && ally?.Team == BattleTeam.Ally && ally.IsDead && ContainsUnit(allyUnits, ally); // 전투 단계와 현재 참가 명단의 사망 상태 확인
+        return CanSelectDuringPlayerTurn && ally?.Team == BattleTeam.Ally && ally.IsDead && ContainsUnit(allyUnits, ally); // 전투 단계와 현재 참가 명단의 사망 상태 확인
     } // 대상 검증 종료
     internal int TryReviveFallenAlly(BattleUnitRuntime ally, int healthPercent) // 기존 아군 런타임의 부활 처리
     { // 부활 요청 처리 시작
@@ -88,6 +95,18 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 아군별 현재 체력 검사 종료
         return foundLivingAlly; // 한 명 이상 생존한 파티의 조건 충족 여부
     } // 생존 아군 체력 확인 종료
+    internal BattleUnitRuntime GetLowestHealthLivingAlly() // 현재 체력이 가장 낮은 생존 아군 조회
+    { // 자동 회복 대상 조회 시작
+        BattleUnitRuntime selected = null; // 선택한 생존 아군의 초기값
+        foreach (BattleUnitRuntime ally in allyUnits) // 처음 출전한 고정 명단 순서로 탐색
+        { // 생존 아군과 현재 체력 비교 시작
+            if (ally != null && !ally.IsDead && ally.Team == BattleTeam.Ally && (selected == null || ally.CurrentHealth < selected.CurrentHealth)) // 현재 수치가 더 낮을 때만 대상 변경
+            { // 최소 체력의 생존 아군 갱신 시작
+                selected = ally; // 동률의 앞선 명단을 유지한 새 최소 대상
+            } // 최소 체력의 생존 아군 갱신 종료
+        } // 생존 아군과 현재 체력 비교 종료
+        return selected; // 최대 체력인 경우도 포함하는 유효한 자동 선택
+    } // 자동 회복 대상 조회 종료
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
@@ -600,14 +619,21 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         pendingSwordThenShieldBlock = 0; // 방어도 알림 전에 다음 방패 예약 소모
         return card.OwnerUnit.GainBlock(block); // 방패 카드의 실제 소유자 한 명에게 추가 방어도 지급
     } // 실제 사용 방어 유물 처리 종료
-    internal void BeginCardResolution() // 카드가 손패에 남아 있는 정산 범위 시작
+    internal void BeginCardResolution(bool deferVictory = false) // 카드가 손패에 남아 있는 정산 범위 시작
     { // 카드 정산 표시 시작
         resolvingCard = true; // 처치 드로우를 카드 사용 뒤로 미루기
+        deferVictoryUntilCardResolved = deferVictory; // 한 카드의 두 효과 뒤 승리 정산 여부 보관
     } // 카드 정산 표시 종료
 
     internal void EndCardResolution() // 사용 카드가 빠진 뒤 예약 처치 드로우 정산
     { // 카드 정산 완료 처리 시작
         resolvingCard = false; // 독립 처치에 즉시 드로우 허용
+        bool finishVictory = deferVictoryUntilCardResolved && !IsBattleEnded && !HasPendingBossPhaseTransition && !HasLivingUnit(enemyUnits); // 복합 효과를 적용한 뒤 실제 적 전멸 확인
+        deferVictoryUntilCardResolved = false; // 전투 종료 알림 전에 예약 해제
+        if (finishVictory) // 이 카드에서 미룬 승리 확인
+        { // 두 효과 이후 승리 정산 시작
+            SetBattleResult(HasLivingUnit(allyUnits) ? BattleResult.Victory : BattleResult.Defeat); // 두 효과 뒤 생존 명단을 포함한 결과 저장
+        } // 두 효과 이후 승리 정산 종료
         DrawDefeatReward(); // 카드가 떠난 손패 공간을 기준으로 지급
     } // 카드 정산 완료 처리 종료
 
@@ -672,7 +698,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             SetBattleResult(BattleResult.Defeat); // 패배 결과 확정
             return; // 승패 판정 종료
         } // 패배 처리 종료
-        if (enemiesDefeated) // 적 전멸 확인
+        if (enemiesDefeated && !deferVictoryUntilCardResolved) // 복합 카드를 제외한 일반 적 전멸 확인
         { // 승리 처리 시작
             SetBattleResult(BattleResult.Victory); // 승리 결과 확정
         } // 승리 처리 종료
