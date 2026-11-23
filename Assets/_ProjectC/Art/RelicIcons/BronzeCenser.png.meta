@@ -1,0 +1,585 @@
+fileFormatVersion: 2
+guid: 3fc1e98f205c66f47ab0892dedebd910
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7692172399734628853
+    second: BronzeCenser_0
+  - first:
+      213: -1181353654472951911
+    second: BronzeCenser_1
+  - first:
+      213: 1793503107604957560
+    second: BronzeCenser_2
+  - first:
+      213: 5070530984685359144
+    second: BronzeCenser_3
+  - first:
+      213: -3724396111530904264
+    second: BronzeCenser_4
+  - first:
+      213: -7251448191127522253
+    second: BronzeCenser_5
+  - first:
+      213: -2666065827364353306
+    second: BronzeCenser_6
+  - first:
+      213: -8678973046080743846
+    second: BronzeCenser_7
+  - first:
+      213: 7803069337903976547
+    second: BronzeCenser_8
+  - first:
+      213: 3028098745252204251
+    second: BronzeCenser_9
+  - first:
+      213: -8755884925389173467
+    second: BronzeCenser_10
+  - first:
+      213: -5587615751364671724
+    second: BronzeCenser_11
+  - first:
+      213: -6242442534197513313
+    second: BronzeCenser_12
+  - first:
+      213: -7870236206826362945
+    second: BronzeCenser_13
+  - first:
+      213: -5890111950408130207
+    second: BronzeCenser_14
+  - first:
+      213: 4818295720953199505
+    second: BronzeCenser_15
+  - first:
+      213: 2668099514535380404
+    second: BronzeCenser_16
+  - first:
+      213: -425126660225165064
+    second: BronzeCenser_17
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 512
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: BronzeCenser_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1241
+        height: 1238
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0ed0c215f9ef3590800000000000000
+      internalID: -7692172399734628853
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_1
+      rect:
+        serializedVersion: 2
+        x: 1069
+        y: 935
+        width: 7
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 997b70f3c1dfa9fe0800000000000000
+      internalID: -1181353654472951911
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_2
+      rect:
+        serializedVersion: 2
+        x: 1075
+        y: 937
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8794a50f29dc3e810800000000000000
+      internalID: 1793503107604957560
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_3
+      rect:
+        serializedVersion: 2
+        x: 1085
+        y: 939
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82058c4d0152e5640800000000000000
+      internalID: 5070530984685359144
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_4
+      rect:
+        serializedVersion: 2
+        x: 1053
+        y: 788
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 835ba512879405cc0800000000000000
+      internalID: -3724396111530904264
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_5
+      rect:
+        serializedVersion: 2
+        x: 1059
+        y: 761
+        width: 21
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 334f1bc3a4ead5b90800000000000000
+      internalID: -7251448191127522253
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_6
+      rect:
+        serializedVersion: 2
+        x: 1149
+        y: 505
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6eac324614b300bd0800000000000000
+      internalID: -2666065827364353306
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_7
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 434
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a56da2d6ff71e8780800000000000000
+      internalID: -8678973046080743846
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_8
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 441
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 360528b68321a4c60800000000000000
+      internalID: 7803069337903976547
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_9
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 423
+        width: 15
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bde4097e3c7f50a20800000000000000
+      internalID: 3028098745252204251
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_10
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 401
+        width: 7
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52d0bff0d09dc7680800000000000000
+      internalID: -8755884925389173467
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_11
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 407
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 417088e141dc472b0800000000000000
+      internalID: -5587615751364671724
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_12
+      rect:
+        serializedVersion: 2
+        x: 86
+        y: 408
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f933e5ac6936e59a0800000000000000
+      internalID: -6242442534197513313
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_13
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 357
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb762b14edd47c290800000000000000
+      internalID: -7870236206826362945
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_14
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 168
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 161e3a4636e124ea0800000000000000
+      internalID: -5890111950408130207
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_15
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 150
+        width: 9
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 19b33360e660ed240800000000000000
+      internalID: 4818295720953199505
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_16
+      rect:
+        serializedVersion: 2
+        x: 1133
+        y: 23
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b5064d4f5ef60520800000000000000
+      internalID: 2668099514535380404
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BronzeCenser_17
+      rect:
+        serializedVersion: 2
+        x: 1157
+        y: 15
+        width: 16
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f81bb01e85a91af0800000000000000
+      internalID: -425126660225165064
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      BronzeCenser_0: -7692172399734628853
+      BronzeCenser_1: -1181353654472951911
+      BronzeCenser_10: -8755884925389173467
+      BronzeCenser_11: -5587615751364671724
+      BronzeCenser_12: -6242442534197513313
+      BronzeCenser_13: -7870236206826362945
+      BronzeCenser_14: -5890111950408130207
+      BronzeCenser_15: 4818295720953199505
+      BronzeCenser_16: 2668099514535380404
+      BronzeCenser_17: -425126660225165064
+      BronzeCenser_2: 1793503107604957560
+      BronzeCenser_3: 5070530984685359144
+      BronzeCenser_4: -3724396111530904264
+      BronzeCenser_5: -7251448191127522253
+      BronzeCenser_6: -2666065827364353306
+      BronzeCenser_7: -8678973046080743846
+      BronzeCenser_8: 7803069337903976547
+      BronzeCenser_9: 3028098745252204251
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:

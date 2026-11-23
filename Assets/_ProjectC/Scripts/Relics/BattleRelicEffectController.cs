@@ -184,6 +184,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         }
 
         List<BattleUnitRuntime> targets = ResolveTargets(relicData.TargetType, eventContext); // 유물 효과 대상 목록 계산
+        if (relicData.EffectType == RelicEffectType.DistributeBlock) // 고정 방어도 배분 효과 확인
+        { // 전체 방어도 배분 시작
+            BattleBlockDistribution.Apply(targets, relicData.EffectValue); // 생존 대상에게 전체 방어도 순서대로 배분
+            return; // 개별 효과 중복 적용 방지
+        } // 전체 방어도 배분 종료
         foreach (BattleUnitRuntime targetUnit in targets) // 대상 유닛 순회
         {
             if (targetUnit == null) // 빈 대상 확인
@@ -211,6 +216,12 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicEffectType.ApplyStatusEffect: // 상태 이상 적용 효과
                 targetUnit.ApplyStatusEffect(relicData.StatusEffectType, relicData.EffectValue, relicData.StatusDuration, relicData.StatusMaximumStacks); // 상태 이상 효과 적용
                 break; // 상태 이상 효과 종료
+            case RelicEffectType.GainBlock: // 개별 방어도 획득 효과
+                targetUnit.GainBlock(relicData.EffectValue); // 지정 대상의 방어도 획득
+                break; // 방어도 효과 종료
+            case RelicEffectType.ChangeMental: // 정신력 직접 증가 효과
+                targetUnit.ChangeMental(relicData.EffectValue, BattleMentalChangeReason.RelicEffect); // 지정 대상의 정신력 증가
+                break; // 정신력 효과 종료
         }
     }
 
@@ -237,6 +248,20 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicTargetType.EventTarget: // 이벤트 대표 대상
                 AddUnit(eventContext == null ? null : eventContext.TargetUnit, targets); // 이벤트 대표 대상 추가
                 break; // 이벤트 대상 처리 종료
+            case RelicTargetType.RandomLivingAlly: // 무작위 생존 아군 대상
+                List<BattleUnitRuntime> livingAllies = new List<BattleUnitRuntime>(); // 생존 아군 후보 목록 생성
+                foreach (BattleUnitRuntime ally in allyUnits) // 실제 아군 목록 순회
+                { // 생존 후보 확인 시작
+                    if (ally != null && !ally.IsDead) // 유효한 생존 아군 확인
+                    { // 생존 후보 추가 시작
+                        livingAllies.Add(ally); // 무작위 선택 후보 추가
+                    } // 생존 후보 추가 종료
+                } // 생존 후보 확인 종료
+                if (livingAllies.Count > 0) // 생존 후보 존재 확인
+                { // 무작위 대상 선택 시작
+                    targets.Add(livingAllies[UnityEngine.Random.Range(0, livingAllies.Count)]); // 생존 아군 한 명 무작위 선택
+                } // 무작위 대상 선택 종료
+                break; // 무작위 아군 처리 종료
         }
         return targets; // 계산된 대상 목록 반환
     }
