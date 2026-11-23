@@ -729,9 +729,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private bool CanGuardAllyWithCard(CardInstance card, BattleUnitRuntime target) // 기존 힘 카드와 방패 카드의 다른 보호 조건 조회
     { // 보호 조건 조회 시작
-        return card.SourceData.ShieldRule == ShieldCardRule.BodyGuard // 대상을 미리 지정하는 방패 카드 확인
-            ? enemyActions.CanBodyGuard(card.OwnerUnit, target) // 예고 없이도 보호 가능한 생존 동료
-            : enemyActions.CanProtectAlly(card.OwnerUnit, target); // 실제 공격 예고가 필요한 기존 힘 카드
+        return card.SourceData.ShieldRule switch // 기본 보호와 방패의 직접 공격 보호 규칙 구분
+        { // 보호 카드 종류 분기 시작
+            ShieldCardRule.BodyGuard => enemyActions.CanBodyGuard(card.OwnerUnit, target), // 이후 한 공격을 대신 받을 수 있는 동료 확인
+            ShieldCardRule.ShieldOath => enemyActions.CanShieldOath(card.OwnerUnit, target), // 두 적 턴 동안 보호할 생존 동료 확인
+            _ => enemyActions.CanProtectAlly(card.OwnerUnit, target) // 예정 공격을 바로 바꾸는 기존 힘 카드 확인
+        }; // 보호 카드 종류 분기 종료
     } // 보호 조건 조회 종료
     internal static bool CanUseDrawInspection(CardInstance card, BattleDeckRuntime deck) // 전투 손패와 대상의 공통 확인 가능 조건
     { // 확인 가능 검사 시작
@@ -807,6 +810,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 동료 피해 분담 종료
         if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 힘의 동료 보호 효과 확인
         { // 동료 보호 처리 시작
+            if (cardInstance.SourceData.ShieldRule == ShieldCardRule.ShieldOath) // 두 적 턴을 지키는 수호 맹세의 적용 확인
+            { // 수호 맹세 처리 시작
+                var defender = cardInstance.OwnerUnit; // 대신 피해를 받을 카드 소유자
+                if (!enemyActions.TryShieldOath(defender, targetUnit, cardInstance.StatusDuration)) // 대상과 시전자의 생존 및 보호 기간 확인
+                { // 보호 예약 실패 처리 시작
+                    return 0; // 실질적으로 적용되지 않은 효과
+                } // 보호 예약 실패 처리 종료
+                var defense = defender.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseUp, cardInstance.EffectValue, cardInstance.StatusDuration, 1, defender); // 대신 공격받는 시전자의 물리 방어력 증가
+                FindUnitView(defender)?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseUp, defense); // 시전자에게 실제 보호 방어력 표시
+                return cardInstance.EffectValue; // 적용한 보호와 물리 방어 보너스 반환
+            } // 수호 맹세 처리 종료
             bool guarded = cardInstance.SourceData.ShieldRule == ShieldCardRule.BodyGuard // 방패 카드의 지속 보호 여부 확인
                 ? enemyActions.TryBodyGuard(cardInstance.OwnerUnit, targetUnit) // 대상의 이후 첫 유효 공격을 대신 받을 예약
                 : enemyActions.TryProtectAlly(cardInstance.OwnerUnit, targetUnit); // 기존 힘 카드의 예정 공격 보호
@@ -825,6 +839,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 획득 시작
             int gainedBlock = targetUnit.GainBlock(cardInstance.EffectValue); // 선택 대상의 실제 방어도 획득
+            if (cardInstance.SourceData.ShieldRule == ShieldCardRule.FrontlineProtection) // 방어도를 받은 아군의 전열 보호 상태 확인
+            { // 출혈 저항 설정 시작
+                var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.BleedResistance, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 생존 아군별 출혈 저항 부여
+                FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.BleedResistance, result); // 실제 아군의 출혈 저항 표시
+            } // 출혈 저항 설정 종료
             if (cardInstance.SourceData.ShieldRule == ShieldCardRule.BalanceGuard) // 방어도를 얻은 카드가 균형 잡기인지 확인
             { // 다음 방패 행동력 할인 예약 시작
                 var balance = targetUnit.ApplyStatusEffect(BattleStatusEffectType.ShieldBalance, cardInstance.SourceData.SecondaryEffectValue, 1, 1, targetUnit); // 다음 소유 방패 한 장의 할인 준비
@@ -1117,6 +1136,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             appliedStatus = BattleStatusEffectType.Stagger; // 적만 사용하는 다음 행동 취소 상태 선택
             statusResult = targetUnit.ApplyStatusEffect(appliedStatus, 1, 1, 1, cardInstance.OwnerUnit); // 다음 유효 적 행동을 한 번 취소
         } // 방패로 적 행동 밀어내기 종료
+        if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SuppressionStrike && !targetUnit.IsDead) // 억제 타격이 명중한 생존 적 확인
+        { // 적 공격력 약화 처리 시작
+            appliedStatus = BattleStatusEffectType.AttackPowerDown; // 기존 적 공격력 감소 상태 사용
+            statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, 1, cardInstance.OwnerUnit); // 대상의 두 적 턴 동안의 공격력 약화 부여
+        } // 적 공격력 약화 처리 종료
         if (appliedStatus != BattleStatusEffectType.None) // 추가 상태 적용 또는 면역 확인
         { // 검 전용 상태 피드백 시작
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(appliedStatus, statusResult); // 명중 후 상태 부여 결과 표시

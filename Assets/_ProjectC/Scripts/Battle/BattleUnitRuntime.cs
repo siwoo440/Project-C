@@ -164,6 +164,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 면역 차단 처리 시작
             return BattleStatusEffectApplyResult.BlockedByImmunity; // 면역 차단 결과 반환
         } // 면역 차단 처리 종료
+        if (effectType == BattleStatusEffectType.Bleed && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 적이 아군에게 주는 유효 출혈 시도 확인
+        { // 출혈 저항 판정 시작
+            int resistance = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.BleedResistance)); // 출혈 저항의 유효 확률 조회
+            if (resistance > 0 && (resistance == 100 || UnityEngine.Random.Range(0, 100) < resistance)) // 저항 보유 시 확정 또는 확률 차단 확인
+            { // 출혈 차단 처리 시작
+                return BattleStatusEffectApplyResult.BlockedByImmunity; // 기존 상태 차단 결과로 출혈 저항 표시
+            } // 출혈 차단 처리 종료
+        } // 출혈 저항 판정 종료
         if (Team == BattleTeam.Ally && value == 2 && (effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.ChargeDefenseDown) && RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.SoftenDefenseLoss) != null) // 보유 금속판과 물리 방어 두 점 감소 확인
         { // 금속판 완화 시작
             value = 1; // 새로 부여되는 약화 한 점으로 완화
@@ -440,7 +448,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
         int protection = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.GuardianCircle)); // 수호의 원 피해 경감률
         int interception = applyDangerInterception ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.DangerInterception)) : 0; // 적용 가능한 위험 차단 비율
-        int adjusted = (int)((long)damage * (100 - resistance) * (100 - protection) * (100 - interception) / 1_000_000); // 세 비율을 곱한 뒤 한 번만 내림
+        int focus = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.FocusedDefense)); // 현재 집중 방어의 직접 피해 경감률
+        int adjusted = (int)((long)damage * (100 - resistance) * (100 - protection) * (100 - interception) * (100 - focus) / 100_000_000); // 비율 네 개를 곱한 뒤 한 번만 내림
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
@@ -478,6 +487,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int incoming = Math.Max(0, damageResult.FinalDamage - damageResult.AbsorbedDamage - sharedDamage); // 방어와 분담 뒤의 실제 원본 피해
             damageResult = damageResult.WithAppliedDamage(Math.Min(CurrentHealth, reduceHealthDamage(incoming))); // 체력 상한 적용 전에 장화 한 점 경감
         } // 철제 장화 경감 종료
+        damageResult = damageResult.WithAppliedDamage(ApplyUndyingGuard(damageResult.AppliedDamage)); // 기존 방어와 피해 경감 이후의 불굴 판정
         LoseHealth(damageResult.AppliedDamage); // 현재 체력 감소
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
@@ -525,7 +535,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 분담 피해 없음 처리 시작
             return 0; // 적용된 체력 피해 없음
         } // 분담 피해 없음 처리 종료
-        int applied = Math.Min(CurrentHealth, amount); // 남은 체력에 맞춘 피해량 계산
+        int applied = ApplyUndyingGuard(Math.Min(CurrentHealth, amount)); // 방어도 없는 피해에서 불굴과 체력 상한 적용
         BattleDamageResult result = new BattleDamageResult(amount, 0, amount, applied, damageType); // 추가 방어와 방어도 없는 피해 결과 생성
         LoseHealth(applied); // 분담자의 체력 감소
         bool diedNow = CurrentHealth == 0; // 분담자의 사망 여부 확인
@@ -545,6 +555,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
+    private int ApplyUndyingGuard(int incoming) // 체력 한 점 이하로 떨어지는 피해의 일회성 제한
+    { // 불굴의 실제 피해 확인 시작
+        int survivableDamage = Math.Max(0, CurrentHealth - 1); // 체력 한 점을 남기는 최대 손실량
+        if (incoming > 0 && incoming >= survivableDamage && RemoveStatusEffect(BattleStatusEffectType.UndyingGuard)) // 실제 피해와 체력 임계 및 불굴 소모 성공 확인
+        { // 불굴 생존 처리 시작
+            return survivableDamage; // 생존에 필요한 체력 손실 상한 반환
+        } // 불굴 생존 처리 종료
+        return incoming; // 보호 조건을 충족하지 않은 피해량 보존
+    } // 불굴의 실제 피해 확인 종료
     private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
     { // 준비 적용 확인 시작
         if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy) // 유효한 적의 피해 확인

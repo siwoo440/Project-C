@@ -48,6 +48,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         IsActionConfigurationValid(); // 실행 가능 여부 조회
 
     internal bool IsPositiveDirectAttack => IsExecutable && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && AttackAmount > 0; // 양수 직접 적 공격 확인
+    internal bool IsSingleTargetEnemyAttack => Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && (TargetRule == EnemyTargetRule.FirstLiving || TargetRule == EnemyTargetRule.LowestHealth || TargetRule == EnemyTargetRule.RandomLiving); // 도발과 맹세가 적용되는 단일 대상 공격 확인
 
     public BattleEnemyAction(
         BattleUnitRuntime actor,
@@ -131,8 +132,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     }
     internal void SetShieldTauntTarget(BattleUnitRuntime target) // 전체 도발의 우선 대상 설정
     { // 도발 대상 설정 시작
-        bool singleTargetAttack = Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && (TargetRule == EnemyTargetRule.FirstLiving || TargetRule == EnemyTargetRule.LowestHealth || TargetRule == EnemyTargetRule.RandomLiving); // 단일 대상 직접 공격 확인
-        shieldTauntTarget = singleTargetAttack ? target : null; // 현재 규칙의 일반 공격에만 도발 적용
+        shieldTauntTarget = IsSingleTargetEnemyAttack ? target : null; // 현재 규칙의 단일 대상 공격에 도발 적용
         ClearPreviousDamageShare(); // 도발 전 대상으로 맺은 분담 해제
     } // 도발 대상 설정 종료
     private void ClearPreviousDamageShare() // 대상 변경으로 무효가 된 분담 정리

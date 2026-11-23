@@ -124,6 +124,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                         }; // 원본 카드 수치 지정 종료
                         description = BattleStatusEffectInstance.GetDescription(effect, amount); // 새 방패 상태의 실제 게임 수치 안내
                     } // 신규 방패 상태의 도감 설명 종료
+                    else if (effect == BattleStatusEffectType.FocusedDefense || effect == BattleStatusEffectType.BleedResistance || effect == BattleStatusEffectType.UndyingGuard) // 집중 방어와 출혈 저항 및 불굴 확인
+                    { // 새 방패 상태 상세 안내 시작
+                        int amount = effect == BattleStatusEffectType.FocusedDefense ? 50 : effect == BattleStatusEffectType.BleedResistance ? 20 : 1; // 기본 방패 카드의 원본 수치
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 새 방패 상태 도감 설명 연결
+                    } // 새 방패 상태 상세 안내 종료
                     else if (effect == BattleStatusEffectType.PublicMark) // 수신기의 공명 표식 확인
                     { // 표식 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 분필과 적용 기한 표시
