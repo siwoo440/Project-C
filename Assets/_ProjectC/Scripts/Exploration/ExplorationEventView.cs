@@ -30,6 +30,11 @@ public sealed class ExplorationEventView : MonoBehaviour // 탐사 이벤트 오
         interactionLocked = true; // 이벤트 상호작용 잠금 저장
     }
 
+    internal void ResetInteraction() // 불러오기 전 이전 이벤트 잠금 해제
+    { // 잠금 해제 시작
+        interactionLocked = false; // 복원 후 미처리 이벤트 재접촉 허용
+    } // 잠금 해제 종료
+
     private void OnTriggerEnter2D(Collider2D other) // 플레이어 이벤트 접촉 처리
     {
         if (interactionLocked ||

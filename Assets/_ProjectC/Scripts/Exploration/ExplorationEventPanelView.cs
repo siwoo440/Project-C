@@ -175,9 +175,13 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
             int capturedIndex = index; // 클릭용 인덱스 복사
 
-            CreateChoiceButton(
-                choiceData.ChoiceText,
-                () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
+            string label = choiceData.ChoiceText; // 행동 이름 조회
+            if (currentEventData.EventId == AshstormEyeEvent.Id) // 재폭풍의 눈 비용 안내 여부 확인
+            { // 행동 효과 표시 시작
+                string[] effects = { "정신력 -8 · 희귀 카드 1장", "체력 -7 · 철판 +1 · 나사 +1", "정신력 +1" }; // 선택 전 확인할 비용과 보상
+                label += "   " + effects[index]; // 선택지 옆에 효과 표시
+            } // 행동 효과 표시 종료
+            CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
         if (choiceButtons.Count == 0)
@@ -196,6 +200,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return; // 잘못된 클릭 또는 중복 선택 차단
         }
 
+        if (currentEventData.EventId == AshstormEyeEvent.Id) // 행동자 지정이 필요한 재폭풍의 눈 확인
+        { // 행동자 선택 시작
+            SelectAshstormActor(choiceIndex); // 행동 확정 전 대상 선택 표시
+            return; // 선택 대기 중 비용과 완료 처리 보류
+        } // 행동자 선택 종료
         choiceCommitted = true; // 선택 완료 상태 저장
 
         ExplorationEventChoiceData choiceData =
@@ -225,6 +234,71 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         ClearChoiceButtons(); // 기존 선택지 버튼 제거
         CreateCloseButton("[확인]"); // 결과 확인 버튼 생성
     }
+
+    private void SelectAshstormActor(int choice) // 선택한 행동을 수행할 생존자 지정
+    { // 행동자 선택 시작
+        var allies = BattleResultManager.EnsureInstance(); // 현재 탐사 파티 상태 조회
+        string runtimeId = currentRuntimeEventId; // 현재 선택 대상 방 식별자 보관
+        string heading = currentEventData.Choices[choice].ChoiceText; // 행동 제목 조회
+        if (choice == AshstormEyeEvent.Gaze) // 응시 후 별도 카드 소유자 선택 확인
+        { // 응시자 선택 시작
+            ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, "정신력 8을 잃고 눈을 들여다볼 생존자를 선택하세요.", "선택 취소", allies.IsLivingPartyMember, allies.IsLivingPartyMember, actor => SelectAshstormOwner(runtimeId, actor)); // 응시자 선택 후 소유자 화면으로 이동
+            return; // 카드 소유자 확정 전 결과 보류
+        } // 응시자 선택 종료
+        string hint = choice == AshstormEyeEvent.Shatter ? "체력 7을 잃고 돌을 던질 생존자를 선택하세요." : "시선을 피하고 정신력 1을 회복할 생존자를 선택하세요."; // 행동별 대상 안내
+        ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, hint, "선택 취소", allies.IsLivingPartyMember, actor => CommitAshstormChoice(runtimeId, choice, actor, null)); // 생존자 선택 후 비용과 결과 반영
+    } // 행동자 선택 종료
+
+    private void SelectAshstormOwner(string runtimeId, CharacterData actor) // 응시한 사람과 별도로 카드 소유자 지정
+    { // 카드 소유자 선택 시작
+        ShopOfferData reward = AshstormEyeEvent.GetRareReward(runtimeId); // 현재 방의 희귀 카드 조회
+        if (reward == null) // 실제 희귀 카드 지급 가능 여부 확인
+        { // 지급 불가 안내 시작
+            bodyText.text = "지급 가능한 희귀 카드가 없습니다. 다른 행동을 선택하세요."; // 비용 없는 선택 복귀 안내
+            return; // 다른 행동 선택 허용
+        } // 지급 불가 안내 종료
+        PartyData party = BattleResultManager.EnsureInstance().ActiveParty; // 현재 파티 소유자 목록 조회
+        string hint = $"{actor.DisplayName}의 정신력 -8 · 카드를 받을 파티원을 선택하세요."; // 비용을 치르는 사람과 소유자 구분 안내
+        ExplorationRewardOwnerView.OpenPartyMember(transform, party, $"희귀 카드 · {reward.DisplayName}", hint, "선택 취소", null, owner => CommitAshstormChoice(runtimeId, AshstormEyeEvent.Gaze, actor, owner)); // 기존 공용 카드 규칙으로 소유자 선택
+    } // 카드 소유자 선택 종료
+
+    private bool CommitAshstormChoice(string runtimeId, int choice, CharacterData actor, CharacterData owner) // 최종 대상 확정 후 결과 표시
+    { // 결과 확정 시작
+        if (choiceCommitted || currentRuntimeEventId != runtimeId || currentEventData == null || !AshstormEyeEvent.TryResolve(runtimeId, choice, actor, owner, out string summary)) // 현재 방의 미처리 선택 성공 확인
+        { // 지급 실패 처리 시작
+            return false; // 선택 취소 또는 재시도 허용
+        } // 지급 실패 처리 종료
+        choiceCommitted = true; // 결과 화면의 중복 입력 차단
+        string story = BuildResultMessage(currentEventData.Choices[choice].ResultText, summary); // 원문 결말과 실제 변화량 결합
+        SaveAshstormResult(story); // 확정된 결과 저장과 표시
+        return true; // 열린 대상 선택 화면 닫기
+    } // 결과 확정 종료
+
+    private void SaveAshstormResult(string story) // 확정 결과만 저장하고 실패 시 같은 상태로 재시도
+    { // 결과 저장 시작
+        bool defeated = ExplorationSessionManager.EnsureInstance().IsExplorationCompleted; // 마지막 생존자 사망 확인
+        bool saved = defeated ? ExplorationAutoSave.SaveAfterBattle(Vector3.zero) : ExplorationAutoSave.SaveCurrentExploration(); // 전멸은 거점에 생존은 현재 탐사에 저장
+        if (defeated) // 탐사 결과 화면 전환 확인
+        { // 전멸 화면 전환 시작
+            if (!saved) // 종료 상태 저장 실패 확인
+            { // 실패 기록 시작
+                Debug.LogWarning("[ExplorationAutoSave] 재폭풍의 눈 전멸 상태를 저장하지 못했습니다."); // 거점 복귀 시 재시도할 저장 실패 안내
+            } // 실패 기록 종료
+            CloseCurrentEvent(); // 거점 복귀 결과 화면에 입력 반환
+            return; // 종료된 탐사 화면 정리
+        } // 전멸 화면 전환 종료
+        ClearChoiceButtons(); // 이전 행동 버튼 제거
+        bodyText.text = saved ? story : story + "\n결과를 저장하지 못했습니다."; // 저장 결과와 원문 결말 표시
+        if (saved) // 탐사 자동 저장 성공 확인
+        { // 완료 안내 시작
+            CreateCloseButton("[확인]"); // 탐사 이동으로 복귀
+        } // 완료 안내 종료
+        else // 동일 결과 재저장 처리
+        { // 재시도 버튼 생성 시작
+            CreateChoiceButton("[다시 저장]", () => SaveAshstormResult(story)); // 비용과 보상의 재적용 없는 저장 재시도
+            CreateCloseButton("[계속]"); // 메모리 진행 상태로 탐사 계속
+        } // 재시도 버튼 생성 종료
+    } // 결과 저장 종료
 
     private string ResolveChoice(
         string runtimeEventId,
@@ -367,6 +441,24 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
     {
         CreateChoiceButton(label, CloseCurrentEvent); // 닫기 버튼 생성 호출
     }
+
+    public static void CloseForLoad() // 저장 복원 전 열려 있는 이벤트 정리
+    { // 열려 있는 이벤트 정리 시작
+        if (instance == null || instance.currentEventData == null) // 현재 열린 이벤트 확인
+        { // 닫힌 화면 처리 시작
+            return; // 기존 입력 상태 유지
+        } // 닫힌 화면 처리 종료
+        if (instance.showCoroutine != null) // 화면 캡처 대기 여부 확인
+        { // 표시 대기 정리 시작
+            instance.StopCoroutine(instance.showCoroutine); // 이전 이벤트 표시 취소
+            instance.showCoroutine = null; // 코루틴 참조 해제
+        } // 표시 대기 정리 종료
+        if (instance.currentEventView != null) // 이전 이벤트 오브젝트 존재 확인
+        { // 이벤트 잠금 해제 시작
+            instance.currentEventView.ResetInteraction(); // 복원 전 오브젝트 상호작용 해제
+        } // 이벤트 잠금 해제 종료
+        instance.CloseCurrentEvent(); // 열린 선택지와 탐사 이동 잠금 해제
+    } // 열려 있는 이벤트 정리 종료
 
     private void CloseCurrentEvent() // 현재 이벤트 패널 닫기
     {
