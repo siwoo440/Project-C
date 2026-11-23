@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "선택한 적에게 마법 피해를 준다."
   artwork: {fileID: 0}
   cardType: 1
+  cardTags: 3
   targetType: 3
   apCost: 1
   effectType: 0
