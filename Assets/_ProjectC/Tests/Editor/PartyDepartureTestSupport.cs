@@ -15,6 +15,7 @@ public static class PartyDepartureTestSupport // 탐사 테스트용 파티 준�
         Assert.IsTrue(selection.Validate().CanDeploy); // 테스트 파티 출전 가능 확인
         Assert.IsTrue(PartyLoadoutRuntime.Prepare(selection)); // 테스트 파티와 덱 준비
         ExplorationSessionManager.EnsureInstance().ResetExploration(); // 새 탐사 상태 초기화
+        PlayerResourceManager.EnsureInstance().BeginExplorationResourceTracking(); // 실제 탐사와 같은 재화 구분 시작
         RunDeckManager.EnsureInstance().ResetToSource(PartyLoadoutRuntime.Active.Deck); // 선택한 시작 덱 적용
         SceneFlowManager.Instance.LoadScene("30_Exploration"); // 탐사 씬 이동
     } // 탐사 테스트 준비 종료

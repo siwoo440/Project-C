@@ -214,16 +214,22 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     private sealed class PlayerResourceShopWallet : IShopWallet // 플레이어 자원 상점 지갑 연결기
     { // 상점 지갑 연결기 시작
+        private int explorationGoldSpent; // 직전 거래의 탐사 골드 사용량
         public int Gold => PlayerResourceManager.EnsureInstance().Gold; // 실제 플레이어 골드 조회
 
         public bool TrySpend(int amount) // 실제 플레이어 골드 차감
         { // 실제 골드 차감 시작
-            return PlayerResourceManager.EnsureInstance().TrySpend(amount, 0, 0, 0); // 골드 단독 차감 결과 반환
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 실제 자원 관리자 조회
+            int previousExplorationGold = resources.ExplorationGold; // 차감 전 탐사 골드 보관
+            bool spent = resources.TrySpend(amount, 0, 0, 0); // 실제 골드 차감 시도
+            explorationGoldSpent = spent ? previousExplorationGold - resources.ExplorationGold : 0; // 직전 거래의 탐사 골드 차감량 저장
+            return spent; // 골드 단독 차감 결과 반환
         } // 실제 골드 차감 종료
 
         public void AddGold(int amount) // 실제 플레이어 골드 환불
         { // 실제 골드 환불 시작
-            PlayerResourceManager.EnsureInstance().AddResources(amount, 0, 0, 0); // 골드 단독 환불 지급
+            PlayerResourceManager.EnsureInstance().RefundShopGold(amount, explorationGoldSpent); // 원래 재화 구분을 유지한 골드 환불
+            explorationGoldSpent = 0; // 직전 거래 환불 기록 초기화
         } // 실제 골드 환불 종료
     } // 상점 지갑 연결기 종료
 } // 상점 관리자 종료

@@ -248,6 +248,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             return false;
         }
 
+        PlayerResourceManager.Instance?.EndExplorationResourceTracking(); // 성공한 탐사 재화 확정
         isExplorationCompleted = true; // 탐사 완료 상태 기록
         completionVersion++; // 새 탐사 종료 처리 순번 증가
         isExplorationSuccess = true; // 탐사 성공 상태 기록
@@ -283,6 +284,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             return false;
         }
 
+        PlayerResourceManager.Instance?.DiscardExplorationResources(); // 전멸 시 남은 탐사 획득 재화 제거
         isExplorationCompleted = true; // 탐사 완료 상태 기록
         completionVersion++; // 새 탐사 종료 처리 순번 증가
         isExplorationSuccess = false; // 탐사 실패 상태 기록
@@ -517,6 +519,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     } // 위험 노출도 조회 종료
     public void ResetExploration() // 다음 탐사를 위한 런 상태 초기화
     {
+        PlayerResourceManager.Instance?.EndExplorationResourceTracking(); // 이전 탐사 재화 구분 해제
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         activeEncounter = null; // 현재 조우 초기화

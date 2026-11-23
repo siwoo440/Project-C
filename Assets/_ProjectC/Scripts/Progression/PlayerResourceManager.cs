@@ -6,6 +6,12 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
     private static PlayerResourceManager instance; // 영구 관리자 인스턴스
     private RelicGoldRuntime goldRuntime; // 기존 유물 골드 런타임 참조
     private bool suppressGoldEvent; // 골드 이벤트 중복 전달 방지
+    private bool trackingExplorationResources; // 탐사 획득 재화 추적 여부
+    private int observedGold; // 골드 이벤트 직전 보유량
+    private int explorationGold; // 현재 남은 탐사 획득 골드
+    private int explorationScrew; // 현재 남은 탐사 획득 나사
+    private int explorationIronPlate; // 현재 남은 탐사 획득 철판
+    private int explorationWire; // 현재 남은 탐사 획득 전선
 
     public static PlayerResourceManager Instance => instance; // 현재 자원 관리자 조회
 
@@ -21,6 +27,11 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
     public int Screw { get; private set; } // 현재 나사 수량
     public int IronPlate { get; private set; } // 현재 철판 수량
     public int Wire { get; private set; } // 현재 전선 수량
+    public bool IsTrackingExplorationResources => trackingExplorationResources; // 탐사 재화 추적 상태 조회
+    public int ExplorationGold => explorationGold; // 남은 탐사 골드 조회
+    public int ExplorationScrew => explorationScrew; // 남은 탐사 나사 조회
+    public int ExplorationIronPlate => explorationIronPlate; // 남은 탐사 철판 조회
+    public int ExplorationWire => explorationWire; // 남은 탐사 전선 조회
 
     public event Action ResourcesChanged; // 자원 변경 이벤트
 
@@ -85,6 +96,12 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
         Screw += safeScrew; // 나사 지급
         IronPlate += safeIronPlate; // 철판 지급
         Wire += safeWire; // 전선 지급
+        if (trackingExplorationResources) // 탐사 획득 재화 추적 여부 확인
+        { // 탐사 자원 증가 처리 시작
+            explorationScrew = AddExplorationResource(explorationScrew, safeScrew, Screw); // 탐사 나사 획득량 반영
+            explorationIronPlate = AddExplorationResource(explorationIronPlate, safeIronPlate, IronPlate); // 탐사 철판 획득량 반영
+            explorationWire = AddExplorationResource(explorationWire, safeWire, Wire); // 탐사 전선 획득량 반영
+        } // 탐사 자원 증가 처리 종료
         ResourcesChanged?.Invoke(); // 전체 자원 변경 알림
     }
 
@@ -120,6 +137,12 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
         Screw -= safeScrew; // 나사 차감
         IronPlate -= safeIronPlate; // 철판 차감
         Wire -= safeWire; // 전선 차감
+        if (trackingExplorationResources) // 탐사 재화 추적 여부 확인
+        { // 기존 재화 우선 차감 시작
+            explorationScrew = Mathf.Min(explorationScrew, Screw); // 남은 탐사 나사 계산
+            explorationIronPlate = Mathf.Min(explorationIronPlate, IronPlate); // 남은 탐사 철판 계산
+            explorationWire = Mathf.Min(explorationWire, Wire); // 남은 탐사 전선 계산
+        } // 기존 재화 우선 차감 종료
         ResourcesChanged?.Invoke(); // 전체 자원 변경 알림
         return true; // 자원 차감 성공 반환
     }
@@ -132,6 +155,7 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
 
     public void ResetResources() // 모든 영구 자원 초기화
     {
+        EndExplorationResourceTracking(); // 이전 탐사 재화 구분 해제
         EnsureGoldRuntime(); // 골드 런타임 연결 보장
         suppressGoldEvent = true; // 골드 단독 변경 이벤트 억제
         goldRuntime.ResetGold(); // 골드 초기화
@@ -156,6 +180,7 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
         }
 
         goldRuntime = currentGoldRuntime; // 새 골드 런타임 저장
+        observedGold = goldRuntime != null ? goldRuntime.Gold : 0; // 현재 골드 이벤트 기준값 저장
         if (goldRuntime != null) // 새 골드 런타임 존재 확인
         {
             goldRuntime.GoldChanged += HandleGoldChanged; // 새 골드 이벤트 등록
@@ -164,11 +189,78 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
 
     private void HandleGoldChanged(int currentGold) // 기존 골드 변경 이벤트 처리
     {
+        if (trackingExplorationResources) // 탐사 골드 추적 여부 확인
+        { // 탐사 골드 갱신 시작
+            explorationGold = currentGold > observedGold ? AddExplorationResource(explorationGold, currentGold - observedGold, currentGold) : Mathf.Min(explorationGold, currentGold); // 획득분 증가와 기존 골드 우선 소비 반영
+        } // 탐사 골드 갱신 종료
+        observedGold = currentGold; // 다음 골드 이벤트 기준값 갱신
         if (!suppressGoldEvent) // 이벤트 억제 상태 확인
         {
             ResourcesChanged?.Invoke(); // 전체 자원 변경 알림
         }
     }
+
+    public void BeginExplorationResourceTracking() // 새 탐사의 획득 재화 구분 시작
+    { // 탐사 재화 구분 시작
+        EnsureGoldRuntime(); // 현재 골드 연결 확인
+        trackingExplorationResources = true; // 탐사 획득분 추적 활성화
+        explorationGold = 0; // 탐사 골드 초기화
+        explorationScrew = 0; // 탐사 나사 초기화
+        explorationIronPlate = 0; // 탐사 철판 초기화
+        explorationWire = 0; // 탐사 전선 초기화
+        observedGold = goldRuntime.Gold; // 기존 골드 이벤트 기준값 설정
+    } // 탐사 재화 구분 종료
+
+    public bool RestoreExplorationResourceTracking(int gold, int screw, int ironPlate, int wire) // 저장된 탐사 획득 재화 복원
+    { // 탐사 재화 복원 시작
+        if (gold < 0 || screw < 0 || ironPlate < 0 || wire < 0 || gold > Gold || screw > Screw || ironPlate > IronPlate || wire > Wire) // 저장 획득분과 전체 자원 범위 확인
+        { // 잘못된 저장 재화 처리 시작
+            return false; // 잘못된 탐사 재화 복원 차단
+        } // 잘못된 저장 재화 처리 종료
+        BeginExplorationResourceTracking(); // 현재 자원 기준 추적 준비
+        explorationGold = gold; // 저장 탐사 골드 적용
+        explorationScrew = screw; // 저장 탐사 나사 적용
+        explorationIronPlate = ironPlate; // 저장 탐사 철판 적용
+        explorationWire = wire; // 저장 탐사 전선 적용
+        return true; // 탐사 재화 복원 성공 반환
+    } // 탐사 재화 복원 종료
+
+    public void EndExplorationResourceTracking() // 탐사 자원 구분만 종료
+    { // 탐사 자원 확정 시작
+        trackingExplorationResources = false; // 탐사 획득분 추적 해제
+        explorationGold = 0; // 탐사 골드 구분 제거
+        explorationScrew = 0; // 탐사 나사 구분 제거
+        explorationIronPlate = 0; // 탐사 철판 구분 제거
+        explorationWire = 0; // 탐사 전선 구분 제거
+    } // 탐사 자원 확정 종료
+
+    public void DiscardExplorationResources() // 전멸 시 남은 탐사 획득분 제거
+    { // 탐사 획득분 제거 시작
+        if (!trackingExplorationResources) // 추적 중인 탐사 확인
+        { // 획득분 없음 처리 시작
+            return; // 기존 자원 유지
+        } // 획득분 없음 처리 종료
+        int savedGold = Gold - explorationGold; // 기존 골드 잔액 계산
+        int savedScrew = Screw - explorationScrew; // 기존 나사 잔액 계산
+        int savedIronPlate = IronPlate - explorationIronPlate; // 기존 철판 잔액 계산
+        int savedWire = Wire - explorationWire; // 기존 전선 잔액 계산
+        RestoreResources(savedGold, savedScrew, savedIronPlate, savedWire); // 기존 재화만 복원
+    } // 탐사 획득분 제거 종료
+
+    public void RefundShopGold(int amount, int explorationSpent) // 실패한 상점 거래의 원래 재화 구분 복원
+    { // 상점 환불 시작
+        int previousExplorationGold = explorationGold; // 환불 전 탐사 골드 보관
+        AddResources(amount, 0, 0, 0); // 전체 골드 환불
+        if (trackingExplorationResources) // 탐사 중 거래 여부 확인
+        { // 탐사 골드 환불 구분 시작
+            explorationGold = AddExplorationResource(previousExplorationGold, Mathf.Clamp(explorationSpent, 0, amount), Gold); // 실제 사용한 탐사 골드만 복원
+        } // 탐사 골드 환불 구분 종료
+    } // 상점 환불 종료
+
+    private static int AddExplorationResource(int previous, int gained, int total) // 안전한 탐사 획득 재화 증가
+    { // 탐사 획득 재화 계산 시작
+        return (int)Math.Min(Math.Max(0, (long)total), (long)previous + Math.Max(0, gained)); // 전체 잔액을 넘지 않는 획득분 반환
+    } // 탐사 획득 재화 계산 종료
 
     private void OnDestroy() // 자원 관리자 제거 처리
     {
