@@ -3,6 +3,8 @@ using UnityEngine; // 영구 오브젝트와 위치 기능 사용
 
 public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 상태 관리자
 {
+    private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
+
     private static ExplorationSessionManager instance; // 탐사 관리자 인스턴스
 
     private readonly HashSet<string> clearedEncounterIds =
@@ -15,6 +17,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
     private int currentFloor = 1; // 현재 탐사 층
     private int currentFloorSeed; // 현재 층 절차 생성 Seed
     private bool hasCurrentFloorSeed; // 현재 층 Seed 존재 여부
+    private bool isExplorationCompleted; // 탐사 완료 여부
+    private bool isExplorationSuccess; // 탐사 성공 여부
+    private int completedFloor; // 탐사 완료 층
+    private int completedEncounterCount; // 완료 시점 클리어 조우 수
+    private int lastExplorationSuccessAffinity; // 마지막 탐사 성공 호감도 보상
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
@@ -23,6 +30,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
     public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
     public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
+    public bool IsExplorationCompleted => isExplorationCompleted; // 탐사 완료 여부 조회
+    public bool IsExplorationSuccess => isExplorationSuccess; // 탐사 성공 여부 조회
+    public int CompletedFloor => completedFloor; // 탐사 완료 층 조회
+    public int CompletedEncounterCount => completedEncounterCount; // 완료 시점 클리어 조우 수 조회
+    public int LastExplorationSuccessAffinity => lastExplorationSuccessAffinity; // 마지막 성공 호감도 조회
 
     public IReadOnlyCollection<string> ClearedEncounterIds =>
         clearedEncounterIds; // 클리어 조우 목록 조회
@@ -79,6 +91,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             encounterData == null ||
             !encounterData.IsValidData() ||
             activeEncounter != null ||
+            isExplorationCompleted ||
             IsEncounterCleared(runtimeEncounterId))
         {
             return false;
@@ -144,6 +157,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         string encounterName =
             activeEncounter.DisplayName; // 현재 조우 이름 보관
 
+        BattleType clearedBattleType =
+            activeEncounter.BattleType; // 클리어 대상 조우 등급 보관
+
         if (resultData.Result == BattleResult.Victory)
         {
             GrantVictoryRewards(activeEncounter); // 승리 보상 지급
@@ -154,8 +170,13 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
             }
 
             Debug.Log(
-                $"[Exploration][Day39] 조우 클리어 - " +
-                $"{runtimeEncounterId} / {encounterName}"); // 조우 클리어 로그
+                $"[Exploration][Day44] 조우 클리어 - " +
+                $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
+
+            if (clearedBattleType == BattleType.Boss)
+            {
+                CompleteExplorationSuccess(); // 보스 승리를 탐사 성공으로 확정
+            }
         }
         else
         {
@@ -170,6 +191,34 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
 
         activeEncounter = null; // 현재 전투 데이터 초기화
         activeRuntimeEncounterId = null; // 현재 런타임 조우 ID 초기화
+    }
+
+    public bool CompleteExplorationSuccess() // 탐사 성공 처리 시도
+    {
+        if (isExplorationCompleted)
+        {
+            return false;
+        }
+
+        isExplorationCompleted = true; // 탐사 완료 상태 기록
+        isExplorationSuccess = true; // 탐사 성공 상태 기록
+        completedFloor = currentFloor; // 성공 층 기록
+        completedEncounterCount = clearedEncounterIds.Count; // 성공 시점 클리어 조우 수 기록
+        lastExplorationSuccessAffinity = ExplorationSuccessAffinityReward; // 성공 호감도 보상 기록
+
+        CharacterAffinityManager affinityManager =
+            CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비
+
+        affinityManager.GrantExplorationSuccessAffinity(
+            lastExplorationSuccessAffinity); // 탐사 성공 호감도 지급
+
+        Debug.Log(
+            $"[Exploration][Day44] 탐사 성공 - " +
+            $"{completedFloor}F / " +
+            $"클리어 조우 {completedEncounterCount}개 / " +
+            $"호감도 +{lastExplorationSuccessAffinity}"); // 탐사 성공 결과 로그
+
+        return true;
     }
 
     public bool IsEncounterCleared(string runtimeEncounterId) // 런타임 조우 클리어 여부 확인
@@ -214,6 +263,15 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
 
     public int AdvanceFloor() // 다음 층 진행
     {
+        if (isExplorationCompleted)
+        {
+            Debug.Log(
+                $"[Exploration][Day44] 탐사 완료 상태라 다음 층으로 이동하지 않습니다. " +
+                $"완료 층 {completedFloor}F"); // 완료 후 층 이동 차단 로그
+
+            return currentFloor;
+        }
+
         currentFloor += 1; // 현재 층 증가
         activeEncounter = null; // 진행 중 조우 초기화
         activeRuntimeEncounterId = null; // 진행 중 런타임 조우 초기화
@@ -237,6 +295,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 탐사 진행 �
         hasReturnPosition = false; // 복귀 위치 해제
         LastClearReward = null; // 마지막 보상 초기화
         currentFloor = 1; // 탐사 층 초기화
+        isExplorationCompleted = false; // 탐사 완료 상태 초기화
+        isExplorationSuccess = false; // 탐사 성공 상태 초기화
+        completedFloor = 0; // 완료 층 초기화
+        completedEncounterCount = 0; // 완료 조우 수 초기화
+        lastExplorationSuccessAffinity = 0; // 성공 호감도 표시 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
     }
 
