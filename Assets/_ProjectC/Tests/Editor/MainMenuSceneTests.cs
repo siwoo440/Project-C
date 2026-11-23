@@ -85,10 +85,9 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             } // 탐사 대기 종료
             yield return null; // 맵과 위치 초기화 대기
             ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 탐사 플레이어 조회
-            GameObject saveEntry = GameObject.Find("SaveMenuEntry"); // 탐사 저장 메뉴 버튼 조회
-            Assert.IsNotNull(saveEntry); // 탐사 저장 메뉴 버튼 존재 확인
-            saveEntry.GetComponent<Button>().onClick.Invoke(); // 탐사 저장 화면 열기
-            SaveMenuController explorationMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 탐사 저장 화면 조회
+            Assert.IsNull(GameObject.Find("SaveMenuEntry")); // 탐사 화면의 저장 버튼 제거 확인
+            Canvas explorationCanvas = Object.FindFirstObjectByType<ExplorationInventoryView>().GetComponentInParent<Canvas>(); // 실제 탐사 캔버스 조회
+            SaveMenuController explorationMenu = SaveMenuController.Open(explorationCanvas, SaveSlotService.CreateDefault(), true, true, index => false); // 재사용 가능한 저장 화면 직접 열기
             Assert.IsNotNull(explorationMenu); // 탐사 저장 화면 표시 확인
             Assert.IsTrue(ExplorationPlayerController.InputBlocked); // 저장 화면 중 이동 차단 확인
             explorationMenu.transform.Find("SaveMenu/CloseButton").GetComponent<Button>().onClick.Invoke(); // 저장 화면 닫기

@@ -143,7 +143,6 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
         CreateExplorationSuccessText(
             canvasObject.transform); // 탐사 성공 결과 HUD 생성
 
-        SaveMenuEntry.Install(canvas, true); // 탐사 저장 메뉴 버튼 설치
         ExplorationPlayerController tutorialPlayer = FindFirstObjectByType<ExplorationPlayerController>(); // 실제 탐사 플레이어 조회
         WorldTutorialProgress tutorial = new WorldTutorialProgress(WorldTutorialKind.Exploration, new PlayerPrefsSettingsStore()); // 기기별 탐사 안내 진행 생성
         WorldTutorialView tutorialView = WorldTutorialView.Create(canvas, tutorial, () => tutorialPlayer != null ? (Vector2)tutorialPlayer.transform.position : Vector2.zero, step => null, true); // 실제 이동을 확인하는 탐사 안내 화면 생성
