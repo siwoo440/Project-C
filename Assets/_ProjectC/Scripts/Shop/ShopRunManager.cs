@@ -118,7 +118,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public ShopPurchaseResult TryPurchase(ShopOfferData offer, CharacterData chosenOwner) // 소유자를 지정한 상품 구매 시도
     { // 지정 상품 구매 시작
-        if (!IsReady || offer == null || !offer.IsValidData() || !catalog.ContainsOffer(offer.OfferId)) // 상점과 상품 유효성 확인
+        if (!IsReady || offer == null || offer.RewardOnly || !offer.IsValidData() || !catalog.ContainsOffer(offer.OfferId)) // 상점 판매와 상품 유효성 확인
         { // 잘못된 상품 처리 시작
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상품 정보가 올바르지 않습니다."); // 잘못된 상품 완료 반환
         } // 잘못된 상품 처리 종료
