@@ -1,0 +1,128 @@
+using System.Collections.Generic; // 목록 자료형 사용
+using UnityEngine; // 유니티 기본 기능 사용
+public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
+{ // 클래스 시작
+    [Header("전투 데이터")] // 전투 데이터 구역
+    [SerializeField] private BattleLoadoutData battleLoadout; // 출전 파티와 덱 데이터
+    [SerializeField] private List<EnemyData> enemies = new List<EnemyData>(); // 출전 적 목록
+    [Header("유닛 생성")] // 유닛 생성 구역
+    [SerializeField] private BattleUnitView unitViewPrefab; // 공용 유닛 프리팹
+    [SerializeField] private Transform allyUnitRoot; // 아군 유닛 부모
+    [SerializeField] private Transform enemyUnitRoot; // 적 유닛 부모
+    [Header("테스트")] // 테스트 구역
+    [Min(1)] // 테스트 피해 최소값
+    [SerializeField] private int testDamage = 10; // 테스트 피해량
+    private readonly List<BattleUnitRuntime> allyUnits = new List<BattleUnitRuntime>(); // 생성된 아군 목록
+    private readonly List<BattleUnitRuntime> enemyUnits = new List<BattleUnitRuntime>(); // 생성된 적 목록
+    public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
+    public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
+    public bool IsInitialized { get; private set; } // 전투 초기화 여부
+    private void Start() // 씬 시작 처리
+    { // 시작 처리 시작
+        InitializeBattle(); // 전투 유닛 초기화
+    } // 시작 처리 종료
+    public void InitializeBattle() // 전투 초기화
+    { // 초기화 시작
+        if (IsInitialized) // 중복 초기화 확인
+        { // 중복 처리 시작
+            return; // 중복 초기화 중단
+        } // 중복 처리 종료
+        if (!ValidateSetup()) // 설정 유효성 확인
+        { // 설정 오류 처리 시작
+            return; // 초기화 중단
+        } // 설정 오류 처리 종료
+        CreateAllyUnits(); // 아군 유닛 생성
+        CreateEnemyUnits(); // 적 유닛 생성
+        IsInitialized = true; // 초기화 완료 저장
+        Debug.Log($"[BattleSceneSetup] 전투 유닛 생성 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명", this); // 생성 완료 출력
+    } // 초기화 종료
+    private bool ValidateSetup() // 설정 유효성 검사
+    { // 유효성 검사 시작
+        if (battleLoadout == null) // 전투 편성 누락 확인
+        { // 편성 누락 처리 시작
+            Debug.LogError("[BattleSceneSetup] BattleLoadoutData가 연결되지 않았습니다.", this); // 편성 누락 출력
+            return false; // 검사 실패 반환
+        } // 편성 누락 처리 종료
+        if (!battleLoadout.IsValidLoadout()) // 전투 편성 유효성 확인
+        { // 잘못된 편성 처리 시작
+            Debug.LogError("[BattleSceneSetup] BattleLoadoutData가 올바르지 않습니다.", this); // 편성 오류 출력
+            return false; // 검사 실패 반환
+        } // 잘못된 편성 처리 종료
+        if (unitViewPrefab == null) // 유닛 프리팹 누락 확인
+        { // 프리팹 누락 처리 시작
+            Debug.LogError("[BattleSceneSetup] BattleUnitView 프리팹이 연결되지 않았습니다.", this); // 프리팹 누락 출력
+            return false; // 검사 실패 반환
+        } // 프리팹 누락 처리 종료
+        if (allyUnitRoot == null || enemyUnitRoot == null) // 유닛 부모 누락 확인
+        { // 부모 누락 처리 시작
+            Debug.LogError("[BattleSceneSetup] 아군 또는 적 유닛 부모가 연결되지 않았습니다.", this); // 부모 누락 출력
+            return false; // 검사 실패 반환
+        } // 부모 누락 처리 종료
+        if (enemies.Count < 1) // 적 목록 비어 있음 확인
+        { // 빈 적 목록 처리 시작
+            Debug.LogError("[BattleSceneSetup] 출전할 적이 없습니다.", this); // 적 누락 출력
+            return false; // 검사 실패 반환
+        } // 빈 적 목록 처리 종료
+        foreach (EnemyData enemyData in enemies) // 적 목록 순회
+        { // 적 검사 시작
+            if (enemyData == null) // 빈 적 데이터 확인
+            { // 빈 적 처리 시작
+                Debug.LogError("[BattleSceneSetup] 적 목록에 빈 데이터가 있습니다.", this); // 빈 적 오류 출력
+                return false; // 검사 실패 반환
+            } // 빈 적 처리 종료
+        } // 적 검사 종료
+        return true; // 검사 성공 반환
+    } // 유효성 검사 종료
+    private void CreateAllyUnits() // 아군 유닛 생성
+    { // 아군 생성 시작
+        foreach (CharacterData characterData in battleLoadout.Party.Members) // 파티원 순회
+        { // 파티원 생성 시작
+            BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateAlly(characterData); // 아군 런타임 생성
+            BattleUnitView unitView = Instantiate(unitViewPrefab, allyUnitRoot); // 아군 화면 오브젝트 생성
+            unitView.name = $"Ally_{runtimeUnit.UnitId}"; // 아군 오브젝트 이름 적용
+            unitView.Bind(runtimeUnit); // 아군 화면 연결
+            allyUnits.Add(runtimeUnit); // 아군 목록 등록
+        } // 파티원 생성 종료
+    } // 아군 생성 종료
+    private void CreateEnemyUnits() // 적 유닛 생성
+    { // 적 생성 시작
+        foreach (EnemyData enemyData in enemies) // 적 데이터 순회
+        { // 적 생성 시작
+            BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
+            BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
+            unitView.name = $"Enemy_{runtimeUnit.UnitId}"; // 적 오브젝트 이름 적용
+            unitView.Bind(runtimeUnit); // 적 화면 연결
+            enemyUnits.Add(runtimeUnit); // 적 목록 등록
+        } // 적 생성 종료
+    } // 적 유닛 생성 종료
+    [ContextMenu("테스트/첫 번째 아군 피해")] // 아군 피해 메뉴
+    private void DamageFirstAlly() // 첫 번째 아군 피해 테스트
+    { // 아군 피해 시작
+        if (!Application.isPlaying) // 플레이 모드 확인
+        { // 비플레이 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 플레이 모드에서 실행해야 합니다.", this); // 플레이 모드 안내
+            return; // 피해 테스트 중단
+        } // 비플레이 처리 종료
+        if (allyUnits.Count < 1) // 아군 존재 확인
+        { // 아군 없음 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 피해를 받을 아군이 없습니다.", this); // 아군 없음 출력
+            return; // 피해 테스트 중단
+        } // 아군 없음 처리 종료
+        allyUnits[0].TakeDamage(testDamage); // 첫 번째 아군 피해 적용
+    } // 아군 피해 종료
+    [ContextMenu("테스트/첫 번째 적 피해")] // 적 피해 메뉴
+    private void DamageFirstEnemy() // 첫 번째 적 피해 테스트
+    { // 적 피해 시작
+        if (!Application.isPlaying) // 플레이 모드 확인
+        { // 비플레이 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 플레이 모드에서 실행해야 합니다.", this); // 플레이 모드 안내
+            return; // 피해 테스트 중단
+        } // 비플레이 처리 종료
+        if (enemyUnits.Count < 1) // 적 존재 확인
+        { // 적 없음 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 피해를 받을 적이 없습니다.", this); // 적 없음 출력
+            return; // 피해 테스트 중단
+        } // 적 없음 처리 종료
+        enemyUnits[0].TakeDamage(testDamage); // 첫 번째 적 피해 적용
+    } // 적 피해 종료
+} // 클래스 종료
