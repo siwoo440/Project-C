@@ -18,3 +18,8 @@ MonoBehaviour:
   explorationPosition: {x: 0.7, y: 1.3}
   enemies:
   - {fileID: 11400000, guid: e2f80ec4bd474b88ba71359930b17d05, type: 2}
+  characterExperienceReward: 10
+  goldReward: 50
+  screwReward: 25
+  ironPlateReward: 20
+  wireReward: 15

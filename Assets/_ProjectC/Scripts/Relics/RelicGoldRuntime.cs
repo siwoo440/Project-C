@@ -1,37 +1,66 @@
-using System; // 기본 이벤트 기능 사용
-using UnityEngine; // 수치 보정 기능 사용
+using System;
+using UnityEngine;
 
-public sealed class RelicGoldRuntime // 유물 시스템 임시 골드 지갑
+public sealed class RelicGoldRuntime
 {
-    public int Gold { get; private set; } // 현재 골드 보유량
-    public event Action<int> GoldChanged; // 골드 변경 이벤트
+    public int Gold { get; private set; }
 
-    public RelicGoldRuntime(int initialGold = 0) // 임시 골드 지갑 생성
+    public event Action<int> GoldChanged;
+
+    public RelicGoldRuntime(int initialGold = 0)
     {
-        Gold = Mathf.Max(0, initialGold); // 음수 없는 시작 골드 저장
+        Gold = Mathf.Max(0, initialGold);
     }
 
-    public int AddGold(int amount) // 골드 추가
+    public int AddGold(int amount)
     {
-        int safeAmount = Mathf.Max(0, amount); // 음수 없는 추가량 계산
-        if (safeAmount == 0) // 추가량 존재 여부 확인
+        int safeAmount = Mathf.Max(0, amount);
+
+        if (safeAmount == 0)
         {
-            return 0; // 추가 없음 반환
+            return 0;
         }
 
-        Gold += safeAmount; // 현재 골드 증가
-        GoldChanged?.Invoke(Gold); // 골드 변경 알림
-        return safeAmount; // 실제 추가량 반환
+        Gold += safeAmount;
+        GoldChanged?.Invoke(Gold);
+
+        return safeAmount;
     }
 
-    public void ResetGold() // 골드 초기화
+    public bool CanAfford(int amount)
     {
-        if (Gold == 0) // 이미 초기 상태 확인
+        int safeAmount = Mathf.Max(0, amount);
+        return Gold >= safeAmount;
+    }
+
+    public bool TrySpend(int amount)
+    {
+        int safeAmount = Mathf.Max(0, amount);
+
+        if (!CanAfford(safeAmount))
         {
-            return; // 초기화 중단
+            return false;
         }
 
-        Gold = 0; // 골드 영으로 초기화
-        GoldChanged?.Invoke(Gold); // 골드 변경 알림
+        if (safeAmount == 0)
+        {
+            return true;
+        }
+
+        Gold -= safeAmount;
+        GoldChanged?.Invoke(Gold);
+
+        return true;
+    }
+
+    public void ResetGold()
+    {
+        if (Gold == 0)
+        {
+            return;
+        }
+
+        Gold = 0;
+        GoldChanged?.Invoke(Gold);
     }
 }
