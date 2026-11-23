@@ -20,7 +20,12 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         } // 카드 누락 처리 종료
         EnsureVisualStructure(); // 툴팁 내부 UI 확인
         titleText.text = cardInstance.DisplayName; // 카드 이름 표시
-        string targetLabel = cardInstance.SourceData.SwordRule == SwordCardRule.SwordDance || cardInstance.SourceData.SwordRule == SwordCardRule.HorizontalSlash ? "선택한 적과 인접한 한 칸" : GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
+        string targetLabel = cardInstance.SourceData.SwordRule switch // 아군 또는 적의 실제 카드 대상 표시
+        { // 검 카드 범위 분기 시작
+            SwordCardRule.SwordDance or SwordCardRule.HorizontalSlash => "선택한 적과 인접한 한 칸", // 이웃 칸 공격 범위
+            SwordCardRule.TwinBladeFlurry => "타격마다 무작위 생존 적 하나", // 전체 적에서 하나씩 고르는 연타 범위
+            _ => GetTargetLabel(cardInstance.TargetType) // 일반 카드 대상 문구
+        }; // 카드 대상 표시 완료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.CostLabel}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시

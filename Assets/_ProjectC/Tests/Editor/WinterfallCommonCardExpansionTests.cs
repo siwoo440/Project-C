@@ -162,12 +162,13 @@ public sealed class WinterfallCommonCardExpansionTests // 윈터폴 공용 카�
         var view = hand.GetComponentsInChildren<BattleCardView>().First(item => item.RuntimeCard != null && item.RuntimeCard.SourceData == card && deck.Hand.Contains(item.RuntimeCard)); // 실제 손패에서 사용할 카드 조회
         CardInstance used = view.RuntimeCard; // 사용할 카드의 개별 인스턴스
         int before = points.CurrentActionPoints; // 사용 전 행동력 보관
+        int cost = used.ApCost; // 사용 직전 카드의 현재 행동력 비용 보관
         view.OnPointerClick(null); // 실제 손패 클릭
         if (target != null) // 사용자가 고르는 대상 확인
         { // 대상 입력 시작
             target.OnPointerClick(null); // 아군 한 명 클릭
         } // 대상 입력 종료
-        Assert.AreEqual(before - card.ApCost, points.CurrentActionPoints, card.DisplayName); // 카드별 행동력 차감 확인
+        Assert.AreEqual(before - cost, points.CurrentActionPoints, card.DisplayName); // 조건부 할인을 포함한 실제 행동력 차감 확인
         float deadline = Time.realtimeSinceStartup + 10f; // 연출 대기 기한
         while (runner.IsBusy && Time.realtimeSinceStartup < deadline) // 효과와 복귀 연출 대기
         { // 연출 대기 시작

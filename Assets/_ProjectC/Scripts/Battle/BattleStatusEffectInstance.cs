@@ -149,6 +149,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법 저항 증가"; // 마법 저항 증가 이름 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마법 저항 약화"; // 마법 저항 감소 이름 반환
+            case BattleStatusEffectType.DuelMark: // 결투 표식 정보
+                return "결투 표식"; // 결투 상태 표시
+            case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
+                return "검성의 자세"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속도 감소"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -173,7 +177,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -233,6 +237,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마+"; // 마법 저항 증가 아이콘 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return "마-"; // 마법 저항 감소 아이콘 반환
+            case BattleStatusEffectType.DuelMark: // 결투 표식 정보
+                return "투"; // 결투 상태 표시
+            case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
+                return "성"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return "속"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
@@ -317,6 +325,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"마법 저항력 증가 {effectiveValue}"; // 마법 저항 증가 설명 반환
             case BattleStatusEffectType.MagicalResistanceDown: // 마법 저항 감소 종류
                 return $"마법 저항력 감소 {effectiveValue}"; // 마법 저항 감소 설명 반환
+            case BattleStatusEffectType.DuelMark: // 결투 표식 정보
+                return $"결투를 건 유닛이 상대에게 주는 직접 카드 피해 +{effectiveValue}%"; // 결투 상태 표시
+            case BattleStatusEffectType.SwordSaintStance: // 검성의 자세 정보
+                return $"고정 비용 검 카드의 행동력 비용 −1, 검 피해 +{effectiveValue}"; // 검 카드 강화 표시
             case BattleStatusEffectType.ActionSpeedDown: // 행동 속도 감소 종류
                 return $"적 행동 속도 −{effectiveValue}"; // 속도 감소 표시
             case BattleStatusEffectType.PublicMark: // 수신기의 공명 표식
