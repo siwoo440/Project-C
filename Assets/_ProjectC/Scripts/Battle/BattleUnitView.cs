@@ -62,9 +62,65 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 연결 종료
     private void ApplyHealthGaugeArt() // 실제 체력 게이지 배경 이미지 적용
     { // 체력 게이지 디자인 적용 시작
-        Transform background = healthSlider != null ? healthSlider.transform.Find("Background") : null; // 체력 게이지 배경 조회
+        if (healthSlider == null) // 체력 게이지 존재 확인
+        { // 체력 게이지 누락 처리 시작
+            return; // 체력 게이지 디자인 적용 중단
+        } // 체력 게이지 누락 처리 종료
+        Transform background = healthSlider.transform.Find("Background"); // 체력 게이지 배경 조회
         Image image = background != null ? background.GetComponent<Image>() : null; // 체력 게이지 배경 이미지 조회
-        BattleUiArt.Apply(image, "GaugeFrame"); // 생성한 게이지 테두리 적용
+        if (image != null) // 체력 배경 존재 확인
+        { // 체력 배경 색상 설정 시작
+            image.sprite = null; // 기존 프레임 이미지 제거
+            image.color = new Color(0.04f, 0.07f, 0.07f, 0.95f); // 비어 있는 체력 배경색 설정
+            image.raycastTarget = false; // 체력 배경 입력 차단 해제
+        } // 체력 배경 색상 설정 종료
+        RectTransform sliderRect = healthSlider.transform as RectTransform; // 체력 게이지 영역 조회
+        sliderRect.sizeDelta = new Vector2(165f, 26f); // 하트 프레임을 포함한 게이지 크기 설정
+        RectTransform fillArea = healthSlider.transform.Find("Fill Area") as RectTransform; // 실제 체력 채움 영역 조회
+        if (fillArea != null) // 체력 채움 영역 존재 확인
+        { // 체력 채움 영역 설정 시작
+            fillArea.offsetMin = new Vector2(25f, 6f); // 하트 오른쪽부터 체력 표시
+            fillArea.offsetMax = new Vector2(-5f, -6f); // 테두리 안쪽 체력 표시
+        } // 체력 채움 영역 설정 종료
+        Transform existingFrame = healthSlider.transform.Find("HealthGaugeFrame"); // 기존 체력 프레임 조회
+        if (existingFrame == null) // 체력 프레임 생성 여부 확인
+        { // 체력 프레임 생성 시작
+            GameObject frameObject = new GameObject("HealthGaugeFrame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 하트 체력 프레임 생성
+            frameObject.transform.SetParent(healthSlider.transform, false); // 체력 게이지 위에 프레임 연결
+            RectTransform frameRect = frameObject.GetComponent<RectTransform>(); // 체력 프레임 영역 조회
+            frameRect.anchorMin = Vector2.zero; // 프레임 최소 앵커 설정
+            frameRect.anchorMax = Vector2.one; // 프레임 최대 앵커 설정
+            frameRect.offsetMin = Vector2.zero; // 프레임 왼쪽 아래 여백 제거
+            frameRect.offsetMax = Vector2.zero; // 프레임 오른쪽 위 여백 제거
+            Image frameImage = frameObject.GetComponent<Image>(); // 체력 프레임 이미지 조회
+            frameImage.enabled = BattleUiArt.Apply(frameImage, "VitalGaugeFrame"); // 생성한 투명 프레임 적용과 누락 처리
+            frameImage.raycastTarget = false; // 체력 프레임 입력 차단 해제
+            GameObject iconObject = new GameObject("HealthGaugeIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 별도 하트 아이콘 생성
+            iconObject.transform.SetParent(healthSlider.transform, false); // 체력 바 위에 하트 아이콘 연결
+            RectTransform iconRect = iconObject.GetComponent<RectTransform>(); // 하트 아이콘 영역 조회
+            iconRect.anchorMin = new Vector2(0f, 0.5f); // 아이콘 왼쪽 중앙 최소 앵커 설정
+            iconRect.anchorMax = new Vector2(0f, 0.5f); // 아이콘 왼쪽 중앙 최대 앵커 설정
+            iconRect.anchoredPosition = new Vector2(13f, 0f); // 체력 바 왼쪽 아이콘 배치
+            iconRect.sizeDelta = new Vector2(28f, 28f); // 체력 아이콘 크기 설정
+            Image iconImage = iconObject.GetComponent<Image>(); // 하트 아이콘 이미지 조회
+            iconImage.enabled = BattleUiArt.Apply(iconImage, "HealthGaugeIcon"); // 투명 하트 아이콘 적용과 누락 처리
+            iconImage.preserveAspect = true; // 하트 아이콘 비율 유지
+            iconImage.raycastTarget = false; // 하트 아이콘 입력 차단 해제
+        } // 체력 프레임 생성 종료
+        if (healthText != null) // 체력 글자 존재 확인
+        { // 체력 글자 배치 시작
+            healthText.transform.SetParent(healthSlider.transform, false); // 체력 글자를 바 내부로 이동
+            healthText.transform.SetAsLastSibling(); // 체력 글자를 프레임 위에 표시
+            RectTransform textRect = healthText.rectTransform; // 체력 글자 영역 조회
+            textRect.anchorMin = Vector2.zero; // 체력 글자 최소 앵커 설정
+            textRect.anchorMax = Vector2.one; // 체력 글자 최대 앵커 설정
+            textRect.offsetMin = new Vector2(25f, 0f); // 하트 오른쪽 글자 영역 설정
+            textRect.offsetMax = new Vector2(-5f, 0f); // 체력 글자 오른쪽 여백 설정
+            healthText.fontSize = 16f; // 바 내부 체력 글자 크기 설정
+            healthText.alignment = TextAlignmentOptions.Center; // 체력 글자 중앙 정렬
+            healthText.color = Color.white; // 체력 글자 밝은 색상 설정
+            healthText.raycastTarget = false; // 체력 글자 입력 차단 해제
+        } // 체력 글자 배치 종료
     } // 체력 게이지 디자인 적용 종료
     public void Unbind() // 런타임 유닛 연결 해제
     { // 연결 해제 시작

@@ -27,7 +27,7 @@ public sealed class BattleMentalGaugeColorTests // 정신력 게이지 색상 �
         Assert.Greater(red.r, red.b); // 최소 정신력 빨강 확인
         Assert.Greater(track.color.r, track.color.b); // 비어 있는 게이지의 빨간 바탕 확인
         Assert.AreEqual(0f, fill.rectTransform.anchorMax.x, 0.001f); // 최소 정신력 채움 너비 확인
-        StringAssert.Contains("붕괴", label.text); // 붕괴 상태 문구 유지 확인
+        Assert.AreEqual("0", label.text); // 붕괴 상태의 정신력 숫자 확인
         Assert.AreEqual(Color.white, label.color); // 어두운 붕괴 바탕 글자 대비 확인
         Assert.IsTrue(unit.ApplyPersistentMental(25)); // 낮은 정신력 적용
         Color low = fill.color; // 낮은 정신력 색상 보관
@@ -45,7 +45,7 @@ public sealed class BattleMentalGaugeColorTests // 정신력 게이지 색상 �
         Color blue = fill.color; // 최대 정신력 색상 보관
         Assert.Greater(blue.b, blue.r); // 최대 정신력 파랑 확인
         Assert.AreEqual(1f, fill.rectTransform.anchorMax.x, 0.001f); // 최대 정신력 채움 너비 확인
-        StringAssert.Contains("각성", label.text); // 각성 상태 문구 유지 확인
+        Assert.AreEqual("100", label.text); // 각성 상태의 정신력 숫자 확인
         Assert.AreEqual(Color.white, label.color); // 어두운 각성 바탕 글자 대비 확인
         unit.ChangeMental(-25, BattleMentalChangeReason.None); // 각성 중 정신력 감소 적용
         Assert.AreEqual(BattleMentalState.Awakening, unit.MentalState); // 각성 상태 유지 확인
