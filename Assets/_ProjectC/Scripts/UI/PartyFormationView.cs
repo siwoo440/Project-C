@@ -12,6 +12,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private CharacterRecoveryManager recovery; // 회복 상태 변경 관리자
     private BattleResultManager results; // 캐릭터 전투 상태 관리자
     private readonly List<Button> characterButtons = new List<Button>(); // 캐릭터 선택 버튼 목록
+    private readonly List<TMP_Text> profileNumbers = new List<TMP_Text>(); // 프로필별 편성 번호 문구
     private readonly Image[] slotImages = new Image[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이미지
     private readonly TMP_Text[] slotNames = new TMP_Text[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이름
     private readonly Button[] presetButtons = new Button[PartyPresetStore.PresetCount]; // 네 개의 편성 선택 버튼
@@ -21,6 +22,10 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private TMP_Text message; // 출전 안내 문구
     private Button startButton; // 탐사 출발 버튼
     private CharacterData focused; // 현재 상세 정보 캐릭터
+    private RectTransform profileViewport; // 프로필 격자 표시 영역
+    private RectTransform profileGrid; // 프로필 격자 내용 영역
+    private GridLayoutGroup profileLayout; // 프로필 세 열 배치
+    private float lastProfileWidth = -1f; // 최근 프로필 표시 영역 너비
     public static PartyFormationView Open(Canvas targetCanvas) // 새 편성 화면 열기
     { // 편성 화면 열기 시작
         if (targetCanvas == null || FindFirstObjectByType<PartyFormationView>() != null) // 캔버스와 중복 화면 확인
@@ -47,6 +52,13 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         view.LoadPreset(PartyPresetStore.Selected); // 저장된 선택 편성 표시
         return view; // 생성 편성 화면 반환
     } // 편성 화면 열기 종료
+    private void LateUpdate() // 프로필 화면 크기 변경 감지
+    { // 크기 변경 감지 시작
+        if (profileViewport != null && !Mathf.Approximately(lastProfileWidth, profileViewport.rect.width)) // 프로필 표시 영역 너비 변경 확인
+        { // 프로필 크기 조정 시작
+            RefreshProfileLayout(); // 세 열 너비에 맞춘 프로필 크기 갱신
+        } // 프로필 크기 조정 종료
+    } // 크기 변경 감지 종료
     private void Build() // 새 편성 화면 배치
     { // 편성 화면 배치 시작
         TMP_Text title = PreparationUi.CreateText("Title", transform, "탐사 파티 편성", 42f); // 편성 화면 제목 생성
@@ -78,15 +90,17 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         grid.anchorMin = new Vector2(0f, 1f); // 격자 시작 앵커 설정
         grid.anchorMax = Vector2.one; // 격자 끝 앵커 설정
         grid.pivot = new Vector2(0.5f, 1f); // 격자 위쪽 기준 설정
-        int rows = (roster.Characters.Count + 3) / 4; // 네 열 기준 행 수 계산
-        grid.sizeDelta = new Vector2(0f, 20f + rows * 110f + Mathf.Max(0, rows - 1) * 12f); // 전체 캐릭터 격자 높이 설정
+        grid.sizeDelta = Vector2.zero; // 격자 크기 초기화
         grid.anchoredPosition = Vector2.zero; // 격자 상단 위치 설정
         GridLayoutGroup layout = gridObject.GetComponent<GridLayoutGroup>(); // 격자 배치 조회
         layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount; // 고정 열 수 설정
-        layout.constraintCount = 4; // 캐릭터 네 열 배치
-        layout.cellSize = new Vector2(110f, 110f); // 캐릭터 버튼 크기 설정
+        layout.constraintCount = 3; // 캐릭터 세 열 배치
+        layout.cellSize = new Vector2(150f, 150f); // 초기 프로필 크기 설정
         layout.spacing = new Vector2(12f, 12f); // 캐릭터 버튼 간격 확대
         layout.padding = new RectOffset(10, 10, 10, 10); // 캐릭터 목록 여백 설정
+        profileViewport = viewport; // 프로필 표시 영역 저장
+        profileGrid = grid; // 프로필 격자 영역 저장
+        profileLayout = layout; // 프로필 격자 배치 저장
         scroll.viewport = viewport; // 스크롤 표시 영역 연결
         scroll.content = grid; // 스크롤 내용 영역 연결
         scroll.horizontal = false; // 가로 스크롤 차단
@@ -97,7 +111,25 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         { // 캐릭터 버튼 생성 시작
             CreateCharacterButton(grid, roster.Characters[index], index); // 캐릭터별 선택 버튼 생성
         } // 캐릭터 버튼 생성 종료
+        RefreshProfileLayout(); // 현재 화면 너비 기준 프로필 크기 설정
     } // 캐릭터 목록 생성 종료
+    private void RefreshProfileLayout() // 세 열에 맞춘 프로필 크기와 목록 높이 설정
+    { // 프로필 크기 설정 시작
+        if (profileViewport == null || profileGrid == null || profileLayout == null || roster == null) // 격자 구성 상태 확인
+        { // 격자 미준비 처리 시작
+            return; // 크기 조정 중단
+        } // 격자 미준비 처리 종료
+        lastProfileWidth = profileViewport.rect.width; // 현재 프로필 표시 너비 저장
+        if (lastProfileWidth <= 0f) // 표시 영역 너비 확인
+        { // 너비 미준비 처리 시작
+            return; // 다음 프레임에 크기 조정
+        } // 너비 미준비 처리 종료
+        float available = lastProfileWidth - profileLayout.padding.left - profileLayout.padding.right - profileLayout.spacing.x * 2f; // 여백과 간격 제외 너비 계산
+        float size = Mathf.Max(1f, available / 3f); // 세 열에 맞춘 정사각형 크기 계산
+        profileLayout.cellSize = new Vector2(size, size); // 프로필 너비와 높이 적용
+        int rows = (roster.Characters.Count + 2) / 3; // 세 열 기준 전체 행 수 계산
+        profileGrid.sizeDelta = new Vector2(0f, profileLayout.padding.top + profileLayout.padding.bottom + rows * size + Mathf.Max(0, rows - 1) * profileLayout.spacing.y); // 스크롤 가능한 전체 격자 높이 설정
+    } // 프로필 크기 설정 종료
     private void CreateCharacterButton(Transform parent, CharacterData character, int index) // 개별 캐릭터 선택 버튼 생성
     { // 캐릭터 버튼 생성 시작
         GameObject target = new GameObject("Character_" + index, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)); // 캐릭터 버튼 객체 생성
@@ -109,12 +141,16 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         Button button = target.GetComponent<Button>(); // 캐릭터 버튼 입력 조회
         button.targetGraphic = portrait; // 버튼 상태를 초상화에 연결
         button.onClick.AddListener(() => ToggleCharacter(character)); // 캐릭터 선택 동작 연결
+        target.AddComponent<PartyProfileDrag>().Bind(this, character); // 캐릭터 드래그 입력 연결
         RectTransform labelBackground = PreparationUi.CreatePanel("NameBackground", target.transform, Vector2.zero, new Vector2(1f, 0.23f)); // 캐릭터 이름 배경 생성
         labelBackground.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.72f); // 캐릭터 이름 배경 색상 설정
         labelBackground.GetComponent<Image>().raycastTarget = false; // 이름 배경 입력 차단 해제
         TMP_Text label = PreparationUi.CreateText("Name", target.transform, character != null ? character.DisplayName : string.Empty, 16f); // 캐릭터 이름 생성
         PreparationUi.Stretch(label.rectTransform, Vector2.zero, new Vector2(1f, 0.23f)); // 초상화 아래 이름 배치
         CreateBorder(target.transform); // 프로필 흰색 구분선 생성
+        TMP_Text number = CreateNumberBadge(target.transform, string.Empty, 38f); // 프로필용 작은 편성 번호 생성
+        number.transform.parent.gameObject.SetActive(false); // 미편성 프로필 번호 숨김
+        profileNumbers.Add(number); // 프로필 번호 문구 보관
         characterButtons.Add(button); // 캐릭터 버튼 보관
     } // 캐릭터 버튼 생성 종료
     private static void CreateBorder(Transform parent) // 프로필의 흰색 구분선 생성
@@ -124,6 +160,27 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         CreateBorderLine("BorderLeft", parent, Vector2.zero, new Vector2(0f, 1f), Vector2.zero, new Vector2(2f, 0f)); // 프로필 왼쪽 구분선 생성
         CreateBorderLine("BorderRight", parent, new Vector2(1f, 0f), Vector2.one, new Vector2(-2f, 0f), Vector2.zero); // 프로필 오른쪽 구분선 생성
     } // 구분선 생성 종료
+    private static TMP_Text CreateNumberBadge(Transform parent, string number, float size) // 편성 번호 표시 생성
+    { // 편성 번호 표시 생성 시작
+        GameObject target = new GameObject("NumberBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline)); // 번호 배경 객체 생성
+        target.transform.SetParent(parent, false); // 번호 표시 부모 연결
+        RectTransform rect = target.GetComponent<RectTransform>(); // 번호 표시 영역 조회
+        rect.anchorMin = new Vector2(0f, 1f); // 왼쪽 위 시작 앵커 설정
+        rect.anchorMax = new Vector2(0f, 1f); // 왼쪽 위 끝 앵커 설정
+        rect.pivot = new Vector2(0f, 1f); // 왼쪽 위 기준 설정
+        rect.anchoredPosition = new Vector2(7f, -7f); // 왼쪽 위 여백 설정
+        rect.sizeDelta = new Vector2(size, size); // 번호 배경 크기 설정
+        Image background = target.GetComponent<Image>(); // 번호 배경 이미지 조회
+        background.color = new Color(0.04f, 0.12f, 0.14f, 0.96f); // 짙은 청록색 배경 적용
+        background.raycastTarget = false; // 번호 배경 입력 차단 해제
+        Outline outline = target.GetComponent<Outline>(); // 번호 테두리 조회
+        outline.effectColor = new Color(0.86f, 0.67f, 0.33f, 1f); // 금색 테두리 적용
+        outline.effectDistance = new Vector2(2f, -2f); // 번호 테두리 두께 설정
+        TMP_Text label = PreparationUi.CreateText("Label", target.transform, number, size * 0.65f); // 번호 문구 생성
+        PreparationUi.Stretch(label.rectTransform, Vector2.zero, Vector2.one); // 배경 전체에 번호 배치
+        label.raycastTarget = false; // 번호 문구 입력 차단 해제
+        return label; // 번호 문구 반환
+    } // 편성 번호 표시 생성 종료
     private static void CreateBorderLine(string name, Transform parent, Vector2 minimum, Vector2 maximum, Vector2 lower, Vector2 upper) // 개별 흰색 구분선 생성
     { // 개별 구분선 생성 시작
         GameObject target = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 구분선 화면 객체 생성
@@ -149,6 +206,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             LobbyUiArt.Apply(slot.GetComponent<Image>(), "FormationCard"); // 제작한 편성 칸 이미지 적용
             slot.offsetMin = new Vector2(5f, 0f); // 편성 칸 왼쪽 간격 설정
             slot.offsetMax = new Vector2(-5f, 0f); // 편성 칸 오른쪽 간격 설정
+            slot.gameObject.AddComponent<PartyFormationSlot>().Bind(this, index); // 드래그 대상 편성 칸 연결
             GameObject artObject = new GameObject("Artwork", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 캐릭터 그림 객체 생성
             artObject.transform.SetParent(slot, false); // 편성 칸 자식 배치
             Image art = artObject.GetComponent<Image>(); // 캐릭터 그림 이미지 조회
@@ -157,6 +215,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             art.raycastTarget = false; // 그림 입력 차단 해제
             TMP_Text name = PreparationUi.CreateText("Name", slot, "빈 슬롯", 24f); // 편성 칸 이름 생성
             PreparationUi.Stretch(name.rectTransform, Vector2.zero, new Vector2(1f, 0.17f)); // 편성 칸 아래 이름 배치
+            CreateNumberBadge(slot, (PartyData.MaxPartySize - index).ToString(), 52f); // 왼쪽부터 네 번째에서 첫 번째까지 표시
             slotImages[index] = art; // 편성 그림 보관
             slotNames[index] = name; // 편성 이름 보관
         } // 개별 편성 칸 생성 종료
@@ -192,7 +251,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         } // 캐릭터 선택 종료
         if (changed) // 실제 편성 변경 확인
         { // 변경 편성 저장 시작
-            PartyPresetStore.SetMembers(PartyPresetStore.Selected, selection.Members); // 현재 편성의 캐릭터 저장
+            PartyPresetStore.SetSlots(PartyPresetStore.Selected, selection.Slots); // 빈칸을 포함한 현재 편성 저장
         } // 변경 편성 저장 종료
         Refresh(); // 선택과 상세 정보 갱신
     } // 캐릭터 선택 전환 종료
@@ -203,12 +262,13 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             return; // 편성 전환 중단
         } // 잘못된 편성 처리 종료
         PartySelection restored = new PartySelection(status); // 저장 편성 복원용 파티 생성
-        foreach (string id in PartyPresetStore.GetMembers(index)) // 저장된 캐릭터 식별자 순회
+        string[] savedSlots = PartyPresetStore.GetSlots(index); // 저장된 위치별 캐릭터 조회
+        for (int slotIndex = 0; slotIndex < savedSlots.Length; slotIndex++) // 저장된 네 편성 칸 순회
         { // 저장 캐릭터 복원 시작
-            CharacterData character = PartyPresetStore.FindCharacter(roster, id); // 캐릭터 원본 조회
+            CharacterData character = PartyPresetStore.FindCharacter(roster, savedSlots[slotIndex]); // 캐릭터 원본 조회
             if (character != null) // 원본 캐릭터 존재 확인
             { // 캐릭터 편성 복원 시작
-                restored.TryRestoreMember(character); // 출전 제한 상태를 유지한 편성 복원
+                restored.TryRestoreAtSlot(character, slotIndex); // 출전 제한과 빈칸을 유지한 편성 복원
             } // 캐릭터 편성 복원 종료
         } // 저장 캐릭터 복원 종료
         selection = restored; // 복원된 파티 선택 적용
@@ -226,6 +286,31 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         } // 선택 캐릭터 비교 종료
         return false; // 미선택 상태 반환
     } // 선택 여부 확인 종료
+    private int FindSlot(CharacterData character) // 선택 캐릭터의 물리적 위치 조회
+    { // 캐릭터 위치 조회 시작
+        for (int index = 0; index < selection.Slots.Count; index++) // 전체 편성 칸 순회
+        { // 편성 칸 비교 시작
+            if (selection.Slots[index] == character && character != null) // 같은 캐릭터 확인
+            { // 캐릭터 발견 처리 시작
+                return index; // 현재 편성 칸 반환
+            } // 캐릭터 발견 처리 종료
+        } // 편성 칸 비교 종료
+        return -1; // 미편성 표시 반환
+    } // 캐릭터 위치 조회 종료
+    public bool CanDragProfile(CharacterData character) // 프로필 드래그 가능 여부 확인
+    { // 드래그 가능 확인 시작
+        return character != null && selection != null && (Contains(character) || CharacterUnlockProgress.Shared.IsUnlocked(character) && !status.IsDead(character) && !status.IsRecovering(character) && status.CanDeploy(character)); // 기존 편성 또는 출전 가능 캐릭터 허용
+    } // 드래그 가능 확인 종료
+    public void DropProfile(CharacterData character, int index) // 캐릭터를 지정한 편성 칸에 배치
+    { // 드롭 처리 시작
+        if (!CanDragProfile(character) || !selection.TryPlaceAtSlot(character, index)) // 드래그 대상과 배치 가능 여부 확인
+        { // 배치 실패 처리 시작
+            return; // 편성 변경 중단
+        } // 배치 실패 처리 종료
+        focused = character; // 배치한 캐릭터 상세 정보 선택
+        PartyPresetStore.SetSlots(PartyPresetStore.Selected, selection.Slots); // 빈칸과 위치를 포함한 편성 저장
+        Refresh(); // 편성 칸과 프로필 번호 갱신
+    } // 드롭 처리 종료
     private void Refresh() // 캐릭터 목록과 편성 칸 갱신
     { // 편성 상태 갱신 시작
         if (selection == null || startButton == null) // 화면 초기화 상태 확인
@@ -235,13 +320,19 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         for (int index = 0; index < characterButtons.Count; index++) // 전체 캐릭터 버튼 순회
         { // 캐릭터 상태 표시 시작
             CharacterData character = roster.Characters[index]; // 해당 캐릭터 원본 조회
-            bool chosen = character != null && Contains(character); // 현재 캐릭터 선택 여부 확인
+            int selectedSlot = FindSlot(character); // 캐릭터 편성 위치 조회
+            bool chosen = selectedSlot >= 0; // 현재 캐릭터 선택 여부 확인
             bool available = character != null && CharacterUnlockProgress.Shared.IsUnlocked(character) && status.CanDeploy(character); // 캐릭터 해금과 출전 가능 여부 확인
             characterButtons[index].interactable = chosen || available && selection.Members.Count < PartyData.MaxPartySize; // 출전 가능 상태별 선택 허용
+            profileNumbers[index].transform.parent.gameObject.SetActive(chosen); // 편성된 프로필에만 번호 표시
+            if (chosen) // 편성 번호 표시 필요 확인
+            { // 프로필 번호 갱신 시작
+                profileNumbers[index].text = (PartyData.MaxPartySize - selectedSlot).ToString(); // 오른쪽 첫 번째부터 번호 적용
+            } // 프로필 번호 갱신 종료
         } // 캐릭터 상태 표시 종료
         for (int index = 0; index < PartyData.MaxPartySize; index++) // 네 개의 편성 칸 순회
         { // 편성 칸 표시 시작
-            CharacterData character = index < selection.Members.Count ? selection.Members[index] : null; // 해당 칸 선택 캐릭터 조회
+            CharacterData character = selection.Slots[index]; // 해당 위치에 배치된 캐릭터 조회
             slotNames[index].text = character != null ? character.DisplayName : "빈 슬롯"; // 캐릭터 이름 또는 빈 칸 표시
             slotImages[index].sprite = character != null ? character.BattleIllustration != null ? character.BattleIllustration : character.Portrait : null; // 실제 캐릭터 일러스트 표시
             slotImages[index].enabled = character != null && slotImages[index].sprite != null; // 캐릭터 그림 존재 시 표시
