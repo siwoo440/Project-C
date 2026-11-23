@@ -389,8 +389,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             return; // 신규 생성 중단
         }
 
-        GameObject eventSystemObject = new GameObject("Day54ShopEventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // 신규 입력 이벤트 시스템 생성
-        DontDestroyOnLoad(eventSystemObject); // Scene 전환 이벤트 시스템 유지
+        new GameObject("Day54ShopEventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // 현재 탐사 씬 입력 관리자 생성
     }
 
     private void OnDestroy() // 상점 화면 제거 처리

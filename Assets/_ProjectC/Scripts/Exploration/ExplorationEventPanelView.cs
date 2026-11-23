@@ -549,10 +549,6 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                     "ExplorationEventSystem",
                     typeof(EventSystem)); // 런타임 EventSystem 오브젝트 생성
 
-            eventSystemObject.transform.SetParent(
-                transform,
-                false); // 영구 이벤트 패널 하위에 배치
-
             eventSystem =
                 eventSystemObject.GetComponent<EventSystem>(); // 생성 EventSystem 조회
         }
