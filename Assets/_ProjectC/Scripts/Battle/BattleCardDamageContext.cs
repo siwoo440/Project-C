@@ -1,3 +1,4 @@
+using System; // 별도 피해의 실제 실행 동작
 using System.Collections.Generic; // 대상 목록 자료형 사용
 
 public static class BattleCardDamageContext // 카드 피해 계산 문맥
@@ -65,6 +66,24 @@ public static class BattleCardDamageContext // 카드 피해 계산 문맥
         Clear(); // 대상 소진 문맥 정리
         return false;
     }
+
+    internal static void WithoutActiveCard(Action action) // 별도 원본 피해에 카드 약점과 다음 대상 소비가 없도록 분리
+    { // 기존 카드 문맥 저장 시작
+        var card = activeCard; // 남은 카드 원본
+        var targets = activeTargets; // 남은 대상 순서
+        int nextIndex = targetIndex; // 다음 원래 타격의 위치
+        Clear(); // 별도 피해에서 카드 문맥 차단
+        try // 원래 문맥의 복구 보장
+        { // 문맥 없는 원본 피해 실행 시작
+            action(); // 원래 카드와 관계없는 실제 피해 실행
+        } // 문맥 없는 원본 피해 실행 종료
+        finally // 원래 카드 피해 문맥 복구
+        { // 보관한 카드와 대상의 재개 시작
+            activeCard = card; // 원래 진행하던 카드 복원
+            activeTargets = targets; // 원래 남아 있던 대상 목록 복원
+            targetIndex = nextIndex; // 앞서 소비하고 남은 원래 인덱스 복원
+        } // 보관한 카드와 대상의 재개 종료
+    } // 기존 카드 문맥 저장 종료
 
     public static void Clear() // 카드 피해 문맥 초기화
     {

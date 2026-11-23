@@ -864,13 +864,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan, IReadOnlyList<CardInstance> pentacleHandCards, CardData improvisedCard) // 정상 충돌 대상과 방어 및 실제 손패 선택 전달
     { // 카드 정산 범위 시작
-        bool resolveEffectsBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 피해와 회복을 함께 처리하는 카드 확인
+        int leechHealingPercent = GetLeechHealingPercent(cardInstance); // 결제한 원래 단일 적 공격의 목걸이 회복률
+        bool resolveEffectsBeforeVictory = leechHealingPercent > 0 || cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies || // 피해와 회복을 함께 처리하는 카드 확인
             cardInstance.SourceData.WandRule == WandCardRule.TimeStop || // 시간 정지의 실제 상태 효과와 한 장 드로우까지 승리 보류
             cardInstance.SourceData.PentacleRule == PentacleCardRule.FusionOfPower; // 힘의 융합의 전체 회복과 마지막 공유 드로우까지 승리 보류
         turnRuntime.BeginCardResolution(resolveEffectsBeforeVictory || cardInstance.IsBattleOnlySingleUse || GetRandomWandHitCount(cardInstance) > 0 || cardInstance.SourceData.WandRule == WandCardRule.EyeOfStorm); // 복합 카드와 연속 타격의 실제 카드 이동 뒤 승리 정산
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
-            ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan, pentacleHandCards, improvisedCard); // 실제 전투 효과와 독립 타격 및 사용 카드 이동 처리
+            ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount, echoPlan, pentacleHandCards, improvisedCard, leechHealingPercent); // 실제 카드 공격과 단일 대상 회복 및 사용 카드 이동 처리
         } // 카드 충돌 처리 종료
         finally // 충돌 처리 종료에 예약 드로우 정리 보장
         { // 카드 정산 범위 정리 시작
@@ -881,7 +882,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 정산 범위 정리 종료
     } // 카드 정산 범위 종료
 
-    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan, IReadOnlyList<CardInstance> pentacleHandCards, CardData improvisedCard) // 정상 충돌 대상과 방어 및 실제 손패 선택 전달
+    private int GetLeechHealingPercent(CardInstance card) // 원래 단일 적 공격에 적용할 유물 회복률 확인
+    { // 원본 대상 규칙 판정 시작
+        if (card.EffectType != CardEffectType.Damage || card.OwnerUnit is not { Team: BattleTeam.Ally, IsDead: false } || // 실제 살아 있는 아군의 피해 카드만 확인
+            card.TargetType is not (CardTargetType.SingleEnemy or CardTargetType.EnemyAndAlly) || SunChainAttack.IsChainCard(card) || // 설계상 한 적을 공격하는 원래 카드 확인
+            card.SourceData.SwordRule is SwordCardRule.BladeWhirlwind or SwordCardRule.HorizontalSlash or SwordCardRule.SwordDance) // 한 명이 남아도 범위가 그대로인 검 규칙 확인
+        { // 단일 적 피해 원본에서 제외 시작
+            return 0; // 실제 유물 회복률 미적용
+        } // 단일 적 피해 원본에서 제외 종료
+        return Math.Clamp(turnRuntime.DamageRelicInventory?.FindEffect(RelicEffectType.LeechFangNecklaceSingleTargetHealing)?.EffectValue ?? 0, 0, 100); // 원래 보유 회복률의 안전한 백분율
+    } // 원본 대상 규칙 판정 종료
+
+    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount, (int Percent, int Paid, int Round) echoPlan, IReadOnlyList<CardInstance> pentacleHandCards, CardData improvisedCard, int leechHealingPercent) // 확인한 카드와 정상 대상 및 단일 공격 회복률 전달
     { // 카드 충돌 처리 시작
         if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && !TryDiscardForManaRetrieval(cardInstance)) // 실제로 별도 지팡이를 버린 경우에만 마력 회수 사용
         { // 사용 전에 버림 실패 처리 시작
@@ -925,7 +937,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         bool appliedDefense = false; // 살아 있는 아군에게 실제 방어 효과를 주었는지 기록
         if (damagesAndHeals) // 적에게만 피해를 주고 지정 아군에게만 회복하는 효과 분리
         { // 두 대상 충돌 처리 시작
-            totalAppliedAmount = ApplyCardEffect(cardInstance, targetUnits[0]); // 선택한 적 한 명의 일반 직접 피해 처리
+            totalAppliedAmount = ApplyCardEffect(cardInstance, targetUnits[0], leechHealingPercent); // 선택 적의 직접 피해와 목걸이 회복 처리
             int healing = GetDirectCardHealing(cardInstance, cardInstance.ScaleQuantitativeEffect(cardInstance.SourceData.SecondaryEffectValue)); // 보조 회복의 원래 양과 원래 시전자 보정 계산
             totalAppliedAmount += RestoreDirectCardHealth(cardInstance, targetUnits[1], healing); // 명중 여부와 별개로 선택한 아군 한 명의 회복 처리
         } // 두 대상 충돌 처리 종료
@@ -978,7 +990,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 { // 남은 타격 취소 시작
                     break; // 미처리 대상 효과 취소
                 } // 남은 타격 취소 종료
-                int applied = ApplyCardEffect(cardInstance, targetUnit); // 현재 카드 대상의 실제 적용량
+                int applied = ApplyCardEffect(cardInstance, targetUnit, leechHealingPercent); // 현재 원본 대상의 실제 적용량과 단일 대상 회복률 전달
                 totalAppliedAmount += applied; // 카드 효과 적용량 누적
                 appliedDefense |= defensiveCard && applied > 0 && targetUnit?.Team == BattleTeam.Ally; // 실제 아군에게 적용한 기본 방어 효과 기록
             } // 대상별 효과 적용 종료
@@ -1889,7 +1901,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         return candidates; // 생존 지정 아군이 가진 적격 실물 목록 반환
     } // 현재 손패와 실제 소유자의 개별 후보 검사 종료
 
-    private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
+    private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit, int leechHealingPercent) // 단일 대상의 카드 효과와 결제에서 확인한 회복률
     { // 단일 효과 적용 시작
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.RunePower) // 현재 생존 아군을 지정한 룬 힘의 실물 대상 추첨
         { // 카드 해결 시 실제 다른 적격 손패 재조회 시작
@@ -2279,6 +2291,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 단일 타격 시작
             int healthBefore = targetUnit.CurrentHealth; // 단일 공격 직전의 대상 체력
             int dealt = ApplyDamageHit(cardInstance, targetUnit, balanceDamage); // 저장한 기본 피해와 원래 현재 대상의 명중 및 방어 판정
+            RestoreLeechHealth(cardInstance.OwnerUnit, targetUnit, dealt, leechHealingPercent); // 별도 후속 대상을 처리하기 전 직접 선택한 적의 체력 손실만 회복
             if (cardInstance.SourceData.SwordRule == SwordCardRule.LastBreakthrough && healthBefore > 0 && dealt == healthBefore && targetUnit.IsDead) // 첫 직접 타격으로만 처치 조건 확인
             { // 처치 후 추가 타격 시작
                 dealt += ApplyBreakthroughFollowUp(cardInstance, targetUnit); // 다음 생존 적 한 번 더 타격
@@ -2299,8 +2312,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 정리 시작
             BattleCardDamageContext.Clear(); // 남은 타격의 약점 판정 제거
         } // 정리 종료
+        RestoreLeechHealth(cardInstance.OwnerUnit, targetUnit, applied, leechHealingPercent); // 같은 원래 대상에 들어간 실제 연타 체력 손실의 한 번 회복
         return applied; // 타격별 체력 피해 합계 반환
     } // 단일 효과 적용 종료
+
+    private static void RestoreLeechHealth(BattleUnitRuntime owner, BattleUnitRuntime target, int healthLost, int percent) // 유료 단일 공격의 실제 적 체력 손실을 시전자 회복으로 변환
+    { // 단일 대상 실제 피해 회복 시작
+        if (percent > 0 && healthLost > 0 && target.Team == BattleTeam.Enemy && !owner.IsDead) // 실제 생존 시전자와 차감된 적 체력 확인
+        { // 같은 적의 기본 회복 수치 계산 시작
+            int healing = (int)((long)healthLost * percent / 100); // 차단과 초과 피해를 제외한 실제 합계의 한 번 내림
+            owner.RestoreHealth(healing, owner); // 원래 체력 상한과 받는 회복 보정을 적용한 단일 치유
+        } // 같은 적의 기본 회복 수치 계산 종료
+    } // 단일 대상 실제 피해 회복 종료
 
     private long ApplyWandEcho(CardInstance card, IReadOnlyList<BattleUnitRuntime> confirmedTargets, (int Percent, int Paid, int Round) echoPlan) // 실제 마법 피해 카드의 공격 방식만 한 번 복제
     { // 반향 대상과 타격 확인 시작

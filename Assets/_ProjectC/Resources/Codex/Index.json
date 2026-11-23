@@ -1807,6 +1807,54 @@
       "artworkKey": "85dbb3d0e3f4570e821d4044bfbda5bf"
     },
     {
+      "category": 3,
+      "name": "거머리 이빨목걸이",
+      "description": "아군의 단일 대상 공격 카드가 적의 체력을 실제로 줄이면, 사용자가 줄인 체력의 5%만큼 회복한다. 소수점은 버린다.",
+      "artworkKey": "897d19a84ad7595ea7c79796cb311fc7"
+    },
+    {
+      "category": 3,
+      "name": "진흙 부적",
+      "description": "명시 효과로 행동력이 실제로 줄어든 생존 아군이 방어도 5를 얻는다.",
+      "artworkKey": "1cb1fe70d8005b67b9c25f09126aacca"
+    },
+    {
+      "category": 3,
+      "name": "안개 꽃가루",
+      "description": "전투 시작에 30% 확률로 무작위 생존 적 한 명에게 한 적 턴 동안 명중률을 25%p 낮추는 실명을 부여한다.",
+      "artworkKey": "d390b67be0d75305b8f2244699155912"
+    },
+    {
+      "category": 3,
+      "name": "화산암 거한의 손가락",
+      "description": "전투 중 현재 체력이 최대 체력의 50% 이하인 생존 아군의 물리 방어력이 4 증가한다.",
+      "artworkKey": "aa81e6e499e85984b707078ec8bfbb0a"
+    },
+    {
+      "category": 3,
+      "name": "흑요석 참수면",
+      "description": "아군이 출혈 중인 적을 쓰러뜨리면 나머지 생존 적 전체에게 피해 6을 준다. 이 피해가 같은 효과를 이어서 발동시키지는 않는다.",
+      "artworkKey": "28993821f9175c75b9fd16d1be7f088e"
+    },
+    {
+      "category": 3,
+      "name": "용암맥 수호핵 파편",
+      "description": "실제 아군 턴이 시작되면 25% 확률로 화상 중인 생존 적마다 해당 턴에 쓸 수 있는 행동력 1을 얻는다.",
+      "artworkKey": "1ec1397472815101b296d9f31d7b5314"
+    },
+    {
+      "category": 3,
+      "name": "붉은 협곡 방벽석",
+      "description": "전투 시작에 생존 아군 전체가 방어도 10을 얻고, 첫 아군 턴의 기본 드로우가 한 장 줄어든다.",
+      "artworkKey": "4023004e1acb5145bf1ca0bf732effcd"
+    },
+    {
+      "category": 3,
+      "name": "재의 봉인문양",
+      "description": "전투 중 아군의 마법 피해 경감률이 10%p 높아지고, 받는 체력 회복량이 5% 감소한다.",
+      "artworkKey": "4b44703cf45b51ee8b3b740b655b787e"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

@@ -3028,7 +3028,7 @@
     {
       "sourceRow": 277,
       "name": "거머리 이빨목걸이",
-      "description": "단일 공격 피해의 5%만큼 체력 회복",
+      "description": "아군의 단일 대상 공격 카드가 적의 체력을 실제로 줄이면, 사용자가 줄인 체력의 5%만큼 회복한다. 소수점은 버린다.",
       "buyMin": 189,
       "buyMax": 232,
       "buyVariance": 43,
@@ -3039,7 +3039,7 @@
     {
       "sourceRow": 278,
       "name": "진흙 부적",
-      "description": "행동력 감소를 받을 때 방어도 +5",
+      "description": "명시 효과로 행동력이 실제로 줄어든 생존 아군이 방어도 5를 얻는다.",
       "buyMin": 206,
       "buyMax": 242,
       "buyVariance": 36,
@@ -3050,7 +3050,7 @@
     {
       "sourceRow": 279,
       "name": "안개 꽃가루",
-      "description": "전투 시작 시 무작위 적 1명 실명(1턴) 30%",
+      "description": "전투 시작에 30% 확률로 무작위 생존 적 한 명에게 한 적 턴 동안 명중률을 25%p 낮추는 실명을 부여한다.",
       "buyMin": 223,
       "buyMax": 266,
       "buyVariance": 43,
@@ -3061,7 +3061,7 @@
     {
       "sourceRow": 280,
       "name": "화산암 거한의 손가락",
-      "description": "체력 50% 이하일 때 방어력 +4",
+      "description": "전투 중 현재 체력이 최대 체력의 50% 이하인 생존 아군의 물리 방어력이 4 증가한다.",
       "buyMin": 240,
       "buyMax": 276,
       "buyVariance": 36,
@@ -3072,7 +3072,7 @@
     {
       "sourceRow": 281,
       "name": "흑요석 참수면",
-      "description": "출혈 상태 적 처치 시 적 전체 6 피해",
+      "description": "아군이 출혈 중인 적을 쓰러뜨리면 나머지 생존 적 전체에게 피해 6을 준다. 이 피해가 같은 효과를 이어서 발동시키지는 않는다.",
       "buyMin": 257,
       "buyMax": 300,
       "buyVariance": 43,
@@ -3083,7 +3083,7 @@
     {
       "sourceRow": 282,
       "name": "용암맥 수호핵 파편",
-      "description": "화상 상태 적 수만큼 턴 시작 시 코스트 +1 25%",
+      "description": "실제 아군 턴이 시작되면 25% 확률로 화상 중인 생존 적마다 해당 턴에 쓸 수 있는 행동력 1을 얻는다.",
       "buyMin": 274,
       "buyMax": 310,
       "buyVariance": 36,
@@ -3094,7 +3094,7 @@
     {
       "sourceRow": 283,
       "name": "붉은 협곡 방벽석",
-      "description": "아군 전체 방어도 +10, 첫 턴 드로우 -1",
+      "description": "전투 시작에 생존 아군 전체가 방어도 10을 얻고, 첫 아군 턴의 기본 드로우가 한 장 줄어든다.",
       "buyMin": 291,
       "buyMax": 334,
       "buyVariance": 43,
@@ -3105,7 +3105,7 @@
     {
       "sourceRow": 284,
       "name": "재의 봉인문양",
-      "description": "아군 전체 저항력 +10%, 회복량 -5%",
+      "description": "전투 중 아군의 마법 피해 경감률이 10%p 높아지고, 받는 체력 회복량이 5% 감소한다.",
       "buyMin": 308,
       "buyMax": 344,
       "buyVariance": 36,
