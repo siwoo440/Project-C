@@ -76,4 +76,47 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsTrue(ExplorationSessionManager.Instance.IsEncounterCleared(encounterId)); // 조우 클리어 상태 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator FinalBossVictory_UnlocksWorldOnlyAfterFinalClear() // 최종 보스 승리 해금 조건 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string testKey = "ProjectC.Test.FinalClear." + System.Guid.NewGuid().ToString("N"); // 고유 테스트 저장 키 생성
+        try // 테스트 정리 보장 시작
+        { // 정리 보장 시작
+            CharacterUnlockProgress progress = new CharacterUnlockProgress(testKey); // 테스트 전용 해금 상태 생성
+            CharacterData world = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[21]; // 세계 캐릭터 조회
+            ExplorationSessionManager manager = ExplorationSessionManager.EnsureInstance(); // 탐사 관리자 생성
+            typeof(ExplorationSessionManager).GetField("unlockProgress", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(manager, progress); // 테스트 해금 상태 주입
+            EncounterData normal = Resources.Load<EncounterData>("Encounters/Encounter_Test_A"); // 일반 조우 조회
+            EncounterData boss = Resources.Load<EncounterData>("Encounters/Encounter_Test_C"); // 보스 조우 조회
+            BattleUnitRuntime ally = BattleUnitRuntime.CreateAlly(Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]); // 생존 아군 생성
+            BattleResultData victory = new BattleResultData(BattleResult.Victory, BattleType.Boss, 1, new[] { ally }, new string[0]); // 승리 결과 생성
+            BattleResultData escape = new BattleResultData(BattleResult.Escape, BattleType.Boss, 1, new[] { ally }, new string[0]); // 도주 결과 생성
+            manager.ResetExploration(); // 탐사 상태 초기화
+            typeof(ExplorationSessionManager).GetField("currentFloor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(manager, 10); // 최종 층 설정
+            Assert.IsTrue(manager.BeginEncounter("normal", normal, Vector3.zero, Vector3.right)); // 일반 조우 시작
+            manager.ResolveBattleResult(victory); // 일반 전투 승리 처리
+            Assert.IsFalse(progress.IsUnlocked(world)); // 일반 전투 해금 제외 확인
+            manager.ResetExploration(); // 탐사 상태 초기화
+            typeof(ExplorationSessionManager).GetField("currentFloor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(manager, 5); // 중간 보스 층 설정
+            Assert.IsTrue(manager.BeginEncounter("middle", boss, Vector3.zero, Vector3.right)); // 중간 보스 조우 시작
+            manager.ResolveBattleResult(victory); // 중간 보스 승리 처리
+            Assert.IsFalse(progress.IsUnlocked(world)); // 중간 보스 해금 제외 확인
+            manager.ResetExploration(); // 탐사 상태 초기화
+            typeof(ExplorationSessionManager).GetField("currentFloor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(manager, 10); // 최종 층 설정
+            Assert.IsTrue(manager.BeginEncounter("escaped", boss, Vector3.zero, Vector3.right)); // 최종 보스 조우 시작
+            manager.ResolveBattleResult(escape); // 최종 보스 도주 처리
+            Assert.IsFalse(progress.IsUnlocked(world)); // 도주 시 해금 제외 확인
+            Assert.IsTrue(manager.BeginEncounter("final", boss, Vector3.zero, Vector3.right)); // 최종 보스 재조우 시작
+            manager.ResolveBattleResult(victory); // 최종 보스 승리 처리
+            Assert.IsTrue(manager.IsExplorationSuccess); // 최종 탐사 성공 확인
+            Assert.IsTrue(progress.IsUnlocked(world)); // 최종 승리 세계 해금 확인
+        } // 테스트 본문 종료
+        finally // 테스트 데이터 정리 시작
+        { // 정리 시작
+            PlayerPrefs.DeleteKey(testKey); // 테스트 전용 저장 키 삭제
+            PlayerPrefs.Save(); // 테스트 키 삭제 저장
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료

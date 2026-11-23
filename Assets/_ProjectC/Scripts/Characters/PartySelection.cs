@@ -6,15 +6,17 @@ public sealed class PartySelection // 출전 파티 선택 상태
     private readonly List<CharacterData> members = new List<CharacterData>(); // 선택 캐릭터 목록
     private readonly ReadOnlyCollection<CharacterData> visibleMembers; // 외부 읽기 전용 목록
     private readonly IPartyDeploymentStatusProvider statusProvider; // 출전 상태 제공자
+    private readonly CharacterUnlockProgress unlockProgress; // 캐릭터 해금 상태
     public IReadOnlyList<CharacterData> Members => visibleMembers; // 선택 목록 조회
-    public PartySelection(IPartyDeploymentStatusProvider provider) // 선택 상태 생성
+    public PartySelection(IPartyDeploymentStatusProvider provider, CharacterUnlockProgress progress = null) // 선택 상태 생성
     { // 생성자 시작
         statusProvider = provider ?? throw new ArgumentNullException(nameof(provider)); // 출전 상태 제공자 저장
+        unlockProgress = progress ?? CharacterUnlockProgress.Shared; // 해금 상태 저장
         visibleMembers = members.AsReadOnly(); // 목록 변경 차단 설정
     } // 생성자 종료
     public bool TryAdd(CharacterData character) // 캐릭터 선택 시도
     { // 선택 처리 시작
-        if (character == null || members.Count >= PartyData.MaxPartySize || members.Contains(character)) // 유효성과 인원 확인
+        if (character == null || !unlockProgress.IsUnlocked(character) || members.Count >= PartyData.MaxPartySize || members.Contains(character)) // 유효성과 인원 확인
         { // 잘못된 선택 처리 시작
             return false; // 선택 실패 반환
         } // 잘못된 선택 처리 종료
@@ -46,7 +48,7 @@ public sealed class PartySelection // 출전 파티 선택 상태
             { // 사망 처리 시작
                 return new PartyDeploymentValidationResult(false, PartyDeploymentBlockReason.DeadMember, member, deployableCount); // 사망 차단 결과
             } // 사망 처리 종료
-            if (!statusProvider.CanDeploy(member)) // 기타 출전 제한 확인
+            if (!unlockProgress.IsUnlocked(member) || !statusProvider.CanDeploy(member)) // 해금과 기타 출전 제한 확인
             { // 출전 제한 처리 시작
                 return new PartyDeploymentValidationResult(false, PartyDeploymentBlockReason.UnavailableMember, member, deployableCount); // 출전 제한 결과
             } // 출전 제한 처리 종료
