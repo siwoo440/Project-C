@@ -75,5 +75,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     ArcaneWard = 72, // 다음 적 턴까지 고정 마법 저항력 상승
     MagicAttackPowerUp = 73, // 실제 아군 마법 카드의 독립 공격력 증가
     Shock = 74, // 대상의 다음 실제 적 턴 시작에 정산하는 감전
-    StealthBreakDamageUp = 75 // 은신 종료 뒤 다음 직접 카드 명중 보정
+    StealthBreakDamageUp = 75, // 은신 종료 뒤 다음 직접 카드 명중 보정
+    ManaConcentration = 76 // 다음 지팡이 피해 카드의 실제 피해 증가
 } // 열거형 종료

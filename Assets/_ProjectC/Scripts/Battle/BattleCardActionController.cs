@@ -34,6 +34,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly FirstSuitHitRelics suitHitRelics = new FirstSuitHitRelics(); // 전투별 첫 검과 지팡이 명중 기록
     private readonly BattleSupplyRelics supplyRelics = new BattleSupplyRelics(); // 이번 전투의 심장핀과 구슬 발동 기록
     private int preparedSwordDamage; // 사용이 확정된 검 한 장의 모든 타격에 더할 피해
+    private int preparedWandDamage; // 사용이 확정된 지팡이 한 장의 모든 명중에 더할 피해
     private int paidActionPoints; // 이번 카드 사용 시 실제로 지불한 행동력
     private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly WinterfallBossPhaseRuntime bossPhaseRuntime; // 선택적인 보스 페이즈 관리자
@@ -45,6 +46,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
     private BattleUnitRuntime firstSequentialTarget; // 두 대상을 고르는 카드의 첫 유닛
+    private int requiredSelectedEnemies; // 카드 입력을 시작한 순간의 고정 적 대상 수
     private IReadOnlyList<CardInstance> pendingCardChoices; // 카드 선택 대기 후보
     private CardEffectType pendingChoiceEffect; // 대기 중인 카드 선택 효과
     private BattleDrawChoiceView drawChoiceView; // 현재 선택 드로우 화면
@@ -98,7 +100,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 부활 대상 없음 시작
             return; // 대상 선택 시작 차단
         } // 부활 대상 없음 종료
-        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 복합 카드의 생존 적 선택 가능 여부 확인
+        if (cardInstance.TargetType is (CardTargetType.EnemyAndAlly or CardTargetType.SelectedTwoEnemies) && // 적을 직접 선택하는 순차 피해 카드 확인
+            (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 실제 선택 가능한 적과 유효한 피해 효과 확인
         { // 적 대상 없음 처리 시작
             return; // 두 대상 선택 시작 차단
         } // 적 대상 없음 처리 종료
@@ -126,6 +129,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         selectedCard = cardInstance; // 새 선택 카드 저장
         handView.SetSelectedCard(selectedCard); // 손패 선택 표시 적용
         handView.SetMixedTargetStage(selectedCard.TargetType == CardTargetType.EnemyAndAlly ? BattleTeam.Enemy : null); // 복합 카드의 첫 적 선택 안내 표시
+        requiredSelectedEnemies = selectedCard.TargetType == CardTargetType.SelectedTwoEnemies ? turnRuntime.CountSelectableEnemyPair() : 0; // 선택 시작 순간 확정한 대상 수 보관
+        if (requiredSelectedEnemies > 0) // 서리 파편의 새로운 적 선택 안내 확인
+        { // 적 대상 단계 표시 시작
+            handView.SetSelectedEnemyStage(null, requiredSelectedEnemies); // 손패에 현재 필요한 적 수와 첫 입력 안내 전달
+        } // 적 대상 단계 표시 종료
         if (selectedCard.TargetType == CardTargetType.Self) // 자신 대상 카드 확인
         { // 자신 대상 처리 시작
             if (IsValidTarget(selectedCard, selectedCard.OwnerUnit)) // 자신 대상 유효성 확인
@@ -180,7 +188,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 잘못된 대상 처리 종료
         bool selectsEnemyAndAlly = selectedCard.TargetType == CardTargetType.EnemyAndAlly; // 적과 아군을 차례로 선택하는 카드 확인
         bool selectsBlessingSource = selectedCard.TargetType == CardTargetType.BlessingSourceAndAlly; // 강화를 복사할 두 아군 선택 확인
-        if (selectsEnemyAndAlly || selectsBlessingSource || selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 두 유닛 순차 선택 카드 확인
+        bool selectsEnemyPair = selectedCard.TargetType == CardTargetType.SelectedTwoEnemies && requiredSelectedEnemies == 2; // 시작 시 두 적 지정이 필요한 카드 확인
+        if (selectsEnemyAndAlly || selectsBlessingSource || selectsEnemyPair || selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 두 유닛 순차 선택 카드 확인
         { // 순차 대상 선택 시작
             if (runtimeUnit == firstSequentialTarget) // 먼저 선택한 유닛의 반복 입력 확인
             { // 같은 대상 처리 시작
@@ -197,6 +206,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 { // 강화 수령 대상 안내 시작
                     handView.SetBlessingTransferSource(runtimeUnit); // 드롭과 클릭에 같은 수령 대상 단계 표시
                 } // 강화 수령 대상 안내 종료
+                if (selectsEnemyPair) // 먼저 고를 적의 선택 완료 확인
+                { // 두 번째 적 선택 안내 시작
+                    handView.SetSelectedEnemyStage(runtimeUnit, requiredSelectedEnemies); // 드래그와 클릭이 공유할 첫 적과 둘째 단계 설정
+                } // 두 번째 적 선택 안내 종료
                 UpdateTargetHighlights(); // 두 번째 단계의 유효 대상 강조 갱신
                 return; // 두 번째 입력까지 카드 사용 보류
             } // 첫 번째 대상 보관 종료
@@ -257,6 +270,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             RefreshBlessingTransferTargets(); // 생존한 실제 복사 조합에 맞게 단계 갱신
             return; // 다른 카드의 대상 단계 검사 생략
         } // 사망 후 축복 대상 갱신 종료
+        if (selectedCard.TargetType == CardTargetType.SelectedTwoEnemies && runtimeUnit.Team == BattleTeam.Enemy) // 순차 적 선택 중에 적이 사망했는지 확인
+        { // 시작 때 확정한 대상 수 유지 시작
+            if (turnRuntime.CountSelectableEnemyPair() < requiredSelectedEnemies) // 현재 후보로 원래 필요했던 적 수를 채우지 못하는지 확인
+            { // 불완전한 입력 취소 시작
+                CancelSelection(); // 처음 고른 대상 수를 줄이지 않고 미결제 선택 종료
+            } // 불완전한 입력 취소 종료
+            else // 원래 필요한 생존 대상 수를 아직 충족하는 경우
+            { // 남은 후보 강조 시작
+                UpdateTargetHighlights(); // 다른 생존 적들의 현재 선택 가능 표시
+            } // 남은 후보 강조 종료
+            return; // 별도 순차 카드의 단계 처리 생략
+        } // 시작 때 확정한 대상 수 유지 종료
         if (selectingEnemyAndAlly || selectingSplitBarrier && runtimeUnit.Team == BattleTeam.Ally) // 두 번째 대상 후보의 생존 변화 확인
         { // 남은 선택 대상 처리 시작
             UpdateTargetHighlights(); // 생존 후보 강조 갱신
@@ -305,6 +330,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 비용 차감 전 카드 선택 취소
             return; // 부활 행동 중단
         } // 부활 대상 변경 처리 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.EmberSpread && (targetUnits.Count != 1 || !IsValidTarget(cardInstance, targetUnits[0]))) // 비용 지불 직전 불씨 확산의 화상 대상 재확인
+        { // 불씨 확산 대상 변경 처리 시작
+            CancelSelection(); // 화상이 만료되거나 해제된 대상의 입력 취소
+            return; // 비용 차감과 카드 이동 없이 실행 중단
+        } // 불씨 확산 대상 변경 처리 종료
         if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && // 적과 아군의 유효성을 비용 지불 직전에 재검사
             (cardInstance.EffectType != CardEffectType.Damage || cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || // 올바른 카드 처리와 소유자 생존 및 두 대상 확인
             !turnRuntime.CanSelectLivingUnit(targetUnits[0], BattleTeam.Enemy) || !turnRuntime.CanSelectLivingUnit(targetUnits[1], BattleTeam.Ally))) // 서로 다른 진영의 두 생존 참가자 확인
@@ -318,6 +348,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 지불 전에 잘못된 두 대상 입력 정리
             return; // 유효한 강화가 없는 카드 실행 중단
         } // 복사 대상 검증 실패 종료
+        if (cardInstance.TargetType == CardTargetType.SelectedTwoEnemies && !CanConfirmSelectedEnemyPair(cardInstance, targetUnits)) // 지불 직전 지정한 적의 생존과 서로 다름 재확인
+        { // 더 이상 대상이 유효하지 않은 경우 시작
+            CancelSelection(); // 비용을 내지 않고 모든 미확정 입력 제거
+            return; // 두 적 선택 카드의 실행과 비용 처리 중단
+        } // 더 이상 대상이 유효하지 않은 경우 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SplitBarrier && // 분할 방벽의 비용 지불 직전 검사
             (cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || targetUnits[0] == targetUnits[1] || // 소유자 생존과 서로 다른 대상 수 확인
             !IsValidTarget(cardInstance, targetUnits[0]) || !IsValidTarget(cardInstance, targetUnits[1]))) // 두 대상의 진영과 생존 상태 확인
@@ -379,6 +414,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.BladeMaintenance); // 한 번 사용한 칼날 정비 제거
             } // 추가 피해 보관 종료
         } // 칼날 정비 소모 종료
+        preparedWandDamage = 0; // 다른 지팡이 공격에 사용한 집중 수치 초기화
+        if (cardInstance.CardType == CardType.Wand && cardInstance.EffectType == CardEffectType.Damage) // 행동력과 대상 확인을 마친 지팡이 피해 카드
+        { // 실제 집중 소모 시작
+            var concentration = cardInstance.OwnerUnit.GetStatusEffect(BattleStatusEffectType.ManaConcentration); // 현재 피해 카드의 원래 소유자에게 남은 집중 조회
+            if (concentration is { IsExpired: false } && cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.ManaConcentration)) // 아직 사용하지 않은 실제 집중 한 장 소모
+            { // 이번 카드의 집중 수치 확보 시작
+                preparedWandDamage = concentration.EffectiveValue; // 빗나감과 관계없이 이 카드의 모든 명중 수치 예약
+            } // 이번 카드의 집중 수치 확보 종료
+        } // 실제 집중 소모 종료
         paidActionPoints = cost; // 충돌 시점에 사용할 실제 지불 비용 보관
         List<BattleUnitRuntime> targetSnapshot = new List<BattleUnitRuntime>(targetUnits); // 연출 중 유지할 대상 목록 복사
         actionPending = true; // 카드 행동 진행 상태 저장
@@ -777,6 +821,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             handView.SetInteractionLocked(false); // 손패와 턴 종료 잠금 해제
         } // 입력 복구 종료
     } // 선택 화면 정리 종료
+    private bool CanConfirmSelectedEnemyPair(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets) // 결제 전에 확인할 골라 놓은 적 조합
+    { // 선택을 시작한 순간의 적 수와 현재 조건 비교 시작
+        if (card.EffectType != CardEffectType.Damage || card.OwnerUnit.IsDead || requiredSelectedEnemies < 1 || targets.Count != requiredSelectedEnemies || // 원본 효과와 소유자 및 처음 필요한 적 수 확인
+            !turnRuntime.CanSelectLivingUnit(targets[0], BattleTeam.Enemy)) // 실제 전투에 남아 있는 첫 생존 적 확인
+        { // 미확정 대상 처리 시작
+            return false; // 행동력 결제와 카드 사용 거절 반환
+        } // 미확정 대상 처리 종료
+        return targets.Count == 1 || targets[0] != targets[1] && turnRuntime.CanSelectLivingUnit(targets[1], BattleTeam.Enemy); // 한 대상 허용 상태 또는 서로 다른 두 생존 적 확인
+    } // 선택을 시작한 순간의 적 수와 현재 조건 비교 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
     { // 대상 검사 시작
         if (cardInstance == null || targetUnit == null) // 카드와 대상 연결 확인
@@ -791,11 +844,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 일반 카드 전투불능 대상 차단 시작
             return false; // 일반 카드 대상으로 선택 불가
         } // 일반 카드 전투불능 대상 차단 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.EmberSpread) // 불씨 확산의 화상 적 전용 대상 확인
+        { // 불씨 확산 대상 검사 시작
+            return cardInstance.TargetType == CardTargetType.SingleEnemy && turnRuntime.CanSelectLivingUnit(targetUnit, BattleTeam.Enemy) && // 실제 선택할 수 있는 생존 적 한 명 확인
+                targetUnit.GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }; // 만료되지 않은 화상 상태 확인
+        } // 불씨 확산 대상 검사 종료
         if (cardInstance.TargetType == CardTargetType.BlessingSourceAndAlly) // 두 아군의 축복 이전 선택 확인
         { // 축복 이전 단계별 대상 검사 시작
             return firstSequentialTarget == null ? BattleBlessingTransfer.CanChooseSource(turnRuntime, targetUnit) : // 강화 보유자 선택 검사
                 BattleBlessingTransfer.FindBlessing(turnRuntime, firstSequentialTarget, targetUnit) != null; // 두 번째로 고른 아군의 실제 강화 수령 가능 여부
         } // 축복 이전 단계별 대상 검사 종료
+        if (cardInstance.TargetType == CardTargetType.SelectedTwoEnemies) // 서리 파편에서 지정할 생존 적 확인
+        { // 현재 적 클릭 유효성 확인 시작
+            return cardInstance.EffectType == CardEffectType.Damage && turnRuntime.CanSelectLivingUnit(targetUnit, BattleTeam.Enemy); // 실제 전투 명단의 생존 적만 입력 허용
+        } // 현재 적 클릭 유효성 확인 종료
         if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 순서가 정해진 적과 아군의 선택 검사
         { // 현재 선택 단계 검사 시작
             BattleTeam team = firstSequentialTarget == null ? BattleTeam.Enemy : BattleTeam.Ally; // 첫 적 지정 전후의 대상 진영 구분
@@ -1439,6 +1501,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.DefeatWard); // 일반 피해 무효와 별개인 전투불능 방지 제거
         } // 명중 대상의 생존 보호 제거 종료
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
+        if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
+        { // 마력 흡수 회복 시작
+            int regained = sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 기존 최대치 안에서 실제 현재 행동력 한 점 회복
+            if (regained > 0) // 실제로 행동력을 되찾았는지 확인
+            { // 회복 표시 시작
+                FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"행동력 +{regained}", true); // 소유자의 실제 행동력 회복 수치 표시
+            } // 회복 표시 종료
+        } // 마력 흡수 회복 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.ExecutionerSword && healthBefore > 0 && damageResult.AppliedDamage == healthBefore && targetUnit.IsDead) // 이 카드의 직접 체력 피해로 적 처치 확인
         { // 처치 환급 시작
             sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 공용 행동력 최대치 안에서 환급
@@ -1468,7 +1538,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중 후 선택 실명 처리 종료
         var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, supplyRelics, out var statusResult); // 실제 명중과 보유 구슬을 반영한 후속 상태 확인
         if (cardInstance.CardType == CardType.Wand && cardInstance.SourceData.ApplyWandHitStatus && !hasAuthoredBlind && !targetUnit.IsDead && targetUnit.Team == BattleTeam.Enemy && // 피해가 명중한 생존 적과 명시된 지팡이 효과 확인
-            cardInstance.StatusEffectType != BattleStatusEffectType.None && cardInstance.SourceData.SecondaryEffectValue > 0) // 별도 확률 효과와 중복되지 않는 유효한 상태 종류 및 수치 확인
+            TryRollWandHitStatus(cardInstance, targetUnit)) // 대상과 설정이 유효한 명중 상태만 실제 확률 확인
         { // 지팡이 명중 상태 부여 시작
             appliedStatus = cardInstance.StatusEffectType; // 원본이 지정한 감전과 기절 및 일반 지팡이 상태 종류 확인
             statusResult = targetUnit.ApplyStatusEffect(appliedStatus, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 기존 상태 면역과 중첩 및 발생자 전달
@@ -1501,6 +1571,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 타격 판정 종료
+    private bool TryRollWandHitStatus(CardInstance card, BattleUnitRuntime target) // 지팡이 명중 상태의 선택 확률과 면역 확인
+    { // 지팡이 상태 판정 시작
+        var status = card.StatusEffectType; // 원본에 설정된 적용 상태 종류
+        int chance = card.SourceData.WandHitStatusChancePercent; // 유효 범위의 원본 명중 상태 확률
+        if (chance <= 0 || status is (BattleStatusEffectType.None or BattleStatusEffectType.Awakening or BattleStatusEffectType.Collapse) || // 확률 없음과 일반 카드로 줄 수 없는 상태 확인
+            !Enum.IsDefined(typeof(BattleStatusEffectType), status) || card.SourceData.SecondaryEffectValue <= 0 || card.StatusDuration <= 0 || card.StatusMaximumStacks <= 0) // 실제 존재하는 상태와 양수 수치 및 지속 확인
+        { // 적용 불가 상태 처리 시작
+            return false; // 잘못된 설정으로 인한 유물 또는 난수 소모 차단
+        } // 적용 불가 상태 처리 종료
+        return chance >= 100 || (target.HasStatusImmunity && BattleStatusEffectInstance.IsDebuffType(status)) || supplyRelics.RollOptionalStatus(target, chance); // 확정과 면역에는 난수 없이 기존 부여 경로 사용
+    } // 지팡이 상태 판정 종료
     private bool TryRollAuthoredBlind(CardInstance card, BattleUnitRuntime target, int value) // 명시된 실명과 유효한 현재 대상의 선택 확률 확인
     { // 카드 실명 확률 검사 시작
         return value > 0 && !target.IsDead && card.SourceData.OptionalBlindChancePercent >= 0 && supplyRelics.RollAuthoredBlind(target, card.SourceData.OptionalBlindChancePercent); // 유효한 양의 명시 효과에만 실제 실명 판정
@@ -1562,10 +1643,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 명중 가산 제외 종료
         var stealthBonus = owner.GetStatusEffect(BattleStatusEffectType.StealthBreakDamageUp); // 은신 종료로 예약된 실제 피해 상태
         int stealthDamage = stealthBonus is { IsExpired: false } && owner.RemoveStatusEffect(BattleStatusEffectType.StealthBreakDamageUp) ? stealthBonus.EffectiveValue : 0; // 첫 유효 직접 명중의 일회 피해 수치 소모
+        long preparedDamage = (long)stealthDamage + (card.CardType == CardType.Wand ? preparedWandDamage : 0); // 같은 명중의 팔찌와 첫 지팡이 집중 가산 합계
         if (damage <= 0) // 기존 양수 피해가 필요한 추가 유물 확인
-        { // 영 피해 카드 타격의 팔찌 보정 시작
-            return (int)Math.Min(int.MaxValue, (long)damage + stealthDamage); // 팔찌 피해만 더한 명중 수치
-        } // 영 피해 카드 타격의 팔찌 보정 종료
+        { // 영 피해 카드 타격의 예약 보정 시작
+            return (int)Math.Min(int.MaxValue, damage + preparedDamage); // 적 명중에서 실제 예약된 피해 합계 반환
+        } // 영 피해 카드 타격의 예약 보정 종료
         int firstBonus = usedFirstCardDamageBonus ? 0 : BattleSupplyRelics.Find(RelicEffectType.FirstCardDamageBonus)?.EffectValue ?? 0; // 전투당 첫 명중에 쓸 붉은 잉크병 수치
         if (firstBonus > 0) // 붉은 잉크병의 유효한 가산량 확인
         { // 붉은 잉크병 발동 시작
@@ -1577,7 +1659,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 검은 깃털 펜던트 발동 시작
             lastRetainedDamageRound = turnRuntime.CurrentRound; // 같은 아군 턴의 다음 타격 중복 방지
         } // 검은 깃털 펜던트 발동 종료
-        return (int)Math.Min(int.MaxValue, (long)damage + stealthDamage + Math.Max(0, firstBonus) + Math.Max(0, retainedBonus)); // 방어와 방어도 앞에서 직접 타격 가산
+        return (int)Math.Min(int.MaxValue, damage + preparedDamage + Math.Max(0, firstBonus) + Math.Max(0, retainedBonus)); // 방어와 방어도 앞에서 명중한 같은 카드의 모든 피해 합산
     } // 직접 명중 유물 확인 종료
     private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작
@@ -1896,6 +1978,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 선택 취소 시작
         selectedCard = null; // 선택 카드 제거
         firstSequentialTarget = null; // 미확정 첫 대상 제거
+        requiredSelectedEnemies = 0; // 취소하거나 사용한 카드의 대상 수 예약 초기화
         handView.SetMixedTargetStage(null); // 적 또는 아군의 선택 단계 안내 제거
         handView.SetSelectedCard(null); // 카드 선택 표시 해제
         ClearTargetHighlights(allyUnitViews); // 아군 대상 강조 해제
@@ -1960,7 +2043,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 손패 이벤트 해제 시작
             handView.CardClicked -= HandleCardClicked; // 카드 클릭 이벤트 해제
             handView.SetMixedTargetStage(null); // 연결 해제 때 남은 복합 대상 안내 제거
-            if (selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly) // 연결 해제 때 축복 이전의 미완료 선택 확인
+            if (selectedCard?.TargetType is CardTargetType.BlessingSourceAndAlly or CardTargetType.SelectedTwoEnemies) // 연결 해제 때 남은 순차 카드 입력 확인
             { // 축복 이전 입력 해제 시작
                 handView.SetSelectedCard(null); // 남은 첫 대상과 단계 안내 및 카드 선택 제거
             } // 축복 이전 입력 해제 종료
@@ -1971,6 +2054,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         UnregisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 해제
         selectedCard = null; // 선택 카드 참조 제거
         firstSequentialTarget = null; // 연결 해제 시 순차 카드의 첫 대상 제거
+        requiredSelectedEnemies = 0; // 전투 입력을 닫을 때 남아 있던 대상 수 제거
         actionPending = false; // 카드 행동 진행 상태 해제
         ClearTargetHighlights(allyUnitViews); // 아군 대상 강조 해제
         ClearTargetHighlights(enemyUnitViews); // 적 대상 강조 해제

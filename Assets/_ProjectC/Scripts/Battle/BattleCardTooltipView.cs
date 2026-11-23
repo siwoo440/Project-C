@@ -101,6 +101,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
                 return "모든 아군"; // 전체 아군 문구 반환
             case CardTargetType.SingleEnemy: // 단일 적 대상
                 return "적 1명"; // 단일 적 문구 반환
+            case CardTargetType.SelectedTwoEnemies: // 고르는 서로 다른 생존 적 대상
+                return "적 2명 선택 (1명만 생존하면 1명)"; // 서리 파편의 선택 대상 수 조건 표시
             case CardTargetType.RandomTwoEnemies: // 서로 다른 무작위 생존 적 대상
                 return "무작위 적 최대 2명"; // 생존 적이 적으면 선택 범위 축소 안내
             case CardTargetType.AllEnemies: // 전체 적 대상

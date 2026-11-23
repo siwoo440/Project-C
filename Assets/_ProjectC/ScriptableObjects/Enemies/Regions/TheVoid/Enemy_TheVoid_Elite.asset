@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_TheVoid_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_TheVoid_ELITE
+  displayName: "\uc9c0\uc6cc\uc9c4 \uc874\uc7ac"
+  description: "\uac00\uae4c\uc774 \ub2e4\uac00\uc628 \uc790\uc758 \ubc29\ud5a5\uacfc \uc0dd\uac01\uc744 \uc9c0\uc6b4\ub2e4."
+  portrait: {fileID: 21300000, guid: f168d0dd0c135c21acd85ef7711ee9ff, type: 3}
+  isUndead: 0
+  isMechanical: 0
+  maxHealth: 80
+  physicalDefense: 6
+  magicalResistance: 10
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 14
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 2
+  minimumActionSpeed: 6
+  maximumActionSpeed: 10
+  actionPatterns:
+  - displayName: "\uc794\uc0c1 \uc18c\uc2e4"
+    actionType: 1
+    attackPower: 14
+    damageType: 2
+    statusEffectType: 19
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 75
+    mentalChangeOnHit: -2
+    targetRule: 2
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  - displayName: "\ud754\uc801 \uc7a0\uc2dd"
+    actionType: 1
+    attackPower: 10
+    damageType: 2
+    statusEffectType: 9
+    statusEffectValue: 5
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 70
+    mentalChangeOnHit: -3
+    targetRule: 3
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  secondPhasePatternStartIndex: 0

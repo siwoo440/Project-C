@@ -20,16 +20,24 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 제거 상태 제외 시작
                 continue; // 다음 상태 이동
             } // 제거 상태 제외 종료
-            if (statusEffect.EffectType == BattleStatusEffectType.Shock) // 적의 다음 실제 진영 시작에 한 번 발동하는 감전 확인
-            { // 감전의 안전한 충격과 소모 시작
-                if (runtimeUnit.Team == BattleTeam.Enemy && !statusEffect.IsExpired && runtimeUnit.RemoveStatusEffectInstance(statusEffect)) // 실제 적 턴 시작과 처리 전 상태 제거 확인
+            if (statusEffect.EffectType == BattleStatusEffectType.Shock) // 실제 적 턴 시작마다 한 번 피해를 주는 감전 확인
+            { // 감전의 피해와 지속 차감 시작
+                if (runtimeUnit.Team == BattleTeam.Enemy && !statusEffect.IsExpired) // 현재 적 진영과 활성 감전 확인
                 { // 감전 효과 적용 시작
-                    statusStateChanged = true; // 선택된 감전 상태의 화면 제거 알림 예약
-                    int applied = runtimeUnit.TakeUnblockedDamage(statusEffect.EffectiveValue, BattleDamageType.None, null); // 직접 카드나 추가 상태 부여 없이 방어도를 우회하는 체력 피해
-                    processResults.Add(CreateResult(statusEffect, round, applied, statusEffect.RemainingTurns, 0, true, BattleStatusEffectRemovalReason.DurationExpired)); // 소모된 감전의 실제 피해와 지속 종료 기록
+                    int previousTurns = statusEffect.RemainingTurns; // 이번 발동 직전의 남은 적 턴 기록
+                    statusEffect.AdvanceDuration(); // 피해 알림 전에 이번 적 턴의 발동 횟수 차감
+                    var reason = BattleStatusEffectRemovalReason.None; // 다음 적 턴까지 남기는 감전의 기본 제거 사유
+                    if (statusEffect.IsExpired) // 마지막 발동으로 감전이 소모되었는지 확인
+                    { // 마지막 감전 제거 시작
+                        runtimeUnit.RemoveStatusEffectInstance(statusEffect); // 다시 체력이 바뀌기 전에 마지막 감전 제거
+                        reason = BattleStatusEffectRemovalReason.DurationExpired; // 지속 횟수 소진의 제거 사유 기록
+                    } // 마지막 감전 제거 종료
+                    statusStateChanged = true; // 남은 감전 횟수와 아이콘 갱신 예약
+                    int applied = runtimeUnit.TakeUnblockedDamage(statusEffect.EffectiveValue, BattleDamageType.None, null); // 직접 카드 효과를 재호출하지 않는 방어도 우회 감전 피해
+                    processResults.Add(CreateResult(statusEffect, round, applied, previousTurns, statusEffect.RemainingTurns, true, reason)); // 이번 감전 피해와 남은 적 턴 기록
                 } // 감전 효과 적용 종료
-                continue; // 같은 상태의 일반 시작 처리와 중복 발동 방지
-            } // 감전의 안전한 충격과 소모 종료
+                continue; // 일반 턴 시작 분기와 중복 처리 방지
+            } // 감전의 피해와 지속 차감 종료
             if (statusEffect.EffectType == BattleStatusEffectType.DelayedHealing) // 진영 시작 때 소모되는 생명수의 예약 회복 확인
             { // 예약 효과 소모 및 회복 시작
                 if (runtimeUnit.Team == BattleTeam.Ally && runtimeUnit.RemoveStatusEffectInstance(statusEffect)) // 실제 아군 턴의 생존 대상과 예약 제거 확인
@@ -136,6 +144,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 일반 아군 턴 정리에서 마력 보호막 제외 시작
                 continue; // 적이 공격을 마친 뒤 한 번만 기간 차감
             } // 일반 아군 턴 정리에서 마력 보호막 제외 종료
+            if (effect.EffectType == BattleStatusEffectType.Shock && runtimeUnit.Team == BattleTeam.Enemy) // 실제 적 턴 시작에서 이미 횟수를 차감한 감전 확인
+            { // 적 턴 종료의 감전 제외 시작
+                continue; // 같은 적 턴에 두 번째 지속 감소 방지
+            } // 적 턴 종료의 감전 제외 종료
             if (effect.EffectType == BattleStatusEffectType.ResurrectionSeed) // 적 턴 종료에서만 차감하는 씨앗 상태 확인
             { // 일반 부활 씨앗 기간 처리 제외 시작
                 continue; // 아군 턴 정리에서는 씨앗 기간 유지

@@ -167,6 +167,10 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ManaConcentration) // 화면에 새로 표시되는 마력 집중의 상세 설명
+                    { // 다음 지팡이 피해 카드의 원본 수치 조회
+                        description = BattleStatusEffectInstance.GetDescription(effect, 4); // 카드와 도감의 추가 피해가 일치하는지 확인
+                    } // 대기 중인 마력 집중 상태의 연결 종료
                     else if (effect == BattleStatusEffectType.StealthBreakDamageUp) // 은신이 풀린 뒤 실제 타격을 기다리는 상태
                     { // 별도 팔찌 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 8); // 유물에 지정된 원본 피해 증가량 전달

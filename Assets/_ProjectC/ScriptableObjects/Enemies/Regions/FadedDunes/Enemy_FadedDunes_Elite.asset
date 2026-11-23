@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_FadedDunes_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_FadedDunes_ELITE
+  displayName: "\uc65c\uace1\ub41c \ud658\uc0c1\uccb4"
+  description: "\ubc29\ud5a5 \uac10\uac01\uc744 \ud754\ub4dc\ub294 \ube5b\uc744 \uacf5\uaca9\uc5d0 \uc11e\ub294\ub2e4."
+  portrait: {fileID: 21300000, guid: 836f1ec6e2a25a599cdfdd6863fc230b, type: 3}
+  isUndead: 0
+  isMechanical: 0
+  maxHealth: 66
+  physicalDefense: 3
+  magicalResistance: 8
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 12
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 2
+  minimumActionSpeed: 6
+  maximumActionSpeed: 10
+  actionPatterns:
+  - displayName: "\uad74\uc808 \ud30c\ud3b8"
+    actionType: 1
+    attackPower: 12
+    damageType: 2
+    statusEffectType: 19
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 65
+    mentalChangeOnHit: -2
+    targetRule: 2
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  - displayName: "\uc2e0\uae30\ub8e8 \ube5b\uc904\uae30"
+    actionType: 1
+    attackPower: 8
+    damageType: 2
+    statusEffectType: 15
+    statusEffectValue: 20
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 55
+    mentalChangeOnHit: 0
+    targetRule: 3
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  secondPhasePatternStartIndex: 0

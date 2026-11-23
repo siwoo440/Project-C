@@ -78,7 +78,7 @@ public static class CharredWellEvent // 윈터폴 검게 탄 우물
                 party.TryGetSavedAllyState(actor, out _, out int afterMental, out _); // 실제 회복 후 정신력 조회
                 summary = $"{actor.DisplayName} 정신력 {mental} → {afterMental} · 다음 층의 첫 재폭풍의 눈 교체 확률 15%"; // 행동자 회복과 다음 층 효과 안내
             } // 봉인 예약 종료
-            session.MarkEventResolved(room); // 보상과 비용 적용 후 사건 완료 기록
+            session.MarkEventResolved(room, true); // 보상과 비용 및 정상 해결의 구역 수치 기록
             if (choice == Dig && party.IsActivePartyWiped()) // 재를 파내다 마지막 생존자 사망 확인
             { // 전멸 정산 시작
                 session.CompleteExplorationFailure("검게 탄 우물의 재를 파낸 마지막 생존자가 쓰러졌습니다."); // 탐사 전멸과 복귀 정산

@@ -34,6 +34,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private CardInstance selectedCard; // 현재 선택 카드
     internal BattleTeam? MixedTargetStage { get; private set; } // 피해 적과 회복 아군의 현재 대상 선택 단계
     internal BattleUnitRuntime BlessingTransferSource { get; private set; } // 선택을 끝낸 첫 강화 보유 아군
+    internal BattleUnitRuntime FirstSelectedEnemy { get; private set; } // 이미 선택한 첫 적과 드래그 중복 검사 대상
+    private bool selectsLoneEnemy; // 선택 시작 시 실제 적이 한 명뿐인 입력 단계
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private BattleCardView draggedCardView; // 현재 꺼내는 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
@@ -145,6 +147,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         selectedCard = null; // 선택 카드 제거
         MixedTargetStage = null; // 이전 전투의 순차 대상 입력 안내 제거
         BlessingTransferSource = null; // 이전 전투의 축복 보유자 선택 해제
+        FirstSelectedEnemy = null; // 이전 전투의 미확정 첫 적 제거
+        selectsLoneEnemy = false; // 이전 전투에서 남은 단일 적 안내 제거
         recoveredCards.Clear(); // 이전 덱 카드 회수 기록 정리
         HideTooltip(); // 카드 툴팁 숨김
         Refresh(); // 빈 손패 화면 표시
@@ -335,9 +339,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 카드 드래그 간격 설정 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
     { // 선택 카드 설정 시작
-        bool refreshBlessingPrompt = selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly || cardInstance?.TargetType == CardTargetType.BlessingSourceAndAlly; // 축복 이전 안내의 추가 또는 제거 확인
+        bool refreshSequentialPrompt = selectedCard?.TargetType is (CardTargetType.BlessingSourceAndAlly or CardTargetType.SelectedTwoEnemies) || // 변경 전 별도 순차 대상 안내 확인
+            cardInstance?.TargetType is CardTargetType.BlessingSourceAndAlly or CardTargetType.SelectedTwoEnemies; // 새 카드에 별도 순차 대상 안내가 필요한지 확인
         selectedCard = cardInstance; // 선택 카드 저장
         BlessingTransferSource = null; // 새 카드 선택에서 미확정 축복 보유자 제거
+        FirstSelectedEnemy = null; // 새 카드 선택에서 표시하던 첫 적 제거
+        selectsLoneEnemy = false; // 새 카드 선택에서 한 적 안내 초기화
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
         { // 선택 표시 적용 시작
             bool selected = cardView != null && cardView.RuntimeCard == selectedCard; // 현재 카드 선택 여부 계산
@@ -347,7 +354,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             } // 선택 표시 적용 종료
         } // 선택 표시 적용 종료
         RefreshCardPreview(); // 선택 또는 선택 해제한 확대 카드 갱신
-        if (refreshBlessingPrompt) // 축복 안내 표시 유무가 달라지는 선택 확인
+        if (refreshSequentialPrompt) // 별도 순차 선택 안내의 표시 또는 제거 확인
         { // 축복 선택 표시 시작
             RefreshTurnStatus(); // 강화 보유자를 고르거나 원래 턴 안내로 복귀
         } // 축복 선택 표시 종료
@@ -357,6 +364,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         BlessingTransferSource = unit; // 드래그와 클릭이 공유하는 첫 아군 기록
         RefreshTurnStatus(); // 두 번째 아군에게 강화 복사 안내 표시
     } // 수령 단계 설정 종료
+    internal void SetSelectedEnemyStage(BattleUnitRuntime first, int requiredCount) // 클릭 또는 드롭으로 진행 중인 적 순차 단계 표시
+    { // 서리 파편의 실제 화면 안내 시작
+        FirstSelectedEnemy = first; // 기존 첫 적을 다시 고르지 않도록 공유 대상 저장
+        selectsLoneEnemy = requiredCount == 1; // 처음부터 한 대상 선택만 필요한지 기록
+        RefreshTurnStatus(); // 첫 적과 두 번째 적 및 단일 적 선택 안내 갱신
+    } // 서리 파편의 실제 화면 안내 종료
     internal void SetMixedTargetStage(BattleTeam? team) // 현재 적 또는 아군의 선택 단계 표시
     { // 선택 단계 표시 시작
         if (MixedTargetStage != team) // 이전 대상과의 변경 확인
@@ -408,7 +421,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 부활 대상 없음 처리 시작
             return false; // 손패 클릭과 드래그 시작 차단
         } // 부활 대상 없음 처리 종료
-        if (cardInstance.TargetType == CardTargetType.EnemyAndAlly && (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 올바른 복합 효과와 생존 적 후보 확인
+        if (cardInstance.TargetType is (CardTargetType.EnemyAndAlly or CardTargetType.SelectedTwoEnemies) && // 적을 먼저 고르는 순차 카드의 손패 사용 확인
+            (cardInstance.EffectType != CardEffectType.Damage || !turnRuntime.HasSelectableEnemy)) // 올바른 피해 효과와 생존 적 후보 확인
         { // 복합 대상 없음 처리 시작
             return false; // 대상 조합을 완성할 수 없는 카드 사용 차단
         } // 복합 대상 없음 처리 종료
@@ -672,6 +686,11 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         switch (turnRuntime.CurrentPhase) // 현재 턴 단계 분기
         { // 턴 단계 분기 시작
             case BattleTurnPhase.PlayerTurn: // 플레이어 턴 단계
+                if (selectedCard?.TargetType == CardTargetType.SelectedTwoEnemies) // 서리 파편의 현재 순차 입력 안내 확인
+                { // 적 선택 안내 시작
+                    turnStatusText.text = selectsLoneEnemy ? "남은 적 선택" : FirstSelectedEnemy == null ? "첫 번째 적 선택" : "두 번째 적 선택"; // 실제 한 명 또는 두 명 입력에 해당하는 문구
+                    break; // 서리 파편의 화면 안내 선택 완료
+                } // 적 선택 안내 종료
                 turnStatusText.text = selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly // 축복 이전의 두 아군 안내 확인
                     ? (BlessingTransferSource == null ? "강화를 복사할 아군 선택" : "강화를 받을 아군 선택") // 강화 보유자와 수령자 선택 안내
                     : MixedTargetStage switch // 나머지 카드의 대상 안내 또는 라운드 표시 선택

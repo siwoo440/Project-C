@@ -60,6 +60,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
     internal bool ActiveEncounterInFade { get; private set; } // 현재 조우가 시작된 방의 퇴색 여부
     public int CurrentFloor => currentFloor; // 현재 층 조회
+    public ExpeditionZoneId CurrentZone { get; private set; } // 이번 회차의 해당 탐사 구역
+    public int CurrentZoneLevel { get; private set; } = 1; // 이번 회차에서 선택한 구역 난이도
+    public bool IsZoneBossReservedForRun { get; private set; } // 이번 출발 시점에 확정된 관문 보스 예약
     public int EncounterPoolVersion => encounterPoolVersion; // 저장된 탐사 조우 목록 버전 조회
     public int EventPoolVersion { get; private set; } = ExplorationEventCatalog.CurrentVersion; // 현재 층의 고정 이벤트 목록 버전
     public bool HasReturnPosition => hasReturnPosition; // 전투 복귀 위치 존재 여부
@@ -128,6 +131,19 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         instance = this; // 현재 관리자 저장
         DontDestroyOnLoad(gameObject); // Scene 전환 상태 유지
     }
+
+    internal bool BeginZoneExpedition(ExpeditionZoneId zone, int level) // 초기화된 새 탐사의 출발 구역 고정
+    { // 출전 가능한 실제 구역과 난이도 검사 시작
+        if (currentFloor != 1 || hasCurrentFloorSeed || activeEncounter != null || isExplorationCompleted || // 이미 시작했거나 종료된 회차 확인
+            !ExpeditionZoneProgress.TrySelect(zone, level)) // 해금하지 않은 구역이나 난이도 요청 확인
+        { // 잘못된 출발의 차단 시작
+            return false; // 기존 회차의 구역 선택 보존
+        } // 잘못된 출발의 차단 종료
+        CurrentZone = zone; // 선택한 구역을 현재 회차 전체에 적용
+        CurrentZoneLevel = level; // 이번 회차에서 선택한 난이도 적용
+        IsZoneBossReservedForRun = ExpeditionZoneProgress.CanReserveBoss(zone, level); // 출발 당시의 백 퍼센트 보스 예약 고정
+        return true; // 실제 새 탐사의 출발 정보 준비
+    } // 출전 가능한 실제 구역과 난이도 검사 종료
 
     public bool CanBeginEncounter(string runtimeEncounterId, EncounterData encounterData) // 전투 조우 시작 가능 여부 확인
     { // 조우 시작 가능 여부 확인 시작
@@ -292,10 +308,14 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
             if (!string.IsNullOrWhiteSpace(runtimeEncounterId))
             {
-                if (clearedEncounterIds.Add(runtimeEncounterId) && activeEncounter.EncounterId == "ENC_WF_ASHSTORM_CORE") // 기존 클리어 기록과 첫 침식핵 파괴 확인
-                { // 침식핵의 추가 보상 준비 시작
-                    coreRewardRoom = runtimeEncounterId; // 같은 배치에서 한 번만 추첨할 방 기록
-                } // 침식핵의 추가 보상 준비 종료
+                if (clearedEncounterIds.Add(runtimeEncounterId)) // 같은 회차에서 처음 클리어한 실제 조우 확인
+                { // 이번 조우의 독립 진행과 보상 준비 시작
+                    ExpeditionZoneProgress.RecordBattleVictory(CurrentZone, clearedBattleType); // 일반과 정예 전투의 구역 수치 반영
+                    if (activeEncounter.EncounterId == "ENC_WF_ASHSTORM_CORE") // 첫 침식핵 전투의 기존 보상 대상 확인
+                    { // 기존 침식핵의 추가 보상 준비 시작
+                        coreRewardRoom = runtimeEncounterId; // 같은 배치에서 한 번만 추첨할 방 기록
+                    } // 기존 침식핵의 추가 보상 준비 종료
+                } // 이번 조우의 독립 진행과 보상 준비 종료
             }
 
             Debug.Log(
@@ -303,13 +323,18 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
                 $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
 
             bool clearedBossGate = clearedBattleType == BattleType.Boss && ExplorationFloorRules.IsBossFloor(currentFloor) && activeEncounter.EncounterId != OptionalBossPlacement.EncounterId; // 필수 보스층의 실제 진행 관문 승리
-            if (clearedBossGate && ExplorationFloorRules.IsFinalBossFloor(currentFloor)) // 선택 전투를 제외한 최종 관문 확인
-            {
-                if (CompleteExplorationSuccess()) // 최종 탐사 성공 확인
-                { // 세계 해금 기록 시작
-                    unlockProgress.RecordFinalClear(); // 최초 최종 탐사 승리 해금 기록
-                } // 세계 해금 기록 종료
-            }
+            bool clearedZoneEliteGate = ExpeditionZoneEncounters.IsRegionalEliteGate(CurrentZone, activeEncounter); // 예약 전 일반 지역 플레이의 정예 최종 관문 확인
+            if ((clearedBossGate || clearedZoneEliteGate) && ExplorationFloorRules.IsFinalBossFloor(currentFloor)) // 실제 보스나 지역 정예의 마지막 관문 확인
+            { // 구역 진행과 기존 최종 탐사 정산 시작
+                if (clearedBossGate && !isExplorationCompleted && ExpeditionZoneEncounters.IsMandatoryBoss(CurrentZone, activeEncounter)) // 선택 보스와 다른 실제 해당 구역 관문 확인
+                { // 정식 구역 보스 처치 정산 시작
+                    ExpeditionZoneProgress.RecordBossVictory(CurrentZone, CurrentZoneLevel, IsZoneBossReservedForRun); // 실제 최고 난이도 예약과 고유 구역 기록 반영
+                } // 정식 구역 보스 처치 정산 종료
+                if (CompleteExplorationSuccess() && clearedBossGate) // 최종 탐사와 기존 보스 클리어 보상 확인
+                { // 캐릭터 세계 해금 기록 시작
+                    unlockProgress.RecordFinalClear(); // 최초 최종 탐사 보스 승리 해금 기록
+                } // 캐릭터 세계 해금 기록 종료
+            } // 구역 진행과 기존 최종 탐사 정산 종료
             else if (clearedBossGate) // 중간 필수 관문에만 다음 층 진행 안내
             {
                 Debug.Log(
@@ -320,6 +345,10 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         else
         {
             LastClearReward = null; // 비승리 보상 제거
+            if (resultData.Result == BattleResult.Escape && resultData.LivingAllyCount > 0) // 실제 생존자와 전투의 도주 결과 확인
+            { // 두 손실의 독립 구역 보정 시작
+                ExpeditionZoneProgress.RecordRetreat(CurrentZone); // 이전 원정까지 포함한 이 구역 첫 후퇴 적용
+            } // 두 손실의 독립 구역 보정 종료
             int escapeGold = GetEscapeGoldReward(resultData); // 성공한 첫 도주의 정산 골드 조회
             if (escapeGold > 0) // 정산할 골드 확인
             { // 도주 골드 지급 시작
@@ -431,6 +460,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             return false;
         }
 
+        ExpeditionZoneProgress.RecordDefeat(CurrentZone); // 최초 전멸의 구역 보정을 기존 실패 정산에 반영
         PlayerResourceManager.Instance?.DiscardExplorationResources(); // 전멸 시 남은 탐사 획득 재화 제거
         isExplorationCompleted = true; // 탐사 완료 상태 기록
         completionVersion++; // 새 탐사 종료 처리 순번 증가
@@ -465,7 +495,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
                resolvedEventIds.Contains(runtimeEventId); // 처리 이벤트 목록 포함 여부 반환
     }
 
-    public bool MarkEventResolved(string runtimeEventId) // 이벤트 처리 완료 기록
+    public bool MarkEventResolved(string runtimeEventId, bool? successful = null) // 방의 완료와 실제 사건의 성공 또는 실패 기록
     {
         if (string.IsNullOrWhiteSpace(runtimeEventId))
         {
@@ -475,11 +505,15 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         bool added =
             resolvedEventIds.Add(runtimeEventId); // 처리 완료 이벤트 목록 등록
 
-        if (added)
-        {
+        if (added) // 실제로 이번 회차에서 처음 해결한 방 확인
+        { // 원래 방 완료와 사건 진행도 처리 시작
+            if (!isExplorationCompleted && successful.HasValue) // 상점과 휴식이 아닌 실제 사건의 판정 확인
+            { // 실제 사건의 성공 및 실패 보정 시작
+                ExpeditionZoneProgress.RecordEvent(CurrentZone, successful.Value); // 현재 구역의 사건 판정에 맞춘 수치 증가
+            } // 실제 사건의 성공 및 실패 보정 종료
             Debug.Log(
                 $"[Exploration][Day49] 이벤트 처리 완료 - {runtimeEventId}"); // 이벤트 완료 로그
-        }
+        } // 원래 방 완료와 사건 진행도 처리 종료
 
         return added;
     }
@@ -655,6 +689,12 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     internal void RestoreRunState(ExplorationSaveService.RunSnapshot snapshot) // 저장된 탐사 상태 복원
     { // 탐사 상태 복원 시작
         ResetExploration(); // 이전 탐사 상태 제거
+        if (snapshot.zoneVersion > 0) // 실제 출발 구역을 보관한 현재 형식 확인
+        { // 탐사 선택과 이미 고정한 보스 예약의 복원 시작
+            CurrentZone = (ExpeditionZoneId)snapshot.zone; // 저장한 회차의 실제 구역
+            CurrentZoneLevel = snapshot.zoneLevel; // 저장한 회차의 실제 선택 레벨
+            IsZoneBossReservedForRun = snapshot.zoneBossReserved; // 도중 백 퍼센트와 구분한 실제 출발 시점 상태
+        } // 탐사 선택과 이미 고정한 보스 예약의 복원 종료
         encounterPoolVersion = snapshot.encounterPoolVersion; // 저장 당시 조우 목록 버전 복원
         EventPoolVersion = snapshot.eventPoolVersion; // 저장 당시 층의 이벤트 목록 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
@@ -705,6 +745,9 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public void ResetExploration() // 다음 탐사를 위한 런 상태 초기화
     {
         PlayerResourceManager.Instance?.EndExplorationResourceTracking(); // 이전 탐사 재화 구분 해제
+        CurrentZone = ExpeditionZoneId.WinterfallAshPlains; // 이전 호출과 저장의 기본 탐사 구역
+        CurrentZoneLevel = 1; // 원래 탐사의 기본 첫 난이도
+        IsZoneBossReservedForRun = false; // 이전 회차에서 고정한 보스 예약 제거
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거

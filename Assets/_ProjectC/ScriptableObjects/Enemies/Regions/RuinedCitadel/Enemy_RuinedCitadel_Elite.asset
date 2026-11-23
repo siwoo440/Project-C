@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a019ccaf3c362944912d90316ff6752, type: 3}
+  m_Name: Enemy_RuinedCitadel_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyId: ENM_ZONE_RuinedCitadel_ELITE
+  displayName: "\uc131\ucc44\uc758 \uc9d1\ud589\uc790"
+  description: "\uacf5\ud3ec\ub97c \ud769\ubfcc\ub9ac\uba70 \uc0b4\uc544 \uc788\ub294 \ub300\uc0c1\uc744 \ucc98\ud615\ub300\ub85c \ubab0\uc544\uac04\ub2e4."
+  portrait: {fileID: 21300000, guid: 19428c92d4205af2a533d9cbff4590a2, type: 3}
+  isUndead: 1
+  isMechanical: 0
+  maxHealth: 76
+  physicalDefense: 9
+  magicalResistance: 6
+  initialMental: 50
+  weaknessCardTypes:
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10
+  actionType: 1
+  basicAttackPower: 10
+  damageType: 2
+  statusEffectType: 0
+  statusEffectValue: 1
+  statusEffectDuration: 1
+  statusEffectMaximumStacks: 1
+  targetRule: 3
+  minimumActionSpeed: 6
+  maximumActionSpeed: 10
+  actionPatterns:
+  - displayName: "\uc9d1\ud589 \uc120\uace0"
+    actionType: 1
+    attackPower: 10
+    damageType: 2
+    statusEffectType: 30
+    statusEffectValue: 1
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 70
+    mentalChangeOnHit: -3
+    targetRule: 3
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  - displayName: "\ud615\ubc8c\uc758 \uce7c\ub0a0"
+    actionType: 1
+    attackPower: 16
+    damageType: 1
+    statusEffectType: 22
+    statusEffectValue: 2
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 1
+    statusEffectChancePercent: 55
+    mentalChangeOnHit: 0
+    targetRule: 1
+    minimumActionSpeed: 6
+    maximumActionSpeed: 10
+  secondPhasePatternStartIndex: 0

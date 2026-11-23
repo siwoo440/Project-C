@@ -72,7 +72,7 @@ public static class AshMapFragmentEvent // 윈터폴 재 속의 지도 조각
                 default: // 지도 조각 찢기
                     break; // 추가 상태 변화 없이 완료
             } // 행동별 적용 종료
-            session.MarkEventResolved(runtimeId); // 이번 방의 선택 결과 기록
+            session.MarkEventResolved(runtimeId, true); // 정상 완료한 일반 사건의 구역 수치 기록
             return true; // 선택 결과 적용 성공
         } // 실제 행동 적용 종료
         finally // 알림 처리 후 잠금 정리

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9682775985224b5fb72eaffb83f64fdf, type: 3}
+  m_Name: Encounter_SubterraneanVault_Normal
+  m_EditorClassIdentifier: Assembly-CSharp::EncounterData
+  encounterId: ENC_ZONE_SubterraneanVault_NORMAL
+  displayName: "\uc9c0\ud558 \ubc99\ucee4 \u0394-12 \u00b7 \uc2e4\ud5d8\uccb4-41"
+  battleType: 0
+  minimumEncounterPoolVersion: 0
+  legacyOnly: 0
+  removedAtEncounterPoolVersion: 0
+  explorationPosition: {x: 0, y: 0}
+  enemies:
+  - {fileID: 11400000, guid: 9e4b194f07385094868147a5a7b87497, type: 2}
+  characterExperienceReward: 9
+  goldReward: 27
+  screwReward: 15
+  ironPlateReward: 11
+  wireReward: 8

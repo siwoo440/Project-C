@@ -89,7 +89,7 @@ public static class AshstormEyeEvent // 윈터폴 재폭풍의 눈 이벤트
                     summary = $"{actor.DisplayName} 정신력 {mental} → {Mathf.Min(BattleMentalRuntime.MaximumMental, mental + 1)}"; // 상한을 반영한 실제 회복 표시
                     break; // 회피 처리 종료
             } // 행동별 적용 종료
-            session.MarkEventResolved(runtimeId); // 보상과 비용 확정 후 현재 방 완료 기록
+            session.MarkEventResolved(runtimeId, true); // 실제 성공한 행동의 보상 및 구역 수치 기록
             if (choice == Shatter && party.IsActivePartyWiped()) // 체력 피해 후 전멸 여부 확인
             { // 전멸 정산 시작
                 session.CompleteExplorationFailure("재폭풍의 눈 파편에 마지막 생존자가 쓰러졌습니다."); // 탐사 획득 재화 회수와 실패 기록

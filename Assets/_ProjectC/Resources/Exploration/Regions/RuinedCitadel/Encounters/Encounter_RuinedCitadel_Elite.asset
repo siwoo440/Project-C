@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9682775985224b5fb72eaffb83f64fdf, type: 3}
+  m_Name: Encounter_RuinedCitadel_Elite
+  m_EditorClassIdentifier: Assembly-CSharp::EncounterData
+  encounterId: ENC_ZONE_RuinedCitadel_ELITE
+  displayName: "\ubd95\uad34\ub41c \uc131\ucc44 \u00b7 \uc131\ucc44\uc758 \uc9d1\ud589\uc790"
+  battleType: 2
+  minimumEncounterPoolVersion: 0
+  legacyOnly: 0
+  removedAtEncounterPoolVersion: 0
+  explorationPosition: {x: 0, y: 0}
+  enemies:
+  - {fileID: 11400000, guid: 0e7367d4b93b5a2b9e45590b7de9a67c, type: 2}
+  characterExperienceReward: 13
+  goldReward: 37
+  screwReward: 15
+  ironPlateReward: 11
+  wireReward: 8

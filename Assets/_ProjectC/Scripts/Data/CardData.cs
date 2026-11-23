@@ -47,6 +47,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private BattleStatusEffectType statusEffectType; // 적용 상태 이상 종류
     [SerializeField] private BattleStatusEffectType statusRemovedByHealing; // 체력 회복 전에 제거할 상태
     [SerializeField] private bool applyWandHitStatus; // 명중한 생존 적에게 원본 상태를 부여하는 지팡이 공격 표시
+    [SerializeField, Range(0, 100)] private int wandHitStatusChancePercent = 100; // 기존 명중 상태의 확정을 기본으로 하는 확률
     [SerializeField] private bool isCorrosionStatus; // 이 카드가 실제 부여하는 상태의 명시적인 침식 계열 표시
     [SerializeField, Range(-1, 100)] private int optionalBlindChancePercent = -1; // 음수의 미설정과 명시 실명 확률의 구분
     [Min(1)]
@@ -81,6 +82,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public BattleStatusEffectType StatusRemovedByHealing => statusRemovedByHealing; // 회복과 함께 제거할 상태 조회
     public bool ApplyWandHitStatus => applyWandHitStatus; // 명시한 지팡이 명중 상태 부여 규칙
+    public int WandHitStatusChancePercent => Mathf.Clamp(wandHitStatusChancePercent, 0, 100); // 유효 범위 안의 지팡이 명중 상태 확률
     public bool IsCorrosionStatus => isCorrosionStatus; // 원본에 명시된 침식 계열 상태 여부
     public int OptionalBlindChancePercent => Mathf.Clamp(optionalBlindChancePercent, -1, 100); // 보정된 명시 실명 확률 또는 일반 처리 값
     public int StatusDuration => statusDuration; // 상태 이상 지속 횟수 조회

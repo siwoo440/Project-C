@@ -88,6 +88,14 @@ public sealed class BattleCardDragHandler :
         { // 드래그 입력 시작 상태 정리
             cardView.OnPointerClick(eventData); // 기존 클릭 선택 해제 후 새 드롭 대상으로 결정
         } // 기존 선택 정리 종료
+        if (cardView.RuntimeCard.TargetType == CardTargetType.SelectedTwoEnemies && !cardView.IsSelected) // 서리 파편의 시작 순간 대상 수를 첫 드롭 전에 확정
+        { // 실제 두 적 선택 시작
+            cardView.OnPointerClick(eventData); // 클릭과 같은 공용 선택 단계와 초기 적 수 규칙 적용
+            if (!cardView.IsSelected) // 드래그를 시작하는 순간 선택이 차단됐는지 확인
+            { // 무효 드래그 시작 중단
+                return; // 시작하지 않은 카드 입력의 후속 드롭 방지
+            } // 무효 드래그 시작 중단 종료
+        } // 실제 두 적 선택 종료
         dragging = true; // 드래그 상태 활성화
         cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, true); // 드래그 중 주변 카드 간격 확장
         cancelRequested = false; // 취소 상태 초기화
@@ -160,6 +168,7 @@ public sealed class BattleCardDragHandler :
 
         bool validDrop =
             draggedCard != null &&
+            (draggedCard.TargetType != CardTargetType.SelectedTwoEnemies || cardView.IsSelected) && // 도중 취소된 서리 파편 드래그의 재선택 방지
             dropTarget != null &&
             IsValidTarget(
                 draggedCard,
@@ -306,6 +315,12 @@ public sealed class BattleCardDragHandler :
         { // 전투불능 대상 차단 시작
             return false; // 일반 카드 드롭 거절
         } // 전투불능 대상 차단 종료
+        if (card.TargetType == CardTargetType.SelectedTwoEnemies) // 서리 파편에서 이미 고른 적과 실제 생존 대상 확인
+        { // 순차 적 드롭 유효성 검사 시작
+            var hand = cardView.GetComponentInParent<BattleHandView>(); // 현재 전투의 선택 단계와 참가 명단 조회
+            return cardView.IsSelected && card.EffectType == CardEffectType.Damage && targetUnit != hand?.FirstSelectedEnemy && // 활성 선택에서 이미 고른 첫 적을 제외한 피해 카드 확인
+                hand?.TurnRuntime?.CanSelectLivingUnit(targetUnit, BattleTeam.Enemy) == true; // 현재 적 명단에 실제로 살아 있는 대상만 드롭 허용
+        } // 순차 적 드롭 유효성 검사 종료
         if (card.TargetType == CardTargetType.BlessingSourceAndAlly) // 축복 이전의 첫 단계와 두 번째 드롭 확인
         { // 축복 이전 드롭 대상 검사 시작
             BattleHandView hand = cardView.GetComponentInParent<BattleHandView>(); // 실제 손패의 선택 단계와 참가 명단 조회
@@ -392,7 +407,7 @@ public sealed class BattleCardDragHandler :
     }
     private static bool KeepsSequentialSelection(CardInstance card) // 드래그 사이에 첫 대상을 계속 보관하는 카드 확인
     { // 순차 대상 카드 확인 시작
-        return card?.TargetType is CardTargetType.EnemyAndAlly or CardTargetType.BlessingSourceAndAlly; // 적과 아군 또는 강화 복사 선택 확인
+        return card?.TargetType is CardTargetType.EnemyAndAlly or CardTargetType.BlessingSourceAndAlly or CardTargetType.SelectedTwoEnemies; // 복합 카드와 서리 파편의 기존 순차 입력 유지
     } // 순차 대상 카드 확인 종료
 
     private void CreateDragGhost() // 마우스를 따라가는 카드 복제 생성

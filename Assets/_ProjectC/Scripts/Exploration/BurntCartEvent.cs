@@ -137,7 +137,7 @@ public static class BurntCartEvent // 불탄 수레의 잔해 원문과 선택 �
                 session.Cart.SetAmbush(room, normal.EncounterId); // 전투 전 저장에 일반 편성과 방 기록
                 summary = $"{normal.DisplayName} · 잿풍의 사냥꾼 1마리 추가 매복"; // 확인 후 전투 진입 안내
             } // 매복 준비 종료
-            session.MarkEventResolved(room); // 확정된 선택의 재지급 방지
+            session.MarkEventResolved(room, choice != Box || boxRoll < SupplyChance); // 물자 상자 실패와 정상 완료 선택의 실제 수치 기록
             if (party.GetLivingAllyCount() == 0) // 마지막 생존자 해체 비용 사망 확인
             { // 전멸 처리 시작
                 session.CompleteExplorationFailure("수레를 해체하던 마지막 생존자가 쓰러졌습니다."); // 기존 전멸과 획득분 손실 처리

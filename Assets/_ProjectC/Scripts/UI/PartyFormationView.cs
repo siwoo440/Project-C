@@ -6,6 +6,8 @@ using UnityEngine.UI; // 편성 버튼과 목록 사용
 public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 편성 화면
 { // 파티 편성 화면 시작
     private Canvas canvas; // 맵 선택 복귀 캔버스
+    private ExpeditionZoneId selectedZone; // 지도에서 넘겨받은 실제 출발 구역
+    private int selectedZoneLevel; // 지도에서 넘겨받은 실제 출발 난이도
     private CharacterRosterData roster; // 전체 캐릭터 원본 목록
     private PartySelection selection; // 현재 출전 파티 선택
     private IPartyDeploymentStatusProvider status; // 캐릭터 출전 상태 제공자
@@ -27,9 +29,14 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private RectTransform profileGrid; // 프로필 격자 내용 영역
     private GridLayoutGroup profileLayout; // 프로필 세 열 배치
     private float lastProfileWidth = -1f; // 최근 프로필 표시 영역 너비
-    public static PartyFormationView Open(Canvas targetCanvas) // 새 편성 화면 열기
-    { // 편성 화면 열기 시작
-        if (targetCanvas == null || FindFirstObjectByType<PartyFormationView>() != null) // 캔버스와 중복 화면 확인
+    public static PartyFormationView Open(Canvas targetCanvas) // 이전 호출의 기본 윈터폴 편성 화면
+    { // 이전 편성 화면 진입 시작
+        return Open(targetCanvas, ExpeditionZoneId.WinterfallAshPlains, 1); // 기존 첫 탐사 구역의 기본 출전
+    } // 이전 편성 화면 진입 종료
+
+    public static PartyFormationView Open(Canvas targetCanvas, ExpeditionZoneId zoneId, int level) // 지도에서 선택한 구역과 난이도의 편성
+    { // 실제 구역 편성 화면 열기 시작
+        if (targetCanvas == null || FindFirstObjectByType<PartyFormationView>() != null || !ExpeditionZoneProgress.CanSelect(zoneId, level)) // 캔버스와 중복 화면 및 실제 출전 허용 확인
         { // 화면 열기 불가 처리 시작
             return null; // 편성 화면 생성 중단
         } // 화면 열기 불가 처리 종료
@@ -42,6 +49,8 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         RectTransform root = PreparationUi.CreateOverlay(targetCanvas, "FormationSetup"); // 편성 전체 화면 생성
         PartyFormationView view = root.gameObject.AddComponent<PartyFormationView>(); // 편성 화면 동작 추가
         view.canvas = targetCanvas; // 부모 캔버스 보관
+        view.selectedZone = zoneId; // 지도에서 선택한 실제 출발 구역 보관
+        view.selectedZoneLevel = level; // 지도에서 선택한 실제 출발 난이도 보관
         view.roster = roster; // 캐릭터 목록 보관
         view.recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 상태 관리자 준비
         view.results = BattleResultManager.EnsureInstance(); // 전투 결과 관리자 준비
@@ -377,7 +386,8 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private void StartExploration() // 선택 파티의 탐사 출발
     { // 탐사 출발 시작
         SceneFlowManager flow = SceneFlowManager.Instance; // 씬 전환 관리자 조회
-        if (!selection.Validate().CanDeploy || flow == null || flow.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("30_Exploration")) // 파티와 씬 이동 가능 여부 확인
+        if (!selection.Validate().CanDeploy || flow == null || flow.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("30_Exploration") || // 파티와 씬 이동 가능 여부 확인
+            !ExpeditionZoneProgress.CanSelect(selectedZone, selectedZoneLevel)) // 지도를 떠난 뒤에도 실제 출전 가능한 구역 확인
         { // 탐사 출발 불가 처리 시작
             message.text = "출전할 파티와 탐사 화면을 확인해 주세요."; // 출발 불가 안내
             return; // 탐사 출발 중단
@@ -387,7 +397,13 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             message.text = "선택한 파티를 준비하지 못했습니다."; // 편성 준비 실패 안내
             return; // 탐사 출발 중단
         } // 편성 준비 실패 처리 종료
-        ExplorationSessionManager.EnsureInstance().ResetExploration(); // 이전 탐사 회차 상태 초기화
+        var session = ExplorationSessionManager.EnsureInstance(); // 기존 단계와 회차를 관리하는 탐사 관리자
+        session.ResetExploration(); // 이전 탐사 회차 상태 초기화
+        if (!session.BeginZoneExpedition(selectedZone, selectedZoneLevel)) // 새 탐사에서만 실제 구역과 난이도 고정
+        { // 실행 중 변경된 출전 조건 처리 시작
+            message.text = "현재 선택한 구역과 레벨로 출전할 수 없습니다."; // 진행 해금 조건과 실제 출발 오류 안내
+            return; // 이전 탐사 재화와 장면 이동의 새 시작 차단
+        } // 실행 중 변경된 출전 조건 처리 종료
         PlayerResourceManager.EnsureInstance().BeginExplorationResourceTracking(); // 새 탐사 획득 재화 구분 시작
         RunDeckManager.EnsureInstance().ResetToSource(PartyLoadoutRuntime.Active.Deck); // 선택 파티의 시작 덱 적용
         flow.LoadScene("30_Exploration"); // 선택한 파티로 탐사 씬 이동
@@ -395,7 +411,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private void Back() // 맵 선택 화면으로 복귀
     { // 맵 선택 복귀 시작
         gameObject.SetActive(false); // 편성 화면 입력 차단
-        ExpeditionMapView.Open(canvas); // 맵 선택 화면 다시 열기
+        ExpeditionMapView.Open(canvas, selectedZone, selectedZoneLevel); // 지도에 기존 선택 구역과 난이도 복구
         Destroy(gameObject); // 이전 편성 화면 제거
     } // 맵 선택 복귀 종료
     private void OnDestroy() // 편성 화면 이벤트 정리

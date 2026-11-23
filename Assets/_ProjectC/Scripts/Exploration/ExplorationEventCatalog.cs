@@ -15,6 +15,12 @@ public static class ExplorationEventCatalog // 탐사 이벤트 데이터 로더
     private static List<ExplorationEventData> scarecrowEvents; // 허수아비까지 포함한 이전 층의 목록
     private static List<ExplorationEventData> currentEvents; // 최신 층의 이벤트 목록
 
+    public static IReadOnlyList<ExplorationEventData> LoadZoneEvents(ExpeditionZoneId zone, int version) // 선택 지역의 실제 사건 원본 조회
+    { // 새 지역의 지역 고유 사건과 기존 윈터폴 사건 분리 시작
+        return zone == ExpeditionZoneId.WinterfallAshPlains ? LoadEvents(version) : // 기존 윈터폴 저장과 균열 나침반 동작 확인
+            Resources.LoadAll<ExplorationEventData>("Exploration/Regions/" + ExpeditionZones.Get(zone).VisualKey + "/Events"); // 선택 지역의 별도 사건 에셋만 조회
+    } // 새 지역의 지역 고유 사건과 기존 윈터폴 사건 분리 종료
+
     public static IReadOnlyList<ExplorationEventData> LoadEvents(int version = CurrentVersion) // 저장된 층 버전의 이벤트 목록 조회
     { // 버전별 이벤트 조회 시작
         if (version >= 8) // 방랑자까지 포함하는 층 확인

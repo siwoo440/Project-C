@@ -24,7 +24,7 @@ public sealed class CrackedCompassRunState // 첫 일반 방의 나침반 판정
         }; // 출발 상태 설정 종료
     } // 출발 판정 종료
 
-    public bool Visit(int floor, int seed, ExplorationMapCell cell, int eventPoolVersion, RelicInventoryRuntime inventory) // 첫 일반 방에서만 출발 기회 소모
+    public bool Visit(int floor, int seed, ExplorationMapCell cell, int eventPoolVersion, RelicInventoryRuntime inventory, ExpeditionZoneId zone = ExpeditionZoneId.WinterfallAshPlains) // 첫 일반 방에서 실제 출정 지역의 발견 기회 소모
     { // 방문 판정 시작
         if (!pending || floor != 1 || cell == null || cell.Type != ExplorationCellType.Normal || cell.RoomType != ExplorationRoomType.Normal) // 출발 방과 특수 방 및 재방문 제외
         { // 일반 방 밖의 처리 시작
@@ -35,7 +35,7 @@ public sealed class CrackedCompassRunState // 첫 일반 방의 나침반 판정
         var random = new System.Random(seed ^ 1370495623); // 기존 방 배치와 독립된 층 시드
         if (compass != null && random.Next(100) < compass.EffectValue) // 원본의 추가 발견 확률 판정
         { // 발견 성공 처리 시작
-            var candidates = ExplorationEventCatalog.LoadEvents(eventPoolVersion).Where(item => item != null && item.IsValidData()).OrderBy(item => item.EventId, StringComparer.Ordinal).ToArray(); // 현재 층 사건의 고정 후보 순서
+            var candidates = ExplorationEventCatalog.LoadZoneEvents(zone, eventPoolVersion).Where(item => item != null && item.IsValidData()).OrderBy(item => item.EventId, StringComparer.Ordinal).ToArray(); // 현재 층 사건의 고정 후보 순서
             if (candidates.Length > 0) // 배치 가능한 실제 사건 확인
             { // 사건 보관 시작
                 eventId = candidates[random.Next(candidates.Length)].EventId; // 선택한 사건 원본 보관
@@ -51,12 +51,12 @@ public sealed class CrackedCompassRunState // 첫 일반 방의 나침반 판정
         return floor == 1 && seed == foundSeed && !string.IsNullOrEmpty(eventId); // 같은 일층 지도에서만 사건 복원
     } // 지도 확인 종료
 
-    public bool IsValid(int floor, int eventPoolVersion) // 저장된 상태와 사건 원본 확인
+    public bool IsValid(int floor, int eventPoolVersion, ExpeditionZoneId zone = ExpeditionZoneId.WinterfallAshPlains) // 저장된 상태와 해당 지역의 사건 원본 확인
     { // 저장 검사 시작
         if (string.IsNullOrEmpty(eventId)) // 발견 전 또는 실패한 상태 확인
         { // 사건 없는 저장 확인 시작
             return !pending || floor == 1; // 첫 층에서만 미사용 기회 허용
         } // 사건 없는 저장 확인 종료
-        return !pending && floor == 1 && ExplorationEventCatalog.LoadEvents(eventPoolVersion).Any(item => item != null && item.EventId == eventId); // 소모 상태와 현재 목록의 사건 확인
+        return !pending && floor == 1 && ExplorationEventCatalog.LoadZoneEvents(zone, eventPoolVersion).Any(item => item != null && item.EventId == eventId); // 소모 상태와 현재 목록의 사건 확인
     } // 저장 검사 종료
 } // 나침반 기록 종료
