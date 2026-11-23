@@ -9,6 +9,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public int EffectiveValue => Value * StackCount; // 전체 적용 수치
     public bool IsExpired => RemainingTurns <= 0; // 지속 종료 여부
     public string DisplayName => GetDisplayName(EffectType); // 화면 표시 이름
+    public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
+    public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -43,6 +45,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "재생"; // 재생 이름 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격력 증가 종류
                 return "공격 증가"; // 공격력 증가 이름 반환
+            case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
+                return "상태 면역"; // 상태 면역 이름 반환
             default: // 알 수 없는 종류
                 return "없음"; // 기본 이름 반환
         } // 종류 분기 종료
@@ -51,4 +55,36 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     { // 디버프 확인 시작
         return effectType == BattleStatusEffectType.Poison; // 중독 디버프 결과 반환
     } // 디버프 확인 종료
+    public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
+    { // 아이콘 문구 조회 시작
+        switch (effectType) // 상태 이상 종류 분기
+        { // 종류 분기 시작
+            case BattleStatusEffectType.Poison: // 중독 종류
+                return "독"; // 중독 아이콘 반환
+            case BattleStatusEffectType.Regeneration: // 재생 종류
+                return "재"; // 재생 아이콘 반환
+            case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
+                return "공"; // 공격 증가 아이콘 반환
+            case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
+                return "면"; // 상태 면역 아이콘 반환
+            default: // 알 수 없는 종류
+                return "?"; // 기본 아이콘 반환
+        } // 종류 분기 종료
+    } // 아이콘 문구 조회 종료
+    public static string GetDescription(BattleStatusEffectType effectType, int effectiveValue) // 상태 상세 설명 조회
+    { // 상세 설명 조회 시작
+        switch (effectType) // 상태 이상 종류 분기
+        { // 종류 분기 시작
+            case BattleStatusEffectType.Poison: // 중독 종류
+                return $"진영 턴 시작에 방어 무시 피해 {effectiveValue}"; // 중독 설명 반환
+            case BattleStatusEffectType.Regeneration: // 재생 종류
+                return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
+            case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
+                return $"피해 카드 원본 피해 증가 {effectiveValue}"; // 공격 증가 설명 반환
+            case BattleStatusEffectType.StatusImmunity: // 상태 면역 종류
+                return "새로 적용되는 디버프 차단"; // 상태 면역 설명 반환
+            default: // 알 수 없는 종류
+                return "효과 없음"; // 기본 설명 반환
+        } // 종류 분기 종료
+    } // 상세 설명 조회 종료
 } // 클래스 종료

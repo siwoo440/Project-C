@@ -4,7 +4,7 @@ using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
-public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전투 유닛 화면 표시
+public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler // 전투 유닛 화면 표시
 { // 클래스 시작
     [Header("기본 표시")] // 기본 표시 구역
     [SerializeField] private Image portraitImage; // 초상화 이미지
@@ -95,6 +95,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
     { // 회복 확대 시작
         motionView?.PlayHealReaction(); // 초상화 회복 확대 시작
     } // 회복 확대 종료
+    public void ShowStatusFeedback(string message, bool isDebuff) // 상태 이상 결과 피드백 표시
+    { // 상태 피드백 시작
+        EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
+        combatFeedbackView.ShowStatusMessage(message, isDebuff); // 상태 결과 플로팅 문구 표시
+    } // 상태 피드백 종료
     public void ResetMotion() // 유닛 움직임 초기화
     { // 움직임 초기화 시작
         motionView?.ResetMotion(); // 초상화 위치와 크기 복구
@@ -133,6 +138,14 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전�
         } // 클릭 불가 처리 종료
         Clicked?.Invoke(RuntimeUnit); // 유닛 클릭 이벤트 알림
     } // 포인터 클릭 처리 종료
+    public void OnPointerEnter(PointerEventData eventData) // 유닛 포인터 진입 처리
+    { // 포인터 진입 처리 시작
+        statusEffectView?.ShowTooltip(); // 상태 이상 상세 툴팁 표시
+    } // 포인터 진입 처리 종료
+    public void OnPointerExit(PointerEventData eventData) // 유닛 포인터 이탈 처리
+    { // 포인터 이탈 처리 시작
+        statusEffectView?.HideTooltip(); // 상태 이상 상세 툴팁 숨김
+    } // 포인터 이탈 처리 종료
     private void ApplyStaticData() // 고정 표시 정보 적용
     { // 고정 정보 적용 시작
         if (nameText != null) // 이름 텍스트 존재 확인

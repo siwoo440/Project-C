@@ -21,9 +21,8 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         EnsureVisualStructure(); // 툴팁 내부 UI 확인
         titleText.text = cardInstance.DisplayName; // 카드 이름 표시
         string targetLabel = GetTargetLabel(cardInstance.TargetType); // 대상 표시 문구 생성
-        string effectLabel = GetEffectLabel(cardInstance); // 효과 표시 문구 생성
-        string durationLabel = cardInstance.EffectType == CardEffectType.ApplyStatusEffect ? $"  |  지속 {cardInstance.StatusDuration}T  |  최대 {cardInstance.StatusMaximumStacks}중첩" : string.Empty; // 상태 이상 지속 정보 생성
-        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectLabel} {cardInstance.EffectValue}{durationLabel}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
+        string effectDetail = GetEffectDetail(cardInstance); // 효과 상세 문구 생성
+        detailText.text = $"소유자 {cardInstance.OwnerUnit.DisplayName}  |  AP {cardInstance.ApCost}  |  대상 {targetLabel}\n효과 {effectDetail}\n{cardInstance.SourceData.Description}"; // 카드 상세 정보 표시
         gameObject.SetActive(true); // 툴팁 오브젝트 표시
         transform.SetAsLastSibling(); // 툴팁 최상단 표시
     } // 툴팁 표시 종료
@@ -92,6 +91,20 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         } // 마법 피해 처리 종료
         return "물리 피해"; // 기본 물리 피해 문구 반환
     } // 효과 문구 조회 종료
+    private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
+    { // 효과 상세 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        { // 디버프 해제 상세 처리 시작
+            return "모든 디버프 해제"; // 디버프 해제 상세 반환
+        } // 디버프 해제 상세 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
+        { // 상태 이상 상세 처리 시작
+            string effectName = GetEffectLabel(cardInstance); // 상태 이상 이름 조회
+            string valueLabel = cardInstance.StatusEffectType == BattleStatusEffectType.StatusImmunity ? string.Empty : $" {cardInstance.EffectValue}"; // 면역 외 효과 수치 생성
+            return $"{effectName}{valueLabel}  |  지속 {cardInstance.StatusDuration}T  |  최대 {cardInstance.StatusMaximumStacks}중첩"; // 상태 이상 상세 반환
+        } // 상태 이상 상세 처리 종료
+        return $"{GetEffectLabel(cardInstance)} {cardInstance.EffectValue}"; // 피해와 회복 상세 반환
+    } // 효과 상세 조회 종료
     private static TMP_Text CreateText(string objectName, Transform parent, float fontSize, Color textColor, TextAlignmentOptions alignment) // 공용 텍스트 생성
     { // 텍스트 생성 시작
         GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 텍스트 오브젝트 생성

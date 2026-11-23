@@ -198,6 +198,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 불필요 처리 시작
             return false; // 회복 대상 불가 반환
         } // 회복 불필요 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs && !targetUnit.HasDebuff) // 정화 대상 디버프 확인
+        { // 정화 불필요 처리 시작
+            return false; // 정화 대상 불가 반환
+        } // 정화 불필요 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect && cardInstance.StatusEffectType == BattleStatusEffectType.None) // 상태 이상 카드 설정 확인
+        { // 상태 설정 오류 처리 시작
+            return false; // 상태 이상 대상 불가 반환
+        } // 상태 설정 오류 처리 종료
         switch (cardInstance.TargetType) // 카드 대상 종류 분기
         { // 대상 분기 시작
             case CardTargetType.Self: // 자신 대상 종류
@@ -242,7 +250,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -273,7 +281,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 대상 화면 조회 종료
         return unitViews; // 대상 화면 목록 반환
     } // 대상 화면 생성 종료
-    private static int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
+    private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
@@ -281,15 +289,50 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 회복 효과 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 처리 시작
-            bool applied = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks); // 대상 상태 이상 적용
-            return applied ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
+            BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks); // 대상 상태 이상 적용
+            ShowStatusApplyFeedback(targetUnit, cardInstance.StatusEffectType, applyResult); // 상태 이상 적용 결과 표시
+            return applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
         } // 상태 이상 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        { // 디버프 해제 처리 시작
+            int removedCount = targetUnit.RemoveAllDebuffs(); // 대상 디버프 전체 제거
+            BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
+            targetView?.ShowStatusFeedback(removedCount > 0 ? $"정화 {removedCount}" : "정화 실패", false); // 정화 결과 플로팅 문구 표시
+            return removedCount; // 제거된 디버프 수 반환
+        } // 디버프 해제 처리 종료
         int modifiedDamage = cardInstance.EffectValue + cardInstance.OwnerUnit.AttackPowerBonus; // 공격력 증가 포함 원본 피해 계산
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType); // 카드 피해 계산과 적용
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 단일 효과 적용 종료
+    private void ShowStatusApplyFeedback(BattleUnitRuntime targetUnit, BattleStatusEffectType effectType, BattleStatusEffectApplyResult applyResult) // 상태 이상 적용 결과 표시
+    { // 적용 결과 표시 시작
+        BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
+        if (targetView == null) // 대상 화면 존재 확인
+        { // 화면 없음 처리 시작
+            return; // 적용 결과 표시 중단
+        } // 화면 없음 처리 종료
+        string effectName = BattleStatusEffectInstance.GetDisplayName(effectType); // 상태 이상 이름 조회
+        if (applyResult == BattleStatusEffectApplyResult.Applied) // 신규 적용 결과 확인
+        { // 신규 적용 표시 시작
+            targetView.ShowStatusFeedback($"{effectName} 적용", BattleStatusEffectInstance.IsDebuffType(effectType)); // 신규 적용 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 신규 적용 표시 종료
+        if (applyResult == BattleStatusEffectApplyResult.Stacked) // 중첩 결과 확인
+        { // 중첩 표시 시작
+            BattleStatusEffectInstance statusEffect = targetUnit.GetStatusEffect(effectType); // 적용된 상태 이상 조회
+            int stackCount = statusEffect == null ? 0 : statusEffect.StackCount; // 현재 중첩 수 조회
+            targetView.ShowStatusFeedback($"{effectName} {stackCount}중첩", BattleStatusEffectInstance.IsDebuffType(effectType)); // 중첩 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 중첩 표시 종료
+        if (applyResult == BattleStatusEffectApplyResult.BlockedByImmunity) // 면역 차단 결과 확인
+        { // 면역 표시 시작
+            targetView.ShowStatusFeedback("면역", false); // 면역 차단 문구 표시
+            return; // 적용 결과 표시 종료
+        } // 면역 표시 종료
+        targetView.ShowStatusFeedback("적용 실패", true); // 잘못된 적용 문구 표시
+    } // 적용 결과 표시 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
@@ -300,6 +343,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 상태 이상 문구 처리 시작
             return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
         } // 상태 이상 문구 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        { // 디버프 해제 문구 처리 시작
+            return "디버프 해제"; // 디버프 해제 문구 반환
+        } // 디버프 해제 문구 처리 종료
         return cardInstance.DamageType == BattleDamageType.Magical ? "마법 피해" : "물리 피해"; // 피해 종류 문구 반환
     } // 효과 문구 조회 종료
     private static List<BattleUnitRuntime> CreateSingleTargetList(BattleUnitRuntime targetUnit) // 단일 대상 목록 생성

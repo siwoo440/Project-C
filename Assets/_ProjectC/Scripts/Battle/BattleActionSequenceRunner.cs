@@ -66,7 +66,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour // 전투 행동 
         StoreActiveViews(actorView, targetViews); // 현재 연출 유닛 저장
         try // 연출 복구 보장 시작
         { // 연출 실행 시작
-            bool isSupportAction = effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect && !BattleStatusEffectInstance.IsDebuffType(statusEffectType); // 회복과 버프 행동 확인
+            bool isSupportAction = effectType == CardEffectType.Heal || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ApplyStatusEffect && !BattleStatusEffectInstance.IsDebuffType(statusEffectType); // 회복과 지원 행동 확인
             if (isSupportAction) // 지원 행동 확인
             { // 회복 순서 시작
                 yield return actorView.PlayCastAnticipation(); // 행동자 회복 준비 연출

@@ -27,6 +27,16 @@ public sealed class BattleCombatFeedbackView : MonoBehaviour // 전투 결과 �
         PlayFlash(healingColor); // 회복 강조 표시
         CreateFloatingText($"+{appliedHealing}", healingColor); // 회복 플로팅 숫자 생성
     } // 회복 피드백 종료
+    public void ShowStatusMessage(string message, bool isDebuff) // 상태 이상 문구 피드백 표시
+    { // 상태 문구 피드백 시작
+        if (string.IsNullOrWhiteSpace(message)) // 표시 문구 확인
+        { // 문구 없음 처리 시작
+            return; // 상태 문구 표시 중단
+        } // 문구 없음 처리 종료
+        Color statusColor = isDebuff ? new Color(1f, 0.38f, 0.45f, 1f) : new Color(0.4f, 0.95f, 0.68f, 1f); // 버프와 디버프 색상 선택
+        PlayFlash(statusColor); // 상태 적용 강조 표시
+        CreateFloatingText(message, statusColor); // 상태 결과 플로팅 문구 생성
+    } // 상태 문구 피드백 종료
     private void CreateFloatingText(string message, Color textColor) // 플로팅 숫자 생성
     { // 숫자 생성 시작
         BattleFloatingTextView.Create(transform, message, textColor, floatingSpawnIndex); // 유닛 내부 숫자 생성
