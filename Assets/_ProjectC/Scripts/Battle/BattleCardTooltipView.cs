@@ -30,6 +30,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 연쇄 번개 대상 문구 시작
             targetLabel = "타격마다 무작위 생존 적 1명"; // 연속 타격의 실제 재선택 대상 문구
         } // 연쇄 번개 대상 문구 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.ShockTransfer) // 감전된 적만 첫 대상으로 고르는 원소 카드 확인
+        { // 감전 전이의 대상 문구 표시 시작
+            targetLabel = "감전된 적 1명"; // 실제 첫 피격 대상의 사용 조건 표시
+        } // 감전 전이의 대상 문구 표시 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.BurnAmplification) // 다른 적에게 새 화상을 주지 않는 원소 카드 확인
+        { // 화상 연장의 실제 대상 문구 시작
+            targetLabel = "화상 상태인 모든 적"; // 남은 화상이 있는 생존 적 전체 안내
+        } // 화상 연장의 실제 대상 문구 종료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaRelease && availableActionPoints.HasValue) // 현재 행동력 미리보기를 쓰는 실제 마력 해방 확인
         { // 현재 기본 피해 미리보기 시작
@@ -222,6 +230,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 위험 차단 상세 표시 시작
             return $"다음 직접 공격 피해 −{cardInstance.EffectValue}% · 1회"; // 턴이 아닌 공격 횟수 안내
         } // 위험 차단 상세 표시 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.BurnAmplification) // 기존 화상 기간만 늘리는 효과 확인
+        { // 화상 연장의 짧은 효과 표시 시작
+            return $"화상 지속 +{cardInstance.EffectValue} 적 턴"; // 원래 화상 수치와 구분한 연장량 표시
+        } // 화상 연장의 짧은 효과 표시 종료
+        if (cardInstance.SourceData.WandRule == WandCardRule.FateFreeze) // 두 상태의 독립 기간과 수치를 가진 동결 확인
+        { // 두 상태의 실제 지속 표시 시작
+            return $"기절 {cardInstance.StatusDuration} 적 턴 · 마법 저항 −{cardInstance.SourceData.SecondaryEffectValue} (2 적 턴)"; // 기절과 마법 저항 감소의 별도 기간 표시
+        } // 두 상태의 실제 지속 표시 종료
         if (cardInstance.SourceData.SpendsAllActionPoints && cardInstance.EffectType == CardEffectType.Damage) // 남은 행동력에 따라 실제 피해가 달라지는 카드 확인
         { // 가변 피해 표시 시작
             return $"{GetEffectLabel(cardInstance)} X × {cardInstance.EffectValue}"; // 피해 종류와 실제 비용 배수 공식 표시

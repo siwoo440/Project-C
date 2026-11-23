@@ -786,6 +786,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 실제 적 타격 처리 시작
         return TakeDamageCore(damageAmount, damageType, source, sharingAlly, preventHealthDamage, 0, reduceHealthDamage, true, isAreaAttack, onRedirect, false, party); // 실제 명중과 대상의 피해 분배 및 기존 보호 전환
     } // 실제 적 타격 처리 종료
+    internal BattleDamageResult TakeWandEchoDamage(int amount, BattleUnitRuntime source) // 반향가 복제한 실제 마법 피해 접수
+    { // 반향의 공용 피해 경로 시작
+        return TakeDamageCore(amount, BattleDamageType.Magical, source, null, null, 0, null, false, false, null, false, wandEcho: true); // 기존 저항과 방어도 및 실제 사망 처리에 반향 출처 전달
+    } // 반향의 공용 피해 경로 종료
     private void RecordCorrosionHealthDamage(BattleDamageResult damageResult) // 유물용 침식 체력 손실 기록
     { // 침식 기록 시작
         if (Team == BattleTeam.Ally && damageResult.DamageType == BattleDamageType.Corrosion && damageResult.AppliedDamage > 0) // 아군의 양수 침식 체력 손실
@@ -794,7 +798,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 적격 피해 처리 끝
     } // 침식 기록 끝
 
-    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null, bool alliedDirectAttack = false) // 직접 피해와 전환 및 실제 파티 분배 정산
+    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null, bool alliedDirectAttack = false, bool wandEcho = false) // 직접 피해와 실제 파티 분배 및 독립 반향 정산
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -810,6 +814,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
         var distributionParty = !linked && !guardianSurvival && sourceUnit?.Team == BattleTeam.Enemy ? party : null; // 단일 연결과 기존 수호자 전환에서 파티 분산 제외
         BattleDamageResult damageResult = PreviewDamageWithParty(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack, true, distributionParty, out var distribution, enemyAreaAttack); // 다중 분배와 기존 원래 대상 방어도 계산
+        if (wandEcho) // 실제 생성된 반향 피해의 원본 결과 확인
+        { // 공용 피해 신호의 반향 표시 시작
+            damageResult = damageResult.WithWandEcho(); // 방어 및 사망과 무효 결과에도 남는 반향 출처
+        } // 공용 피해 신호의 반향 표시 종료
         bool consumeInterception = enemyDirectAttack && Team == BattleTeam.Ally; // 실제 피격자만 소모할 위험 차단 확인
         if (damageResult.WasDamageNullified) // 기존 경감 뒤 한 번 무효화된 실제 피해 확인
         { // 실제 피해 무효 시작
@@ -889,7 +897,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             BlockChanged?.Invoke(this); // 방어도 변경 알림
         } // 소모 알림 종료
         DamageResolved?.Invoke(sourceUnit, this, damageResult); // 발생자 포함 피해 완료 알림
-        ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 피해 관련 정신력 변화 적용
+        if (!wandEcho) // 원래 사용의 실제 피해에만 정신력 가산과 감소 허용
+        { // 일반 피격 정신력 처리 시작
+            ApplyDamageMental(damageResult.AppliedDamage, diedNow, sourceUnit); // 원래 공격의 피해 및 처치 정신력 변화 적용
+        } // 일반 피격 정신력 처리 종료
         if (diedNow) // 신규 사망 확인
         { // 사망 알림 시작
             SettleDefeat(sourceUnit); // 사망 신호와 가능한 씨앗 부활을 순서대로 정산

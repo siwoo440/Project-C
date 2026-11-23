@@ -68,6 +68,15 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
         } // 정신 상태 외부 감소 차단 종료
         RemainingTurns = Math.Max(0, RemainingTurns - 1); // 남은 횟수 한 단계 감소
     } // 지속 감소 종료
+    internal bool TryExtendActiveDuration(int turns) // 기존 활성 상태의 지속 시간만 연장
+    { // 실제 상태 연장 검사 시작
+        if (turns <= 0 || IsExpired || IsProtectedMentalState || RemainingTurns == int.MaxValue) // 유효 시간과 활성 시간제 상태 확인
+        { // 잘못된 연장 시도 처리 시작
+            return false; // 이미 끝났거나 더 늘릴 수 없는 상태 보존
+        } // 잘못된 연장 시도 처리 종료
+        RemainingTurns = (int)Math.Min(int.MaxValue, (long)RemainingTurns + turns); // 수치와 중첩 및 감소 예약을 유지한 남은 턴만 증가
+        return true; // 동일 상태의 지속 연장 완료
+    } // 실제 상태 연장 검사 종료
     internal void SyncMentalDuration(int remainingTurns) // 정신 상태의 실제 남은 턴 연결
     { // 정신 상태 턴 연결 시작
         if (IsProtectedMentalState) // 보호된 정신 상태 확인
@@ -224,6 +233,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마력 보호막"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마력 증폭"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
+                return "마법 반향"; // 실제 전투와 도감의 상태 문구
             case BattleStatusEffectType.ConfessionDamageMark: // 고해의 표식 종류 확인
                 return "고해의 표식"; // 전투와 도감의 고해 피해 표시
             case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인
@@ -394,6 +405,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법저항+"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마법피해+"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
+                return "반향"; // 실제 전투와 도감의 상태 문구
             case BattleStatusEffectType.ConfessionDamageMark: // 고해의 표식 종류 확인
                 return "고해"; // 전투와 도감의 고해 피해 표시
             case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인
@@ -564,6 +577,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴까지 마법 저항력 수치 {effectiveValue} 증가"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return $"마법 카드 공격력 {effectiveValue} 증가"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.WandEcho: // 마법 반향 상태 확인
+                return $"이번 아군 턴 다음 지팡이 마법 공격 복제, 복제 피해 {effectiveValue}%"; // 실제 전투와 도감의 상태 문구
             case BattleStatusEffectType.ConfessionDamageMark: // 고해의 표식 종류 확인
                 return $"다음 유효한 직접 카드 명중 피해 {effectiveValue} 증가"; // 전투와 도감의 고해 피해 표시
             case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인

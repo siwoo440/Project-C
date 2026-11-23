@@ -156,6 +156,11 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return living[selected]; // 이번 타격을 받을 생존 적 반환
     } // 실제 타격 대상 결정 종료
 
+    internal static int GetRuneBurstDamageBonus(CardInstance card, BattleUnitRuntime target) // 실제 룬 폭발의 기존 활성 대상 표식 검사
+    { // 표식 추가 피해 계산 시작
+        return card.SourceData.WandRule == WandCardRule.RuneBurst && target?.HasActiveCardDamageMark == true ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 적의 기존 표식 한 개 이상에 원본 피해를 한 번만 가산
+    } // 표식 추가 피해 계산 종료
+
     internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 카드 공격의 방어 전 기본 피해 계산
     { // 원본 피해 계산 시작
         if (card.SourceData.SpendsAllActionPoints && card.EffectType == CardEffectType.Damage) // 실제 지불량에 연동하는 피해 카드 확인
@@ -170,7 +175,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             case SwordCardRule.Counterattack: // 직전 적 턴 이후 체력 손실 반격
                 return card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue); // 실제 잃은 체력의 절반 내림
             default: // 표기 피해의 일반 공격
-                return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus); // 기존 카드 공격력 보정 적용
+                return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + GetRuneBurstDamageBonus(card, target)); // 같은 타격 및 대상 예고의 원본과 룬 표식 가산 합계
         } // 피해 종류 선택 종료
     } // 원본 피해 계산 종료
 

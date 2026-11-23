@@ -2579,6 +2579,54 @@
       "name": "마력 방출",
       "description": "생존 적 전체에 각각 마법 피해 9를 준다.",
       "artworkKey": "845d406cb0465c0288f8153959721008"
+    },
+    {
+      "category": 7,
+      "name": "비전 보호",
+      "description": "생존 아군 전체가 두 적 턴 동안 적의 직접 마법 피해에 대한 저항을 15% 얻는다.",
+      "artworkKey": "0cc7a4f6964d5b79b0b8090dacfb01c2"
+    },
+    {
+      "category": 7,
+      "name": "정신 충격",
+      "description": "지정 적에게 마법 피해 10을 준다. 명중한 생존 적의 정신력을 5 낮춘다.",
+      "artworkKey": "250cb72d031c5aa587c07b8c60b9a805"
+    },
+    {
+      "category": 7,
+      "name": "냉기 폭발",
+      "description": "생존 적 전체에게 각각 마법 피해 7을 준다. 명중한 생존 적의 행동 속도를 한 적 턴 동안 1 낮춘다.",
+      "artworkKey": "d00866427a5950c7948886d0b48bc03e"
+    },
+    {
+      "category": 7,
+      "name": "화상 증폭",
+      "description": "화상이 걸린 모든 생존 적의 화상 지속 시간을 한 적 턴 늘린다.",
+      "artworkKey": "83428815a81655079de78b7bcde80315"
+    },
+    {
+      "category": 7,
+      "name": "감전 전이",
+      "description": "감전 상태인 적에게 마법 피해 12를 준다. 명중 후 다른 생존 적을 무작위로 골라 감전 1을 두 적 턴 동안 부여한다.",
+      "artworkKey": "e263888fe32a510398b9ac65e3f834d3"
+    },
+    {
+      "category": 7,
+      "name": "마법 반향",
+      "description": "이번 아군 턴에 자신이 다음으로 사용하는 지팡이 마법 공격을 한 번 복제한다. 복제는 기본 피해의 50%를 적용한다.",
+      "artworkKey": "c4cbe7fe996355249ba26b73c5d9fc81"
+    },
+    {
+      "category": 7,
+      "name": "룬 폭발",
+      "description": "지정 적에게 마법 피해 11을 준다. 활성 청진기·공개·전차 표식이 있는 적은 추가 피해 6을 받는다.",
+      "artworkKey": "4b17683e2f995eb09104473e2b7d9b80"
+    },
+    {
+      "category": 7,
+      "name": "운명 동결",
+      "description": "지정 적에게 한 적 턴 동안 기절을 부여하고, 두 적 턴 동안 마법 저항력을 10 낮춘다.",
+      "artworkKey": "9740e591e90e566a90649517c3cc1fe7"
     }
   ]
 }

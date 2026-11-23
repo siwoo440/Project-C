@@ -1931,7 +1931,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 저항력 +15% (2턴)",
+      "description": "생존 아군 전체가 두 적 턴 동안 적의 직접 마법 피해에 대한 저항을 15% 얻는다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "비전 보호.png"
@@ -1942,7 +1942,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 10 피해, 정신력 -5",
+      "description": "지정 적에게 마법 피해 10을 준다. 명중한 생존 적의 정신력을 5 낮춘다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "정신 충격.png"
@@ -1953,7 +1953,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 전체에게 7 피해, 속도 -1 (1턴)",
+      "description": "생존 적 전체에게 각각 마법 피해 7을 준다. 명중한 생존 적의 행동 속도를 한 적 턴 동안 1 낮춘다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "냉기 폭발.png"
@@ -1964,7 +1964,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "모든 화상 적의 화상 지속시간 +1턴",
+      "description": "화상이 걸린 모든 생존 적의 화상 지속 시간을 한 적 턴 늘린다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "화상 증폭.png"
@@ -1975,7 +1975,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "감전 상태 적에게 12 피해, 다른 적 1명에게 감전(2턴)",
+      "description": "감전 상태인 적에게 마법 피해 12를 준다. 명중 후 다른 생존 적을 무작위로 골라 감전 1을 두 적 턴 동안 부여한다.",
       "area": "단일/전이",
       "targets": "적",
       "imageFileName": "감전 전이.png"
@@ -1986,7 +1986,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 다음 마법 카드 1회 복제, 복제 피해 -50%",
+      "description": "이번 아군 턴에 자신이 다음으로 사용하는 지팡이 마법 공격을 한 번 복제한다. 복제는 기본 피해의 50%를 적용한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "마법 반향.png"
@@ -1997,7 +1997,7 @@
       "attribute": "지팡이",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적에게 11 피해, 표식 상태면 추가 6 피해",
+      "description": "지정 적에게 마법 피해 11을 준다. 활성 청진기·공개·전차 표식이 있는 적은 추가 피해 6을 받는다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "룬 폭발.png"
@@ -2008,7 +2008,7 @@
       "attribute": "지팡이",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 1명 행동 불가(1턴), 저항력 -10% (2턴)",
+      "description": "지정 적에게 한 적 턴 동안 기절을 부여하고, 두 적 턴 동안 마법 저항력을 10 낮춘다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "운명 동결.png"

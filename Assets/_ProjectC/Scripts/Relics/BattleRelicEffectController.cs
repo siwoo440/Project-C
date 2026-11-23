@@ -205,7 +205,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         } // 턴 종료 신호의 중복 처리 차단 종료
         if (relicData.EffectType == RelicEffectType.MagicalHitMentalLoss && // 검은 별가루의 피해 이벤트 확인
             (eventContext?.SourceUnit?.Team != BattleTeam.Ally || eventContext.TargetUnit?.Team != BattleTeam.Enemy || eventContext.TargetUnit.IsDead || // 확률 소비 전 실제 아군 출처와 살아 있는 적 대상 확인
-             eventContext.DamageResult is not { DamageType: BattleDamageType.Magical, AppliedDamage: > 0 })) // 체력에 적용된 양수 마법 피해만 허용
+             eventContext.DamageResult is not { DamageType: BattleDamageType.Magical, AppliedDamage: > 0, IsWandEcho: false })) // 실제 원본 마법 피해에만 추가 정신력 추첨 허용
         { // 별가루와 무관한 피해 제외 시작
             return false; // 전투의 기존 무작위 판정과 발동 기록 보존
         } // 별가루와 무관한 피해 제외 종료
