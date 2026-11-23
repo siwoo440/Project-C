@@ -24,7 +24,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
     private BattleSceneSetup battleSceneSetup; // 현재 전투 설정
     private Button arrowModeButton; // 화살표 표시 옵션 버튼
-    private TMP_Text arrowModeButtonText; // 화살표 표시 옵션 문구
+    private Image arrowModeIcon; // 화살표 표시 옵션 문구
     private ArrowDisplayMode arrowDisplayMode = ArrowDisplayMode.All; // 기본 모든 화살표 표시
     private bool arrowButtonAligned; // 현재 강화 버튼 옆 정렬 여부
 
@@ -66,7 +66,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
             arrowsView = null; // 이전 전투 화살표 화면 참조 제거
             battleSceneSetup = null; // 이전 전투 설정 제거
             arrowModeButton = null; // 이전 화살표 버튼 참조 제거
-            arrowModeButtonText = null; // 이전 화살표 문구 참조 제거
+            arrowModeIcon = null; // 이전 화살표 문구 참조 제거
             arrowButtonAligned = false; // 버튼 정렬 상태 초기화
             return;
         }
@@ -347,34 +347,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
             arrowModeButton.onClick.AddListener(
                 ToggleArrowDisplayMode); // 화살표 표시 방식 전환 연결
 
-            GameObject textObject =
-                new GameObject(
-                    "Label",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(TextMeshProUGUI)); // 버튼 문구 오브젝트 생성
-
-            textObject.transform.SetParent(
-                buttonObject.transform,
-                false); // 버튼에 문구 배치
-
-            arrowModeButtonText =
-                textObject.GetComponent<TMP_Text>(); // 버튼 문구 TMP 조회
-
-            arrowModeButtonText.fontSize = 14f; // 버튼 문구 글자 크기 설정
-            arrowModeButtonText.alignment = TextAlignmentOptions.Center; // 버튼 문구 중앙 정렬
-            arrowModeButtonText.color = Color.white; // 버튼 문구 색상 설정
-            arrowModeButtonText.raycastTarget = false; // 문구 포인터 차단 해제
-            arrowModeButtonText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
-
-            RectTransform textRect =
-                arrowModeButtonText.rectTransform; // 버튼 문구 RectTransform 조회
-
-            textRect.anchorMin = Vector2.zero; // 최소 앵커 설정
-            textRect.anchorMax = Vector2.one; // 최대 앵커 설정
-            textRect.offsetMin = Vector2.zero; // 왼쪽 아래 여백 제거
-            textRect.offsetMax = Vector2.zero; // 오른쪽 위 여백 제거
-
+            arrowModeIcon = BattleUiArt.SetHudIcon(arrowModeButton, "HudIntent"); // 표적 화살표 표시
             RefreshArrowModeButtonText(); // 기본 버튼 문구 적용
             arrowButtonAligned = false; // 현재 강화 버튼 탐색 대기
         }
@@ -410,15 +383,8 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                 continue;
             }
 
-            TMP_Text candidateText =
-                candidate.GetComponentInChildren<TMP_Text>(
-                    true); // 버튼 문구 조회
-
-            if (candidateText == null ||
-                string.IsNullOrWhiteSpace(candidateText.text) ||
-                !candidateText.text.Contains(
-                    "현재 강화"))
-            {
+            if (candidate.name != "MinorBuffToggle") // 강화 버튼의 고정 이름 확인
+            { // 다른 버튼 제외
                 continue;
             }
 
@@ -449,7 +415,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
             float targetWidth =
                 Mathf.Max(
-                    130f,
+                    54f,
                     sourceRect.rect.width); // 옵션 버튼 최소 너비 보정
 
             float targetHeight =
@@ -488,15 +454,10 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
     private void RefreshArrowModeButtonText() // 화살표 옵션 버튼 문구 갱신
     {
-        if (arrowModeButtonText == null)
-        {
-            return;
-        }
-
-        arrowModeButtonText.text =
-            arrowDisplayMode == ArrowDisplayMode.All
-                ? "화살표 : 전체"
-                : "화살표 : 하나씩"; // 현재 표시 방식 문구 적용
+        if (arrowModeIcon != null) // 화살표 아이콘 확인
+        { // 모드별 표시 시작
+            arrowModeIcon.color = arrowDisplayMode == ArrowDisplayMode.All ? Color.white : new Color(0.42f, 0.83f, 1f); // 개별 모드 청색 강조
+        } // 모드별 표시 종료
     }
 
     private Canvas FindBattleCanvas() // 전투 UI Canvas 조회

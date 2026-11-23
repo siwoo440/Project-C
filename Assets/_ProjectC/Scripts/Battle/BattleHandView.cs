@@ -35,6 +35,15 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
     private BattleCardView draggedCardView; // 현재 꺼내는 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
+    private bool openingDealPending; // 처음 채워지는 손패 확인
+    private float dealElapsed = -1f; // 카드 배분 경과 시간
+    private const float DealInterval = 0.105f; // 각 카드 출발 시차
+    private const float DealTravel = 0.45f; // 카드 한 장의 비행 시간
+    public bool IsDealingOpeningHand => dealElapsed >= 0f; // 현재 시작 손패의 이동 여부
+    public void PrepareOpeningDeal() // 첫 손패 연출 예약
+    { // 첫 드로우 준비 시작
+        openingDealPending = true; // 적 선제 시에도 첫 드로우 대기
+    } // 첫 드로우 준비 종료
     private bool interactionLocked; // 행동 연출 중 입력 잠금 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
@@ -60,6 +69,18 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             LayoutHand(); // 변경된 화면 너비 기준 카드 재배치
             RefreshCardPreview(); // 변경된 손패 너비의 확대 카드 갱신
         } // 손패 재배치 종료
+        if (dealElapsed >= 0f) // 시작 손패가 이동 중인지 확인
+        { // 시작 배분 갱신
+            if (SceneFlowManager.Instance == null || !SceneFlowManager.Instance.IsLoadingScene) // 로딩 화면 종료 확인
+            { // 표시 시간 갱신
+                dealElapsed += Mathf.Min(Time.unscaledDeltaTime, 0.08f); // 로딩 지연에 따른 순간 이동 방지
+            } // 표시 시간 갱신 종료
+            if (dealElapsed >= (spawnedCardViews.Count - 1) * DealInterval + DealTravel) // 마지막 카드 도착 확인
+            { // 첫 손패 배치 종료
+                dealElapsed = -1f; // 일반 배치 복귀
+            } // 종료 처리 완료
+            LayoutHand(); // 이동 중 카드와 입력 위치 갱신
+        } // 시작 배분 갱신 종료
         RefreshHoveredTooltip(); // 마우스와 임시 상세 키 상태에 따른 툴팁 갱신
     } // 크기 변경 감지 종료
     private void OnRectTransformDimensionsChange() // 손패 패널 크기 변경 처리
@@ -101,6 +122,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 덱 연결 종료
     public void Unbind() // 런타임 덱 연결 해제
     { // 덱 연결 해제 시작
+        openingDealPending = false; // 이전 전투 드로우 예약 해제
+        dealElapsed = -1f; // 이전 배분 연출 종료
         if (runtimeDeck != null) // 기존 런타임 덱 확인
         { // 이벤트 해제 시작
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
@@ -277,7 +300,15 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             float normalized = count == 1 ? 0f : 2f * index / (count - 1f) - 1f; // 손패 가운데 기준 상대 위치 계산
             float spreadOffset = focusedIndex < 0 || index == focusedIndex ? 0f : index < focusedIndex ? -spread : spread; // 선택 카드 양옆의 바깥 이동량 계산
             float fanHeight = -12f * scale * normalized * normalized; // 양끝 카드가 살짝 낮은 부채꼴 높이
-            spawnedCardViews[index].SetHandLayout(new Vector2(x + spreadOffset, fanHeight), scale, -normalized * fanAngle); // 카드 겹침과 부채꼴 회전 적용
+            Vector2 position = new Vector2(x + spreadOffset, fanHeight); // 부채꼴 도착 위치
+            float travel = dealElapsed < 0f ? 1f : Mathf.SmoothStep(0f, 1f, (dealElapsed - index * DealInterval) / DealTravel); // 각 카드의 이동 진행률
+            if (travel < 1f) // 아직 도착하지 않은 카드 확인
+            { // 더미에서 손패로 이동
+                Vector2 pile = handLayoutRoot.InverseTransformPoint(DrawPileAnchor.TransformPoint(DrawPileAnchor.rect.center)); // 뽑기 더미 중심
+                position = Vector2.Lerp(pile, position, travel) + Vector2.up * (54f * Mathf.Sin(Mathf.PI * travel)); // 살짝 들린 곡선 경로
+            } // 카드 위치 계산 종료
+            cardHitRegions[index].gameObject.SetActive(travel >= 1f); // 도착한 카드부터 클릭 허용
+            spawnedCardViews[index].SetHandLayout(position, Mathf.Lerp(0.27f, scale, travel), Mathf.Lerp(-14f, -normalized * fanAngle, travel)); // 카드 겹침과 부채꼴 회전 적용
             float left = index == 0 ? x - width * 0.5f : x - step * 0.5f; // 카드 입력 영역 왼쪽 경계
             float right = index == count - 1 ? x + width * 0.5f : x + step * 0.5f; // 카드 입력 영역 오른쪽 경계
             RectTransform hitRect = cardHitRegions[index]; // 대응 카드 입력 영역 조회
@@ -524,6 +555,16 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
                 removedPositions[view.RuntimeCard] = root.InverseTransformPoint(view.transform.position); // 이전 카드의 손패 기준 위치 저장
             } // 버린 카드 위치 기록 종료
         } // 변경 전 카드 화면 확인 종료
+        bool firstDraw = openingDealPending && runtimeDeck.HandCount > 0; // 첫 드로우 판별
+        if (firstDraw) // 처음 채워진 손패 확인
+        { // 배분 시작
+            openingDealPending = false; // 첫 드로우 예약 소모
+            dealElapsed = 0f; // 모든 카드의 시작 위치 설정
+        } // 배분 시작 종료
+        else if (previousCards.Count > 0) // 배분 중 손패 변경 확인
+        { // 변경된 덱 우선 처리
+            dealElapsed = -1f; // 새 손패 상태로 전환
+        } // 덱 변경 처리 종료
         Refresh(); // 손패 화면 자동 갱신
         Vector2 drawPosition = root.InverseTransformPoint(DrawPileAnchor.TransformPoint(DrawPileAnchor.rect.center)); // 실제 뽑기 더미 중앙 위치 조회
         Vector2 discardPosition = root.InverseTransformPoint(DiscardPileAnchor.TransformPoint(DiscardPileAnchor.rect.center)); // 실제 버리기 더미 중앙 위치 조회
@@ -533,7 +574,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 버리기 연출 생성 종료
         foreach (BattleCardView view in spawnedCardViews) // 변경 후 카드 화면 순회
         { // 새 카드 뽑기 확인 시작
-            if (view != null && !previousCards.Contains(view.RuntimeCard)) // 새로 손패에 들어온 카드 확인
+            if (!firstDraw && view != null && !previousCards.Contains(view.RuntimeCard)) // 새로 손패에 들어온 카드 확인
             { // 새 카드 이동 연출 시작
                 Vector2 start = recoveredCards.Contains(view.RuntimeCard) ? discardPosition : drawPosition; // 회수와 일반 뽑기의 출발 더미 구분
                 Vector2 end = root.InverseTransformPoint(view.transform.position); // 실제 손패 카드 위치 조회

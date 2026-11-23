@@ -4,6 +4,15 @@ using UnityEngine.UI; // 전투 화면 이미지 사용
 public static class BattleUiArt // 이미지 생성으로 제작한 전투 UI 제공
 { // 전투 이미지 제공 시작
     private static readonly Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>(); // 재사용할 전투 스프라이트 목록
+    public static Image SetHudIcon(Button button, string resource) // 상단 버튼에 아이콘 연결
+    { // 아이콘 준비 시작
+        var icon = PreparationUi.CreatePanel(resource, button.transform, Vector2.zero, Vector2.one).GetComponent<Image>(); // 버튼 앞에 이미지 생성
+        icon.sprite = Resources.Load<Sprite>("UI/Battle/" + resource); // 전용 아이콘 조회
+        icon.preserveAspect = true; // 원본 비율 유지
+        icon.color = Color.white; // 원화 색상 유지
+        icon.raycastTarget = false; // 버튼 클릭 통과
+        return icon; // 모드 표시용 이미지 반환
+    } // 아이콘 준비 종료
     public static bool Apply(Image target, string name) // 지정한 전투 이미지 적용
     { // 전투 이미지 적용 시작
         if (target == null || name != "HandPanel" && name != "CardFrame" && name != "CostBadge" && name != "GaugeFrame" && name != "VitalGaugeFrame" && name != "HealthGaugeIcon" && name != "MentalGaugeIcon" && name != "MentalStateBacklight" && name != "CardTypeSword" && name != "CardTypeWand" && name != "CardTypeCup" && name != "CardTypePentacle" && name != "CardTypeShield" && name != "DrawPile" && name != "DiscardPile" && name != "LevelFrame" && name != "EnemyAttackPhysical" && name != "EnemyAttackMagical" && name != "EnemyAttackNeutral") // 화면과 지원 이미지 이름 확인

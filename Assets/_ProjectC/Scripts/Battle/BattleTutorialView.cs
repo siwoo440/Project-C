@@ -34,7 +34,8 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
     } // 안내 화면 생성 종료
     private void Build() // 안내 화면 요소 생성
     { // 안내 화면 구성 시작
-        replayButton = PreparationUi.CreateButton("ReplayButton", transform, "전투 도움말", new Vector2(0.64f, 0.98f), new Vector2(0f, -8f), new Vector2(145f, 40f), () => progress.Replay()); // 전투 중 다시 보기 버튼 생성
+        replayButton = PreparationUi.CreateButton("ReplayButton", transform, string.Empty, new Vector2(0.64f, 0.98f), new Vector2(0f, -8f), new Vector2(54f, 50f), () => progress.Replay()); // 전투 중 다시 보기 버튼 생성
+        BattleUiArt.SetHudIcon(replayButton, "HudHelp"); // 도움말 책 표시
         guide = PreparationUi.CreatePanel("Guide", transform, Vector2.zero, Vector2.one); // 안내 전체 영역 생성
         Image guideImage = guide.GetComponent<Image>(); // 전체 안내 배경 조회
         guideImage.color = Color.clear; // 전체 배경의 별도 색상 제거
