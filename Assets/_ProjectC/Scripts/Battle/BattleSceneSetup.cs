@@ -14,12 +14,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private int testDamage = 10; // 테스트 피해량
     private readonly List<BattleUnitRuntime> allyUnits = new List<BattleUnitRuntime>(); // 생성된 아군 목록
     private readonly List<BattleUnitRuntime> enemyUnits = new List<BattleUnitRuntime>(); // 생성된 적 목록
+    private BattleDeckRuntime battleDeck; // 생성된 런타임 덱
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
+    public BattleDeckRuntime BattleDeck => battleDeck; // 런타임 덱 조회
     public bool IsInitialized { get; private set; } // 전투 초기화 여부
     private void Start() // 씬 시작 처리
     { // 시작 처리 시작
-        InitializeBattle(); // 전투 유닛 초기화
+        InitializeBattle(); // 전투 전체 초기화
     } // 시작 처리 종료
     public void InitializeBattle() // 전투 초기화
     { // 초기화 시작
@@ -33,8 +35,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 설정 오류 처리 종료
         CreateAllyUnits(); // 아군 유닛 생성
         CreateEnemyUnits(); // 적 유닛 생성
+        battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits); // 전투용 카드 인스턴스 생성
         IsInitialized = true; // 초기화 완료 저장
-        Debug.Log($"[BattleSceneSetup] 전투 유닛 생성 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명", this); // 생성 완료 출력
+        Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 카드 {battleDeck.CardCount}장", this); // 생성 완료 출력
     } // 초기화 종료
     private bool ValidateSetup() // 설정 유효성 검사
     { // 유효성 검사 시작
@@ -67,7 +70,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 적 검사 시작
             if (enemyData == null) // 빈 적 데이터 확인
             { // 빈 적 처리 시작
-                Debug.LogError("[BattleSceneSetup] 적 목록에 빈 데이터가 있습니다.", this); // 빈 적 오류 출력
+                Debug.LogError("[BattleSceneSetup] 적 목록에 빈 데이터가 있습니다.", this); // 적 오류 출력
                 return false; // 검사 실패 반환
             } // 빈 적 처리 종료
         } // 적 검사 종료
@@ -125,4 +128,22 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 없음 처리 종료
         enemyUnits[0].TakeDamage(testDamage); // 첫 번째 적 피해 적용
     } // 적 피해 종료
+    [ContextMenu("테스트/카드 인스턴스 출력")] // 카드 출력 메뉴
+    private void LogCardInstances() // 카드 인스턴스 출력
+    { // 카드 출력 시작
+        if (!Application.isPlaying) // 플레이 모드 확인
+        { // 비플레이 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 플레이 모드에서 실행해야 합니다.", this); // 플레이 모드 안내
+            return; // 카드 출력 중단
+        } // 비플레이 처리 종료
+        if (!IsInitialized || battleDeck == null) // 런타임 덱 생성 여부 확인
+        { // 덱 없음 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 런타임 덱이 생성되지 않았습니다.", this); // 덱 없음 출력
+            return; // 카드 출력 중단
+        } // 덱 없음 처리 종료
+        foreach (CardInstance cardInstance in battleDeck.Cards) // 카드 인스턴스 순회
+        { // 카드 출력 시작
+            Debug.Log($"[CardInstance] {cardInstance.InstanceId} / {cardInstance.DisplayName} / 소유자 {cardInstance.OwnerUnit.DisplayName}", this); // 카드 정보 출력
+        } // 카드 출력 종료
+    } // 카드 출력 종료
 } // 클래스 종료
