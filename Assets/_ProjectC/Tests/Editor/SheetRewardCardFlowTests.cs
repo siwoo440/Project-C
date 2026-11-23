@@ -60,7 +60,7 @@ public sealed class SheetRewardCardFlowTests // 공용 카드 보물 검사
             { // 상점 화면 생성 시작
                 shopView = ShopPrototypeView.Create(shop); // 실제 상점 화면 생성
             } // 상점 화면 생성 종료
-            shopView.transform.Find("OpenShopButton").GetComponent<Button>().onClick.Invoke(); // 실제 상점 열기
+            Assert.IsTrue(shopView.TryOpenFromRoom(shop.ActiveRoomRuntimeId)); // 상점 방 방문 성공 확인
             Transform products = shopView.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 실제 상점 상품 목록 조회
             Assert.IsNull(products.Find("Offer_REWARD_SHEET_SMALL_HEAL")); // 작은 치유 상점 미표시 확인
             Assert.IsNull(products.Find("Offer_REWARD_SHEET_FIREBALL")); // 불덩이 상점 미표시 확인

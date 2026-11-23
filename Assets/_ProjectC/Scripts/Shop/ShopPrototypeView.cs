@@ -45,18 +45,9 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         manager = shopManager; // 상점 관리자 저장
         manager.Changed += HandleManagerChanged; // 상점 변경 이벤트 연결
         manager.TransactionCompleted += HandleTransactionCompleted; // 거래 결과 이벤트 연결
-        CreateOpenButton(); // 상점 열기 버튼 생성
         CreateOverlay(); // 상점 전체 패널 생성
         RefreshMainView(); // 최초 상품 목록 생성
         overlayObject.SetActive(false); // 시작 시 상점 닫기
-    }
-
-    private void CreateOpenButton() // 탐사 상점 열기 버튼 생성
-    {
-        Button openButton = CreateButton("OpenShopButton", transform, "상점 열기", 26f, AccentColor); // 상점 열기 버튼 생성
-        RectTransform openRect = openButton.GetComponent<RectTransform>(); // 열기 버튼 위치 정보 조회
-        SetAnchoredRect(openRect, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(260f, 72f), new Vector2(-24f, -24f)); // 오른쪽 위 위치 지정
-        openButton.onClick.AddListener(OpenShop); // 상점 열기 동작 연결
     }
 
     private void CreateOverlay() // 상점 오버레이 생성
@@ -111,19 +102,21 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         productScrollRect.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(30f); // 선택한 상점 스크롤 속도 적용
     }
 
-    private void OpenShop() // 상점 열기
-    {
-        if (!overlayObject.activeSelf) // 신규 상점 열기 확인
-        {
-            previousTimeScale = Time.timeScale; // 기존 시간 배율 저장
-            Time.timeScale = 0f; // 상점 이용 중 탐사 진행 정지
-            pausedByShop = true; // 상점 시간 정지 상태 저장
-        }
-
-        showingCardRemoval = false; // 상품 목록 모드 지정
-        RefreshMainView(); // 최신 상품 목록 갱신
-        overlayObject.SetActive(true); // 상점 오버레이 표시
-    }
+    public bool TryOpenFromRoom(string roomId) // 상점 방에서 방문 시작
+    { // 상점 방문 시작
+        if (!isActiveAndEnabled || manager == null || !manager.IsReady || string.IsNullOrWhiteSpace(roomId) || overlayObject == null || overlayObject.activeSelf) // 상점 준비와 중복 방문 확인
+        { // 방문 불가 처리 시작
+            return false; // 방 사용 보류
+        } // 방문 불가 처리 종료
+        manager.BeginRoomVisit(roomId); // 열 수 있는 방의 상품 목록 준비
+        previousTimeScale = Time.timeScale; // 방문 전 게임 속도 보관
+        Time.timeScale = 0f; // 상점 이용 중 탐사 정지
+        pausedByShop = true; // 닫을 때 속도 복원 표시
+        showingCardRemoval = false; // 상품 목록 모드 선택
+        RefreshMainView(); // 방문 시점 상품과 재화 표시
+        overlayObject.SetActive(true); // 상점 화면 열기
+        return true; // 상점 방문 성공
+    } // 상점 방문 종료
 
     private void CloseShop() // 상점 닫기
     {
