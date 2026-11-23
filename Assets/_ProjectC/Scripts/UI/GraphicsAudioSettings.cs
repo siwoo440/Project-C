@@ -59,6 +59,8 @@ public sealed class GraphicsAudioSettings // 지원하는 화면과 음량 설�
             new Option("quality", 0, 7, new[] { "낮음", "중간", "높음", "울트라" }, 2), // 기획 그래픽 품질과 기본값
             new Option("master", 1, 0, volume, 80), // 기획 마스터 음량과 기본값
             new Option("tutorial", 2, 1, new[] { "켜기", "끄기" }, 0), // 전투 안내 자동 표시 설정
+            new Option("damageNumbers", 2, 8, new[] { "켜기", "끄기" }, 0), // 피해 숫자 표시 설정
+            new Option("detailTooltip", 2, 9, new[] { "항상", "키 누를 때", "끄기" }, 0), // 상세 툴팁 표시 방식 설정
             new Option("battleSpeed", 2, 3, new[] { "x1.0", "x1.5", "x2.0" }, 1), // 기획 전투 속도와 기본값
             new Option("scrollSpeed", 3, 5, new[] { "느림", "보통", "빠름" }, 1) // 기획 스크롤 속도와 기본값
         }; // 지원 설정 목록 종료

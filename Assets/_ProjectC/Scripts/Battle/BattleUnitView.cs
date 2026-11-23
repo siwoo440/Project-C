@@ -28,6 +28,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private TMP_Text blockText; // 방어도 수치 텍스트
     private GameObject partnerRoot; // 파트너 표시 배경
     private TMP_Text partnerText; // 파트너 상태 텍스트
+    private bool statusTooltipHovered; // 상태 상세 대상에 마우스 진입 여부
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
@@ -73,6 +74,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
         mentalView?.Unbind(); // 정신력 화면 연결 해제
         RuntimeUnit = null; // 런타임 참조 제거
+        statusTooltipHovered = false; // 이전 유닛 마우스 상태 초기화
         if (blockRoot != null) // 방어도 화면 존재 확인
         { // 방어도 화면 숨김 시작
             blockRoot.SetActive(false); // 연결 해제 시 방어도 숨김
@@ -248,12 +250,37 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 포인터 클릭 처리 종료
     public void OnPointerEnter(PointerEventData eventData) // 유닛 포인터 진입 처리
     { // 포인터 진입 처리 시작
-        statusEffectView?.ShowTooltip(); // 상태 이상 상세 툴팁 표시
+        statusTooltipHovered = true; // 현재 유닛 마우스 진입 기록
+        RefreshStatusTooltip(); // 설정에 맞는 상태 상세 표시 갱신
     } // 포인터 진입 처리 종료
     public void OnPointerExit(PointerEventData eventData) // 유닛 포인터 이탈 처리
     { // 포인터 이탈 처리 시작
-        statusEffectView?.HideTooltip(); // 상태 이상 상세 툴팁 숨김
+        statusTooltipHovered = false; // 현재 유닛 마우스 이탈 기록
+        RefreshStatusTooltip(); // 상태 상세 툴팁 숨김
     } // 포인터 이탈 처리 종료
+    private void LateUpdate() // 상태 상세 키 입력 변화 감시
+    { // 상태 상세 갱신 시작
+        if (statusTooltipHovered) // 현재 유닛 마우스 진입 여부 확인
+        { // 키 입력 상태 갱신 시작
+            RefreshStatusTooltip(); // 임시 상세 키와 상태 변화 반영
+        } // 키 입력 상태 갱신 종료
+    } // 상태 상세 갱신 종료
+    private void RefreshStatusTooltip() // 현재 유닛의 상태 상세 표시 갱신
+    { // 상태 상세 표시 갱신 시작
+        bool visible = RuntimeUnit != null && RuntimeUnit.StatusEffects.Count > 0 && BattleDisplaySettings.ShowTooltip(GraphicsAudioSettingsRuntime.Current, statusTooltipHovered, BattleDisplaySettings.IsTooltipKeyPressed()); // 상태 존재와 상세 표시 조건 확인
+        if (visible == (statusEffectView != null && statusEffectView.IsTooltipVisible)) // 기존 상세 표시 상태 확인
+        { // 상태 유지 처리 시작
+            return; // 불필요한 상세 갱신 중단
+        } // 상태 유지 처리 종료
+        if (visible) // 상태 상세 표시 필요 확인
+        { // 상태 상세 표시 시작
+            statusEffectView?.ShowTooltip(); // 현재 유닛 상태 상세 표시
+        } // 상태 상세 표시 종료
+        else // 상태 상세 숨김 필요 확인
+        { // 상태 상세 숨김 시작
+            statusEffectView?.HideTooltip(); // 현재 유닛 상태 상세 숨김
+        } // 상태 상세 숨김 종료
+    } // 상태 상세 표시 갱신 종료
     private void ApplyStaticData() // 고정 표시 정보 적용
     { // 고정 정보 적용 시작
         if (nameText != null) // 이름 텍스트 존재 확인
