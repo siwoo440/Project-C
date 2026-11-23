@@ -1,6 +1,7 @@
 using System.Collections; // 실제 전투 화면 대기 사용
 using System.Collections.Generic; // 실제 손패 카드 목록 사용
 using NUnit.Framework; // 카드 더미와 배치 검증 사용
+using TMPro; // 실제 카드 더미 숫자 확인 사용
 using UnityEngine; // 전투 화면 좌표와 객체 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
 using UnityEngine.UI; // 카드 더미 이미지 검사 사용
@@ -45,6 +46,12 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         RectTransform layout = hand.transform.Find("HandLayoutRoot") as RectTransform; // 실제 가운데 손패 영역 조회
         Assert.IsNotNull(draw); // 왼쪽 뽑기 더미 존재 확인
         Assert.IsNotNull(discard); // 오른쪽 버리기 더미 존재 확인
+        Assert.IsNull(hand.transform.Find("DeckStatusText")); // 손패 상단 카드 수량 문구 제거 확인
+        TMP_Text drawCount = draw.Find("Count/CountText").GetComponent<TMP_Text>(); // 뽑기 더미의 실제 수량 조회
+        TMP_Text discardCount = discard.Find("Count/CountText").GetComponent<TMP_Text>(); // 버린 더미의 실제 수량 조회
+        Assert.AreEqual("4", drawCount.text); // 남은 뽑기 카드 수 확인
+        Assert.AreEqual("0", discardCount.text); // 빈 버린 카드 수 확인
+        Assert.IsFalse(drawCount.raycastTarget || discardCount.raycastTarget); // 수량 글자의 카드 입력 차단 방지 확인
         Assert.AreEqual("DrawPile", draw.GetComponent<Image>().sprite.texture.name); // 제작한 뽑기 카드 이미지 연결 확인
         Assert.AreEqual("DiscardPile", discard.GetComponent<Image>().sprite.texture.name); // 제작한 묘지 카드 이미지 연결 확인
         Assert.IsFalse(draw.GetComponent<Image>().raycastTarget); // 뽑기 더미의 카드 입력 차단 방지 확인
@@ -61,6 +68,9 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         Color emptyDiscard = discard.GetComponent<Image>().color; // 빈 버리기 더미 표시 색상 저장
         Assert.IsTrue(deck.DiscardCard(deck.Hand[0])); // 실제 손패 카드 버리기 확인
         Assert.Greater(discard.GetComponent<Image>().color.a, emptyDiscard.a); // 버린 카드 존재 시 더미 표시 강조 확인
+        Assert.AreEqual("1", discardCount.text); // 실제 버린 카드 수 갱신 확인
+        Assert.AreEqual(1, deck.DrawCards(1)); // 실제 카드 한 장 추가 뽑기
+        Assert.AreEqual("3", drawCount.text); // 실제 뽑기 더미 수 갱신 확인
         hand.Unbind(); // 실제 손패와 덱 연결 해제
         level.Dispose(); // 레벨 표시 이벤트 연결 해제
         turns.Dispose(); // 실제 전투 턴 관리자 정리
