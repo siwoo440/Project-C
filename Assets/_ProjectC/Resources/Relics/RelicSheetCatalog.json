@@ -1851,7 +1851,7 @@
     {
       "sourceRow": 170,
       "name": "커튼 고정핀",
-      "description": "은신 상태 적을 공격할 때 피해 +5",
+      "description": "은신 상태인 적을 아군 카드로 직접 명중하면 피해가 5 증가한다.",
       "buyMin": 320,
       "buyMax": 356,
       "buyVariance": 36,
@@ -1862,7 +1862,7 @@
     {
       "sourceRow": 171,
       "name": "금실 자수 조각",
-      "description": "버프 상태 아군 회복량 +15%",
+      "description": "활성 강화가 있는 생존 아군이 체력을 회복할 때 회복량이 15% 증가한다.",
       "buyMin": 187,
       "buyMax": 230,
       "buyVariance": 43,
@@ -1873,7 +1873,7 @@
     {
       "sourceRow": 172,
       "name": "피아노 줄",
-      "description": "적에게 행동력 감소 부여 시 4 피해 추가",
+      "description": "아군이 적에게 다음 행동 1회 취소를 부여하거나 갱신하면 그 생존 적에게 일반 피해 4를 준다.",
       "buyMin": 204,
       "buyMax": 240,
       "buyVariance": 36,
@@ -1884,7 +1884,7 @@
     {
       "sourceRow": 173,
       "name": "붉은 포도주 얼룩",
-      "description": "중독 상태 적의 명중률 -5%",
+      "description": "활성 중독이 있는 적의 명중률이 5%p 감소한다.",
       "buyMin": 221,
       "buyMax": 264,
       "buyVariance": 43,
@@ -1895,7 +1895,7 @@
     {
       "sourceRow": 174,
       "name": "망가진 은촛불집게",
-      "description": "화상 상태 적 처치 시 아군 1명 체력 5 회복",
+      "description": "화상 중인 적을 처치하면 현재 체력이 가장 낮은 생존 아군의 체력을 5 회복한다.",
       "buyMin": 238,
       "buyMax": 274,
       "buyVariance": 36,
@@ -1906,7 +1906,7 @@
     {
       "sourceRow": 175,
       "name": "귀족의 검은 단추",
-      "description": "전투 시작 시 손패에 비용 0의 임시 카드 1장 생성",
+      "description": "전투의 첫 실제 아군 손패에 첫 생존 아군의 행동력 0 임시 찌르기 카드 한 장을 생성한다.",
       "buyMin": 255,
       "buyMax": 298,
       "buyVariance": 43,
@@ -1917,7 +1917,7 @@
     {
       "sourceRow": 176,
       "name": "부서진 무도화",
-      "description": "아군이 회피하면 다음 공격 피해 +2",
+      "description": "아군이 적의 공격을 회피하면 그 아군의 다음 유효한 직접 공격 피해가 2 증가한다.",
       "buyMin": 272,
       "buyMax": 308,
       "buyVariance": 36,
@@ -1928,7 +1928,7 @@
     {
       "sourceRow": 177,
       "name": "잠긴 서랍 열쇠",
-      "description": "상자 방에서 추가 보상 등장 확률 +15%",
+      "description": "보물방의 보상을 실제로 획득할 때 15% 확률로 150골드를 추가로 얻는다. 같은 방은 한 번만 판정한다.",
       "buyMin": 289,
       "buyMax": 332,
       "buyVariance": 43,

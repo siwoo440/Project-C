@@ -1183,6 +1183,54 @@
       "artworkKey": "6fa30b0a45df560a8a99685ffcc361c0"
     },
     {
+      "category": 3,
+      "name": "커튼 고정핀",
+      "description": "은신 상태인 적을 아군 카드로 직접 명중하면 피해가 5 증가한다.",
+      "artworkKey": "bee5d1b8b54f5d7a9024ca7ec9e3da58"
+    },
+    {
+      "category": 3,
+      "name": "금실 자수 조각",
+      "description": "활성 강화가 있는 생존 아군이 체력을 회복할 때 회복량이 15% 증가한다.",
+      "artworkKey": "73e948ba688a5e17b5505dc2fadd8fdd"
+    },
+    {
+      "category": 3,
+      "name": "피아노 줄",
+      "description": "아군이 적에게 다음 행동 1회 취소를 부여하거나 갱신하면 그 생존 적에게 일반 피해 4를 준다.",
+      "artworkKey": "b254b9fa8a6f527ca4e3c280bbe43d93"
+    },
+    {
+      "category": 3,
+      "name": "붉은 포도주 얼룩",
+      "description": "활성 중독이 있는 적의 명중률이 5%p 감소한다.",
+      "artworkKey": "95a1fae68d2250b9a84637fe43813c49"
+    },
+    {
+      "category": 3,
+      "name": "망가진 은촛불집게",
+      "description": "화상 중인 적을 처치하면 현재 체력이 가장 낮은 생존 아군의 체력을 5 회복한다.",
+      "artworkKey": "665eabd5ecbc52f68f36258bc165c561"
+    },
+    {
+      "category": 3,
+      "name": "귀족의 검은 단추",
+      "description": "전투의 첫 실제 아군 손패에 첫 생존 아군의 행동력 0 임시 찌르기 카드 한 장을 생성한다.",
+      "artworkKey": "550a465012bb5e29877b8fe1d22dd9d9"
+    },
+    {
+      "category": 3,
+      "name": "부서진 무도화",
+      "description": "아군이 적의 공격을 회피하면 그 아군의 다음 유효한 직접 공격 피해가 2 증가한다.",
+      "artworkKey": "67141599b61f5e39bb3e2c63dc936b5b"
+    },
+    {
+      "category": 3,
+      "name": "잠긴 서랍 열쇠",
+      "description": "보물방의 보상을 실제로 획득할 때 15% 확률로 150골드를 추가로 얻는다. 같은 방은 한 번만 판정한다.",
+      "artworkKey": "c747f8b2fe01595bab22ad902f980129"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

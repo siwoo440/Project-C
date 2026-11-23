@@ -53,5 +53,7 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     NewFloorLayout, // 새 층의 선택 방 역할을 확정하는 시점
     BeforeMentalDamage, // 처음 받을 정신 피해를 확정하기 전
     StatusRemoved, // 살아 있는 유닛의 활성 상태가 해제된 시점
-    EnemySummoned // 전체 전투 관리자에 적 소환이 완료된 시점
+    EnemySummoned, // 전체 전투 관리자에 적 소환이 완료된 시점
+    AttackEvaded, // 아군의 회피율로 실제 적 공격이 빗나간 시점
+    TreasureRoomCompleted // 방의 기본 보상 획득과 저장이 확정되는 시점
 }

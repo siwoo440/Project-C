@@ -166,7 +166,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
-        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage) // 체력 손실과 부활 및 출혈 처리기가 적용하는 전용 유물 확인
+        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage or RelicEffectType.SilverSnufferBurnKillHealing) // 실제 체력 손실과 부활 및 출혈과 처치에서 정산하는 전용 유물 확인
         { // 공용 발동에서 전용 유물 제외 시작
             return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
         } // 공용 발동에서 전용 유물 제외 종료
@@ -242,6 +242,9 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             case RelicEffectType.BattleStartCleanseOne: // 향 주머니의 전투 시작 디버프 정화
             case RelicEffectType.BattleEndCleanseOne: // 손수건의 실제 종료 디버프 정화
                 return TryCleanseOneAllyStatus(); // 모든 생존 아군의 제거 가능한 일반 상태에서 한 개 추첨
+            case RelicEffectType.PianoWireActionLossDamage: // 실제로 적용된 경직에만 생기는 일반 피해
+                var pianoHit = context.TargetUnit.TakeDamage(relic.EffectValue, BattleDamageType.None); // 일반 방어도는 따르되 추가 직접 공격을 만들지 않는 피해
+                return pianoHit.AppliedDamage > 0 || pianoHit.AbsorbedDamage > 0; // 실제로 체력이나 방어도에 피해를 남긴 경우만 기록
             case RelicEffectType.ConfessionMentalDamageMark: // 실제 적 정신력 손실의 일회 피해 표식
                 var mark = context.TargetUnit.ApplyStatusEffect(BattleStatusEffectType.ConfessionDamageMark, relic.EffectValue, 1, 1, context.SourceUnit); // 일반 약화 면역에 따르는 턴 독립 표식 한 개 부여
                 return mark is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked; // 실제 부여 결과만 발동으로 기록
@@ -567,6 +570,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 return context is { EventType: BattleEventType.HealingApplied, AppliedAmount: > 0, TargetUnit: { Team: BattleTeam.Ally, IsDead: false } }; // 양수 회복을 실제로 받은 생존 아군만 발동 허용
             case RelicEffectType.ActionPreventingStatusDraw: // 어비스 밀랍인장의 실제 적 행동 제어 확인
                 return IsEnemyDebuffApplication(context) && context.SourceUnit?.Team == BattleTeam.Ally && context.StatusEffectType is BattleStatusEffectType.Stun or BattleStatusEffectType.Stagger; // 아군이 성공시킨 기절과 경직으로 제한
+            case RelicEffectType.PianoWireActionLossDamage: // 행동을 잃는 실제 경직 부여 사건의 적과 발생자 확인
+                return IsEnemyDebuffApplication(context) && context.Phase is (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn) && // 현재 전투의 신규 또는 중첩 성공만 인정
+                    context.StatusEffectType == BattleStatusEffectType.Stagger && context.SourceUnit is { Team: BattleTeam.Ally, IsDead: false } && // 기존 기절과 속도 감소를 제외한 아군의 경직 확인
+                    context.TargetUnit is { IsDead: false } && context.TargetUnit.GetStatusEffect(BattleStatusEffectType.Stagger) is { IsExpired: false }; // 실제로 다음 행동을 한 번 막는 살아 있는 적의 활성 상태
             case RelicEffectType.FifthEnemyDebuffHeal: // 공허의 잔뿌리의 실제 약화 횟수 확인
                 if (!IsEnemyDebuffApplication(context)) // 일반 강화와 면역 및 무효 상태 제외
                 { // 횟수 미변경 처리 시작

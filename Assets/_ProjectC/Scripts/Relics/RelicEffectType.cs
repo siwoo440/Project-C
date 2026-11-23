@@ -161,4 +161,12 @@ public enum RelicEffectType // 유물 효과 종류
     ChapelClothChaliceBlock, // 성배 카드 사용 정산 뒤 사용자의 방어도 추가
     PortraitNailMarkedBleedDamage, // 표식 상태인 적의 실제 출혈 피해 증가
     DiningBellSummonEvasionLoss, // 새 소환 적을 포함한 생존 적 전체 회피 감소
+    CurtainPinStealthDamage, // 은신 중인 적에 대한 실제 카드 직접 피해 증가
+    GoldEmbroideryBuffedHealing, // 활성 강화가 있는 아군의 받는 체력 회복 증가
+    PianoWireActionLossDamage, // 적의 실제 행동 취소 약화 부여에 고정 피해
+    WineStainPoisonAccuracyLoss, // 활성 중독이 있는 적의 실제 명중률 감소
+    SilverSnufferBurnKillHealing, // 화상 적 처치 시 가장 낮은 체력 아군 회복
+    NobleButtonOpeningTemporaryCard, // 첫 아군 손패에 비용 없는 임시 찌르기 생성
+    DanceShoeEvasionDamage, // 아군 실제 회피 뒤 다음 공격의 피해 증가
+    LockedDrawerTreasureBonus, // 보물방 완료 시 방별 한 번 추가 골드 판정
 }

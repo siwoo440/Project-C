@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: CurtainPin
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_CURTAIN_PIN
+  displayName: 커튼 고정핀
+  description: "은신 상태인 적을 아군 카드로 직접 명중하면 피해가 5 증가한다."
+  icon: {fileID: 21300000, guid: bee5d1b8b54f5d7a9024ca7ec9e3da58, type: 3}
+  rarity: 0
+  triggerType: 21
+  effectType: 161
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 5
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 64
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
