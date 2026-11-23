@@ -9,6 +9,7 @@ public sealed class CharacterData : ScriptableObject // 캐릭터 원본 데이�
     [SerializeField] private string description; // 캐릭터 설명
     [SerializeField] private CharacterRole role; // 캐릭터 역할
     [SerializeField] private Sprite portrait; // 캐릭터 초상화
+    [SerializeField] private Sprite battleIllustration; // 전투 전용 캐릭터 그림
     [Header("기본 전투 수치")] // 기본 전투 수치 구역
     [Min(1)] // 최대 체력 최소값
     [SerializeField] private int maxHealth = 100; // 최대 체력
@@ -32,6 +33,7 @@ public sealed class CharacterData : ScriptableObject // 캐릭터 원본 데이�
     public string Description => description; // 캐릭터 설명 조회
     public CharacterRole Role => role; // 캐릭터 역할 조회
     public Sprite Portrait => portrait; // 캐릭터 초상화 조회
+    public Sprite BattleIllustration => battleIllustration; // 전투 전용 그림 조회
     public int MaxHealth => maxHealth; // 최대 체력 조회
     public int PhysicalDefense => physicalDefense; // 물리 방어력 조회
     public int MagicalResistance => magicalResistance; // 마법 저항력 조회

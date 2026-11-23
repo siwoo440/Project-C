@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 버림패 단기 재가공"
   role: 3
   portrait: {fileID: -5502038183186411561, guid: 10ff66def8b09f047b5c302a64bee44b, type: 3}
+  battleIllustration: {fileID: 4000000000000000001, guid: 5992e58b64424855b583adeabc9513f7, type: 3}
   maxHealth: 86
   physicalDefense: 1
   magicalResistance: 5

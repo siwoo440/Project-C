@@ -194,10 +194,13 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 이름 적용 종료
         if (portraitImage != null) // 초상화 이미지 존재 확인
         { // 초상화 적용 시작
-            portraitImage.sprite = RuntimeUnit.Portrait; // 초상화 스프라이트 적용
+            Sprite battleArt = RuntimeUnit.CharacterSource != null ? RuntimeUnit.CharacterSource.BattleIllustration : null; // 아군 전투 전용 그림 조회
+            Sprite displayArt = battleArt != null ? battleArt : RuntimeUnit.Portrait; // 전용 그림 또는 기존 초상화 선택
+            portraitImage.sprite = displayArt; // 유닛 그림 적용
+            portraitImage.preserveAspect = battleArt != null; // 전용 그림 원본 비율 유지
             portraitImage.enabled = true; // 초상화 또는 임시 표시 활성화
             Color placeholderColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 진영별 임시 초상화 색상 계산
-            portraitImage.color = RuntimeUnit.Portrait != null ? Color.white : new Color(placeholderColor.r, placeholderColor.g, placeholderColor.b, 0.45f); // 원본 또는 임시 초상화 색상 적용
+            portraitImage.color = displayArt != null ? Color.white : new Color(placeholderColor.r, placeholderColor.g, placeholderColor.b, 0.45f); // 원본 또는 임시 초상화 색상 적용
         } // 초상화 적용 종료
         if (teamFrameImage != null) // 진영 테두리 존재 확인
         { // 진영 색상 적용 시작

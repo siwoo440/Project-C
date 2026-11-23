@@ -17,6 +17,7 @@ MonoBehaviour:
   description: "임시 능력치 · 기획 역할: 조건부 사전 준비"
   role: 1
   portrait: {fileID: -4887388887509051508, guid: ee588b7d980510a48b6e5447122a206e, type: 3}
+  battleIllustration: {fileID: 4000000000000000005, guid: 714cc275e7b149a88d767d9841668d22, type: 3}
   maxHealth: 118
   physicalDefense: 4
   magicalResistance: 6
