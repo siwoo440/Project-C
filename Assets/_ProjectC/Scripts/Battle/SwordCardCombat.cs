@@ -244,7 +244,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 대상 사망 처리 시작
             return BattleStatusEffectType.None; // 전투불능 대상의 신규 상태 차단
         } // 대상 사망 처리 종료
-        result = target.ApplyStatusEffect(type, value, card.StatusDuration, 1, card.OwnerUnit, corrosionFamily: card.SourceData.IsCorrosionStatus && card.StatusEffectType == type); // 원본에 같은 침식 상태가 명시된 경우의 실제 상태 적용
+        result = BattleSupplyRelics.ApplyDirectHitStatus(target, card.OwnerUnit, ref type, value, card.StatusDuration, 1, corrosionFamily: card.SourceData.IsCorrosionStatus && card.StatusEffectType == type); // 확률을 통과한 검의 실제 부여와 기계 출혈 치환 처리
         return type; // 피격과 면역 피드백 종류 반환
     } // 후속 상태 처리 종료
 

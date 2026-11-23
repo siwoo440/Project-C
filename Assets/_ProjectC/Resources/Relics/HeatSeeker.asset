@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: HeatSeeker
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_HEAT_SEEKER
+  displayName: 열원 탐색기
+  description: "전투 중 처음으로 실명 상태의 아군이 실제 공격할 때 해당 공격의 실명 명중률 감소를 무시한다."
+  icon: {fileID: 21300000, guid: 21c98b4d2e8e54a78b731fde36844bfb, type: 3}
+  rarity: 0
+  triggerType: 19
+  effectType: 228
+  targetType: 2
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 0
+  statusEffectType: 15
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

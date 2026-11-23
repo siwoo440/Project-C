@@ -317,7 +317,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 복사한 강화 적용 시작
         return ApplyStatusEffectCore(blessing.EffectType, blessing.Value, blessing.RemainingTurns, blessing.MaximumStacks, caster, blessing); // 원래 강화의 현재 시간과 수치 전달
     } // 복사한 강화 적용 종료
-    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true, bool publicMarkCountsEnemyTurns = false) // 일반 시계와 전술 표식의 실제 공통 상태 면역 및 부여
+    internal BattleStatusEffectApplyResult ApplyFrostPrisonActionLoss(int value, int duration, int maximumStacks, BattleUnitRuntime source) // 원본 서리 감옥이 취소한 실제 적 행동의 출처 보관
+    { // 기존 경직 면역과 단일 적용 실행 시작
+        return ApplyStatusEffectCore(BattleStatusEffectType.Stagger, value, duration, maximumStacks, source, null, authoredActionPointLoss: true); // 별도 상태 사건 없는 원본 경직과 출처 전달
+    } // 기존 경직 면역과 단일 적용 실행 종료
+
+    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true, bool publicMarkCountsEnemyTurns = false, bool authoredActionPointLoss = false) // 실제 공통 상태 면역과 기존 경직의 원본 출처 부여
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -385,11 +390,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             { // 원본 전술 표식 수명 지정 시작
                 status.SetPublicMarkEnemyTurnLifetime(); // 일반 처리와 알림 전에 실제 적 턴 시계 적용
             } // 원본 전술 표식 수명 지정 종료
+            status.HasAuthoredActionPointLoss = authoredActionPointLoss; // 일반 새 상태와 반사에 원래 서리 감옥 출처 복제 제외
             status.RecordPoisonApplication(sourceUnit, preserveExisting: false); // 반사와 신규 적용 모두 이번 실제 중독 적용자의 진영만 기록
             statusEffects.Add(status); // 실제 첫 약화 또는 강화 등록
             return ResolveAppliedStatus(status, sourceUnit, BattleStatusEffectApplyResult.Applied, blessing != null, previousPhysicalDefense, enteringStealth); // 신규 등록 뒤 상태 정화 및 적용 결과 전달
         } // 신규 상태 처리 종료
-        bool preservePoisonSource = !existingEffect.IsExpired; // 이미 만료한 중독에는 이전 중첩의 출처를 다시 쓰지 않음
+        bool preserveActiveSource = !existingEffect.IsExpired; // 종료 상태의 이전 적용 출처 회수
+        existingEffect.HasAuthoredActionPointLoss = authoredActionPointLoss || (preserveActiveSource && existingEffect.HasAuthoredActionPointLoss); // 실제 활성 상태에만 보존하고 오래된 경직의 출처 부활 차단
         if (blessing == null) // 일반 상태 갱신과 강화 복사 구분
         { // 일반 상태 갱신 시작
             existingEffect.Refresh(value, duration, maximumStacks); // 일반 중첩과 지속 시간 갱신
@@ -402,7 +409,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 새 전술 표식의 기존 단일 상태 수명 갱신 시작
             existingEffect.SetPublicMarkEnemyTurnLifetime(); // 원래 한 중첩 갱신 뒤 아무 알림 전 적 턴 수명 보관
         } // 새 전술 표식의 기존 단일 상태 수명 갱신 종료
-        existingEffect.RecordPoisonApplication(sourceUnit, preservePoisonSource); // 기존 활성 중첩과 이번 중독 적용 출처를 같은 실제 상태에 연결
+        existingEffect.RecordPoisonApplication(sourceUnit, preserveActiveSource); // 기존 활성 중첩과 이번 중독 적용 출처를 같은 실제 상태에 연결
         return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null, previousPhysicalDefense, enteringStealth); // 중첩 갱신 뒤 상태 정화 및 적용 결과 전달
     } // 상태 이상 적용 종료
     private BattleStatusEffectApplyResult ResolveAppliedStatus(BattleStatusEffectInstance status, BattleUnitRuntime source, BattleStatusEffectApplyResult result, bool preserveDuration, int previousPhysicalDefense, bool enteringStealth) // 상태 최종 정산과 실제 물리 방어 차이 확인
@@ -841,7 +848,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally // 기존 적 직접 피해의 방패 경감 대상 확인
-            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack) // 기존 방패 보호와 성역을 한 번에 적용
+            ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack, sourceUnit) // 기존 방패 보호와 성역 및 실제 적 광역 피해 경감을 한 번에 적용
             : damageResult.FinalDamage - ApplySanctuaryDamageReduction(damageResult.FinalDamage); // 일반 및 지속 피해의 성역 경감량
         int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction() + GetMechanicalDirectDamageReduction(sourceUnit, enemyDirectAttack)); // 기계형 직접 공격 감소를 포함한 공용 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
@@ -891,7 +898,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return Math.Max(0, ApplySanctuaryDamageReduction(damage) - GetLowHealthDamageReduction()); // 성역 비율 뒤 저체력 고정 감소와 영 하한 적용
     } // 방어도 없는 피해 경감 종료
 
-    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack) // 방패 상태와 광역 의도의 직접 피해 경감 계산
+    private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack, BattleUnitRuntime source) // 방패와 실제 적 광역의 미리 보기 및 직접 피해 경감 계산
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
         int protection = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.GuardianCircle)); // 수호의 원 피해 경감률
@@ -901,9 +908,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int fortify = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.FortifyResistance)) : 0; // 요새화의 별도 마법 직접 피해 감소 비율
         int eternalShield = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.EternalShield)); // 영원의 방패 직접 피해 경감률
         int eternalResistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.EternalShieldResistance)) : 0; // 영원의 방패 별도 마법 직접 피해 저항률
+        int shell = enemyAreaAttack && source?.Team == BattleTeam.Enemy && DamageRelicBattle is { IsBattleEnded: false, HasPendingBossPhaseTransition: false } battle // 진행 중인 실제 적의 전체 대상 공격인지 확인
+            ? Math.Clamp(battle.DamageRelicInventory?.FindEffect(RelicEffectType.MechanicalBugShellAreaReduction)?.EffectValue ?? 0, 0, 100) : 0; // 원본 유물의 광역 피해 경감 비율과 최대 범위
         int adjusted = (int)((decimal)damage * (100 - resistance) * (100 - protection) * (100 - interception) // 기존 마법 저항과 수호 및 위험 차단 비율
             * (100 - focus) * (100 - spread) * (100 - fortify) * (100 - eternalShield) * (100 - eternalResistance) // 집중·분산과 요새화 및 영원의 방패 비율
-            * (100 - SanctuaryReductionPercent) / 1_000_000_000_000_000_000m); // 성역을 포함한 전체 비율 곱의 마지막 한 번 내림
+            * (100 - SanctuaryReductionPercent) * ((100m - shell) / 100m) / 1_000_000_000_000_000_000m); // 성역과 기계벌레 껍질을 포함한 전체 비율 곱의 마지막 한 번 내림
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
@@ -1160,6 +1169,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 전투 상태 및 진영 조건을 벗어난 가산 제외 시작
             return amount; // 원래 피해 유지
         } // 전투 상태 및 진영 조건을 벗어난 가산 제외 종료
+        amount = ApplyCompressionPincerDamage(amount); // 활성 행동력 감소의 양수 직접 카드 원본 피해를 예고와 실제에 공통 적용
         int antenna = battle.ResolveFirstAllyAttackBonus(source, preview); // 동일한 최초 카드의 첫 확인 피해 또는 순수 예고
         int sandBone = amount > 0 ? battle.GetSandBoneDamageBonus(source, this) : 0; // 실제 양수 직접 카드의 기존 출혈 가산 조건
         usedSandBone = sandBone > 0; // 방어도나 체력 손실 뒤 확정할 출혈 가산 기록
@@ -1168,10 +1178,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         usedMaintenance = source.GetStatusEffect(BattleStatusEffectType.ToolMaintenanceAttackUp) is { IsExpired: false } maintenance ? maintenance : null; // 바로 이 아군의 다음 직접 피해 강화 상태 조회
         int sunGlyph = amount > 0 && directCardType == CardType.Cup && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false } // 양수 성배 타격을 받는 적의 기존 활성 화상
             ? DamageRelicBattle?.DamageRelicInventory?.FindEffect(RelicEffectType.RuinedSunGlyphChaliceBurnDamage)?.EffectValue ?? 0 : 0; // 실제 보유한 태양문양의 원본 고정 가산량
-        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens + sunGlyph + (usedMaintenance?.EffectiveValue ?? 0)); // 성배와 도구 손질 등 같은 타격의 독립 고정 가산 합계
+        int leakage = directCardType == CardType.Wand && GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false } // 직접 지팡이 타격의 정확한 계열과 현재 적 감전 상태 확인
+            ? Math.Max(0, battle.DamageRelicInventory?.FindEffect(RelicEffectType.LeakageCoilShockedWandDamage)?.EffectValue ?? 0) : 0; // 현재 보유한 누전 코일의 독립 방어 전 고정 가산
+        int flatDamage = (int)Math.Min(int.MaxValue, (long)amount + antenna + sandBone + lens + sunGlyph + leakage + (usedMaintenance?.EffectiveValue ?? 0)); // 같은 직접 타격에 참여하는 원본 고정 가산 합계
         int strap = (long)CurrentHealth * 2 <= MaxHealth ? BattleSupplyRelics.Find(RelicEffectType.RuinedLeatherStrapLowHealthEnemyDamage)?.EffectValue ?? 0 : 0; // 타격 직전 실제 최대 체력 절반 이하에서만 비율 증가
         return strap > 0 && flatDamage > 0 ? (int)Math.Min(int.MaxValue, (long)flatDamage * (100L + strap) / 100L) : flatDamage; // 원본 양수 비율을 반올림 없이 방어 이전 정수로 내림
     } // 원본 카드의 활성 전투와 양쪽 생존 확인 종료
+
+    private int ApplyCompressionPincerDamage(int amount) // 실제 행동력 감소 상태를 확인한 집게 손잡이의 비율 가산
+    { // 유효한 양수 원본과 활성 약화 확인 시작
+        if (amount <= 0 || (GetStatusEffect(BattleStatusEffectType.ActionPointDown) is not { IsExpired: false } && // 명시 행동력 감소의 실제 활성 상태 확인
+            GetStatusEffect(BattleStatusEffectType.Stagger) is not { IsExpired: false, HasAuthoredActionPointLoss: true })) // 서리 감옥이 실제 부여한 활성 행동 취소의 원본 출처 확인
+        { // 조건 없는 정상 피해 유지 시작
+            return amount; // 원래 피해나 영점의 상태 그대로 반환
+        } // 조건 없는 정상 피해 유지 종료
+        int bonus = BattleSupplyRelics.Find(RelicEffectType.CompressionPincerHandleReducedActionDamage)?.EffectValue ?? 0; // 실제 보유한 압착 집게 손잡이의 비율 수치
+        return (int)Math.Min(int.MaxValue, (long)amount * (100L + bonus) / 100L); // 기존 방어와 피해 보정 이전의 정수 내림 및 상한
+    } // 유효한 양수 원본과 활성 약화 확인 종료
 
     private int ApplyCaravanDamageRelics(int amount) // 방어도 전에 공용 적용하는 두 카라반 피해 보정
     { // 카라반 피해 유물 계산 시작

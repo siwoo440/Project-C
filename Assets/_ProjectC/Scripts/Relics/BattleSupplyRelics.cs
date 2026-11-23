@@ -86,6 +86,25 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         return (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 원래 감전 성공 범위에 고정 증가를 합산해 백 이하로 제한
     } // 감전 원본과 기존 가능 확률 확인 종료
 
+    private static RelicData FindMechanicalBleedConversion(BattleUnitRuntime source, BattleUnitRuntime target, BattleStatusEffectType type) // 실제 직격에서 변화시킬 아군의 기계형 출혈 판정
+    { // 원래 부여하려는 출혈과 양쪽 참가자 확인 시작
+        if (type != BattleStatusEffectType.Bleed || source is not { Team: BattleTeam.Ally, IsDead: false } || target is not { Team: BattleTeam.Enemy, IsDead: false, EnemySource: { IsMechanical: true } }) // 실제 살아 있는 아군과 명시 기계형 생존 적의 원본 출혈
+        { // 원래 상태 유지 시작
+            return null; // 다른 상태와 적 진영 및 일반형 대상의 치환 제외
+        } // 원래 상태 유지 종료
+        return Find(RelicEffectType.ConveyorToothMechanicalBleedConversion); // 현재 보유한 출혈 변환 유물의 실제 수치 자료
+    } // 원래 부여하려는 출혈과 양쪽 참가자 확인 종료
+
+    internal static BattleStatusEffectApplyResult ApplyDirectHitStatus(BattleUnitRuntime target, BattleUnitRuntime source, ref BattleStatusEffectType type, int value, int duration, int maximumStacks, bool corrosionFamily = false) // 실제 명중 뒤 원래 상태나 치환 상태를 한 번 부여
+    { // 유물 보유와 원래 직접 출혈의 치환 시작
+        if (FindMechanicalBleedConversion(source, target, type) is { EffectValue: > 0 } conveyor) // 출혈을 대체할 유효 수치의 컨베이어 톱니 확인
+        { // 피드백을 위한 실제 상태와 원본 값 교체 시작
+            type = BattleStatusEffectType.PhysicalDefenseDown; // 실제 물리 방어 감소 상태와 화면의 같은 종류
+            return target.ApplyStatusEffect(type, conveyor.EffectValue, conveyor.StatusDuration, 1, source); // 기존 면역과 기간의 단일 물리 방어 약화
+        } // 피드백을 위한 실제 상태와 원본 값 교체 종료
+        return target.ApplyStatusEffect(type, value, duration, maximumStacks, source, corrosionFamily: corrosionFamily); // 기존 일반 상태의 실제 종류와 수명 유지
+    } // 유물 보유와 원래 직접 출혈의 치환 종료
+
     internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null) // 실제 상태 종류와 출처를 포함한 명중 후 약화 굴림
     { // 명중 후 효과 굴림 시작
         bool alliedAgainstEnemy = source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy; // 실제 아군이 적에게 시도한 원본 효과 확인
@@ -104,7 +123,8 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
                 return true; // 확률을 소비하지 않고 원래 상태 부여에서 면역 결과 반환
             } // 원래 면역 결과 처리 종료
             int bonus = alliedBleed ? Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0 : blindBonus; // 출혈 또는 실명에 해당하는 실제 유물 확률 가산
-            chance = alliedShock ? GetShockApplicationChance(source, target, type, chance) : (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 실제 종류별 확률 보정과 영 및 백 경계 적용
+            int conveyorChance = FindMechanicalBleedConversion(source, target, type) is { EffectValue: > 0 } conveyor ? conveyor.TriggerChancePercent : 0; // 실제 기계형 출혈 시도의 별도 확률 가산 조회
+            chance = alliedShock ? GetShockApplicationChance(source, target, type, chance) : (int)Math.Clamp((long)chance + bonus + conveyorChance, 0L, 100L); // 유효 확률을 모두 한 번 합산해 영과 백 사이의 실제 판정
             if (chance >= 100) // 기존 확률과 유물 보정으로 완전히 보장된 약화 확인
             { // 확정 약화 처리 시작
                 return true; // 다른 확률 유물과 무작위 없이 확정 적용 반환

@@ -4093,4 +4093,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 94ce962b680758acac736cfb365bbe45, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_WATCH_POD_LENS
+    offerType: 1
+    price: 260
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: d153a24164d45c738c8276cbea0f7d97, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LEAKAGE_COIL
+    offerType: 1
+    price: 281
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 3337565c068852b7b0d69abc76cf16a1, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_COMPRESSION_PINCER_HANDLE
+    offerType: 1
+    price: 294
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: dcacddff2d8a52ffa62ffad8a57acde9, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_HEAT_SEEKER
+    offerType: 1
+    price: 315
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 173cae3a3c2e507b8e1623b941f4b9fa, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_CONVEYOR_TOOTH
+    offerType: 1
+    price: 328
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1102b70356be5808aea56980b2218cac, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_LEAKAGE_TURRET_CASING
+    offerType: 1
+    price: 349
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 9c44cfb4ac265098ba3a7f9351b3e690, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SCRAP_SYRINGE
+    offerType: 1
+    price: 212
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: c71602eec85e5e51951a1fdb985d9c0d, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_MECHANICAL_BUG_SHELL
+    offerType: 1
+    price: 233
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 559e1eae224759398522c84fed6dfbe3, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
