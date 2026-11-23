@@ -1,11 +1,12 @@
 using UnityEngine; // IMGUI 디버그 표시 기능 사용
 
-public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 변환 디버그 화면
+public sealed class ExplorationMapDebugView : MonoBehaviour // 41일차 충돌 Tilemap 및 플레이어 미니맵 표시
 {
     private const float CellSize = 28f; // 셀 표시 크기
     private const float CellStep = 36f; // 셀 간 표시 간격
-    private const float HeaderHeight = 146f; // 패널 상단 정보 높이
+    private const float HeaderHeight = 166f; // 패널 상단 정보 높이
     private const float PanelPadding = 18f; // 패널 내부 여백
+    private const float PlayerMarkerSize = 18f; // 플레이어 미니맵 표시 크기
 
     private ExplorationMapRuntime mapRuntime; // 절차 맵 런타임 참조
 
@@ -15,7 +16,7 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 
             GetComponent<ExplorationMapRuntime>(); // 동일 오브젝트 맵 런타임 조회
     }
 
-    private void OnGUI() // 논리 맵 화면 표시
+    private void OnGUI() // 논리 맵과 플레이어 위치 화면 표시
     {
         if (mapRuntime == null ||
             mapRuntime.CurrentMap == null)
@@ -46,7 +47,8 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 
             heightInCells * CellStep; // 맵 표시 세로 크기 계산
 
         float panelWidth =
-            contentWidth + PanelPadding * 2f; // 전체 패널 가로 크기 계산
+            contentWidth +
+            PanelPadding * 2f; // 전체 패널 가로 크기 계산
 
         float panelHeight =
             HeaderHeight +
@@ -78,14 +80,15 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 
                 panelY,
                 panelWidth,
                 panelHeight),
-            $"40일차 Tilemap 변환  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
+            $"41일차 Tilemap 완성  |  {mapRuntime.CurrentFloor}F  |  {stateText}\n" +
             $"Seed {mapData.Seed}\n" +
-            $"S 시작 / E 조우 / ▼ 계단\n" +
+            $"S 시작 / E 조우 / ▼ 계단 / P 플레이어\n" +
             $"조우 {mapRuntime.CurrentEncounterCount}개 · " +
             $"Floor {mapRuntime.CurrentFloorTileCount} · " +
-            $"Wall Preview {mapRuntime.CurrentWallPreviewTileCount}\n" +
+            $"Wall {mapRuntime.CurrentWallTileCount}\n" +
             $"방 {ExplorationTilemapView.RoomSize}x{ExplorationTilemapView.RoomSize} · " +
-            $"간격 {ExplorationTilemapView.RoomSpacing} · F9 재생성"); // Tilemap 디버그 패널 표시
+            $"간격 {ExplorationTilemapView.RoomSpacing}\n" +
+            $"Wall Collider 활성 · F9 새 Seed 재생성"); // Tilemap 완성 디버그 패널 표시
 
         foreach (ExplorationMapCell cell in mapData.Cells)
         {
@@ -127,8 +130,51 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 
                     cellY,
                     CellSize,
                     CellSize),
-                GetCellLabel(cell)); // 셀 종류와 조우 기호 표시
+                GetCellLabel(cell)); // 셀 본래 상태 표시
         }
+
+        DrawPlayerMarker(
+            panelX,
+            panelY,
+            minX,
+            maxY); // 기존 셀 정보를 덮지 않는 P 오버레이 표시
+    }
+
+    private void DrawPlayerMarker(
+        float panelX,
+        float panelY,
+        int minX,
+        int maxY) // 플레이어의 실제 Tilemap 위치를 미니맵에 표시
+    {
+        if (!mapRuntime.TryGetPlayerLogicalPosition(
+                out Vector2 logicalPosition))
+        {
+            return;
+        }
+
+        float markerCenterX =
+            panelX +
+            PanelPadding +
+            (logicalPosition.x - minX) *
+            CellStep +
+            CellSize * 0.5f; // 플레이어 논리 X를 미니맵 X로 변환
+
+        float markerCenterY =
+            panelY +
+            HeaderHeight +
+            (maxY - logicalPosition.y) *
+            CellStep +
+            CellSize * 0.5f; // 플레이어 논리 Y를 미니맵 Y로 변환
+
+        GUI.Box(
+            new Rect(
+                markerCenterX -
+                PlayerMarkerSize * 0.5f,
+                markerCenterY -
+                PlayerMarkerSize * 0.5f,
+                PlayerMarkerSize,
+                PlayerMarkerSize),
+            "P"); // 방과 통로 위에 플레이어 위치 오버레이
     }
 
     private string GetCellLabel(
@@ -158,13 +204,16 @@ public sealed class ExplorationMapDebugView : MonoBehaviour // 40일차 Tilemap 
         float cellY) // 셀 연결선 표시
     {
         float centerX =
-            cellX + CellSize * 0.5f; // 셀 중심 X 계산
+            cellX +
+            CellSize * 0.5f; // 셀 중심 X 계산
 
         float centerY =
-            cellY + CellSize * 0.5f; // 셀 중심 Y 계산
+            cellY +
+            CellSize * 0.5f; // 셀 중심 Y 계산
 
         float gapLength =
-            CellStep - CellSize; // 셀 사이 연결 길이 계산
+            CellStep -
+            CellSize; // 셀 사이 연결 길이 계산
 
         if (cell.ConnectedUp)
         {
