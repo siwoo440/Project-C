@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 전차
   description: "임시 능력치 · 기획 역할: 한 턴 단일 표적 돌파"
   role: 0
-  portrait: {fileID: 0}
+  portrait: {fileID: -5774309225951526590, guid: 2c8325eda65ffb7478e1702b070cd3a8, type: 3}
   maxHealth: 108
   physicalDefense: 4
   magicalResistance: 2
