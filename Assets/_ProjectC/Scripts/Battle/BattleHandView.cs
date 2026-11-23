@@ -1,3 +1,4 @@
+using System; // 기본 이벤트 기능 사용
 using System.Collections.Generic; // 목록 자료형 사용
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
@@ -8,8 +9,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
+    private CardInstance selectedCard; // 현재 선택 카드
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
+    public event Action<CardInstance> CardClicked; // 손패 카드 클릭 이벤트
     private void Awake() // 손패 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 손패 내부 UI 자동 생성
@@ -35,6 +38,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         } // 이벤트 해제 종료
         runtimeDeck = null; // 런타임 덱 참조 제거
+        selectedCard = null; // 선택 카드 제거
         Refresh(); // 빈 손패 화면 표시
     } // 덱 연결 해제 종료
     private void EnsureVisualStructure() // 손패 내부 UI 준비
@@ -88,6 +92,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         foreach (CardInstance cardInstance in runtimeDeck.Hand) // 현재 손패 카드 순회
         { // 카드 화면 생성 시작
             BattleCardView cardView = CreateCardView(cardInstance); // 카드 화면 코드 생성
+            cardView.SetSelected(cardInstance == selectedCard); // 현재 카드 선택 표시 적용
             spawnedCardViews.Add(cardView); // 생성 카드 화면 목록 등록
         } // 카드 화면 생성 종료
     } // 화면 갱신 종료
@@ -98,8 +103,21 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         cardObject.transform.SetParent(handLayoutRoot, false); // 카드 부모 연결
         BattleCardView cardView = cardObject.GetComponent<BattleCardView>(); // 카드 화면 컴포넌트 조회
         cardView.Bind(cardInstance); // 카드 인스턴스 화면 연결
+        cardView.Clicked += HandleCardViewClicked; // 카드 클릭 이벤트 등록
         return cardView; // 생성 카드 화면 반환
     } // 카드 화면 생성 종료
+    public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
+    { // 선택 카드 설정 시작
+        selectedCard = cardInstance; // 선택 카드 저장
+        foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
+        { // 선택 표시 적용 시작
+            bool selected = cardView != null && cardView.RuntimeCard == selectedCard; // 현재 카드 선택 여부 계산
+            if (cardView != null) // 카드 화면 존재 확인
+            { // 선택 표시 적용 시작
+                cardView.SetSelected(selected); // 카드 선택 표시 적용
+            } // 선택 표시 적용 종료
+        } // 선택 표시 적용 종료
+    } // 선택 카드 설정 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
@@ -108,11 +126,20 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             { // 제거된 화면 처리 시작
                 continue; // 다음 카드 화면 이동
             } // 제거된 화면 처리 종료
+            cardView.Clicked -= HandleCardViewClicked; // 카드 클릭 이벤트 해제
             cardView.gameObject.SetActive(false); // 카드 화면 즉시 숨김
             Destroy(cardView.gameObject); // 카드 화면 오브젝트 제거
         } // 카드 화면 제거 종료
         spawnedCardViews.Clear(); // 생성 카드 화면 목록 비우기
     } // 카드 화면 제거 종료
+    private void HandleCardViewClicked(BattleCardView cardView) // 카드 화면 클릭 처리
+    { // 카드 클릭 처리 시작
+        if (cardView == null || cardView.RuntimeCard == null) // 카드 화면 연결 확인
+        { // 잘못된 화면 처리 시작
+            return; // 카드 클릭 처리 중단
+        } // 잘못된 화면 처리 종료
+        CardClicked?.Invoke(cardView.RuntimeCard); // 손패 카드 클릭 이벤트 알림
+    } // 카드 클릭 처리 종료
     private void HandleDeckStateChanged() // 덱 상태 변경 처리
     { // 덱 상태 처리 시작
         Refresh(); // 손패 화면 자동 갱신
@@ -127,10 +154,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         text.color = textColor; // 글자 색상 설정
         text.alignment = TextAlignmentOptions.Center; // 텍스트 중앙 정렬
         text.raycastTarget = false; // 텍스트 입력 차단 해제
-        if (TMP_Settings.defaultFontAsset != null) // 기본 글꼴 존재 확인
-        { // 기본 글꼴 적용 시작
-            text.font = TMP_Settings.defaultFontAsset; // 기본 글꼴 적용
-        } // 기본 글꼴 적용 종료
+        text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
         return text; // 생성 텍스트 반환
     } // 텍스트 생성 종료
     private void OnDestroy() // 손패 화면 제거 처리

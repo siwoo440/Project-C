@@ -19,3 +19,5 @@ MonoBehaviour:
   cardType: 0
   targetType: 3
   apCost: 1
+  effectType: 0
+  effectValue: 10

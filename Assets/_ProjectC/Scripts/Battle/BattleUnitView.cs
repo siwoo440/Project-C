@@ -1,7 +1,9 @@
+using System; // 기본 이벤트 기능 사용
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
+using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
-public sealed class BattleUnitView : MonoBehaviour // 전투 유닛 화면 표시
+public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler // 전투 유닛 화면 표시
 { // 클래스 시작
     [Header("기본 표시")] // 기본 표시 구역
     [SerializeField] private Image portraitImage; // 초상화 이미지
@@ -15,6 +17,7 @@ public sealed class BattleUnitView : MonoBehaviour // 전투 유닛 화면 표�
     [SerializeField] private Color allyColor = new Color(0.2f, 0.55f, 1f, 1f); // 아군 표시 색상
     [SerializeField] private Color enemyColor = new Color(1f, 0.25f, 0.25f, 1f); // 적 표시 색상
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
+    public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
     { // 연결 시작
         if (runtimeUnit == null) // 런타임 유닛 누락 확인
@@ -39,6 +42,23 @@ public sealed class BattleUnitView : MonoBehaviour // 전투 유닛 화면 표�
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
         RuntimeUnit = null; // 런타임 참조 제거
     } // 연결 해제 종료
+    public void SetTargetable(bool targetable) // 대상 선택 가능 표시
+    { // 대상 표시 시작
+        if (teamFrameImage == null || RuntimeUnit == null) // 화면 연결 상태 확인
+        { // 연결 없음 처리 시작
+            return; // 대상 표시 중단
+        } // 연결 없음 처리 종료
+        Color teamColor = RuntimeUnit.Team == BattleTeam.Ally ? allyColor : enemyColor; // 기본 진영 색상 계산
+        teamFrameImage.color = targetable ? Color.yellow : teamColor; // 대상 가능 색상 적용
+    } // 대상 표시 종료
+    public void OnPointerClick(PointerEventData eventData) // 유닛 포인터 클릭 처리
+    { // 포인터 클릭 처리 시작
+        if (RuntimeUnit == null || RuntimeUnit.IsDead) // 유닛 연결과 생존 상태 확인
+        { // 클릭 불가 처리 시작
+            return; // 포인터 클릭 처리 중단
+        } // 클릭 불가 처리 종료
+        Clicked?.Invoke(RuntimeUnit); // 유닛 클릭 이벤트 알림
+    } // 포인터 클릭 처리 종료
     private void ApplyStaticData() // 고정 표시 정보 적용
     { // 고정 정보 적용 시작
         if (nameText != null) // 이름 텍스트 존재 확인

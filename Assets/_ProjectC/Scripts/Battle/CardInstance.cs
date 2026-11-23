@@ -10,6 +10,8 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardType CardType => SourceData.CardType; // 카드 종류 조회
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
     public int ApCost => SourceData.ApCost; // 카드 AP 비용 조회
+    public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
+    public int EffectValue => SourceData.EffectValue; // 카드 효과 수치 조회
     private CardInstance(string instanceId, CardData sourceData, BattleUnitRuntime ownerUnit) // 카드 인스턴스 생성자
     { // 생성자 시작
         InstanceId = instanceId; // 인스턴스 ID 저장

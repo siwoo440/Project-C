@@ -1,10 +1,15 @@
+using System; // 기본 이벤트 기능 사용
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 기본 기능 사용
+using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
-public sealed class BattleCardView : MonoBehaviour // 전투 카드 화면 표시
+public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler // 전투 카드 화면 표시
 { // 클래스 시작
     private const float CardWidth = 160f; // 카드 기본 너비
     private const float CardHeight = 220f; // 카드 기본 높이
+    private static readonly Color DefaultBackgroundColor = new Color(0.08f, 0.09f, 0.13f, 0.98f); // 카드 기본 배경 색상
+    private static readonly Color SelectedBackgroundColor = new Color(0.72f, 0.45f, 0.08f, 1f); // 카드 선택 배경 색상
+    private Image backgroundImage; // 카드 배경 이미지
     private Image artworkImage; // 카드 일러스트 이미지
     private TMP_Text nameText; // 카드 이름 텍스트
     private TMP_Text descriptionText; // 카드 설명 텍스트
@@ -13,6 +18,7 @@ public sealed class BattleCardView : MonoBehaviour // 전투 카드 화면 표�
     private TMP_Text costText; // 카드 비용 텍스트
     private bool visualStructureCreated; // 화면 구조 생성 여부
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
+    public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
     private void Awake() // 카드 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 카드 내부 UI 자동 생성
@@ -34,6 +40,19 @@ public sealed class BattleCardView : MonoBehaviour // 전투 카드 화면 표�
         artworkImage.sprite = RuntimeCard.Artwork; // 카드 일러스트 적용
         artworkImage.color = RuntimeCard.Artwork != null ? Color.white : new Color(0.22f, 0.22f, 0.26f, 1f); // 일러스트 유무 색상 적용
     } // 카드 연결 종료
+    public void SetSelected(bool selected) // 카드 선택 표시 설정
+    { // 선택 표시 시작
+        EnsureVisualStructure(); // 카드 내부 UI 확인
+        backgroundImage.color = selected ? SelectedBackgroundColor : DefaultBackgroundColor; // 선택 상태 배경색 적용
+    } // 선택 표시 종료
+    public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
+    { // 포인터 클릭 처리 시작
+        if (RuntimeCard == null) // 카드 연결 여부 확인
+        { // 카드 미연결 처리 시작
+            return; // 클릭 처리 중단
+        } // 카드 미연결 처리 종료
+        Clicked?.Invoke(this); // 카드 클릭 이벤트 알림
+    } // 포인터 클릭 처리 종료
     private void EnsureVisualStructure() // 카드 내부 UI 준비
     { // 화면 구조 준비 시작
         if (visualStructureCreated) // 기존 화면 구조 확인
@@ -42,13 +61,13 @@ public sealed class BattleCardView : MonoBehaviour // 전투 카드 화면 표�
         } // 기존 구조 처리 종료
         RectTransform rootRect = transform as RectTransform; // 카드 루트 RectTransform 조회
         rootRect.sizeDelta = new Vector2(CardWidth, CardHeight); // 카드 루트 크기 설정
-        Image backgroundImage = GetComponent<Image>(); // 카드 배경 이미지 조회
+        backgroundImage = GetComponent<Image>(); // 카드 배경 이미지 조회
         if (backgroundImage == null) // 카드 배경 누락 확인
         { // 카드 배경 추가 시작
             backgroundImage = gameObject.AddComponent<Image>(); // 카드 배경 이미지 추가
         } // 카드 배경 추가 종료
-        backgroundImage.color = new Color(0.08f, 0.09f, 0.13f, 0.98f); // 카드 배경 색상 설정
-        backgroundImage.raycastTarget = false; // 카드 배경 입력 차단 해제
+        backgroundImage.color = DefaultBackgroundColor; // 카드 배경 색상 설정
+        backgroundImage.raycastTarget = true; // 카드 클릭 입력 허용
         LayoutElement layoutElement = GetComponent<LayoutElement>(); // 카드 레이아웃 크기 조회
         if (layoutElement == null) // 레이아웃 크기 누락 확인
         { // 레이아웃 크기 추가 시작
@@ -94,10 +113,7 @@ public sealed class BattleCardView : MonoBehaviour // 전투 카드 화면 표�
         text.alignment = TextAlignmentOptions.Center; // 텍스트 중앙 정렬
         text.overflowMode = TextOverflowModes.Ellipsis; // 넘친 텍스트 생략 설정
         text.raycastTarget = false; // 텍스트 입력 차단 해제
-        if (TMP_Settings.defaultFontAsset != null) // 기본 글꼴 존재 확인
-        { // 기본 글꼴 적용 시작
-            text.font = TMP_Settings.defaultFontAsset; // 기본 글꼴 적용
-        } // 기본 글꼴 적용 종료
+        text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
         return text; // 생성 텍스트 반환
     } // 텍스트 생성 종료
     private static void SetCenteredRect(RectTransform rectTransform, Vector2 anchor, Vector2 anchoredPosition, Vector2 sizeDelta) // 중앙 기준 RectTransform 설정

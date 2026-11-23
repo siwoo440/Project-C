@@ -1,5 +1,7 @@
 using System.Collections.Generic; // 목록 자료형 사용
 using UnityEngine; // 유니티 기본 기능 사용
+using UnityEngine.EventSystems; // 유니티 이벤트 시스템 사용
+using UnityEngine.InputSystem.UI; // 유니티 입력 시스템 UI 사용
 public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
 { // 클래스 시작
     [Header("전투 데이터")] // 전투 데이터 구역
@@ -22,7 +24,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private int testDamage = 10; // 테스트 피해량
     private readonly List<BattleUnitRuntime> allyUnits = new List<BattleUnitRuntime>(); // 생성된 아군 목록
     private readonly List<BattleUnitRuntime> enemyUnits = new List<BattleUnitRuntime>(); // 생성된 적 목록
+    private readonly List<BattleUnitView> allyUnitViews = new List<BattleUnitView>(); // 생성된 아군 화면 목록
+    private readonly List<BattleUnitView> enemyUnitViews = new List<BattleUnitView>(); // 생성된 적 화면 목록
     private BattleDeckRuntime battleDeck; // 생성된 런타임 덱
+    private BattleCardActionController cardActionController; // 카드 행동 관리자
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
     public BattleDeckRuntime BattleDeck => battleDeck; // 런타임 덱 조회
@@ -41,6 +46,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 설정 오류 처리 시작
             return; // 초기화 중단
         } // 설정 오류 처리 종료
+        EnsureEventSystem(); // UI 클릭 이벤트 시스템 준비
         CreateAllyUnits(); // 아군 유닛 생성
         CreateEnemyUnits(); // 적 유닛 생성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
@@ -50,6 +56,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
             return; // 초기화 중단
         } // 손패 화면 오류 처리 종료
+        cardActionController = new BattleCardActionController(battleDeck, handView, allyUnitViews, enemyUnitViews); // 카드 행동 관리자 생성
         int drawnCardCount = battleDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         IsInitialized = true; // 초기화 완료 저장
         Debug.Log($"[BattleSceneSetup] 전투 초기화 완료 - 아군 {allyUnits.Count}명, 적 {enemyUnits.Count}명, 전체 카드 {battleDeck.CardCount}장, 시작 손패 {drawnCardCount}장", this); // 생성 완료 출력
@@ -107,6 +114,15 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 검사 종료
         return true; // 검사 성공 반환
     } // 유효성 검사 종료
+    private static void EnsureEventSystem() // UI 이벤트 시스템 준비
+    { // 이벤트 시스템 준비 시작
+        if (EventSystem.current != null) // 기존 이벤트 시스템 확인
+        { // 기존 시스템 처리 시작
+            return; // 이벤트 시스템 생성 중단
+        } // 기존 시스템 처리 종료
+        GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule)); // 입력 이벤트 시스템 생성
+        eventSystemObject.transform.SetParent(null); // 이벤트 시스템 최상위 배치
+    } // 이벤트 시스템 준비 종료
     private void CreateAllyUnits() // 아군 유닛 생성
     { // 아군 생성 시작
         foreach (CharacterData characterData in battleLoadout.Party.Members) // 파티원 순회
@@ -116,6 +132,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             unitView.name = $"Ally_{runtimeUnit.UnitId}"; // 아군 오브젝트 이름 적용
             unitView.Bind(runtimeUnit); // 아군 화면 연결
             allyUnits.Add(runtimeUnit); // 아군 목록 등록
+            allyUnitViews.Add(unitView); // 아군 화면 목록 등록
         } // 파티원 생성 종료
     } // 아군 생성 종료
     private void CreateEnemyUnits() // 적 유닛 생성
@@ -127,6 +144,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             unitView.name = $"Enemy_{runtimeUnit.UnitId}"; // 적 오브젝트 이름 적용
             unitView.Bind(runtimeUnit); // 적 화면 연결
             enemyUnits.Add(runtimeUnit); // 적 목록 등록
+            enemyUnitViews.Add(unitView); // 적 화면 목록 등록
         } // 적 생성 종료
     } // 적 유닛 생성 종료
     private bool CanUseBattleDeckTest() // 카드 테스트 가능 여부 확인
@@ -241,4 +259,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         Debug.Log("[BattleSceneSetup] 뽑을 카드 더미를 다시 섞었습니다.", this); // 셔플 완료 출력
         LogDeckState(); // 카드 영역 수량 출력
     } // 카드 셔플 테스트 종료
+    private void OnDestroy() // 전투 씬 제거 처리
+    { // 씬 제거 처리 시작
+        cardActionController?.Dispose(); // 카드 행동 이벤트 연결 해제
+        cardActionController = null; // 카드 행동 관리자 참조 제거
+    } // 씬 제거 처리 종료
 } // 클래스 종료
