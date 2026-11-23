@@ -13,6 +13,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool openingAllySpeedActive; // 첫 적 턴까지 유지할 배지 상태
     private BattleUnitRuntime openingVulnerableEnemy; // 첫 아군 턴까지 취약을 적용한 적
     private int openingSpecimenActionPoints; // 첫 아군 턴에 지급할 탐사 표본병 행동력
+    private int nextPlayerTurnActionPointLoss; // 거인의 방패 사용으로 다음 아군 턴에 차감할 행동력
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private int lastExcludedBlockRound; // 봉인왁스의 마지막 발동 라운드
     private int lastFlagDrawRound; // 회전 깃발의 마지막 드로우 라운드
@@ -271,8 +272,18 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         runtimeDeck.QueuePlayerTurnDraw(draw); // 첫 실제 아군 드로우의 추가량 예약
         openingSpecimenActionPoints = actionPoints; // 선제 적 턴에는 사용하지 않을 행동력 보관
     } // 시작 표본병 예약 종료
+    internal void QueueNextPlayerTurnActionPointLoss(int amount) // 해결된 거인의 방패의 다음 아군 턴 차감 예약
+    { // 다음 아군 턴 행동력 예약 시작
+        if (!disposed && IsPlayerTurn && !IsBattleEnded && amount > 0) // 성공한 아군 행동과 양수 행동력 차감 확인
+        { // 개별 카드의 차감 예약 시작
+            nextPlayerTurnActionPointLoss = (int)Math.Min(int.MaxValue, (long)nextPlayerTurnActionPointLoss + amount); // 여러 사용의 행동력 차감을 정수 범위에서 누적
+        } // 개별 카드의 차감 예약 종료
+    } // 다음 아군 턴 행동력 예약 종료
     private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
     { // 턴 손패 처리 시작
+        int actionPointLoss = nextPlayerTurnActionPointLoss; // 현재 턴에 적용할 이전 카드의 차감량
+        nextPlayerTurnActionPointLoss = 0; // 행동력 변경 알림 전에 예약 초기화
+        sharedActionPoints.ReduceTurnCapacity(actionPointLoss); // 기본 회복 뒤 현재와 최대 행동력의 일시 차감
         int specimenActionPoints = openingSpecimenActionPoints; // 실제 아군 턴에 지급할 행동력 확보
         openingSpecimenActionPoints = 0; // 발동 알림 전에 재지급 방지
         sharedActionPoints.AddTurnCapacity(specimenActionPoints); // 끝나는 턴에 회수할 현재 및 상한 행동력 지급
@@ -514,6 +525,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         CurrentPhase = battleResult == BattleResult.Victory ? BattleTurnPhase.Victory : battleResult == BattleResult.Defeat ? BattleTurnPhase.Defeat : BattleTurnPhase.Escaped; // 결과별 종료 단계 설정
         ClearOpeningAllySpeed(); // 첫 적 턴을 마치지 않은 전투의 배지 상태 회수
         ClearOpeningVulnerability(); // 첫 아군 턴 중 승리나 도주 시에도 취약 회수
+        nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
         sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
         StateChanged?.Invoke(); // 전투 종료 알림

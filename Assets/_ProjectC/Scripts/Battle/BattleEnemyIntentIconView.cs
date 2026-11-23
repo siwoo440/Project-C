@@ -219,9 +219,7 @@ public sealed class BattleEnemyIntentIconView :
             iconText.text = string.Empty; // 취소된 공격의 예상 수치 숨김
             return; // 남은 일반 예고 표시 생략
         } // 제한 상태 예고 종료
-        int previewAmount =
-            GetPreviewAmount(
-                currentAction); // 행동 아이콘 표시 수치 계산
+        int previewAmount = currentAction.IsAreaAttack ? 0 : GetPreviewAmount(currentAction); // 일반 행동의 예상 수치 계산
 
         specialMark.gameObject.SetActive(specialPattern && currentAction.ActionType == EnemyActionType.Attack); // 특수 공격의 별도 구분 표시
         if (currentAction.ActionType == EnemyActionType.Attack) // 실제 공격 행동 확인
@@ -230,9 +228,9 @@ public sealed class BattleEnemyIntentIconView :
             bool hasIcon = BattleUiArt.Apply(backgroundImage, imageName); // 투명 공격 유형 아이콘 적용
             backgroundImage.preserveAspect = true; // 사각형 공격 아이콘 비율 유지
             iconText.alignment = hasIcon ? TextAlignmentOptions.BottomRight : TextAlignmentOptions.Center; // 아이콘 위 수치 또는 대체 문구 정렬
-            iconText.fontSize = hasIcon ? 20f : 15f; // 예상 피해 수치 크기 설정
+            iconText.fontSize = currentAction.IsAreaAttack ? 13f : hasIcon ? 20f : 15f; // 광역 범위 표시가 들어갈 예상 수치 크기
             iconText.outlineWidth = 0.25f; // 투명 아이콘 위 예상 피해 가독성 설정
-            iconText.text = hasIcon ? previewAmount.ToString() : $"ATK\n{previewAmount}"; // 실제 예상 피해 또는 이미지 누락 대체 표시
+            iconText.text = currentAction.IsAreaAttack ? $"광역 {GetAreaPreviewAmount(currentAction)}" : hasIcon ? previewAmount.ToString() : $"ATK\n{previewAmount}"; // 광역 의도와 피해 범위 또는 기존 단일 수치 표시
             if (!hasIcon) // 공격 이미지 누락 확인
             { // 공격 이미지 대체 시작
                 backgroundImage.sprite = null; // 기존 행동 이미지 제거
@@ -283,6 +281,22 @@ public sealed class BattleEnemyIntentIconView :
                 $"-\n{previewAmount}"; // 공격이 아닌 기타 행동 표시
         }
     }
+
+    private static string GetAreaPreviewAmount(BattleEnemyAction action) // 광역 공격의 예상 체력 피해 범위 조회
+    { // 광역 예상 범위 계산 시작
+        int minimum = int.MaxValue; // 생존 대상의 최소 피해 초기값
+        int maximum = 0; // 생존 대상의 최대 피해 초기값
+        foreach (var target in action.AreaTargets) // 실제 광역 대상 순회
+        { // 대상별 범위 반영 시작
+            if (target != null && !target.IsDead) // 예상 피해가 있는 생존 대상 확인
+            { // 피해 범위 계산 시작
+                int damage = action.PreviewDamage(target).AppliedDamage; // 대상의 예상 체력 피해 조회
+                minimum = Mathf.Min(minimum, damage); // 가장 낮은 예상 피해 보관
+                maximum = Mathf.Max(maximum, damage); // 가장 높은 예상 피해 보관
+            } // 피해 범위 계산 종료
+        } // 대상별 범위 반영 종료
+        return minimum >= maximum ? maximum.ToString() : $"{minimum}–{maximum}"; // 동일 피해 또는 서로 다른 피해 범위 표시
+    } // 광역 예상 범위 계산 종료
 
     private static int GetPreviewAmount(
         BattleEnemyAction action) // 행동 아이콘 예상 수치 조회

@@ -49,5 +49,9 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     FocusedDefense, // 다음 적 턴 동안 직접 피해 비율 감소
     BleedResistance, // 적의 출혈 부여 시도 방어 확률
     UndyingGuard, // 체력이 한 점 이하가 될 때 한 번 버티는 효과
-    Vulnerable = 49 // 방어도 적용 가능 원본 피해 증가
+    Vulnerable = 49, // 방어도 적용 가능 원본 피해 증가
+    DamageNullification = 50, // 양수 다음 피해 한 번 무효
+    DistributedDefense = 51, // 지정 적 턴의 광역 피해만 경감
+    RetributionBulwark = 52, // 생존 아군을 직접 공격한 적에게 고정 피해
+    FortifyResistance = 53 // 요새화의 독립적인 마법 피해 경감
 } // 열거형 종료
