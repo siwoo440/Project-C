@@ -38,7 +38,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 덱 누락 처리 시작
             throw new ArgumentNullException(nameof(deckData)); // 덱 누락 예외
         } // 덱 누락 처리 종료
-        if (deckEntries == null || deckEntries.Count < 1) // 보유 카드 목록 유효성 확인
+        if (deckEntries == null) // 보유 카드 목록 존재 확인
         { // 잘못된 카드 목록 처리 시작
             throw new ArgumentException("유효하지 않은 보유 카드 목록입니다.", nameof(deckEntries)); // 잘못된 카드 목록 예외
         } // 잘못된 카드 목록 처리 종료
