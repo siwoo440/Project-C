@@ -201,4 +201,12 @@ public enum RelicEffectType // 유물 효과 종류
     RuinedLeatherStrapLowHealthEnemyDamage, // 최대 체력 절반 이하인 적에게 주는 직접 타격 피해 증가
     PilgrimBrokenCompassLowMentalProtection, // 정신력이 낮은 아군이 적에게 받는 정신 피해 감소
     AshstormAshPouchBurnOnDefeat, // 화상 중인 적의 실제 사망에서 다른 생존 적에게 화상 전이
+    SaltLeatherFragmentPeriodicTrade, // 아군의 출혈 지속 피해 감소와 화상 지속 피해 증가
+    BlackDesertTrackerPinOpeningMark, // 전투 시작 현재 체력이 가장 낮은 적에게 표식
+    SandQueenEggshellPeriodicWeakness, // 세 번째 아군 턴 주기의 무작위 적 공격력 감소
+    GlassDesertReflectorBlind, // 아군에게 적용된 적 실명의 무작위 적 발동
+    BlackSunAshBurningEnemyDamageUp, // 활성 화상 적이 받는 실제 전투 피해 증가
+    DryOasisHeartOpeningHealAndMental, // 전투 시작 생존 아군의 회복과 정신력 감소
+    SandstormBottleOpeningEvasionAndAccuracy, // 개막 적 턴 회피 증가와 첫 아군 턴 명중 감소
+    CaravanSecretLedgerVictoryTrade, // 네 가지 승리 자원과 정예전 피해 증가
 }

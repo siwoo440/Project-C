@@ -58,7 +58,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal int EfficientUseApDiscount { get; set; } // 현재 아군 턴의 펜타클 기본 행동력 할인
     internal int RuneRecordingApDiscount { get; set; } // 다음 실제 일반 기본 비용 사용까지 보존되는 이 아군의 한 번 룬 기록
-    internal BattleTurnRuntime AlliedDirectDamageBattle { get; set; } // 예고 및 실제 피해에 연결된 현재 적의 전투 한정 유물 관리자
+    internal BattleTurnRuntime DamageRelicBattle { get; set; } // 예고와 실제 피해에 연결된 양 진영의 현재 전투 유물 관리자
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
     internal int DefeatedBurnAmount { get; private set; } // 정리 전 실제 전투불능 적에게 남은 화상 실효량
     internal bool DefeatedWhileAfraid { get; private set; } // 실제 전투불능 순간에 사라지기 전 활성 공포
@@ -782,6 +782,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return BattleDamageResult.Empty(damageType); // 피해 없음 결과 반환
         } // 사망 유닛 처리 종료
         damageAmount = ApplyHeartShardDamageBonus(damageAmount, sourceUnit); // 출처가 있는 아군 피해의 심장파편 증가를 예고와 실제에 함께 반영
+        damageAmount = ApplyCaravanDamageRelics(damageAmount); // 화상 적과 정예 조우 아군의 비율 조정을 예고와 실제 방어 계산에 공통 반영
         BattleStatusEffectInstance preparation = applyPreparation ? GetApplicablePreparation(damageAmount, damageType, sourceUnit) : null; // 순서상 남은 경우에만 해당 공격의 방어 준비 조회
         int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
@@ -881,7 +882,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 고해실의 못 피해 가산 시작
             damageAmount = ApplyAlliedDirectDamageBonuses(damageAmount, sourceUnit, out confession); // 예고와 같은 방어 이전 고해 표식과 은신 보정
         } // 고해실의 못 피해 가산 종료
-        var sandBattle = AlliedDirectDamageBattle; // 이번 타격이 시작될 때의 실제 전투 관리자
+        var sandBattle = DamageRelicBattle; // 이번 타격이 시작될 때의 실제 전투 관리자
         BattleStatusEffectInstance usedMaintenance = null; // 실제 명중에 적용한 아군의 도구 손질 원본 상태
         bool usedSandBone = false; // 이번 직접 카드 타격이 실제 가산을 받은 상태
         if (!wandEcho && (alliedDirectAttack || BattleCardDamageContext.IsPendingHit(sourceUnit, this))) // 원본 직접 카드와 태양의 별도 타격만 포함하고 반향 제외
@@ -1008,12 +1009,12 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 실제 고통 분산의 개별 조각 적용 시작
             for (int index = 0; index < distribution.Recipients.Count; index++) // 고정 출전 명단의 분담 순서 순회
             { // 분담받는 아군의 개별 무방어 피해 처리 시작
-                distribution.Recipients[index].TakeUnblockedDamage(distribution.GetPortion(index), damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack); // 원래 타격과 연결하되 새 공격과 보호·분담을 발생시키지 않는 피해
+                distribution.Recipients[index].TakeUnblockedDamage(distribution.GetPortion(index), damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 원래 타격과 연결하되 새 공격과 보호·분담을 발생시키지 않는 피해
             } // 분담받는 아군의 개별 무방어 피해 처리 종료
         } // 실제 고통 분산의 개별 조각 적용 종료
         if (sharedDamage > 0 && sharingAlly != null && !sharingAlly.IsDead) // 실제 분담 피해와 생존 상태 확인
         { // 분담 피해 적용 시작
-            sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack); // 동일 직접 공격과 연결된 실제 분담 피해 적용
+            sharingAlly.TakeUnblockedDamage(sharedDamage, damageType, sourceUnit, fromEnemyDirectAttack: damageResult.FromEnemyDirectAttack, sharesResolvedDamage: true); // 동일 직접 공격과 연결된 실제 분담 피해 적용
         } // 분담 피해 적용 종료
         if (!IsDead && damageResult.AppliedDamage > 0 && damageType == BattleDamageType.Physical && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 직접 물리 공격의 실제 생존 피해 확인
         { // 검격 반사 시작
@@ -1041,13 +1042,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         return ApplySurvivalProtection(Math.Min(CurrentHealth, reduced), consume: false); // 실제 불굴과 성배의 생존 경계를 상태 소모 없이 반영
     } // 분담받는 실제 체력 피해 예고 종료
 
-    internal int TakeUnblockedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, bool fromEnemyDirectAttack = false) // 분담과 출혈 및 반사의 방어도 없는 실제 체력 피해
+    internal int TakeUnblockedDamage(int amount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, bool fromEnemyDirectAttack = false, bool sharesResolvedDamage = false) // 출혈과 반사 및 원래 타격에서 이미 계산한 분담의 실제 방어 우회
     { // 분담 피해 처리 시작
         if (amount <= 0 || IsDead) // 실제 피해와 생존 상태 확인
         { // 분담 피해 없음 처리 시작
             return 0; // 적용된 체력 피해 없음
         } // 분담 피해 없음 처리 종료
         amount = ApplyHeartShardDamageBonus(amount, sourceUnit); // 공격자 출처가 명시된 무방어 피해의 심장파편 원본 증가
+        if (!sharesResolvedDamage) // 원래 피해의 비율 증폭을 거친 분담 조각의 제외
+        { // 독립적인 방어 우회 피해 증가 시작
+            amount = ApplyCaravanDamageRelics(amount); // 출혈과 감전 및 실제 반사의 독립 피해 조정
+        } // 독립적인 방어 우회 피해 증가 종료
         int reduced = GetUnblockedDamageAfterReduction(amount); // 성역과 고정 감소가 반영된 실제 무방어 피해
         if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
         { // 무방어 피해 무효 시작
@@ -1093,7 +1098,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 원본 카드의 활성 전투와 양쪽 생존 확인 시작
         usedMaintenance = null; // 유효한 원래 직접 피해에서만 소비할 상태 기본값
         usedSandBone = false; // 아직 소모할 혈흔 대상 가산이 없는 기본값
-        var battle = AlliedDirectDamageBattle; // 실제 공격을 처리하는 현재 전투 연결
+        var battle = DamageRelicBattle; // 실제 공격을 처리하는 현재 전투 연결
         if (battle == null || battle.IsBattleEnded || battle.HasPendingBossPhaseTransition || Team != BattleTeam.Enemy || IsDead || source is not { Team: BattleTeam.Ally, IsDead: false }) // 실제 생존 아군의 진행 중인 생존 적 타격만 인정
         { // 전투 상태 및 진영 조건을 벗어난 가산 제외 시작
             return amount; // 원래 피해 유지
@@ -1108,6 +1113,26 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int strap = (long)CurrentHealth * 2 <= MaxHealth ? BattleSupplyRelics.Find(RelicEffectType.RuinedLeatherStrapLowHealthEnemyDamage)?.EffectValue ?? 0 : 0; // 타격 직전 실제 최대 체력 절반 이하에서만 비율 증가
         return strap > 0 && flatDamage > 0 ? (int)Math.Min(int.MaxValue, (long)flatDamage * (100L + strap) / 100L) : flatDamage; // 원본 양수 비율을 반올림 없이 방어 이전 정수로 내림
     } // 원본 카드의 활성 전투와 양쪽 생존 확인 종료
+
+    private int ApplyCaravanDamageRelics(int amount) // 방어도 전에 공용 적용하는 두 카라반 피해 보정
+    { // 카라반 피해 유물 계산 시작
+        var battle = DamageRelicBattle; // 실제 피해 대상에 연결된 현재 조우
+        if (amount <= 0 || battle == null || battle.IsBattleEnded || battle.HasPendingBossPhaseTransition) // 전투 밖과 이미 종료된 전투 및 양수 아닌 피해 확인
+        { // 실제 진행 중인 피해가 아닌 경우 시작
+            return amount; // 원래 피해 판정 그대로 유지
+        } // 실제 진행 중인 피해가 아닌 경우 종료
+        var relics = battle.DamageRelicInventory; // 전투를 시작할 때 연결한 현재 보유 유물
+        int percent = 0; // 실제 조건을 통과한 피해 증가율
+        if (Team == BattleTeam.Enemy && GetStatusEffect(BattleStatusEffectType.Burn) is { IsExpired: false }) // 지금 화상이 활성화된 적 대상 확인
+        { // 검은 태양의 재 증가율 조회 시작
+            percent = relics?.FindEffect(RelicEffectType.BlackSunAshBurningEnemyDamageUp)?.EffectValue ?? 0; // 기존 원본의 화상 피해 증가율
+        } // 검은 태양의 재 증가율 조회 종료
+        else if (Team == BattleTeam.Ally && battle.BattleType == BattleType.Elite && relics?.FindEffect(RelicEffectType.CaravanSecretLedgerVictoryTrade) != null) // 비밀장부 보유 중인 정확한 정예 조우의 아군 피해 확인
+        { // 비밀장부의 정예 불이익 시작
+            percent = 5; // 승리 보상률과 별개인 정예 피해의 고정 증가율
+        } // 비밀장부의 정예 불이익 종료
+        return (int)Math.Min(int.MaxValue, (long)amount * (100L + percent) / 100L); // 방어도 흡수 이전 정수 범위 내림
+    } // 카라반 피해 유물 계산 종료
 
     private int ApplyHeartShardDamageBonus(int amount, BattleUnitRuntime sourceUnit) // 심장파편을 반영한 실제 아군 출처 피해
     { // 저체력 아군 피해 계산 시작

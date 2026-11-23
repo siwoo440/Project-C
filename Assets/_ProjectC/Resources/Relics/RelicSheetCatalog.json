@@ -2302,7 +2302,7 @@
     {
       "sourceRow": 211,
       "name": "소금가죽 파편",
-      "description": "출혈 피해 -1, 화상 피해 +1",
+      "description": "아군이 받는 출혈의 지속 피해가 1 감소하고 화상의 지속 피해가 1 증가한다.",
       "buyMin": 267,
       "buyMax": 310,
       "buyVariance": 43,
@@ -2313,7 +2313,7 @@
     {
       "sourceRow": 212,
       "name": "흑사막 추적자의 표식핀",
-      "description": "전투 시작 시 체력이 가장 낮은 적에게 표식(3턴)",
+      "description": "전투 시작에 현재 체력이 가장 낮은 생존 적에게 세 적 턴 동안 표식을 부여한다.",
       "buyMin": 284,
       "buyMax": 320,
       "buyVariance": 36,
@@ -2324,7 +2324,7 @@
     {
       "sourceRow": 213,
       "name": "모래여왕의 알껍질",
-      "description": "3턴마다 무작위 적에게 약화(1턴) 30%",
+      "description": "매 세 번째 아군 턴의 시작에 30% 확률로 무작위 생존 적 하나의 공격력을 한 적 턴 동안 2 낮춘다.",
       "buyMin": 301,
       "buyMax": 344,
       "buyVariance": 43,
@@ -2335,7 +2335,7 @@
     {
       "sourceRow": 214,
       "name": "유리사막 반사판",
-      "description": "실명을 받을 때 50% 확률로 적 1명에게 실명(1턴)",
+      "description": "적의 실명이 아군에게 실제로 적용됐을 때 50% 확률로 무작위 생존 적 하나에게 한 적 턴 동안 실명을 부여한다.",
       "buyMin": 318,
       "buyMax": 354,
       "buyVariance": 36,
@@ -2346,7 +2346,7 @@
     {
       "sourceRow": 215,
       "name": "검은 태양의 재",
-      "description": "화상 상태 적이 받는 피해 +8%",
+      "description": "화상 중인 적이 받는 전투 피해가 8% 증가한다.",
       "buyMin": 185,
       "buyMax": 228,
       "buyVariance": 43,
@@ -2357,7 +2357,7 @@
     {
       "sourceRow": 216,
       "name": "마른 오아시스 심장",
-      "description": "전투 시작 시 아군 전체 체력 6 회복, 정신력 -2",
+      "description": "전투 시작에 생존 아군 전원의 체력을 6 회복하고 정신력을 각각 2 낮춘다.",
       "buyMin": 202,
       "buyMax": 238,
       "buyVariance": 36,
@@ -2368,7 +2368,7 @@
     {
       "sourceRow": 217,
       "name": "모래폭풍 병",
-      "description": "전투 시작 시 아군 전체 회피율 +10% (2턴), 명중률 -5% (1턴)",
+      "description": "생존 아군 전원의 회피율을 처음 두 적 턴 동안 10%p 높이고 첫 아군 턴 명중률을 5%p 낮춘다.",
       "buyMin": 219,
       "buyMax": 262,
       "buyVariance": 43,
@@ -2379,7 +2379,7 @@
     {
       "sourceRow": 218,
       "name": "카라반 비밀장부",
-      "description": "전투 보상 재화 +15%, 정예 전투에서 받는 피해 +5%",
+      "description": "승리로 받는 골드·나사·철판·전선이 15% 증가하고 정예 전투에서 아군이 받는 피해가 5% 증가한다.",
       "buyMin": 236,
       "buyMax": 272,
       "buyVariance": 36,

@@ -109,6 +109,15 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
         } // 상태 알림 종료
         return processResults; // 전체 처리 결과 반환
     } // 상태 처리 종료
+    private static int ResolveSaltLeatherPeriodicDamage(int amount, BattleUnitRuntime target, BattleStatusEffectType type, int previousAdjustment) // 같은 양수 출혈과 화상의 서로 다른 유물 조정
+    { // 소금가죽 지속 피해 보정 시작
+        var battle = target.DamageRelicBattle; // 피해 상태의 실제 조우 확인
+        int trade = amount > 0 && target.Team == BattleTeam.Ally && battle is { IsBattleEnded: false, HasPendingBossPhaseTransition: false } // 진행 중인 전투에서 양수 상태가 실제 발생한 아군 확인
+            ? battle.DamageRelicInventory?.FindEffect(RelicEffectType.SaltLeatherFragmentPeriodicTrade)?.EffectValue ?? 0 : 0; // 같은 유물 원본의 하나뿐인 보정량
+        int adjustment = type == BattleStatusEffectType.Burn ? trade : -trade; // 화상은 추가하고 출혈은 감소하는 원본 정의
+        return (int)System.Math.Clamp((long)amount + previousAdjustment + adjustment, 0L, int.MaxValue); // 원래 유물 보정과 합친 영 하한과 정수 상한
+    } // 소금가죽 지속 피해 보정 종료
+
     public IReadOnlyList<BattleStatusEffectProcessResult> ProcessPhaseEnd(BattleUnitRuntime runtimeUnit, int round) // 진영 턴 종료 상태 처리
     { // 턴 종료 상태 처리 시작
         List<BattleStatusEffectProcessResult> results = new List<BattleStatusEffectProcessResult>(); // 처리 결과 목록 생성
@@ -164,12 +173,14 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 출혈 처리 시작
                 int bonus = runtimeUnit.Team == BattleTeam.Enemy && previousValue > 0 ? BattleSupplyRelics.Find(RelicEffectType.EnemyBleedDamageBonus)?.EffectValue ?? 0 : 0; // 적이 실제로 받는 양수 출혈 틱의 유물 가산량
                 bonus += previousValue > 0 && runtimeUnit.HasActiveCardDamageMark ? BattleSupplyRelics.Find(RelicEffectType.PortraitNailMarkedBleedDamage)?.EffectValue ?? 0 : 0; // 공통 표식이 남은 실제 출혈 틱의 추가 피해
-                applied = runtimeUnit.TakeUnblockedDamage((int)System.Math.Min(int.MaxValue, (long)previousValue + bonus), BattleDamageType.None, null); // 원래 출혈 지속과 방어도 우회를 유지한 체력 피해
+                int damage = ResolveSaltLeatherPeriodicDamage(previousValue, runtimeUnit, BattleStatusEffectType.Bleed, bonus); // 기존 출혈 가산량과 받는 아군 피해 감소의 합계
+                applied = runtimeUnit.TakeUnblockedDamage(damage, BattleDamageType.None, null); // 원래 출혈의 방어도 우회 체력 피해
             } // 출혈 처리 종료
             else if (effect.EffectType == BattleStatusEffectType.Burn) // 기존 화상 피해 확인
             { // 화상 피해 처리 시작
                 int reduction = runtimeUnit.Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.ReducePeriodicBurnDamage)?.EffectValue ?? 0 : 0; // 실제 생존 아군 화상의 보유 유물 경감량
-                applied = runtimeUnit.TakeDamage(System.Math.Max(0, previousValue - reduction), BattleDamageType.None).AppliedDamage; // 영 미만을 막은 화상 원본을 기존 방어·무효 경로로 전달
+                int damage = ResolveSaltLeatherPeriodicDamage(previousValue, runtimeUnit, BattleStatusEffectType.Burn, -reduction); // 기존 화상 경감량과 받는 아군 피해 증가의 합계
+                applied = runtimeUnit.TakeDamage(damage, BattleDamageType.None).AppliedDamage; // 화상의 기존 방어도와 피해 무효 경로 유지
             } // 화상 피해 처리 종료
             else if (renew) // 생존 아군 자신의 실제 턴 종료인 경우
             { // 재생 지속 회복 시작

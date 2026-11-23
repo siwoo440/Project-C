@@ -1423,6 +1423,54 @@
       "artworkKey": "45827429c7e05b52abd34b54775cbb4d"
     },
     {
+      "category": 3,
+      "name": "소금가죽 파편",
+      "description": "아군이 받는 출혈의 지속 피해가 1 감소하고 화상의 지속 피해가 1 증가한다.",
+      "artworkKey": "832235ef29b2538db04db85a29ed5ee4"
+    },
+    {
+      "category": 3,
+      "name": "흑사막 추적자의 표식핀",
+      "description": "전투 시작에 현재 체력이 가장 낮은 생존 적에게 세 적 턴 동안 표식을 부여한다.",
+      "artworkKey": "40665d6d944650f7a28f99570599ba2e"
+    },
+    {
+      "category": 3,
+      "name": "모래여왕의 알껍질",
+      "description": "매 세 번째 아군 턴의 시작에 30% 확률로 무작위 생존 적 하나의 공격력을 한 적 턴 동안 2 낮춘다.",
+      "artworkKey": "5d0309ff4ce65ff1b46dbd2b65142e3c"
+    },
+    {
+      "category": 3,
+      "name": "유리사막 반사판",
+      "description": "적의 실명이 아군에게 실제로 적용됐을 때 50% 확률로 무작위 생존 적 하나에게 한 적 턴 동안 실명을 부여한다.",
+      "artworkKey": "8d268c310f685f8892c67e3af405b79b"
+    },
+    {
+      "category": 3,
+      "name": "검은 태양의 재",
+      "description": "화상 중인 적이 받는 전투 피해가 8% 증가한다.",
+      "artworkKey": "9b93e8c29799570c871d2a5743ff6ee0"
+    },
+    {
+      "category": 3,
+      "name": "마른 오아시스 심장",
+      "description": "전투 시작에 생존 아군 전원의 체력을 6 회복하고 정신력을 각각 2 낮춘다.",
+      "artworkKey": "5b992a677013572b97f008da45607e13"
+    },
+    {
+      "category": 3,
+      "name": "모래폭풍 병",
+      "description": "생존 아군 전원의 회피율을 처음 두 적 턴 동안 10%p 높이고 첫 아군 턴 명중률을 5%p 낮춘다.",
+      "artworkKey": "9fb0a23fe8045d5bb121d916d9b242b8"
+    },
+    {
+      "category": 3,
+      "name": "카라반 비밀장부",
+      "description": "승리로 받는 골드·나사·철판·전선이 15% 증가하고 정예 전투에서 아군이 받는 피해가 5% 증가한다.",
+      "artworkKey": "aaff602354405a75867381d1f50be94b"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",
