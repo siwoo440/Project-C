@@ -129,6 +129,14 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE") // 심판의 위기 아군 회복 확인
+        { // 심판 회복 상세 시작
+            return $"체력 {cardInstance.EffectValue} 회복 · 체력 50% 이하에서 {cardInstance.SourceData.SecondaryEffectValue} 추가 회복"; // 회복량과 위험 구간 상세 반환
+        } // 심판 회복 상세 종료
+        if (cardInstance.SourceData.CardId == "CRD_ARC_21_LINK") // 세계의 동료 연계 방어 확인
+        { // 세계 연계 상세 시작
+            return $"방어도 {cardInstance.EffectValue} · 다른 동료 둘의 전용 카드 사용 시 체력 비율이 가장 낮은 다른 아군에게 {cardInstance.SourceData.SecondaryEffectValue} 추가"; // 기본 방어와 연계 조건 상세 반환
+        } // 세계 연계 상세 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 달의 드로우 후 손패 정리 확인
         { // 손패 정리 상세 시작
             return $"최대 {cardInstance.EffectValue}장 드로우 후 손패 하나 선택해 버리기"; // 달 카드의 드로우와 선택 상세 반환

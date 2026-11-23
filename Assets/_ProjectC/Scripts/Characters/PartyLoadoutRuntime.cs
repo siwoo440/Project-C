@@ -81,6 +81,10 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/MoonHandChoice"; // 달의 드로우와 손패 정리 카드 경로 반환
             case "ARC_19": // 태양 캐릭터
                 return "StarterCards/SunChain"; // 태양의 서로 다른 적 연속 공격 카드 경로 반환
+            case "ARC_20": // 심판 캐릭터
+                return "StarterCards/JudgementRescue"; // 심판의 위험 아군 즉시 회복 카드 경로 반환
+            case "ARC_21": // 세계 캐릭터
+                return "StarterCards/WorldLink"; // 세계의 동료 전용 카드 연계 방어 경로 반환
             default: // 전용 카드 미구현 캐릭터
                 return null; // 공용 카드 사용 반환
         } // 식별자 분기 종료

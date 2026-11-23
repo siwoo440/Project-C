@@ -13,6 +13,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly LoversPartnerRuntime loversPartner; // 연인 파트너와 행동 기록
     private readonly ChariotConcentrationRuntime chariotConcentration; // 전차 집중 공격과 표식 기록
     private readonly StarRecoveryPassiveRuntime starRecoveryPassive; // 별의 턴당 추가 예약 회복
+    private readonly WorldCoordinationRuntime worldCoordination; // 세계의 동료 전용 카드 연계 기록
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
@@ -43,6 +44,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         loversPartner = new LoversPartnerRuntime(turnRuntime, enemyActions.AllyUnits); // 연인 파트너 관리자 생성
         chariotConcentration = new ChariotConcentrationRuntime(turnRuntime, enemyActions.EnemyUnits); // 전차 집중 공격 관리자 생성
         starRecoveryPassive = new StarRecoveryPassiveRuntime(turnRuntime); // 별 추가 예약 회복 관리자 생성
+        worldCoordination = new WorldCoordinationRuntime(turnRuntime, enemyActions.AllyUnits); // 세계의 동료 전용 카드 연계 관리자 생성
         loversPartner.Changed += RefreshPartnerMarkers; // 파트너 표시 갱신 연결
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
@@ -214,6 +216,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 카드 충돌 처리 시작
         CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         loversPartner.RecordCardUsed(cardInstance); // 파트너의 이번 턴 카드 사용 기록
+        worldCoordination.RecordCardUsed(cardInstance); // 세계 연계용 동료 전용 카드 사용 기록
         if (cardInstance.SourceData.CardId == "CRD_ARC_16_SHATTER") // 탑의 광역 방어도 파괴 카드 확인
         { // 전체 적 방어도 제거 시작
             foreach (BattleUnitRuntime targetUnit in targetUnits) // 실제 공격 대상 순회
@@ -591,7 +594,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 파트너 지정 처리 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 획득 시작
-            return targetUnit.GainBlock(cardInstance.EffectValue); // 대상의 실제 방어도 획득량 반환
+            int gainedBlock = targetUnit.GainBlock(cardInstance.EffectValue); // 선택 대상의 실제 방어도 획득
+            if (cardInstance.SourceData.CardId == "CRD_ARC_21_LINK") // 세계 전용 연계 카드 확인
+            { // 추가 아군 방어 시작
+                BattleUnitRuntime additional = worldCoordination.FindAdditionalTarget(cardInstance.OwnerUnit, targetUnit); // 체력 비율이 가장 낮은 다른 생존 아군 조회
+                if (additional != null) // 유효한 추가 아군 확인
+                { // 추가 아군 방어 적용 시작
+                    gainedBlock += additional.GainBlock(cardInstance.SourceData.SecondaryEffectValue); // 다른 아군의 실제 방어도 획득량 합산
+                } // 추가 아군 방어 적용 종료
+            } // 추가 아군 방어 종료
+            return gainedBlock; // 전체 실제 방어도 획득량 반환
         } // 방어도 획득 종료
         if (cardInstance.EffectType == CardEffectType.RecoverDiscard) // 버린 카드 회수 효과 확인
         { // 마법사 전용 효과 시작
@@ -627,7 +639,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 황제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
-            int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(cardInstance.EffectValue); // 정신 상태 포함 회복량 계산
+            int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
+            int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(baseHealing); // 정신 상태 포함 회복량 계산
             return targetUnit.RestoreHealth(modifiedHealing, cardInstance.OwnerUnit); // 실제 회복량 반환
         } // 회복 효과 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
@@ -834,6 +847,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         loversPartner.Dispose(); // 파트너 관리자 연결 해제
         chariotConcentration.Dispose(); // 전차 표식 관리자 연결 해제
         starRecoveryPassive.Dispose(); // 별 추가 예약 회복 관리자 정리
+        worldCoordination.Dispose(); // 세계 연계 관리자 정리
         CloseCardChoice(); // 대기 선택 화면 정리
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작
