@@ -25,6 +25,11 @@ public sealed class ShopOfferData // 상점 단일 상품 데이터
     public RelicData Relic => relic; // 유물 원본 조회
     public PotionData Potion => potion; // 포션 원본 조회
 
+    internal bool CanOfferToDeck(RunDeckManager deck) // 현재 덱의 고정 소유자 확인
+    { // 지급 대상 확인 시작
+        return offerType != ShopOfferType.Card || chooseCardOwner || (deck != null && deck.ContainsOwner(cardOwner)); // 공용 상품 또는 출전 소유자 상품 허용
+    } // 지급 대상 확인 종료
+
     public Sprite Icon // 상품 이미지 조회
     { // 상품 이미지 조회 시작
         get // 상품 이미지 반환 시작

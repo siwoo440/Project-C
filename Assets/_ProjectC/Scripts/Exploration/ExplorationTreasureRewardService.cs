@@ -174,6 +174,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
     private static bool TryGrantRelic(System.Random random, out string message) // 상점 카탈로그 유물 기반 보상 지급
     {
         List<ShopOfferData> offers = GetValidOffers(ShopOfferType.Relic); // 유물 상품 후보 조회
+        RelicRunManager relics = RelicRunManager.EnsureInstance(); // 현재 유물 보관함 조회
 
         while (offers.Count > 0) // 획득 가능한 유물 탐색
         {
@@ -181,12 +182,12 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
             ShopOfferData offer = offers[index]; // 현재 유물 상품 조회
             offers.RemoveAt(index); // 동일 유물 재시도 방지
 
-            if (offer.Relic == null) // 유물 데이터 확인
-            {
-                continue; // 잘못된 유물 제외
-            }
+            if (offer.Relic == null || relics.Inventory.ContainsRelic(offer.Relic.RelicId)) // 빈 유물 또는 이미 보유한 유물 확인
+            { // 지급 불가 후보 처리 시작
+                continue; // 골드 지급 없이 다음 후보 검색
+            } // 지급 불가 후보 처리 종료
 
-            RelicAcquireResult result = RelicRunManager.EnsureInstance().TryAcquire(offer.Relic); // 회차 유물 획득 시도
+            RelicAcquireResult result = relics.TryAcquire(offer.Relic); // 신규 유물 획득 시도
             if (result == RelicAcquireResult.Acquired) // 신규 유물 획득 확인
             {
                 message = $"보물 획득: 유물 [{offer.DisplayName}]"; // 유물 결과 안내
@@ -291,12 +292,10 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
 
         foreach (ShopOfferData offer in catalog.Offers) // 전체 상점 상품 순회
         {
-            if (offer != null &&
-                offer.OfferType == offerType &&
-                offer.IsValidData()) // 요청 종류와 데이터 유효성 확인
-            {
+            if (offer != null && offer.OfferType == offerType && offer.IsValidData() && offer.CanOfferToDeck(RunDeckManager.Instance)) // 종류와 현재 덱의 지급 가능 여부 확인
+            { // 지급 가능 후보 처리 시작
                 result.Add(offer); // 보상 후보 등록
-            }
+            } // 지급 가능 후보 처리 종료
         }
 
         return result; // 유효 보상 후보 반환
