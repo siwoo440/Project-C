@@ -66,11 +66,27 @@ public sealed class BattleCardPilesViewTests // 뽑기와 버리기 더미 화�
         yield return new WaitForSecondsRealtime(0.1f); // 실제 좁은 화면 배치 갱신 대기
         AssertPileLayout(handRect, draw, discard, orb, layout); // 좁은 화면의 더미와 손패 구분 확인
         Color emptyDiscard = discard.GetComponent<Image>().color; // 빈 버리기 더미 표시 색상 저장
+        CardInstance keptCard = deck.Hand[1]; // 제거 뒤에도 실제 손패에 남을 복제 카드
+        BattleCardView keptView = layout.GetChild(1).GetComponent<BattleCardView>(); // 현재 카드에 연결된 화면 참조
+        Transform hitRoot = hand.transform.Find("HandHitRoot"); // 대응 카드의 실제 입력 영역
+        BattleCardHitRegion keptHit = hitRoot.GetChild(1).GetComponent<BattleCardHitRegion>(); // 현재 카드에 연결된 입력 참조
+        keptHit.OnPointerEnter(null); // 실제 버튼 위치를 가리킨 상태에서 손패 갱신 재현
+        Assert.Less(Mathf.Abs(Mathf.DeltaAngle(0f, keptView.transform.localEulerAngles.z)), 0.01f); // 진입 직후 카드 강조 확인
+        deck.ShuffleDrawPile(); // 포인터 대상과 슬롯이 그대로인 실제 덱 변경
+        Assert.Less(Mathf.Abs(Mathf.DeltaAngle(0f, keptView.transform.localEulerAngles.z)), 0.01f); // 자리 이동이 없는 갱신의 강조 유지 확인
         Assert.IsTrue(deck.DiscardCard(deck.Hand[0])); // 실제 손패 카드 버리기 확인
         Assert.Greater(discard.GetComponent<Image>().color.a, emptyDiscard.a); // 버린 카드 존재 시 더미 표시 강조 확인
         Assert.AreEqual("1", discardCount.text); // 실제 버린 카드 수 갱신 확인
         Assert.AreEqual(1, deck.DrawCards(1)); // 실제 카드 한 장 추가 뽑기
         Assert.AreEqual("3", drawCount.text); // 실제 뽑기 더미 수 갱신 확인
+        yield return null; // 제거 카드의 장면 정리 대기
+        Assert.AreSame(keptCard, deck.Hand[0]); // 삭제 뒤 남은 카드의 원본 손패 순서 확인
+        Assert.Less(Mathf.Abs(Mathf.DeltaAngle(0f, keptView.transform.localEulerAngles.z)), 0.01f); // 포인터를 다시 움직이기 전에도 기존 카드 강조 유지 확인
+        keptHit.OnPointerExit(null); // 실제 입력 영역에서 포인터 이탈
+        Assert.AreSame(keptView, layout.GetChild(0).GetComponent<BattleCardView>()); // 남은 카드 그림과 상태 재사용 확인
+        Assert.AreSame(keptHit, hitRoot.GetChild(0).GetComponent<BattleCardHitRegion>()); // 남은 카드의 실제 입력 영역 재사용 확인
+        Assert.AreSame(keptView, keptHit.CardView); // 옮겨진 슬롯의 클릭 대상 일치 확인
+        Assert.AreEqual(deck.HandCount, layout.GetComponentsInChildren<BattleCardView>(false).Length); // 프레임 끝 제거 전에도 실제 손패만 표시되는지 확인
         hand.Unbind(); // 실제 손패와 덱 연결 해제
         level.Dispose(); // 레벨 표시 이벤트 연결 해제
         turns.Dispose(); // 실제 전투 턴 관리자 정리

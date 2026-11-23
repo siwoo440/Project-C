@@ -819,6 +819,11 @@ public sealed class BattleCardDragHandler :
     }
 
     private void OnDisable() // 드래그 처리기 비활성화 정리
+    { // 화면 비활성 상태 정리 시작
+        ResetDrag(); // 기존 드래그와 대상 강조 해제
+    } // 화면 비활성 상태 정리 종료
+
+    internal void ResetDrag() // 화면 제거 또는 손패 갱신으로 무효가 된 드래그 정리
     {
         if (cardView != null) // 연결 카드 존재 확인
         { // 드래그 간격 정리 시작

@@ -74,7 +74,7 @@ public sealed class ExplorationEncounterPursuit : MonoBehaviour // 발견한 플
         bool seesPlayer = (target - body.position).sqrMagnitude <= DetectionRadius * DetectionRadius && // 시야 반경에서 먼저 멀리 있는 플레이어 제외
             tilemap.TryGetWalkableCell(target, out Vector3Int targetCell) && // 실제 걷는 바닥에 있는 플레이어만 발견
             Mathf.Abs(targetCell.x - spawnCell.x) <= leash && Mathf.Abs(targetCell.y - spawnCell.y) <= leash && // 최초 배치 주변의 추격 허용 거리
-            ExplorationPursuitGrid.HasLineOfSight(from, targetCell, isFloor); // 사이에 벽이나 막힌 모서리가 있는지 직접 검증
+            path.CheckLineOfSight(from, targetCell, tilemap.WalkableRevision, isFloor); // 같은 타일과 벽 구성의 시야 확인 결과 재사용
         if (seesPlayer) // 실제로 시야에 들어온 플레이어 확인
         { // 마지막으로 확인한 플레이어 위치 갱신 시작
             lastSeenPosition = target; // 가려지는 순간 이후 쫓을 위치 보관

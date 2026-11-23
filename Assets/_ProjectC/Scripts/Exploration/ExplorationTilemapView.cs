@@ -64,10 +64,12 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
 
     public int FloorTileCount => floorCells.Count; // 현재 Floor 타일 개수
     public int WallTileCount => wallCells.Count; // 현재 Wall 타일 개수
+    internal int WalkableRevision { get; private set; } // 현재 바닥 전체가 다시 만들어진 횟수
 
     public void Build(ExplorationMapData mapData, ExpeditionZoneId? zone = null) // 실제 충돌과 선택한 지역 원화를 가진 타일맵 생성
     { // 지정 맵과 지역 타일 재구성 시작
         EnsureTilemapHierarchy(); // Grid와 Tilemap 계층 준비
+        WalkableRevision++; // 새 바닥에 이전 탐사 적 시야가 쓰이지 않도록 버전 변경
 
         floorTilemap.ClearAllTiles(); // 이전 Floor 제거
         wallTilemap.ClearAllTiles(); // 이전 Wall 제거

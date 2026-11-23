@@ -18,6 +18,19 @@ internal sealed class ExplorationPursuitGrid // 탐사 적의 격자 시야와 �
 
     private readonly Queue<Vector3Int> pending = new Queue<Vector3Int>(); // 재사용할 방문 대기열
     private readonly Dictionary<Vector3Int, Vector3Int> firstSteps = new Dictionary<Vector3Int, Vector3Int>(); // 방문 셀마다 출발점에서의 첫 이동 기록
+    private (Vector3Int Start, Vector3Int End, int Revision, Func<Vector3Int, bool> Floor)? lastSightQuery; // 같은 바닥에서 마지막으로 확인한 두 시야 셀
+    private bool lastSight; // 현재 두 셀의 최근 시야 결과
+
+    internal bool CheckLineOfSight(Vector3Int start, Vector3Int end, int revision, Func<Vector3Int, bool> isFloor) // 같은 셀의 반복 직선 시야 조회
+    { // 시야 재사용 시작
+        var query = (start, end, revision, isFloor); // 실제 위치와 맵 변경을 구분할 조회값
+        if (lastSightQuery != query) // 플레이어와 적의 셀 또는 현재 층 변경 확인
+        { // 새 시야 검사 시작
+            lastSight = HasLineOfSight(start, end, isFloor); // 다음 셀까지 실제 벽과 모서리 검사
+            lastSightQuery = query; // 동일한 위치의 다음 물리 틱에 결과 재사용
+        } // 새 시야 검사 종료
+        return lastSight; // 현재 위치 두 곳의 실제 시야 결과
+    } // 시야 재사용 종료
 
     internal static bool HasLineOfSight(Vector3Int start, Vector3Int end, Func<Vector3Int, bool> isFloor) // 두 바닥 셀 사이의 직선 시야 확인
     { // 직선 시야 검사 시작

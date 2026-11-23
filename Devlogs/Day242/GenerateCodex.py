@@ -10,6 +10,15 @@ SCRIPT_GUID = "1b21245badb9576384f781243d5042df"  # 단일 원화 스크립터�
 REFERENCE = r"\{fileID: (-?\d+), guid: ([a-f0-9]+), type: \d+\}"  # 유니티 파일 식별자와 참조 키
 QUOTED = r'"(?:[^"\\]|\\.)*"'  # 줄바꿈 이스케이프를 허용한 문자열
 RESOURCE_RELATIVE = Path("Assets/_ProjectC/Resources/Codex")  # 도감 전용 리소스 위치
+EXCLUDED_CODEX_CARDS = {  # 도감에서 제외할 시험 카드 식별자
+    "CRD_TEST_ALLY_HEAL",  # 아군 회복 시험 카드
+    "CRD_TEST_ATTACK",  # 공격 시험 카드
+    "CRD_TEST_MAGIC_ATTACK",  # 마법 공격 시험 카드
+    "CRD_TEST_SELF_HEAL",  # 자기 회복 시험 카드
+    "CRD_DEBUG_ALLY_MENTAL_BREAK",  # 아군 정신 붕괴 시험 카드
+    "CRD_DEBUG_ALLY_INSTANT_KILL",  # 아군 즉사 시험 카드
+    "CRD_DEBUG_INSTANT_KILL",  # 즉사 시험 카드
+}  # 도감 제외 카드 목록 끝
 
 
 def read(path):  # UTF8 에셋과 C# 텍스트 읽기
@@ -44,6 +53,25 @@ def scalar(value):  # 현재 카탈로그 문자열의 YAML 접기와 이스케�
     return value  # 따옴표 없는 원본 이름 또는 문구 반환
 
 
+def enum_values(path, enum_name):  # C# 열거형과 직렬화 번호의 대응표 생성
+    code = re.sub(r"//[^\n]*", "", read(path))  # 열거형 이름과 수치만 남기는 줄 주석 제거
+    body = re.search(r"\benum\s+" + enum_name + r"\b[^{]*\{([^}]+)\}", code)[1]  # 지정 열거형의 멤버 범위
+    values = {}  # 열거형 멤버와 정수의 대응표
+    number = -1  # 첫 멤버의 기본 번호 준비
+    for member in body.split(","):  # 실제 열거형 선언의 멤버 순회
+        if not member.strip():  # 마지막 쉼표 뒤의 빈 멤버 확인
+            continue  # 빈 멤버 건너뛰기
+        name, explicit, value = member.partition("=")  # 이름과 명시 번호 분리
+        number = int(value, 0) if explicit else number + 1  # 명시 번호 또는 직전 멤버 다음 번호
+        values[name.strip()] = number  # 직렬화에 사용하는 멤버 번호 등록
+    return values  # 선언 순서를 지킨 이름과 번호 대응표
+
+
+def sprite_reference(path):  # 단일 스프라이트를 가리키는 유니티 참조 생성
+    asset_guid = re.search(r"^guid:\s+([a-f0-9]{32})", read(Path(str(path) + ".meta")), re.M)[1]  # 원본 스프라이트 메타의 식별자
+    return "21300000", asset_guid  # 단일 스프라이트 파일 번호와 원본 식별자
+
+
 def source_index(project):  # 에셋 GUID의 실제 파일 경로 조회
     index = {}  # 프로젝트 원본들의 경로 보관
     for meta in (project / "Assets").rglob("*.meta"):  # 씬에서 참조할 원본 메타 순회
@@ -56,21 +84,27 @@ def source_index(project):  # 에셋 GUID의 실제 파일 경로 조회
 def collect_rows(project, sources):  # 게임과 같은 자료에서 도감 항목 수집
     project_assets = project / "Assets/_ProjectC"  # 게임이 관리하는 실제 자료 루트
     resources = project_assets / "Resources"  # 이벤트 그림과 카탈로그 위치
+    fallback_art = project_assets / "Art/Codex"  # 도감 전용 원화의 카테고리별 위치
     catalog = fields(read(resources / "Save/SaveAssetCatalog.asset"))  # 저장 가능한 카드와 아이템 원본 목록
     original_art = {}  # 중복 사용 원본의 식별자와 실제 경로
     rows = []  # 분류별로 원본 순서를 유지한 도감 목록
 
-    def add(category, name, desc, reference=None):  # 문자열과 원화 주소 한 줄 추가
+    def add(category, name, desc, reference=None, fallback=None):  # 문자열과 원화 주소 한 줄 추가
+        if fallback is not None and fallback.is_file():  # 실제 도감 대체 원화 확인
+            if not reference or reference[1] not in sources or not sources[reference[1]].is_file():  # 기존 원본이 연결되지 않았거나 빠진 경우 확인
+                reference = sprite_reference(fallback)  # 도감 전용 스프라이트 참조 연결
         artwork_key = ""  # 원화가 없는 항목의 빈 키
         if reference:  # 에셋에서 연결한 원화 존재 확인
             file_id, asset_guid = reference  # 단일 스프라이트를 가리키는 참조 분리
             artwork_key = asset_guid if file_id == "21300000" else f"{asset_guid}_{file_id}"  # 같은 이미지 안의 개별 스프라이트 구분
             original_art[artwork_key] = (sources[asset_guid], asset_guid, file_id)  # 별도 원화 래퍼 생성에 필요한 원본 정보
-        rows.append({"category": category, "name": name, "description": desc, "artworkKey": artwork_key})  # 이미지 객체 없는 도감 행 저장
+        row = {"category": category, "name": name, "description": desc, "artworkKey": artwork_key}  # 이미지 객체 없는 도감 행
+        rows.append(row)  # 도감 원본 순서대로 행 저장
+        return row  # 카드의 분류와 비용을 추가할 수 있는 행 반환
 
-    def add_asset(category, data, reference_field):  # 일반 스크립터블 오브젝트 이름과 그림 변환
+    def add_asset(category, data, reference_field, fallback=None):  # 일반 스크립터블 오브젝트 이름과 그림 변환
         reference = re.fullmatch(REFERENCE, data.get(reference_field, "").strip())  # 실제 스프라이트 연결 확인
-        add(category, scalar(data["displayName"]), scalar(data.get("description", "")), reference.groups() if reference else None)  # 도감용 이름과 설명 추출
+        return add(category, scalar(data["displayName"]), scalar(data.get("description", "")), reference.groups() if reference else None, fallback)  # 도감용 이름과 설명 및 원화 추출
 
     exploration = project_assets / "Scripts/Exploration"  # 런타임 생성 이벤트 원본 위치
     event_catalog = read(exploration / "ExplorationEventCatalog.cs")  # 현재 버전까지 포함하는 실제 탐사 목록
@@ -93,10 +127,9 @@ def collect_rows(project, sources):  # 게임과 같은 자료에서 도감 항�
         ident = re.search(r"\bId\s*=\s*(" + QUOTED + r")", code)[1]  # 런타임에서 사용하는 사건 ID
         body = re.search(r"\.Initialize\(Id,\s*(" + QUOTED + r"),\s*(" + QUOTED + r").*?Resources\.Load<Sprite>\((" + QUOTED + r")\)", code, re.S)  # 포맷된 사건 본문과 일러스트 위치
         art_path = resources / (json.loads(body[3]) + ".png")  # 리소스 주소의 실제 원화 파일
-        art_guid = re.search(r"^guid:\s+([a-f0-9]{32})", read(Path(str(art_path) + ".meta")), re.M)[1]  # 이벤트 원화의 유니티 참조 키
-        events[json.loads(ident)] = (json.loads(body[1]), json.loads(body[2]), ("21300000", art_guid))  # 코드형 사건의 실제 내용 보관
-    for name, desc, source in (events[key] for key in sorted(events)):  # 실제 탐사 ID 순서의 사건 자료
-        add(0, name, desc, source)  # 상호작용 도감 행 생성
+        events[json.loads(ident)] = (json.loads(body[1]), json.loads(body[2]), sprite_reference(art_path))  # 코드형 사건의 실제 내용 보관
+    for ident, (name, desc, source) in sorted(events.items()):  # 실제 탐사 ID 순서의 사건 자료
+        add(0, name, desc, source, fallback_art / "Events" / f"{ident}.png")  # 상호작용 도감과 식별자별 원화 연결
 
     for _, key in re.findall(REFERENCE, catalog["consumables"]):  # 저장 카탈로그의 소모품 목록 순회
         data = fields(read(sources[key]))  # 저장 가능한 소모품 실제 원본
@@ -109,11 +142,37 @@ def collect_rows(project, sources):  # 게임과 같은 자료에서 도감 항�
             ident = scalar(data["enemyId"])  # 중복 판정에 사용할 적 식별자
             if ident not in seen:  # 같은 적 중복 제거
                 seen.add(ident)  # 현재 적의 등록 기록
-                add_asset(2, data, "portrait")  # 적 도감의 이름과 초상화 원본
+                add_asset(2, data, "portrait", fallback_art / "Enemies" / f"{ident}.png")  # 적 이름과 초상화 원본 또는 도감 원화 연결
     for _, key in re.findall(REFERENCE, catalog["relics"]):  # 저장 가능한 유물의 원본 순서 유지
-        add_asset(3, fields(read(sources[key])), "icon")  # 유물 도감 행 생성
+        data = fields(read(sources[key]))  # 실제 유물 원본 조회
+        ident = scalar(data["relicId"])  # 도감 원화와 연결할 유물 식별자
+        add_asset(3, data, "icon", fallback_art / "Relics" / f"{ident}.png")  # 유물 도감과 식별자별 원화 연결
+    battle = project_assets / "Scripts/Battle"  # 직렬화된 카드 규칙 선언 위치
+    sword_rules = enum_values(battle / "SwordCardCombat.cs", "SwordCardRule")  # 검의 전액 비용 규칙 번호
+    cup_rules = enum_values(battle / "CupCardRule.cs", "CupCardRule")  # 성배의 전액 비용 규칙 번호
+    wand_rules = enum_values(battle / "WandCardRule.cs", "WandCardRule")  # 지팡이의 전액 비용 규칙 번호
+    pentacle_rules = enum_values(battle / "PentacleCardRule.cs", "PentacleCardRule")  # 펜타클의 전액 비용 규칙 번호
+    spend_all_rules = {  # CardData.SpendsAllActionPoints의 종류별 규칙
+        "swordRule": {sword_rules["Finisher"]},  # 검 처형의 전액 지불 규칙
+        "cupRule": {cup_rules["GrailMiracle"]},  # 성배 기적의 전액 지불 규칙
+        "wandRule": {wand_rules["ManaRelease"], wand_rules["ArcaneLiberationRite"]},  # 지팡이의 가변 비용 규칙
+        "pentacleRule": {pentacle_rules["WheelOfFate"], pentacle_rules["CalculatedInvestment"], pentacle_rules["InfiniteContract"]},  # 펜타클의 가변 비용 규칙
+    }  # 종류별 전액 비용 규칙 끝
     for _, key in re.findall(REFERENCE, catalog["cards"]):  # 실제 보상과 저장 복원 카드 원본 순회
-        add_asset(7, fields(read(sources[key])), "artwork")  # 카드 도감 행 생성
+        data = fields(read(sources[key]))  # 카드 원본과 직렬화된 규칙
+        ident = scalar(data["cardId"])  # 도감 포함 여부와 원화 연결에 사용할 카드 식별자
+        if ident in EXCLUDED_CODEX_CARDS:  # 도감 전용 시험 카드 제외 확인
+            continue  # 저장 카탈로그를 유지한 도감 제외
+        row = add_asset(7, data, "artwork", fallback_art / "Cards" / f"{ident}.png")  # 카드 도감의 이름과 원화 연결
+        row["cardType"] = int(data.get("cardType", "0"))  # 원본 카드 종류의 직렬화 번호
+        base_cost = int(data.get("apCost", "1"))  # 카드 원본 또는 초기값의 기본 행동력 비용
+        if int(data.get("pentacleRule", "0")) == pentacle_rules["CalculatedInvestment"]:  # 고정 하한이 있는 계산된 투자의 전액 비용
+            row["costLabel"] = f"{base_cost}+"  # 전투 카드와 같은 하한 표기
+        elif any(int(data.get(field, "0")) in rules for field, rules in spend_all_rules.items()):  # 종류별 전액 사용 규칙 확인
+            row["costLabel"] = "X"  # 남은 행동력 전액의 가변 표기
+        else:  # 전투 중 할인 전의 고정 결제액 처리
+            extra_cost = max(0, int(data.get("additionalActionPointCost", "0")))  # 카드 사용 시 반드시 지불하는 별도 행동력
+            row["costLabel"] = str(min(2_147_483_647, max(0, base_cost) + extra_cost))  # 전투 손패와 같은 고정 행동력 합계
     return rows, original_art  # 도감 문자와 원화의 분리된 출력 자료
 
 
@@ -147,25 +206,37 @@ def save_original_reference(output, key, asset_guid, file_id):  # 기존 게임 
     write(output / Path(str(target) + ".meta"), f"fileFormatVersion: 2\nguid: {guid(target)}\nNativeFormatImporter:\n  mainObjectFileID: 11400000\n")  # 원화 참조 에셋 고정 메타
 
 
-def save_status_thumbnails(project, output):  # 원화 접근 전 사용할 상태 아이콘 썸네일 생성
+def save_status_thumbnails(project, output):  # 상태별 썸네일과 도감 전용 원화 참조 생성
     scripts = project / "Assets/_ProjectC/Scripts"  # 상태 정의와 이미지 매핑의 실제 루트
     icon_dir = project / "Assets/_ProjectC/Resources/UI/Battle"  # 개별 및 공용 상태 원화 실제 위치
+    override_dir = project / "Assets/_ProjectC/Art/Codex/Status"  # 도감 상태 전용 원화 위치
     art = read(scripts / "Battle/BattleStatusIconArt.cs")  # 실제 상태 아이콘 선택 규칙 조회
-    enum = read(scripts / "Data/BattleStatusEffectType.cs")  # 현재 배정된 효과 종류 조회
-    kinds = re.findall(r"^\s{4}(\w+)(?:\s*=\s*\d+)?,?\s*//", enum, re.M)  # 실제 상태 열거형 멤버 이름
-    individual = set(re.findall(r"type == BattleStatusEffectType\.(\w+)", art))  # 개별 원화가 지정된 상태
+    kinds = enum_values(scripts / "Data/BattleStatusEffectType.cs", "BattleStatusEffectType")  # 실제 상태 열거형 멤버 이름
+    aliases = dict(re.findall(r"if \(type == BattleStatusEffectType\.(\w+)\)[^\n]*\n[^\n]*\n\s*return (?:Get|GetIndividualIcon)\(BattleStatusEffectType\.(\w+)\);", art))  # 다른 기존 상태의 원화를 쓰는 실제 연결 대상
     indices = dict(re.findall(r"case BattleStatusEffectType\.(\w+): return (\d+);", art))  # 기본 공용 타일 이미지의 순번
     default = int(re.search(r"default: return (\d+);", art)[1])  # 대응 상태가 없는 경우의 기본 타일
     with Image.open(icon_dir / "StatusIcons.png") as sheet:  # 기존 전투 상태 스프라이트 시트 읽기
         tile = sheet.width // 4  # 게임과 같은 네 열의 타일 크기
         for kind in kinds:  # 실제 등록 상태 이미지 순회
-            if kind in individual:  # 독립 그림을 표시하는 상태 확인
-                with Image.open(icon_dir / f"{kind}StatusIcon.png") as icon:  # 실제 전투에서 쓰는 원본 한 장 읽기
-                    save_thumbnail(output, "status_" + kind, icon)  # 독립적인 저해상도 이미지 생성
+            if kind == "None":  # 빈 상태 확인
+                continue  # 도감에 표시되지 않는 빈 상태 제외
+            key = "status_" + kind  # 목록과 상세가 공유하는 상태 이미지 키
+            override = override_dir / f"{kind}.png"  # 도감에서 우선할 전용 상태 원화
+            if override.is_file():  # 도감 전용 상태 원화가 있는 경우
+                with Image.open(override) as icon:  # 도감의 상태 원본 읽기
+                    save_thumbnail(output, key, icon)  # 같은 원본의 상태 썸네일 생성
+                file_id, asset_guid = sprite_reference(override)  # 도감 원본의 유니티 스프라이트 참조
+                save_original_reference(output, key, asset_guid, file_id)  # 상세 화면의 도감 원화 참조 생성
+                continue  # 기존 전투 상태 원화의 조회 생략
+            art_kind = aliases.get(kind, kind)  # 연결 상태와 일반 상태의 실제 원화 이름
+            battle_icon = icon_dir / f"{art_kind}StatusIcon.png"  # 같은 이름의 전투 상태 원화 위치
+            if battle_icon.is_file():  # 실제 전투 상태 파일 존재 확인
+                with Image.open(battle_icon) as icon:  # 실제 전투에서 쓰는 원본 한 장 읽기
+                    save_thumbnail(output, key, icon)  # 상세에 쓰는 전투 원본과 같은 썸네일 생성
             else:  # 기존 공용 시트에서 상태를 읽는 경우
-                index = int(indices.get(kind, default))  # 상태별 공용 타일 위치
+                index = int(indices.get(art_kind, default))  # 연결 상태나 직접 지정한 상태의 공용 타일 위치
                 x, y = (index % 4) * tile, (index // 4) * tile  # 공용 타일의 원본 픽셀 좌표
-                save_thumbnail(output, "status_" + kind, sheet.crop((x, y, x + tile, y + tile)))  # 전체 시트 없이 표시할 개별 썸네일
+                save_thumbnail(output, key, sheet.crop((x, y, x + tile, y + tile)))  # 전체 시트 없이 표시할 개별 썸네일
 
 
 def generate(project, output):  # 프로젝트 원본을 도감 텍스트와 이미지로 분리 생성

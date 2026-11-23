@@ -1,7 +1,19 @@
 fileFormatVersion: 2
 guid: f6993ecb739e59028ba6e953f24f3a1c
 TextureImporter:
-  internalIDToNameTable: []
+  internalIDToNameTable:
+  - first:
+      213: 4837659014717790737
+    second: WallVariants_0
+  - first:
+      213: 2610231354424254237
+    second: WallVariants_1
+  - first:
+      213: -9015692775387407899
+    second: WallVariants_2
+  - first:
+      213: 7177364687307235131
+    second: WallVariants_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -43,18 +55,18 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 0
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 192
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
   spriteTessellationDetail: -1
-  textureType: 0
+  textureType: 8
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -95,7 +107,111 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: WallVariants_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4322d13e2cb85a11809ca1c5d16a7021
+      internalID: 4837659014717790737
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_1
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24396796560b5f1da4229510b45a2e9a
+      internalID: 2610231354424254237
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_2
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82e1d3301efa59e5b4f7051fff4e568f
+      internalID: -9015692775387407899
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: WallVariants_3
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 192
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape:
+      - - {x: -96, y: -96}
+        - {x: -96, y: 96}
+        - {x: 96, y: 96}
+        - {x: 96, y: -96}
+      tessellationDetail: -1
+      bones: []
+      spriteID: 639b1f27e2615f3b88bd2b90dffa16ad
+      internalID: 7177364687307235131
+      vertices: []
+      indices:
+      edges: []
+      weights: []
     outline: []
     customData:
     physicsShape: []
@@ -109,7 +225,11 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      WallVariants_0: 4837659014717790737
+      WallVariants_1: 2610231354424254237
+      WallVariants_2: -9015692775387407899
+      WallVariants_3: 7177364687307235131
   mipmapLimitGroupName:
   pSDRemoveMatte: 0
   userData:

@@ -55,8 +55,8 @@ public sealed class WorldTutorialSceneTests // 실제 거점과 탐사 안내 �
         player.transform.position += Vector3.right * 0.2f; // 실제 탐사 플레이어 위치 변경
         yield return null; // 실제 이동 감시 프레임 대기
         Assert.IsTrue(next.interactable); // 실제 위치 변경 후 다음 안내 허용 확인
-        next.onClick.Invoke(); // 실제 접촉 상호작용 안내 이동
-        Assert.IsTrue(guide.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("접촉")); // 현재 구현된 접촉 방식 안내 확인
+        next.onClick.Invoke(); // 실제 상호작용 안내로 이동
+        Assert.IsTrue(guide.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("F 키")); // 현재 게임의 F 키 입력 안내 확인
         yield return new ExitPlayMode(); // 실제 게임 플레이 종료
     } // 실제 화면 연결 검사 종료
 } // 실제 안내 검사 종료

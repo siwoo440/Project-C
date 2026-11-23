@@ -51,6 +51,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private bool initialPlayerPlacementHandled; // 첫 플레이어 위치 처리 여부
 
     private EncounterData optionalBossEncounter; // 선택 방 한 곳에만 연결된 보스 원본
+    private List<EncounterData> floorEncounterPool; // 현재 층의 정렬과 검증을 마친 지역 조우 목록
     public ExplorationMapData CurrentMap { get; private set; } // 현재 생성된 논리 맵
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
     internal ExpeditionZoneId CurrentZone => sessionManager?.CurrentZone ?? ExpeditionZoneId.WinterfallAshPlains; // 저장 또는 신규 출정에서 실제 탐사 지역 확인
@@ -140,10 +141,16 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             false); // 새 Seed로 현재 층 재생성
     }
 
+    internal List<EncounterData> GetFloorEncounterPool() // 일반 배치와 방 역할이 함께 사용할 지역 조우 조회
+    { // 현재 층 조우 조회 시작
+        return floorEncounterPool ??= ExpeditionZoneEncounters.LoadRandom(CurrentZone, sessionManager.EncounterPoolVersion); // 같은 층의 원본 로드와 정렬 재사용
+    } // 현재 층 조우 조회 종료
+
     private void BuildCurrentFloor(
         int seed,
         bool restoredFromSession) // 지정 Seed로 현재 층 구축
     {
+        floorEncounterPool = null; // 새로 만들거나 불러온 층의 지역 조우 목록 초기화
         ClearEncounterObjects(); // 이전 조우 오브젝트 정리
         ClearEventObjects(); // 이전 이벤트 오브젝트 정리
         ClearHazards(); // 이전 퇴색 방 표시와 상태 정리
@@ -451,10 +458,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             return;
         }
 
-        List<EncounterData> loadedData = ExpeditionZoneEncounters.LoadRandom(CurrentZone, sessionManager.EncounterPoolVersion); // 저장한 지역의 실제 일반 후보 및 기존 윈터폴 호환 자료
-
-        List<EncounterData> validData =
-            new List<EncounterData>(); // 전체 유효 조우 목록
+        List<EncounterData> validData = GetFloorEncounterPool(); // 원본으로 정렬과 버전 검증을 마친 전체 후보
 
         List<EncounterData> normalData =
             new List<EncounterData>(); // 일반 조우 목록
@@ -465,17 +469,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         List<EncounterData> bossData =
             new List<EncounterData>(); // 보스 조우 목록
 
-        foreach (EncounterData data in loadedData)
-        {
-            if (data == null || // 빈 조우 확인
-                !data.IsValidData() || // 조우 데이터 유효성 확인
-                !data.IsAvailableForPoolVersion(sessionManager.EncounterPoolVersion)) // 저장된 조우 목록 버전 확인
-            {
-                continue;
-            }
-
-            validData.Add(data); // 유효 조우 등록
-
+        foreach (EncounterData data in validData) // 조우 ID로 정렬된 유효 원본 순회
+        { // 등급별 기존 선택 순서 보존 시작
             switch (data.BattleType)
             {
                 case BattleType.Elite:
@@ -499,11 +494,6 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
 
             return;
         }
-
-        SortEncounterData(validData); // 전체 조우 순서 고정
-        SortEncounterData(normalData); // 일반 조우 순서 고정
-        SortEncounterData(eliteData); // 엘리트 조우 순서 고정
-        SortEncounterData(bossData); // 보스 조우 순서 고정
 
         List<ExplorationMapCell> availableCells =
             new List<ExplorationMapCell>(); // 조우 배치 가능 일반 셀 목록
@@ -743,16 +733,6 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         return sourceData[
             random.Next(
                 sourceData.Count)]; // Seed 기반 조우 템플릿 반환
-    }
-
-    private static void SortEncounterData(
-        List<EncounterData> data) // Seed 재현용 조우 데이터 정렬
-    {
-        data.Sort(
-            (left, right) =>
-                string.CompareOrdinal(
-                    left.EncounterId,
-                    right.EncounterId)); // EncounterId 순서 고정
     }
 
     public void CreateEncounterObject(

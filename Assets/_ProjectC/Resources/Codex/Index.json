@@ -4,19 +4,19 @@
       "category": 0,
       "name": "버려진 상자",
       "description": "먼지 쌓인 통로 구석에서 낡은 상자를 발견했습니다. 뚜껑이 반쯤 열린 채로 방치되어 있으며, 안에는 아직 쓸 만한 자원이 남아 있는 듯합니다.",
-      "artworkKey": ""
+      "artworkKey": "b8b440695a305c0a92f99eb1e10054a0"
     },
     {
       "category": 0,
       "name": "손상된 단말기",
       "description": "벽면에 매립된 오래된 단말기가 간헐적으로 점멸합니다. 전력은 불안정하지만 아직 일부 기능은 살아 있는 것 같습니다.",
-      "artworkKey": ""
+      "artworkKey": "49ddcbb75f5256719940ef31e52322a0"
     },
     {
       "category": 0,
       "name": "보급품 더미",
       "description": "무너진 구조물 아래에서 정리되지 않은 보급품 더미를 발견했습니다. 모두 챙기기에는 무거워 보이지만 원하는 방식으로 일부를 가져갈 수 있습니다.",
-      "artworkKey": ""
+      "artworkKey": "efe5b85d4ff150299290054488c7bbff"
     },
     {
       "category": 0,
@@ -69,7 +69,7 @@
     {
       "category": 1,
       "name": "테스트 공격 포션",
-      "description": "",
+      "description": "선택한 적 하나에게 물리 피해 20을 줍니다.",
       "artworkKey": "fa804adaa7b34b4a80d10c1563e47cce"
     },
     {
@@ -88,13 +88,13 @@
       "category": 2,
       "name": "Test Enemy",
       "description": "4일차 데이터 테스트 적",
-      "artworkKey": ""
+      "artworkKey": "51221b7044235198add2a544a83bec47"
     },
     {
       "category": 2,
       "name": "중독 실험체",
       "description": "무작위 아군에게 중독을 부여하는 테스트 적",
-      "artworkKey": ""
+      "artworkKey": "1f80abaecbf553fa96b78dacd5c82438"
     },
     {
       "category": 2,
@@ -148,13 +148,13 @@
       "category": 3,
       "name": "회복 유물",
       "description": "전투 시작 시 모든 생존 아군의 체력을 10 회복합니다.",
-      "artworkKey": ""
+      "artworkKey": "238a6f7149bf5e479479ef1376a5d617"
     },
     {
       "category": 3,
       "name": "최대 체력 유물",
       "description": "전투 시작 시 모든 생존 아군의 최대 체력이 10 증가합니다.",
-      "artworkKey": ""
+      "artworkKey": "72420b1be4cb554eb7c01b029c9c0915"
     },
     {
       "category": 3,
@@ -1948,1861 +1948,2425 @@
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",
-      "artworkKey": "158f890f78852c2408113b1c25162eac"
+      "artworkKey": "158f890f78852c2408113b1c25162eac",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "이어진 세계",
       "description": "아군 하나에게 방어도 3. 이번 턴 다른 동료 둘의 전용 카드 사용 시 체력 비율이 가장 낮은 다른 아군에게 방어도 3. (임시 효과)",
-      "artworkKey": "0181ff2c0c49b4c44ac42813ad17b2c6"
+      "artworkKey": "0181ff2c0c49b4c44ac42813ad17b2c6",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "흐린 경계",
       "description": "덱에서 최대 2장을 뽑은 뒤 손패에서 카드 1장을 선택해 버립니다. (임시 효과)",
-      "artworkKey": "f9a9ac5aa2affd647a65772f22a5436a"
+      "artworkKey": "f9a9ac5aa2affd647a65772f22a5436a",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "햇살 돌파",
       "description": "선택한 적에게 물리 피해 8. 다른 생존 적 하나에게 무작위로 물리 피해 6. (임시 효과)",
-      "artworkKey": "c58259e5551ce2145bd47cf121cbc1e6"
+      "artworkKey": "c58259e5551ce2145bd47cf121cbc1e6",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "균열",
       "description": "모든 적의 방어도를 3 제거한 뒤 각 적에게 물리 피해 8. (임시 효과)",
-      "artworkKey": "507aed3f91b530e40868280ce4177268"
+      "artworkKey": "507aed3f91b530e40868280ce4177268",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "균형 처치",
       "description": "선택한 아군의 디버프를 모두 제거합니다. (임시 효과)",
-      "artworkKey": "fed22a1815c5d1b4ba95a4aa2b99f7d3"
+      "artworkKey": "fed22a1815c5d1b4ba95a4aa2b99f7d3",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "달콤한 거래",
       "description": "자신의 체력 5를 소모해 적 하나에게 물리 피해 20. 체력이 5 이하이면 사용할 수 없습니다. (임시 효과)",
-      "artworkKey": "566d23eb19584664dacde93580d8c0d7"
+      "artworkKey": "566d23eb19584664dacde93580d8c0d7",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "기울어진 시선",
       "description": "다른 아군의 디버프 하나를 선택해 자신에게 이전합니다. (임시 효과)",
-      "artworkKey": "e399fba02e64b3641a16e19a377ebc92"
+      "artworkKey": "e399fba02e64b3641a16e19a377ebc92",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마침표",
       "description": "적 하나에게 물리 피해 10. 디버프가 있는 적에게 피해 50% 증가. (임시 효과)",
-      "artworkKey": "fa3d09171320c0f4e98ef35cb0c2a93b"
+      "artworkKey": "fa3d09171320c0f4e98ef35cb0c2a93b",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "갈림길",
       "description": "적의 무작위 공격 대상 재굴림. 같은 대상도 선택될 수 있습니다. (임시 효과)",
-      "artworkKey": "c3db25e8632662b4484f1c41683c81fa"
+      "artworkKey": "c3db25e8632662b4484f1c41683c81fa",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "공정한 판정",
       "description": "다른 아군의 첫 예정 공격을 방어 후 절반씩 분담. 홀수는 원래 대상이 더 받습니다. (임시 효과)",
-      "artworkKey": "f60f2241fe10b96438cb269cd24815f6"
+      "artworkKey": "f60f2241fe10b96438cb269cd24815f6",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "버팀목",
       "description": "다른 아군에게 예정된 첫 공격을 자신이 대신 받습니다. (임시 효과)",
-      "artworkKey": "ed67ea42a9466884b9bb63b25e5dab80"
+      "artworkKey": "ed67ea42a9466884b9bb63b25e5dab80",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "기록 대조",
       "description": "덱 위 카드 최대 3장을 확인하고 한 장을 맨 위로 옮깁니다. (임시 효과)",
-      "artworkKey": "90f9286a92c99774f9d7fa5eeed40d8c"
+      "artworkKey": "90f9286a92c99774f9d7fa5eeed40d8c",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "함께하는 선택",
       "description": "생존한 다른 아군 한 명을 파트너로 지정. 변경 시 이전 파트너의 사용 기록 초기화",
-      "artworkKey": "7d0bcc46df0877b42b03c22c58b33fe1"
+      "artworkKey": "7d0bcc46df0877b42b03c22c58b33fe1",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 공격",
       "description": "적 하나에게 물리 피해 10",
-      "artworkKey": "c7e2ec885c2f379458024d6594fe26e2"
+      "artworkKey": "c7e2ec885c2f379458024d6594fe26e2",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "전차의 돌파",
       "description": "적에게 임시 물리 피해 6과 돌파 표식 1 부여. 표식은 턴 종료 시 제거",
-      "artworkKey": "64ab58495b5961f41a102a10cb7591ef"
+      "artworkKey": "64ab58495b5961f41a102a10cb7591ef",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 방어",
       "description": "아군 하나의 물리 방어력 3 증가",
-      "artworkKey": "07d257f11f999504f947a00c55be359e"
+      "artworkKey": "07d257f11f999504f947a00c55be359e",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "황제의 수호",
       "description": "적 하나의 공격을 자신에게 유도하고 임시 방어도 3 획득",
-      "artworkKey": "961a2a987f660994c918221a55629f27"
+      "artworkKey": "961a2a987f660994c918221a55629f27",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "든든한 식탁",
       "description": "임시 방어도 총 3을 생존 아군에게 균등 배분. 남는 수치는 앞 순서부터 부여",
-      "artworkKey": "443146f0dfb52de43a0120df7024c0ba"
+      "artworkKey": "443146f0dfb52de43a0120df7024c0ba",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "바보의 선택",
       "description": "덱 위 카드 최대 2장 중 한 장을 선택해 드로우",
-      "artworkKey": "9d5d7bb15aec9af40ae21b4bd08f14a7"
+      "artworkKey": "9d5d7bb15aec9af40ae21b4bd08f14a7",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "안전 절차",
       "description": "아군 한 명이 다음 적 공격을 받기 직전 임시 방어도 3 획득. 적 턴 종료 시 소멸",
-      "artworkKey": "0bbb659ab2f80ad4992bdd38bee7a704"
+      "artworkKey": "0bbb659ab2f80ad4992bdd38bee7a704",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 개조",
       "description": "버린 카드 더미에서 카드 한 장을 선택해 손패로 회수",
-      "artworkKey": "1a796f082cc149f2b0690939ed233750_3050149274871117732"
+      "artworkKey": "1a796f082cc149f2b0690939ed233750_3050149274871117732",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "여사제의 결계",
       "description": "선택한 아군에게 임시 방어도 2 부여. 적 턴 종료 후 사라짐",
-      "artworkKey": "1eab618cc22112a4c82f4a99c88ea836"
+      "artworkKey": "1eab618cc22112a4c82f4a99c88ea836",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "남은 빛",
       "description": "아군 한 명의 다음 턴 시작 시 체력 6 회복",
-      "artworkKey": "5a07c1d6c7374b11b55dcf777e78b992_3173546234569911223"
+      "artworkKey": "5a07c1d6c7374b11b55dcf777e78b992_3173546234569911223",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 마법",
       "description": "적 하나에게 마법 피해 8",
-      "artworkKey": "b592642502dde4c44808d260f6094e78"
+      "artworkKey": "b592642502dde4c44808d260f6094e78",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 회복",
       "description": "아군 하나의 체력 8 회복",
-      "artworkKey": "ab37df16a9e07c443b44f6862acc7c71"
-    },
-    {
-      "category": 7,
-      "name": "[DEBUG] 아군 즉사",
-      "description": "Day51 상태 연동 검사용 카드. 선택한 아군에게 매우 큰 피해를 준다.",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "[DEBUG] 아군 정신 붕괴",
-      "description": "Day51 상태 연동 검사용 카드. 선택한 아군의 정신력을 50 감소시킨다.",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "[DEBUG] 즉사",
-      "description": "진행 검사용 카드. 선택한 적에게 매우 큰 피해를 준다.",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "Test Ally Heal",
-      "description": "선택한 아군의 체력을 회복한다.",
-      "artworkKey": ""
+      "artworkKey": "ab37df16a9e07c443b44f6862acc7c71",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "아군 중독 시험",
       "description": "정화와 면역 확인을 위해 아군에게 중독을 부여",
-      "artworkKey": ""
+      "artworkKey": "e8f6ca6ea98e595fbcae1e67a5b72bfa",
+      "cardType": 3,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "마력 탄환",
       "description": "선택한 적 한 명에게 마법 피해 14를 줍니다.",
-      "artworkKey": ""
+      "artworkKey": "e64c8aca613759a9bb463f752af2993b",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마력 폭발",
       "description": "선택한 적에게 강한 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "125d9ce3d260535c944bacaed0848d24",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마력 폭풍",
       "description": "모든 적에게 마법 피해를 준다.",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "Test Attack",
-      "description": "선택한 적 한 명에게 물리 피해 10을 줍니다.",
-      "artworkKey": ""
+      "artworkKey": "1d8a3098bfe85f37971a5b6c93f74b3f",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "공격 증가",
       "description": "자신의 카드 피해를 2턴 동안 증가",
-      "artworkKey": ""
+      "artworkKey": "73339920db745be98053be8a64fb28d0",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "검풍",
       "description": "모든 적에게 10 피해",
-      "artworkKey": "756271545266416898ab4cc731887b2a"
+      "artworkKey": "756271545266416898ab4cc731887b2a",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "정화",
       "description": "아군 하나의 디버프 1개 제거",
-      "artworkKey": "f2a03057e0fc4a468cd194b5d277a7bc"
+      "artworkKey": "f2a03057e0fc4a468cd194b5d277a7bc",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "교란",
       "description": "대상의 정신력을 4 감소시키고 사용자의 정신력을 2 증가시키는 테스트 카드",
-      "artworkKey": ""
+      "artworkKey": "108375dcbde457e6ab87f27176eeaa53",
+      "cardType": 1,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "집중 광선",
       "description": "선택한 적에게 매우 강한 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "bc2e81fdc8435326bb844dc1e405afe7",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "강타",
       "description": "적에게 물리 피해 8",
-      "artworkKey": "443aebcb154d416d9a6339e4bc3f80ed"
+      "artworkKey": "443aebcb154d416d9a6339e4bc3f80ed",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "주술 타격",
       "description": "선택한 적에게 주술성 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "2d26ca7699bc5d6aa9ec35a106752567",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "주술 파동",
       "description": "모든 적에게 주술성 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "f0fbac12d7645478ae80e44061eda40d",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마법 저항 약화",
       "description": "적의 마법 저항력을 2턴 동안 3 감소",
-      "artworkKey": ""
+      "artworkKey": "2ff6e083e49b50b9923899798a0b72ae",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마법 저항 강화",
       "description": "아군의 마법 저항력을 2턴 동안 3 증가",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "Test Magic Attack",
-      "description": "단일 적에게 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "63a8ec9b3a5c53f78670d1673622ef7d",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "정신 파괴",
       "description": "정신력을 50 감소시켜 붕괴 발동을 확인하는 테스트 카드",
-      "artworkKey": ""
+      "artworkKey": "853b60fb8e655a858efa036c38383a5a",
+      "cardType": 1,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "정신 집중",
       "description": "정신력을 50 증가시켜 각성 발동을 확인하는 테스트 카드",
-      "artworkKey": ""
+      "artworkKey": "b8664a5a95eb5858980163e7fd39b478",
+      "cardType": 1,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "내려찍기",
       "description": "힘을 모아 선택한 적에게 큰 물리 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "0ae7962bf61751358b217a342b5ac292",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "물리 방어 약화",
       "description": "적의 물리 방어력을 2턴 동안 3 감소",
-      "artworkKey": ""
+      "artworkKey": "d95aa1d3aaf954fab1025ac4ec54255b",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "물리 방어 강화",
       "description": "아군의 물리 방어력을 2턴 동안 3 증가",
-      "artworkKey": ""
+      "artworkKey": "fb4f284385b25418b8889a0c8a294f56",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "정밀 찌르기",
       "description": "선택한 적의 빈틈을 찔러 물리 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "9094d5e092fd5f2f930b0201ba464581",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "중독 부여",
       "description": "적에게 2턴 동안 중독 피해를 부여",
-      "artworkKey": ""
+      "artworkKey": "ff928f645c0a5050bf0d6bb9640a3e91",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "빠른 베기",
       "description": "선택한 적을 빠르게 베어 물리 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "dbcc2709e628590da278d25c1b9f0e0b",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "성광 타격",
       "description": "선택한 적에게 성광의 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "378c07cca7545c8cadebc8370e9a1a07",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "성광 파동",
       "description": "모든 적에게 성광의 마법 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "3ebfa35c7f7959efaa68abf40d140fcd",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "재생 부여",
       "description": "아군에게 2턴 동안 재생 회복을 부여",
-      "artworkKey": ""
-    },
-    {
-      "category": 7,
-      "name": "Test Self Heal",
-      "description": "카드 소유자의 체력을 12 회복합니다.",
-      "artworkKey": ""
+      "artworkKey": "edb05c3db5db5ecc81aa0fcf1318071c",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "방패 강타",
       "description": "선택한 적을 방패로 가격해 물리 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "c312c61dcecd57ff9e438071cc578438",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "상태 면역",
       "description": "아군에게 2턴 동안 새 디버프 면역을 부여",
-      "artworkKey": ""
+      "artworkKey": "78a4ae8b7ce45ffbaf0a1f8a62bdb2f3",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "휩쓸기",
       "description": "모든 적을 베어 물리 피해를 준다.",
-      "artworkKey": ""
+      "artworkKey": "412adad257c955e2b8ae9302e52ecd3e",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "작은 치유",
       "description": "아군 1명 체력 6 회복",
-      "artworkKey": "4b0b72fbaebe4eb49478dfae66ae14f8"
+      "artworkKey": "4b0b72fbaebe4eb49478dfae66ae14f8",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "불덩이",
       "description": "적에게 마법 피해 9",
-      "artworkKey": "a2590ad35cd749539a7c2bc31a5a4f66"
+      "artworkKey": "a2590ad35cd749539a7c2bc31a5a4f66",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마력탄",
       "description": "적에게 마법 피해 7",
-      "artworkKey": "42f36cb1fd4e406195cae850977efab2"
+      "artworkKey": "42f36cb1fd4e406195cae850977efab2",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "치유",
       "description": "아군 하나 회복 8",
-      "artworkKey": "1f62c134e0a043d4b76e6d93a8cba8d3"
+      "artworkKey": "1f62c134e0a043d4b76e6d93a8cba8d3",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "소생",
       "description": "아군 하나 회복 15",
-      "artworkKey": "de20d2ddd6534efeb301fa31d0c0d111"
+      "artworkKey": "de20d2ddd6534efeb301fa31d0c0d111",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "회복의 물결",
       "description": "아군 전체 회복 10",
-      "artworkKey": "a2773522feb248f8ab72a54d06b9f500"
+      "artworkKey": "a2773522feb248f8ab72a54d06b9f500",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "기도",
       "description": "아군 1명 정신력 6 회복",
-      "artworkKey": "e6d1b18fc44748bc9294c08d46ffd93b"
+      "artworkKey": "e6d1b18fc44748bc9294c08d46ffd93b",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "보호의 잔",
       "description": "아군 1명 방어도 +7",
-      "artworkKey": "c2b1cd2d71414c40b67d9acc5a14f5d9"
+      "artworkKey": "c2b1cd2d71414c40b67d9acc5a14f5d9",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "베기",
       "description": "적에게 4 피해를 1회 준다",
-      "artworkKey": "08b3f8aa9aca4687ab98a4096a4feef6"
+      "artworkKey": "08b3f8aa9aca4687ab98a4096a4feef6",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "연속 베기",
       "description": "적에게 4 피해를 2회 준다",
-      "artworkKey": "1fc0edbcb5d04240afa11c5de3a1e40b"
+      "artworkKey": "1fc0edbcb5d04240afa11c5de3a1e40b",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "이연참",
       "description": "적에게 6 피해를 2회 준다",
-      "artworkKey": "6cdd8b44b6c24546acf743d1f64c194a"
+      "artworkKey": "6cdd8b44b6c24546acf743d1f64c194a",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "전장의 외침",
       "description": "아군 전체 공격력 +3 (2턴)",
-      "artworkKey": "396e752393e74ab9b90aa727d0599ff6"
+      "artworkKey": "396e752393e74ab9b90aa727d0599ff6",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "방패 들기",
       "description": "방어도 8 획득",
-      "artworkKey": "11593fb58d8d44f79afaac9a461917df"
+      "artworkKey": "11593fb58d8d44f79afaac9a461917df",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "장갑 강화",
       "description": "아군 1명 방어력 +5 (2턴)",
-      "artworkKey": "9876479dd557454a8e09ac0adabd3179"
+      "artworkKey": "9876479dd557454a8e09ac0adabd3179",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "맑은 물",
       "description": "아군 1명 중독 제거, 체력 3 회복",
-      "artworkKey": "74d39f9f2af446b58914e80230ca90a3"
+      "artworkKey": "74d39f9f2af446b58914e80230ca90a3",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "정신 회복",
       "description": "아군 전체 정신력 5 회복",
-      "artworkKey": "90884d49a97a42cdad402e66599c8cba"
+      "artworkKey": "90884d49a97a42cdad402e66599c8cba",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "대정화",
       "description": "아군 전체 디버프 1개씩 제거",
-      "artworkKey": "8ff9456e4e39492681ef8cd4f3d76767"
+      "artworkKey": "8ff9456e4e39492681ef8cd4f3d76767",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "화염구",
       "description": "적 전체에게 피해 10",
-      "artworkKey": "7366476f15164285b85c64cb21ddb3a8"
+      "artworkKey": "7366476f15164285b85c64cb21ddb3a8",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "빠른 계산",
       "description": "카드 1장 드로우, 손패 1장 버림",
-      "artworkKey": "0272c006d5574aa0aae3be800eef1636"
+      "artworkKey": "0272c006d5574aa0aae3be800eef1636",
+      "cardType": 3,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "잿빛 저주",
       "description": "사용할 수 없다. 뽑으면 손패 한 칸을 차지한다.",
-      "artworkKey": "af207210aaf64d44a70a2c204153026d"
+      "artworkKey": "af207210aaf64d44a70a2c204153026d",
+      "cardType": 5,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "전진 베기",
       "description": "적에게 8 피해, 자신 방어도 +2",
-      "artworkKey": "d994482375a24073a9deb6db4f4b0cc9"
+      "artworkKey": "d994482375a24073a9deb6db4f4b0cc9",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "신성의 일격",
       "description": "적에게 15 피해, 아군 전체 회복 5",
-      "artworkKey": "13f789b8386a44a9a836a5cb7fa633c0"
+      "artworkKey": "13f789b8386a44a9a836a5cb7fa633c0",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "은총의 잔",
       "description": "아군 1명 체력 12 회복, 방어도 +6",
-      "artworkKey": "1c33212e93144f599375c2190faaa4c6"
+      "artworkKey": "1c33212e93144f599375c2190faaa4c6",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "집중 호흡",
       "description": "정신력 5 회복, 카드 1장 드로우",
-      "artworkKey": "2fda102318f846608c4248e3f9685d3e"
+      "artworkKey": "2fda102318f846608c4248e3f9685d3e",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "방어 태세",
       "description": "방어도 6을 얻는다",
-      "artworkKey": "ef4a5046d7e8418da9a6cfa9c771b26a"
+      "artworkKey": "ef4a5046d7e8418da9a6cfa9c771b26a",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "무자비한 연격",
       "description": "적에게 5 피해를 4회 준다",
-      "artworkKey": "8790047e410241aebc5f405764e5c82e"
+      "artworkKey": "8790047e410241aebc5f405764e5c82e",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "방어선 구축",
       "description": "아군 전체 방어도 +4",
-      "artworkKey": "a5d331c5299a48ffb33c1d451f4ceb3f"
+      "artworkKey": "a5d331c5299a48ffb33c1d451f4ceb3f",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "철벽",
       "description": "방어도 18 획득",
-      "artworkKey": "6253e2069a614fce89d4bd2d889ac540"
+      "artworkKey": "6253e2069a614fce89d4bd2d889ac540",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "치명 일격",
       "description": "선택한 적에게 물리 피해 15. 이 공격의 치명타 확률 +20%p. 기본 치명타 확률은 0%, 치명타 피해는 1.5배.",
-      "artworkKey": "854740f5756c41dc9498238f364e961d"
+      "artworkKey": "854740f5756c41dc9498238f364e961d",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "검의 춤",
       "description": "범위 2칸 안의 생존한 적을 매 타격마다 무작위로 골라 물리 피해 6을 총 3회 준다. 같은 적에게 여러 번 적중할 수 있다.",
-      "artworkKey": "d5ecfd30876c4003a1ccc7a3b24b4d8d"
+      "artworkKey": "d5ecfd30876c4003a1ccc7a3b24b4d8d",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "돌진",
       "description": "선택한 적에게 물리 피해 7. 명중한 적은 다음 아군 턴에 물리 방어 −2.",
-      "artworkKey": "06f279573f8a4406b898d0b219ec8c02"
+      "artworkKey": "06f279573f8a4406b898d0b219ec8c02",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "역공",
       "description": "직전 적 턴이 시작된 뒤 현재까지 카드 소유자가 실제로 받은 체력 피해의 절반(소수점 버림)을 선택한 적에게 물리 피해로 준다.",
-      "artworkKey": "70f2e746312d48028b4edff521408566"
+      "artworkKey": "70f2e746312d48028b4edff521408566",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "최후의 일격",
       "description": "선택한 적의 현재 체력이 최대 체력의 20% 이하일 때, 남은 행동력 X를 소모해 해당 적에게 물리 피해 X×5를 준다.",
-      "artworkKey": "d4f90d96fad145c8a48cdb6b52938ac0"
+      "artworkKey": "d4f90d96fad145c8a48cdb6b52938ac0",
+      "cardType": 0,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "전의 고취",
       "description": "아군 전체의 치명타 확률 +5%p (2턴). 기본 치명타 확률은 0%, 치명타 피해는 1.5배.",
-      "artworkKey": "e26f8764207346d5bec274127c0e5456"
+      "artworkKey": "e26f8764207346d5bec274127c0e5456",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "화염 참격",
       "description": "적에게 물리 피해 10 + 화상",
-      "artworkKey": "e049c406402449aa828f67efffdd25df"
+      "artworkKey": "e049c406402449aa828f67efffdd25df",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "파멸의 검",
       "description": "적 하나 피해 25, 자신 HP -10",
-      "artworkKey": "d41a4432fe124f858b3128cbfbb89e2f"
+      "artworkKey": "d41a4432fe124f858b3128cbfbb89e2f",
+      "cardType": 0,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "찌르기",
       "description": "적에게 물리 피해 7. 20% 확률로 출혈을 2턴 부여한다. 대상 턴 종료마다 체력 2 감소. 다시 부여하면 지속 시간 갱신.",
-      "artworkKey": "bcb2225568b140379e0b65abc0c5f23b"
+      "artworkKey": "bcb2225568b140379e0b65abc0c5f23b",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "가로베기",
       "description": "선택한 적과 이웃한 칸의 적에게 각각 물리 피해 5.",
-      "artworkKey": "0072a38d1f7d40ba9df50b746503c856"
+      "artworkKey": "0072a38d1f7d40ba9df50b746503c856",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "무릎 베기",
       "description": "적에게 물리 피해 6. 25% 확률로 대상의 다음 행동 1회 취소.",
-      "artworkKey": "6587c19c94fe466ebf72cf8bda9be892"
+      "artworkKey": "6587c19c94fe466ebf72cf8bda9be892",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "검등 치기",
       "description": "적에게 5 피해, 기절(1턴) 15%",
-      "artworkKey": "4aebb4c9a04846d6bee7a68f165b8cfb"
+      "artworkKey": "4aebb4c9a04846d6bee7a68f165b8cfb",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "피의 칼끝",
       "description": "적에게 6 피해, 출혈 상태면 추가 4 피해",
-      "artworkKey": "5a5badd415de4f68b1d2ab0af4f4ccce"
+      "artworkKey": "5a5badd415de4f68b1d2ab0af4f4ccce",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "방패 쪼개기",
       "description": "적에게 7 피해, 방어력 -1 (2턴)",
-      "artworkKey": "f7792c1bb161450e923e6f0e3c6e3c40"
+      "artworkKey": "f7792c1bb161450e923e6f0e3c6e3c40",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "저지 베기",
       "description": "적에게 5 피해, 다음 공격 피해 -2",
-      "artworkKey": "25de8fb174164d249af0a9bc0741c961"
+      "artworkKey": "25de8fb174164d249af0a9bc0741c961",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "견제 참격",
       "description": "적에게 4 피해, 자신 회피율 +10% (1턴)",
-      "artworkKey": "d4b09fe7e9e74deb80a55f3915809426"
+      "artworkKey": "d4b09fe7e9e74deb80a55f3915809426",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "급소 노림",
       "description": "적에게 6 피해, 치명타 확률 +10%",
-      "artworkKey": "9cc428c0c36153cb9b990ff299aa5e44"
+      "artworkKey": "9cc428c0c36153cb9b990ff299aa5e44",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "칼날 정비",
       "description": "이번 턴에 카드 사용자가 다음으로 사용하는 검 피해 카드의 모든 타격에 피해 +3. 카드 사용 시 소모되며 다시 부여하면 +3으로 갱신한다.",
-      "artworkKey": "4507b470e15e5b878bce5dde6eda6891"
+      "artworkKey": "4507b470e15e5b878bce5dde6eda6891",
+      "cardType": 0,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "전열 정돈",
       "description": "아군 1명 방어도 +5, 공격력 +1 (1턴)",
-      "artworkKey": "317b6c085ed95f47af4c403e42536528"
+      "artworkKey": "317b6c085ed95f47af4c403e42536528",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "처형 베기",
       "description": "체력 50% 이하 적에게 18 피해",
-      "artworkKey": "dd45bb644db253b29141ad7073940201"
+      "artworkKey": "dd45bb644db253b29141ad7073940201",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "피바람",
       "description": "적 전체에게 6 피해, 출혈(2턴) 30%",
-      "artworkKey": "4864f9661da45a6ab45a4629eacc0d79"
+      "artworkKey": "4864f9661da45a6ab45a4629eacc0d79",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "검격 반사",
       "description": "다음 아군 턴 시작 전까지 적의 직접 물리 공격으로 사용자가 체력을 잃고 생존하면 1회 반격한다. 직접 잃은 체력의 절반(내림)을 공격자에게 방어를 무시하는 고정 피해로 준다.",
-      "artworkKey": "c07fc0c63fe555dea92c25ccac8c7f30"
+      "artworkKey": "c07fc0c63fe555dea92c25ccac8c7f30",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "파고들기",
       "description": "적에게 물리 피해 12. 대상의 현재 임시 방어도 중 30%를 이번 타격에서 건너뛴다. 건너뛴 방어도는 남는다.",
-      "artworkKey": "d306a60835e9518da61252e230e5f33e"
+      "artworkKey": "d306a60835e9518da61252e230e5f33e",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "쌍검 연무",
       "description": "무작위 적에게 4 피해를 4회 준다",
-      "artworkKey": "74318debb2235851a17f9edb628bd56b"
+      "artworkKey": "74318debb2235851a17f9edb628bd56b",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "피의 맹세",
       "description": "자신 HP -5, 검 카드 피해 +5 (2턴)",
-      "artworkKey": "2fa8868cc16f566daa89d329b39d7f00"
+      "artworkKey": "2fa8868cc16f566daa89d329b39d7f00",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "방어 붕괴",
       "description": "적에게 10 피해, 방어력 -3 (2턴)",
-      "artworkKey": "4cf5a8f4031658cb96c643a980a94940"
+      "artworkKey": "4cf5a8f4031658cb96c643a980a94940",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "위협 돌진",
       "description": "적에게 물리 피해 9. 명중하면 35% 확률로 공포를 1턴 부여한다. 공포 상태인 대상은 공격을 회피할 수 없다.",
-      "artworkKey": "42cf3b8488f55606a74c4f80def96462"
+      "artworkKey": "42cf3b8488f55606a74c4f80def96462",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "칼날 소용돌이",
       "description": "선택한 적과 바로 양옆 칸의 생존 적에게 각각 물리 피해 7.",
-      "artworkKey": "5c875aae38e4576faffe0ed96f48c10b"
+      "artworkKey": "5c875aae38e4576faffe0ed96f48c10b",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마무리 자세",
       "description": "이번 턴에 카드 사용자가 최대 체력의 50% 이하인 적에게 주는 카드 피해 +30%.",
-      "artworkKey": "18e04517bbce5d478e15a51bee89a44c"
+      "artworkKey": "18e04517bbce5d478e15a51bee89a44c",
+      "cardType": 0,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "피의 추적",
       "description": "출혈 상태 적 1명에게 16 피해",
-      "artworkKey": "5ae2826530775871893db111924b7be5"
+      "artworkKey": "5ae2826530775871893db111924b7be5",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "절단 일격",
       "description": "적에게 18 피해, 회복량 -50% (2턴)",
-      "artworkKey": "d01225adcd415c6bbcf30f72bc303055"
+      "artworkKey": "d01225adcd415c6bbcf30f72bc303055",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "돌파 참격",
       "description": "현재 가로열의 모든 생존 적에게 물리 피해 14.",
-      "artworkKey": "bcd32737ab305ea2b05ebd525ff70216"
+      "artworkKey": "bcd32737ab305ea2b05ebd525ff70216",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "분노 해방",
       "description": "자신 공격력 +6 (2턴), 방어력 -2 (2턴)",
-      "artworkKey": "31714e559be45307b69773513fb1b5ee"
+      "artworkKey": "31714e559be45307b69773513fb1b5ee",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "처단의 검",
       "description": "적에게 물리 피해 20. 이 공격으로 적을 직접 처치하면 공용 행동력 1을 최대치까지 회복한다.",
-      "artworkKey": "c59a2f72a63f5e428389c8173a0118e2"
+      "artworkKey": "c59a2f72a63f5e428389c8173a0118e2",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "균열 베기",
       "description": "적 전체에게 8 피해, 방어력 -2 (2턴)",
-      "artworkKey": "e26f94fabb265445a016ce52367ded34"
+      "artworkKey": "e26f94fabb265445a016ce52367ded34",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "전장의 결의",
       "description": "생존 아군 전체에게 공격력 +2를 2턴 부여한다. 사용 즉시 방어도 4를 주고 다음 아군 턴 시작에 생존 아군에게 다시 4를 준다.",
-      "artworkKey": "597e326d0c7f502ea8fb8278748262a6"
+      "artworkKey": "597e326d0c7f502ea8fb8278748262a6",
+      "cardType": 0,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "피의 역류",
       "description": "모든 출혈 적에게 즉시 10 피해",
-      "artworkKey": "0003b258bcdf51279f575647bcd90e9c"
+      "artworkKey": "0003b258bcdf51279f575647bcd90e9c",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "칼날 폭주",
       "description": "이번 턴 검 카드 사용 시 추가 피해 +4",
-      "artworkKey": "7898809ae77f5843b43d667c6c3bafbb"
+      "artworkKey": "7898809ae77f5843b43d667c6c3bafbb",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "단죄 베기",
       "description": "버프 상태 적에게 22 피해, 버프 1개 제거",
-      "artworkKey": "d074a0b2973752e49e3599eb5b498217"
+      "artworkKey": "d074a0b2973752e49e3599eb5b498217",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "왕의 참격",
       "description": "생존 적 전체에게 물리 피해 18. 이후 살아 있는 적 중 최대 체력이 가장 높은 적에게 추가 물리 피해 12. 동률이면 전투 배치에서 앞선 적을 고른다.",
-      "artworkKey": "45e791dedc835f08b6d87b6ed9f423d1"
+      "artworkKey": "45e791dedc835f08b6d87b6ed9f423d1",
+      "cardType": 0,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "피로 물든 결투",
       "description": "시전자와 선택한 적에게 결투 표식을 부여한다. 이번 턴부터 아군 3턴 동안 시전자가 그 적에게 주는 직접 카드 피해가 40% 증가한다. 새 결투는 양쪽의 기존 결투를 끝낸다.",
-      "artworkKey": "933917e1f04159fe9aae40111b4ea018"
+      "artworkKey": "933917e1f04159fe9aae40111b4ea018",
+      "cardType": 0,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "검성의 자세",
       "description": "이번 턴부터 3턴 동안 자신의 고정 비용 검 카드가 행동력을 1 적게 쓰고, 검 카드 피해가 타격마다 4 증가한다.",
-      "artworkKey": "b4f7f4f055da5557afd247c8d5076a10"
+      "artworkKey": "b4f7f4f055da5557afd247c8d5076a10",
+      "cardType": 0,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "최후 돌파",
       "description": "적 하나에게 물리 피해 35. 이 타격으로 직접 처치하면 전투 배치에서 다음 생존 적에게 비용 없이 같은 타격을 한 번 더 가한다.",
-      "artworkKey": "b03f5458698c5e18be6be88bd1f514fb"
+      "artworkKey": "b03f5458698c5e18be6be88bd1f514fb",
+      "cardType": 0,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "천검 난무",
       "description": "물리 피해 7을 7회 준다. 타격마다 무작위로 생존한 적 하나를 고르며 같은 적을 다시 고를 수 있다.",
-      "artworkKey": "20e4b73605a45b659ee40a8fc8a9f99a"
+      "artworkKey": "20e4b73605a45b659ee40a8fc8a9f99a",
+      "cardType": 0,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "파멸 절단",
       "description": "자신의 체력 15를 지불해 적 하나에게 물리 피해 50을 준다. 체력이 15 이하라면 사용할 수 없다.",
-      "artworkKey": "0ad3d332f7db571bb7146bca81c4c459"
+      "artworkKey": "0ad3d332f7db571bb7146bca81c4c459",
+      "cardType": 0,
+      "costLabel": "6"
     },
     {
       "category": 7,
       "name": "몸으로 막기",
       "description": "자신을 제외한 아군 하나를 선택한다. 그 아군이 적에게 받는 다음 직접 타격 1회를 대신 받는다. 대신 받을 때까지 유지된다.",
-      "artworkKey": "3ed901e7d36e5cde87ac3a5e132ecc86"
+      "artworkKey": "3ed901e7d36e5cde87ac3a5e132ecc86",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "충격 흡수",
       "description": "다음 적 턴이 끝날 때까지 자신이 받는 직접 피해를 타격마다 최대 5 줄인다.",
-      "artworkKey": "34b20f5cf11852e3a72dfbc8a939bd99"
+      "artworkKey": "34b20f5cf11852e3a72dfbc8a939bd99",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "수비 명령",
       "description": "아군 하나의 물리 방어력이 2턴 동안 2 증가한다.",
-      "artworkKey": "5ec96551feb557199a14b12065ee06c8"
+      "artworkKey": "5ec96551feb557199a14b12065ee06c8",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "견고한 자세",
       "description": "행동력을 추가로 1 소모하고, 2턴 동안 자신의 물리 방어력이 3 증가한다.",
-      "artworkKey": "ae9d161ec25a51478beca018291299ff"
+      "artworkKey": "ae9d161ec25a51478beca018291299ff",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "방패 밀치기",
       "description": "적 하나에게 물리 피해 5를 준다. 명중하면 20% 확률로 그 적의 다음 행동 1회를 취소한다.",
-      "artworkKey": "b5c5a09de88f5a4086d8547855b9f7ab"
+      "artworkKey": "b5c5a09de88f5a4086d8547855b9f7ab",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "가드 전환",
       "description": "방어도 5를 얻고 카드 1장을 뽑는다.",
-      "artworkKey": "edf3f0bc91705ae09a8f5935c46b1303"
+      "artworkKey": "edf3f0bc91705ae09a8f5935c46b1303",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "막아 세우기",
       "description": "적 하나가 직접 공격으로 주는 피해가 적 2턴 동안 2 감소한다.",
-      "artworkKey": "45457443aa135cefb3627274009fab7d"
+      "artworkKey": "45457443aa135cefb3627274009fab7d",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "저항 태세",
       "description": "적 2턴 동안 자신이 받는 마법 피해가 방어도에 닿기 전에 15% 감소한다.",
-      "artworkKey": "ecb8176c6ab858c78da2f85669481991"
+      "artworkKey": "ecb8176c6ab858c78da2f85669481991",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "보호막 분배",
       "description": "서로 다른 생존 아군 두 명에게 각각 방어도 4를 부여한다.",
-      "artworkKey": "b8b9a14857ac575a8da5a17611dc3006"
+      "artworkKey": "b8b9a14857ac575a8da5a17611dc3006",
+      "cardType": 4,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "균형 잡기",
       "description": "방어도 3을 얻는다. 자신이 다음에 쓰는 방패 카드 중 고정 비용이 1 이상인 카드의 비용을 1 줄인다. 할인은 중첩되지 않는다.",
-      "artworkKey": "ef8a30ab552a5e08b2c424051ba79f4f"
+      "artworkKey": "ef8a30ab552a5e08b2c424051ba79f4f",
+      "cardType": 4,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "도발",
       "description": "자신의 물리 방어력이 1턴 동안 4 증가한다. 다음 적 턴에 단일 대상 공격은 자신을 우선 노린다.",
-      "artworkKey": "b35126dc6cbd57f1b568e9c6382dffc3"
+      "artworkKey": "b35126dc6cbd57f1b568e9c6382dffc3",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "방패 반격",
       "description": "다음 적 턴이 끝날 때까지 방어도가 적의 직접 공격 피해를 흡수할 때마다 그 적에게 고정 피해 8을 준다.",
-      "artworkKey": "5f875608c8b05935a46b8f1de5971ed7"
+      "artworkKey": "5f875608c8b05935a46b8f1de5971ed7",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "수호의 원",
       "description": "다음 두 번의 적 턴 동안 생존 아군 모두가 받는 직접 피해를 10% 줄인다.",
-      "artworkKey": "fb4c847fbd075630b3191028354e4d2f"
+      "artworkKey": "fb4c847fbd075630b3191028354e4d2f",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "방어 전진",
       "description": "적 하나에게 물리 피해 8을 주고 자신은 방어도 10을 얻는다.",
-      "artworkKey": "655559a9b64251d18729d3ee04871cec"
+      "artworkKey": "655559a9b64251d18729d3ee04871cec",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "파열 방패",
       "description": "적 하나에게 현재 자신이 지닌 방어도의 절반만큼 물리 피해를 준다. 소수점은 버리며 방어도는 소모하지 않는다.",
-      "artworkKey": "2929c0e73abb56839ecfeb519b0b3382"
+      "artworkKey": "2929c0e73abb56839ecfeb519b0b3382",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "위험 차단",
       "description": "아군 하나가 다음에 적에게 받는 직접 피해 1회를 70% 줄인다. 피해를 줄일 때까지 유지된다.",
-      "artworkKey": "f7a324e57228538a94c493b6e01a3cad"
+      "artworkKey": "f7a324e57228538a94c493b6e01a3cad",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "집중 방어",
       "description": "이번 턴 자신이 받는 피해를 50% 줄인다.",
-      "artworkKey": "621318b0147e5372b502e5e280a84e9c"
+      "artworkKey": "621318b0147e5372b502e5e280a84e9c",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "전열 보호",
       "description": "생존 아군 모두에게 각각 방어도 7을 부여하고 출혈 저항을 2턴 동안 20% 높인다.",
-      "artworkKey": "816eb9760086597aa9edcdc57caf41d7"
+      "artworkKey": "816eb9760086597aa9edcdc57caf41d7",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "억제 타격",
       "description": "적 하나에게 물리 피해 9를 주고 공격력을 2턴 동안 3 낮춘다.",
-      "artworkKey": "afc19cdc43d65fbfaa55add3c00e4964"
+      "artworkKey": "afc19cdc43d65fbfaa55add3c00e4964",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "막아내고 밀기",
       "description": "적 하나에게 물리 피해 7을 주고 35% 확률로 그 적의 다음 행동을 한 번 취소한다.",
-      "artworkKey": "4441a74ccff751fbaa248f6a14273c91"
+      "artworkKey": "4441a74ccff751fbaa248f6a14273c91",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "성벽 자세",
       "description": "생존 아군 모두에게 각각 방어도 15를 부여한다. 사용 시 행동력을 1 추가로 지불한다.",
-      "artworkKey": "b24caa207a9d599f97c6ebe54e55c7b1"
+      "artworkKey": "b24caa207a9d599f97c6ebe54e55c7b1",
+      "cardType": 4,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "불굴",
       "description": "2턴 동안 체력이 1 이하로 내려가는 피해를 한 번 막아 체력 1로 버틴다.",
-      "artworkKey": "3bd4e57b04a755c4b48fbb7272bd3c19"
+      "artworkKey": "3bd4e57b04a755c4b48fbb7272bd3c19",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "수호 맹세",
       "description": "2턴 동안 아군 하나가 받을 공격을 대신 받고 자신의 물리 방어력이 4 증가한다.",
-      "artworkKey": "1b5718845a455c88b8773dc881e67ffe"
+      "artworkKey": "1b5718845a455c88b8773dc881e67ffe",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "방패 파동",
       "description": "모든 적에게 현재 자신의 방어도의 절반만큼 물리 피해를 준다. 소수점은 버리며 방어도는 소모하지 않는다.",
-      "artworkKey": "7234ae3a2de859f4acd5656bbd4c56a8"
+      "artworkKey": "7234ae3a2de859f4acd5656bbd4c56a8",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "철갑 돌진",
       "description": "적 하나에게 물리 피해 16을 주고 자신은 방어도 10을 얻는다.",
-      "artworkKey": "37134c4fab5a5feda228b3c1fe284553"
+      "artworkKey": "37134c4fab5a5feda228b3c1fe284553",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "절대 가드",
       "description": "아군 한 명이 받는 다음 피해를 한 번 무효로 한다.",
-      "artworkKey": "d3320c90331c5e3283044c29408bd675"
+      "artworkKey": "d3320c90331c5e3283044c29408bd675",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "요새화",
       "description": "아군 전체의 물리 방어력과 마법 피해 저항을 3턴 동안 각각 3과 10% 높인다.",
-      "artworkKey": "bdb8d60c450855d58411e4024ab5dcbe"
+      "artworkKey": "bdb8d60c450855d58411e4024ab5dcbe",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "응징 방벽",
       "description": "이번 적 턴에 생존 아군이 직접 공격을 맞으면 공격자에게 고정 물리 피해 5를 준다.",
-      "artworkKey": "d831f0d9d18d5124ab5208e81abf9eee"
+      "artworkKey": "d831f0d9d18d5124ab5208e81abf9eee",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "분산 방어",
       "description": "2회 적 턴 동안 아군 전체가 받는 적 광역 공격 피해를 35% 줄인다.",
-      "artworkKey": "4143a7a9cb6451d4a3af6a02a976bbfb"
+      "artworkKey": "4143a7a9cb6451d4a3af6a02a976bbfb",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "불굴의 전열",
       "description": "생존 아군 전체에게 각각 방어도 10을 부여하고 공포를 제거한다.",
-      "artworkKey": "81eb85a1f68151659e777011746322ac"
+      "artworkKey": "81eb85a1f68151659e777011746322ac",
+      "cardType": 4,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "난공불락",
       "description": "생존 아군 전체에게 각각 방어도 12를 부여하고 각자의 다음 피해를 한 번 무효로 한다.",
-      "artworkKey": "1161ab467453582caa0675fd84d8ea85"
+      "artworkKey": "1161ab467453582caa0675fd84d8ea85",
+      "cardType": 4,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "거인의 방패",
       "description": "자신에게 방어도 40을 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 감소한다.",
-      "artworkKey": "f843359bde1d5d3890553444cfcb041e"
+      "artworkKey": "f843359bde1d5d3890553444cfcb041e",
+      "cardType": 4,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "최후 방벽",
       "description": "모든 생존 아군의 체력이 각각 최대치의 30% 이하이면 생존 아군 모두에게 각각 방어도 25를 부여한다.",
-      "artworkKey": "78a8a273c7ee51d2a1a995e98dece322"
+      "artworkKey": "78a8a273c7ee51d2a1a995e98dece322",
+      "cardType": 4,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "수호자의 심장",
       "description": "지정한 아군이 적의 직접 공격으로 쓰러질 때 그 공격을 한 번 대신 받고 체력 1 이상으로 생존한다.",
-      "artworkKey": "c5b29cefc8d85c978894f1e4ab2ac289"
+      "artworkKey": "c5b29cefc8d85c978894f1e4ab2ac289",
+      "cardType": 4,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "반사의 성채",
       "description": "다음 적 턴에 아군이 적의 직접 공격으로 잃은 체력을 합산한다. 적 턴이 끝날 때 합계의 절반만큼 모든 생존 적에게 고정 물리 피해를 준다.",
-      "artworkKey": "ef63ee36fa6152b98ac87141b19c6256"
+      "artworkKey": "ef63ee36fa6152b98ac87141b19c6256",
+      "cardType": 4,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "영원의 방패",
       "description": "3회 적 턴 동안 생존 아군 전체가 받는 직접 피해가 30% 줄고 마법 피해 저항이 20% 높아진다.",
-      "artworkKey": "e7732255a3b054df8e700ba716bc9bd9"
+      "artworkKey": "e7732255a3b054df8e700ba716bc9bd9",
+      "cardType": 4,
+      "costLabel": "6"
     },
     {
       "category": 7,
       "name": "축복",
       "description": "생존 아군 모두의 물리 방어력을 2턴 동안 4 높인다.",
-      "artworkKey": "dbfef189352c5f048a10dc30b1adc53b"
+      "artworkKey": "dbfef189352c5f048a10dc30b1adc53b",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "성스러운 방패",
       "description": "생존 아군 각자가 받는 다음 피해를 한 번 무효로 한다.",
-      "artworkKey": "dd1d9e1ae7e55b86891ea369f484545a"
+      "artworkKey": "dd1d9e1ae7e55b86891ea369f484545a",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "생명의 빛",
       "description": "이번 전투에서 쓰러진 지정 아군 한 명을 최대 체력의 30%로 되살린다. 체력의 소수점은 올린다.",
-      "artworkKey": "c1a06b51266f556ab6ae2673eed08a04"
+      "artworkKey": "c1a06b51266f556ab6ae2673eed08a04",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "신성한 심판",
       "description": "모든 적을 마법 피해 12로 공격한다. 명중한 적의 전투불능 방지와 불굴을 적용 직전에 해제한다.",
-      "artworkKey": "953420c20fb75b4db2d8fa27fa7ec3ba"
+      "artworkKey": "953420c20fb75b4db2d8fa27fa7ec3ba",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "천상의 은총",
       "description": "생존 아군 모두의 체력을 각각 20 회복시키고, 이번 아군 턴 동안 공격력을 각각 2 높인다.",
-      "artworkKey": "bf4d747cf1c153188f7f0672731038bf"
+      "artworkKey": "bf4d747cf1c153188f7f0672731038bf",
+      "cardType": 2,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "성배의 심판",
       "description": "생존 아군 각자가 받는 치명적인 피해를 한 번 막아 체력 1로 생존하게 한다.",
-      "artworkKey": "92589918ba275fafbd045110244c4c5e"
+      "artworkKey": "92589918ba275fafbd045110244c4c5e",
+      "cardType": 2,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "응급 처치",
       "description": "지정한 생존 아군의 체력을 5 회복하고 출혈 상태를 하나 제거한다.",
-      "artworkKey": "3439e1bca0575548ac078818a46100ab"
+      "artworkKey": "3439e1bca0575548ac078818a46100ab",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "온기",
       "description": "지정한 생존 아군의 화상을 제거하고 방어도 3을 부여한다.",
-      "artworkKey": "66bfee48f751568daf78cf18646534bd"
+      "artworkKey": "66bfee48f751568daf78cf18646534bd",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "진정",
       "description": "지정 아군의 공포를 제거하고 정신력을 4 회복한다.",
-      "artworkKey": "15a5d1aac641550ab122d3abf0c33b2d"
+      "artworkKey": "15a5d1aac641550ab122d3abf0c33b2d",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "성수 뿌리기",
       "description": "적 하나에게 마법 피해 5를 준다. 명중한 대상이 불사형이면 피해가 5 증가한다.",
-      "artworkKey": "951a6d7c18da5aa1a113ed374999c116"
+      "artworkKey": "951a6d7c18da5aa1a113ed374999c116",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "회복 기도",
       "description": "현재 체력 수치가 가장 낮은 생존 아군 하나를 찾아 체력을 8 회복시킨다.",
-      "artworkKey": "a41c44ded9a65029b7af60e2d22e9fc5"
+      "artworkKey": "a41c44ded9a65029b7af60e2d22e9fc5",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "정화의 손길",
       "description": "지정 아군에게서 제거 가능한 디버프 하나를 해제하고, 다음 적 턴 동안 마법 피해 저항을 5% 높인다.",
-      "artworkKey": "0d01774164c3586f9eb927cb0fe0825d"
+      "artworkKey": "0d01774164c3586f9eb927cb0fe0825d",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "잔잔한 축복",
       "description": "지정 아군이 받는 체력 회복량을 2턴 동안 20% 높인다.",
-      "artworkKey": "e5204de67fd15eef9242288841541157"
+      "artworkKey": "e5204de67fd15eef9242288841541157",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "빛의 조각",
       "description": "적 하나와 아군 하나를 차례로 선택한다. 적에게 마법 피해 6을 주고 아군의 체력을 3 회복시킨다.",
-      "artworkKey": "226d567ae55c5672be894c60c5303275"
+      "artworkKey": "226d567ae55c5672be894c60c5303275",
+      "cardType": 2,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "재생",
       "description": "지정 아군의 체력을 이번 아군 턴부터 3회 아군 턴 종료마다 5씩 회복한다.",
-      "artworkKey": "b71db3d4b18b52398ae9e3e2f6348656"
+      "artworkKey": "b71db3d4b18b52398ae9e3e2f6348656",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "상처 봉합",
       "description": "지정 아군의 모든 출혈을 해제하고 체력을 14 회복한다.",
-      "artworkKey": "f7b70bbf326a56e2bf1f7c62f4b702fa"
+      "artworkKey": "f7b70bbf326a56e2bf1f7c62f4b702fa",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "해독 의식",
       "description": "생존 아군 전체의 중독을 제거하고 각각 체력 4를 회복시킨다.",
-      "artworkKey": "f9397a668e8f57c8bb2c297d37fc966c"
+      "artworkKey": "f9397a668e8f57c8bb2c297d37fc966c",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "수호 성가",
       "description": "생존 아군 각자에게 방어도 8을 부여한다.",
-      "artworkKey": "987e8bd224d3543da429a57cbd566c22"
+      "artworkKey": "987e8bd224d3543da429a57cbd566c22",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "성역",
       "description": "생존 아군 각자가 받는 피해를 적 턴 2회 동안 10% 낮춘다.",
-      "artworkKey": "124c0788284d5070a825de08b9dd9137"
+      "artworkKey": "124c0788284d5070a825de08b9dd9137",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "빛의 징벌",
       "description": "생존 적 전체에게 마법 피해 8을 준다. 명중한 불사형 적에게 피해 4를 더한다.",
-      "artworkKey": "50d87de45157524ba16473e3c18c4b06"
+      "artworkKey": "50d87de45157524ba16473e3c18c4b06",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "희생 치유",
       "description": "시전자가 자신의 체력 6을 지불하고 선택한 생존 아군의 체력 20을 회복한다. 체력 7 이상에서 사용할 수 있다.",
-      "artworkKey": "02841ea646a7547d98ac285acbc6d3bc"
+      "artworkKey": "02841ea646a7547d98ac285acbc6d3bc",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "고요한 찬가",
       "description": "생존 아군 전체가 받는 공포를 적 턴 2회 동안 30% 확률로 막는다.",
-      "artworkKey": "458a3a03160053ebba57582b7a21e224"
+      "artworkKey": "458a3a03160053ebba57582b7a21e224",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "축복 전이",
       "description": "옮길 수 있는 강화가 걸린 아군과 받을 다른 아군을 차례로 지정해 유효한 강화 하나를 복사한다.",
-      "artworkKey": "4498ffea44ae59dd99a9120b124cf198"
+      "artworkKey": "4498ffea44ae59dd99a9120b124cf198",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "생명수",
       "description": "지정한 아군이 즉시 체력 10을 회복하고, 다음 아군 턴 시작에 체력 6을 더 회복한다.",
-      "artworkKey": "cec49e282ad558f0801c79d7a286616b"
+      "artworkKey": "cec49e282ad558f0801c79d7a286616b",
+      "cardType": 2,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "부활의 씨앗",
       "description": "선택한 생존 아군이 다음 적 턴 두 번이 끝나기 전에 쓰러지면 최대 체력의 20%로 한 번 부활한다. 소수점은 올린다.",
-      "artworkKey": "1931cdf402d852c9a3bf117869c1f98f"
+      "artworkKey": "1931cdf402d852c9a3bf117869c1f98f",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "축성 방벽",
       "description": "생존 아군 각자에게 방어도 12를 주고 다음 적 턴 두 번 동안 마법 피해 저항을 10% 높인다.",
-      "artworkKey": "cfd55206674e55fe8cd2c3b8d6cb1065"
+      "artworkKey": "cfd55206674e55fe8cd2c3b8d6cb1065",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "빛의 폭우",
       "description": "모든 생존 적에게 마법 피해 8을 주고 모든 생존 아군을 각각 체력 12만큼 회복한다.",
-      "artworkKey": "700a51967645599c838fb02abf026adc"
+      "artworkKey": "700a51967645599c838fb02abf026adc",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "순백의 맹세",
       "description": "지정 아군이 받을 다음 피해를 한 번 무효로 하고 정신력을 8 회복시킨다.",
-      "artworkKey": "baf2edb8c4bc5994bb4fd366b5037279"
+      "artworkKey": "baf2edb8c4bc5994bb4fd366b5037279",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "고통 분산",
       "description": "두 적 턴 동안 보호가 걸린 아군이 적의 직접 공격을 받으면 피해의 25%를 이 효과가 있는 다른 생존 아군과 나눈다.",
-      "artworkKey": "3496e3c3705559d9a3ec13afadf8797a"
+      "artworkKey": "3496e3c3705559d9a3ec13afadf8797a",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "기적의 잔향",
       "description": "이번 아군 턴 동안 생존 아군이 사용하는 카드의 직접 체력 회복량을 6 높인다.",
-      "artworkKey": "fe48f6b319a0501ead11a42493748f2e"
+      "artworkKey": "fe48f6b319a0501ead11a42493748f2e",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "심판의 성수",
       "description": "적 하나에게 마법 피해 18을 준다. 공격이 명중하고 적이 생존하면 해제 가능한 강화 하나를 제거한다.",
-      "artworkKey": "b8b14da7be535b1d8fb6742700c23cb2"
+      "artworkKey": "b8b14da7be535b1d8fb6742700c23cb2",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "구원의 원",
       "description": "생존 아군 전체의 공포를 해제하고 각각 체력 8을 회복한다.",
-      "artworkKey": "c53dc8d24ce95406a37a54662540baf5"
+      "artworkKey": "c53dc8d24ce95406a37a54662540baf5",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "생명의 계약",
       "description": "시전자의 정신력 5를 소모하고 선택한 생존 아군의 체력을 25 회복한다.",
-      "artworkKey": "a298eccbfcad576fbf65f03f9188ae1a"
+      "artworkKey": "a298eccbfcad576fbf65f03f9188ae1a",
+      "cardType": 2,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "대천사의 축복",
       "description": "생존 아군 전체에서 제거 가능한 디버프를 모두 없애고 각각 체력 25를 회복한다.",
-      "artworkKey": "219b8c4325ca59c594f0c116e4bbebb6"
+      "artworkKey": "219b8c4325ca59c594f0c116e4bbebb6",
+      "cardType": 2,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "순교자의 빛",
       "description": "시전자의 체력을 1로 낮춘 뒤 시전자를 포함한 생존 아군 전체를 체력 30씩 회복한다.",
-      "artworkKey": "2b46f74987db50d6b7cf030dfd3db7c6"
+      "artworkKey": "2b46f74987db50d6b7cf030dfd3db7c6",
+      "cardType": 2,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "부활 성가",
       "description": "쓰러진 출전 아군 한 명을 최대 체력의 50%로 부활시킨다. 소수점은 올린다.",
-      "artworkKey": "33ee35df081b51c8876676a3c7088175"
+      "artworkKey": "33ee35df081b51c8876676a3c7088175",
+      "cardType": 2,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "불멸의 잔",
       "description": "생존 아군마다 첫 치명 피해에서 체력 1로 버티는 보호 1회와 방어도 10을 준다.",
-      "artworkKey": "1e44900f04c15c4797540712e0e46a3e"
+      "artworkKey": "1e44900f04c15c4797540712e0e46a3e",
+      "cardType": 2,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "성배의 기적",
       "description": "현재 행동력을 모두 소모해 지불한 행동력마다 생존 아군 전체를 각각 체력 8 회복한다. 행동력을 4 이상 지불하면 각 대상에게서 디버프 하나도 해제한다.",
-      "artworkKey": "4fccf7fb991e5585a7ff81f2d6deaff2"
+      "artworkKey": "4fccf7fb991e5585a7ff81f2d6deaff2",
+      "cardType": 2,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "빛의 대심판",
       "description": "생존 적 전체에게 마법 피해 25를 주고 생존 아군 전체를 각각 체력 15만큼 회복한다.",
-      "artworkKey": "9c7d7e8a21b659f8a1cc7650ff63082e"
+      "artworkKey": "9c7d7e8a21b659f8a1cc7650ff63082e",
+      "cardType": 2,
+      "costLabel": "6"
     },
     {
       "category": 7,
       "name": "얼음 화살",
       "description": "지정 적에게 마법 피해 6을 준다. 명중하면 다음 적 턴 동안 행동 속도를 1 낮춘다.",
-      "artworkKey": "2492b5eb515a50a0bf54a1fad3582d8d"
+      "artworkKey": "2492b5eb515a50a0bf54a1fad3582d8d",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "전격",
       "description": "생존 적 중 서로 다른 두 명을 무작위로 골라 각각 마법 피해 7을 준다. 적이 하나면 한 번 공격한다.",
-      "artworkKey": "035107954fb15b99abc9b50e3236c5d2"
+      "artworkKey": "035107954fb15b99abc9b50e3236c5d2",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마력 보호막",
       "description": "생존 아군 하나의 마법 저항력 수치를 다음 적 턴 동안 6 높인다.",
-      "artworkKey": "5883a09ce94e5e838a98b96671e2755c"
+      "artworkKey": "5883a09ce94e5e838a98b96671e2755c",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "빙결",
       "description": "지정 적에게 한 적 턴 동안 행동 불가 상태를 부여한다.",
-      "artworkKey": "1f581a791b1c5514a250ad0c6cb4cea9"
+      "artworkKey": "1f581a791b1c5514a250ad0c6cb4cea9",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "마력 증폭",
       "description": "생존 아군 각각의 마법 카드 공격력을 5 높인다. 시전한 턴부터 아군 턴 두 번 동안 적용된다.",
-      "artworkKey": "21d47787e8955964997e0d4d1d8b388b"
+      "artworkKey": "21d47787e8955964997e0d4d1d8b388b",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "번개 폭풍",
       "description": "생존 적 전체에게 마법 피해 8을 준다. 명중한 생존 적은 다음 적 턴 시작에 감전 피해 1을 받는다.",
-      "artworkKey": "a846a167d9305f839fa6c3864a7cb998"
+      "artworkKey": "a846a167d9305f839fa6c3864a7cb998",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "운석 낙하",
       "description": "생존 적 전체에게 마법 피해 20을 준다. 명중한 생존 적에게 한 적 턴 동안 기절을 부여한다.",
-      "artworkKey": "a7edc5b28bf252cb98a736f3f6110666"
+      "artworkKey": "a7edc5b28bf252cb98a736f3f6110666",
+      "cardType": 1,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "마력 해방",
       "description": "현재 행동력을 모두 지불하고 지정 적에게 지불한 행동력마다 마법 피해 7을 준다.",
-      "artworkKey": "4ed4434c958c5825ad1d2e8515e53b24"
+      "artworkKey": "4ed4434c958c5825ad1d2e8515e53b24",
+      "cardType": 1,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "냉기 손길",
       "description": "지정 적에게 마법 피해 5를 준다. 명중하면 다음 두 적 턴 동안 행동 속도를 1 낮춘다.",
-      "artworkKey": "6cdf92c8fcdc5433b688b28c959cb751"
+      "artworkKey": "6cdf92c8fcdc5433b688b28c959cb751",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "작은 불꽃",
       "description": "지정 적에게 마법 피해 6을 준다. 명중한 생존 적에게 25% 확률로 2턴 동안 화상 2를 부여한다.",
-      "artworkKey": "1285fca9b18651889a8a21978bafcac3"
+      "artworkKey": "1285fca9b18651889a8a21978bafcac3",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "정전기",
       "description": "지정 적에게 마법 피해 5를 준다. 명중한 생존 적에게 25% 확률로 두 적 턴 동안 감전 1을 부여한다.",
-      "artworkKey": "432ba05beb9e589b9e454b23e5cfbac6"
+      "artworkKey": "432ba05beb9e589b9e454b23e5cfbac6",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마력 집중",
       "description": "다음으로 사용하는 지팡이 피해 카드가 명중할 때마다 피해가 4 증가한다.",
-      "artworkKey": "177ecb55a02858319d23e4459c312cdf"
+      "artworkKey": "177ecb55a02858319d23e4459c312cdf",
+      "cardType": 1,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "마법 장벽",
       "description": "지정 아군의 마법 피해 저항을 두 적 턴 동안 10% 높인다.",
-      "artworkKey": "ea12640ec18f58f29398dce1b1fdcd48"
+      "artworkKey": "ea12640ec18f58f29398dce1b1fdcd48",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "서리 파편",
       "description": "서로 다른 생존 적 둘을 골라 각 대상에게 마법 피해 4를 준다. 적이 하나면 그 적을 선택해 한 번 공격한다.",
-      "artworkKey": "32423a04ca625a639bc3c6f25e478ac1"
+      "artworkKey": "32423a04ca625a639bc3c6f25e478ac1",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "불씨 확산",
       "description": "화상 상태인 생존 적을 선택해 마법 피해 8을 준다.",
-      "artworkKey": "796d2e89ce2858c9820c51ce1946d262"
+      "artworkKey": "796d2e89ce2858c9820c51ce1946d262",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마력 흡수",
       "description": "지정 적에게 마법 피해 4를 주고 생존 적에게 명중하면 30% 확률로 현재 행동력을 1 회복한다.",
-      "artworkKey": "65c50561f28e536e91cd0da8fb33563a"
+      "artworkKey": "65c50561f28e536e91cd0da8fb33563a",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "저주 표식",
       "description": "지정 적이 받는 마법 피해를 두 적 턴 동안 15% 높인다.",
-      "artworkKey": "4e570d2a813055778d6b9a041946f478"
+      "artworkKey": "4e570d2a813055778d6b9a041946f478",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "바람 칼날",
       "description": "지정 적에게 마법 피해 6을 준다. 명중한 생존 적의 회피율을 두 적 턴 동안 10%p 낮춘다.",
-      "artworkKey": "dee8d59861b359dea35cd1c921e2768a"
+      "artworkKey": "dee8d59861b359dea35cd1c921e2768a",
+      "cardType": 1,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "마나 회수",
       "description": "손패에서 다른 지팡이 카드 한 장을 골라 버리고 현재 행동력을 1 회복한다.",
-      "artworkKey": "c194340acb1a5b9b9c8c508be8222e84"
+      "artworkKey": "c194340acb1a5b9b9c8c508be8222e84",
+      "cardType": 1,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "화염 쇄도",
       "description": "서로 다른 생존 적 둘에게 각 마법 피해 9를 준다. 생존 적이 한 명이면 한 번 공격한다. 명중한 생존 적에게 각각 35% 확률로 2턴 동안 화상 2를 부여한다.",
-      "artworkKey": "ac1c9fecf3ac58448663b738c3864ded"
+      "artworkKey": "ac1c9fecf3ac58448663b738c3864ded",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "서리 감옥",
       "description": "지정 적에게 마법 피해 8을 준다. 명중한 생존 적은 40% 확률로 다음 행동을 한 번 잃는다.",
-      "artworkKey": "e8a64d524f9b528884285e0153678380"
+      "artworkKey": "e8a64d524f9b528884285e0153678380",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "연쇄 번개",
       "description": "타격마다 현재 생존 적을 무작위로 골라 마법 피해 6을 준다. 한 카드에서 최대 세 번 타격하며 적 하나가 반복 대상이 될 수 있다.",
-      "artworkKey": "5d38e1658c33520d97bad2973832325b"
+      "artworkKey": "5d38e1658c33520d97bad2973832325b",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "중력 압박",
       "description": "생존 적 전체의 회피율을 두 적 턴 동안 15%p 낮춘다.",
-      "artworkKey": "2d5e1f32898b54238f66198b1cb28053"
+      "artworkKey": "2d5e1f32898b54238f66198b1cb28053",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마력 방출",
       "description": "생존 적 전체에 각각 마법 피해 9를 준다.",
-      "artworkKey": "845d406cb0465c0288f8153959721008"
+      "artworkKey": "845d406cb0465c0288f8153959721008",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "비전 보호",
       "description": "생존 아군 전체가 두 적 턴 동안 적의 직접 마법 피해에 대한 저항을 15% 얻는다.",
-      "artworkKey": "0cc7a4f6964d5b79b0b8090dacfb01c2"
+      "artworkKey": "0cc7a4f6964d5b79b0b8090dacfb01c2",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "정신 충격",
       "description": "지정 적에게 마법 피해 10을 준다. 명중한 생존 적의 정신력을 5 낮춘다.",
-      "artworkKey": "250cb72d031c5aa587c07b8c60b9a805"
+      "artworkKey": "250cb72d031c5aa587c07b8c60b9a805",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "냉기 폭발",
       "description": "생존 적 전체에게 각각 마법 피해 7을 준다. 명중한 생존 적의 행동 속도를 한 적 턴 동안 1 낮춘다.",
-      "artworkKey": "d00866427a5950c7948886d0b48bc03e"
+      "artworkKey": "d00866427a5950c7948886d0b48bc03e",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "화상 증폭",
       "description": "화상이 걸린 모든 생존 적의 화상 지속 시간을 한 적 턴 늘린다.",
-      "artworkKey": "83428815a81655079de78b7bcde80315"
+      "artworkKey": "83428815a81655079de78b7bcde80315",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "감전 전이",
       "description": "감전 상태인 적에게 마법 피해 12를 준다. 명중 후 다른 생존 적을 무작위로 골라 감전 1을 두 적 턴 동안 부여한다.",
-      "artworkKey": "e263888fe32a510398b9ac65e3f834d3"
+      "artworkKey": "e263888fe32a510398b9ac65e3f834d3",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마법 반향",
       "description": "이번 아군 턴에 자신이 다음으로 사용하는 지팡이 마법 공격을 한 번 복제한다. 복제는 기본 피해의 50%를 적용한다.",
-      "artworkKey": "c4cbe7fe996355249ba26b73c5d9fc81"
+      "artworkKey": "c4cbe7fe996355249ba26b73c5d9fc81",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "룬 폭발",
       "description": "지정 적에게 마법 피해 11을 준다. 활성 청진기·공개·전차 표식이 있는 적은 추가 피해 6을 받는다.",
-      "artworkKey": "4b17683e2f995eb09104473e2b7d9b80"
+      "artworkKey": "4b17683e2f995eb09104473e2b7d9b80",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "운명 동결",
       "description": "지정 적에게 한 적 턴 동안 기절을 부여하고, 두 적 턴 동안 마법 저항력을 10 낮춘다.",
-      "artworkKey": "9740e591e90e566a90649517c3cc1fe7"
+      "artworkKey": "9740e591e90e566a90649517c3cc1fe7",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "화염 폭우",
       "description": "타격마다 생존 적을 무작위로 골라 마법 피해 5를 최대 여섯 번 준다. 명중한 생존 적에게 각각 25% 확률로 화상 2를 두 턴 동안 부여한다.",
-      "artworkKey": "2acded1da6f75767b20404a0fcb12d4f"
+      "artworkKey": "2acded1da6f75767b20404a0fcb12d4f",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "천둥 감옥",
       "description": "생존 적 전체에게 각각 마법 피해 10을 준다. 명중한 생존 적에게 40% 확률로 감전 1을 두 적 턴 동안 부여한다.",
-      "artworkKey": "aa95727a248e53e9b5926a2cbfc632a1"
+      "artworkKey": "aa95727a248e53e9b5926a2cbfc632a1",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "마력 폭주",
       "description": "이번 아군 턴 동안 자신의 지팡이 마법 공격 피해를 50% 높인다. 사용 후 자신의 정신력이 5 감소한다.",
-      "artworkKey": "25ed017c92dc570c98a2b5245fec27fe"
+      "artworkKey": "25ed017c92dc570c98a2b5245fec27fe",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "공허의 손",
       "description": "지정 적에게 마법 피해 16을 준다. 유효하게 명중한 생존 적의 가장 오래된 제거 가능한 강화 한 개를 제거한다.",
-      "artworkKey": "e58d99e56f725c6db58cc32331bdf802"
+      "artworkKey": "e58d99e56f725c6db58cc32331bdf802",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "별빛 낙인",
       "description": "생존 적 전체가 받는 피해를 두 적 턴 동안 10% 높인다.",
-      "artworkKey": "d551e0f66c255af48e50dafbf2b1a56a"
+      "artworkKey": "d551e0f66c255af48e50dafbf2b1a56a",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "환영 분열",
       "description": "지정 아군의 회피율을 두 적 턴 동안 25%p 높이고, 다음 유효한 적 직접 피격 피해를 5 줄인다.",
-      "artworkKey": "0783fcf0510e59b6870955a42aa94a0a"
+      "artworkKey": "0783fcf0510e59b6870955a42aa94a0a",
+      "cardType": 1,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "마력 역류",
       "description": "생존 적 전체에 각각 마법 피해 12를 준다. 정산 뒤 이번 아군 턴 동안 자신의 공격력이 2 감소한다.",
-      "artworkKey": "bdc7fc0ec4eb5bfb9264c9d375757dc6"
+      "artworkKey": "bdc7fc0ec4eb5bfb9264c9d375757dc6",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "비전 쇄도",
       "description": "지정 적의 현재 마법 저항력 20%를 무시하고 마법 피해 24를 준다. 행동력 비용은 3이다.",
-      "artworkKey": "63f31bb7438a5b7a86f9d99f416eefe1"
+      "artworkKey": "63f31bb7438a5b7a86f9d99f416eefe1",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "심연의 주문",
       "description": "지정 적에게 마법 피해 15를 준다. 명중한 생존 적의 정신력을 8 낮춘다.",
-      "artworkKey": "76c174f97d03502d98b13a20ec1921b2"
+      "artworkKey": "76c174f97d03502d98b13a20ec1921b2",
+      "cardType": 1,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "대폭발",
       "description": "생존 적 전체에게 각각 마법 피해 28을 준다. 명중한 생존 적에게 각각 60% 확률로 화상 2를 두 턴 동안 부여한다.",
-      "artworkKey": "7b22528ea0b15677bac4cd962227243d"
+      "artworkKey": "7b22528ea0b15677bac4cd962227243d",
+      "cardType": 1,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "절대영도",
       "description": "생존 적 전체에게 각각 마법 피해 18을 준다. 명중한 생존 적은 각각 50% 확률로 다음 행동 한 번을 잃는다.",
-      "artworkKey": "cc93a995b42d52cf97c2e9b39090ce2e"
+      "artworkKey": "cc93a995b42d52cf97c2e9b39090ce2e",
+      "cardType": 1,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "폭풍의 눈",
       "description": "생존 적 전체에게 마법 피해 14를 두 차례 준다. 각 타격 시 감전 상태인 적은 그 타격에서 마법 피해 8을 더 받는다.",
-      "artworkKey": "16be69045ef953feba34508c45dfc17d"
+      "artworkKey": "16be69045ef953feba34508c45dfc17d",
+      "cardType": 1,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "마도 해방식",
       "description": "현재 행동력을 모두 지불하고 생존 적 전체에게 지불한 행동력마다 마법 피해 6을 준다. 4 이상 지불하면 명중한 생존 적을 각각 30% 확률로 한 적 턴 동안 기절시킨다.",
-      "artworkKey": "449dbff7cf955a2f852b1117b150b500"
+      "artworkKey": "449dbff7cf955a2f852b1117b150b500",
+      "cardType": 1,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "시간 정지",
       "description": "생존 적 전체에게 다음 행동 한 번 취소를 부여한다. 아군 공용 손패에 카드 한 장을 뽑는다.",
-      "artworkKey": "829181bc12da598b92a5673362262d13"
+      "artworkKey": "829181bc12da598b92a5673362262d13",
+      "cardType": 1,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "공허 붕괴",
       "description": "지정 적에게 마법 피해 45를 준다. 이 공격으로 적을 처치하지 못하면 자신의 정신력이 10 감소한다.",
-      "artworkKey": "a3ac39042d495018b54b30aa431ca39e"
+      "artworkKey": "a3ac39042d495018b54b30aa431ca39e",
+      "cardType": 1,
+      "costLabel": "6"
     },
     {
       "category": 7,
       "name": "황금 동전",
       "description": "현재 행동력을 1 회복한다. 최대 행동력을 넘지 않는다.",
-      "artworkKey": "a68c56622b9251ee982b37c1c123edc7"
+      "artworkKey": "a68c56622b9251ee982b37c1c123edc7",
+      "cardType": 3,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "집중",
       "description": "이번 아군 턴의 공용 손패에 카드 한 장을 즉시 뽑는다.",
-      "artworkKey": "308198fb12bd5e5eaefa57ec6509d3f9"
+      "artworkKey": "308198fb12bd5e5eaefa57ec6509d3f9",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "전술 교환",
       "description": "손패에서 다른 카드 두 장을 골라 버리고 보충 카드 두 장을 뽑는다.",
-      "artworkKey": "7dced9221d5d5307b995caf93fd054d1"
+      "artworkKey": "7dced9221d5d5307b995caf93fd054d1",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "강화 주문",
       "description": "손패에서 다른 카드 한 장을 고른다. 그 카드의 다음 실제 사용에서 기본 효과 수치가 50% 증가한다.",
-      "artworkKey": "6bb88bc9bbce59ae879a144e9d01b375"
+      "artworkKey": "6bb88bc9bbce59ae879a144e9d01b375",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "효율적 사용",
       "description": "이번 아군 턴 동안 아군 카드의 기본 행동력 비용을 1 낮춘다. 현재 행동력을 모두 지불하는 X 비용과 별도 필수 비용은 그대로다.",
-      "artworkKey": "2904f35acc0f58e39ac082ef0f5fd9a4"
+      "artworkKey": "2904f35acc0f58e39ac082ef0f5fd9a4",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "고대의 룬",
       "description": "아군 공용 손패에 카드 두 장을 즉시 뽑는다.",
-      "artworkKey": "917c7e46c8c55f948555abea9fe6c598"
+      "artworkKey": "917c7e46c8c55f948555abea9fe6c598",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "운명의 바퀴",
       "description": "현재 행동력 수만큼 손패의 다른 카드를 선택한다. 행동력을 모두 지불하고 고른 카드를 이번 전투에서 제외한 뒤, 생존 아군 전체의 체력을 지불한 행동력마다 3 회복한다.",
-      "artworkKey": "eb9f917ce51054f6a530befe37109135"
+      "artworkKey": "eb9f917ce51054f6a530befe37109135",
+      "cardType": 3,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "계약",
       "description": "시전자의 체력을 10 지불하고 현재 행동력을 3 회복한다. 체력은 최소 1 남아야 한다.",
-      "artworkKey": "5a805eed2beb5795b77183c0bb2521c9"
+      "artworkKey": "5a805eed2beb5795b77183c0bb2521c9",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "힘의 분배",
       "description": "선택한 생존 아군의 공격력을 8 높이고 물리 방어력을 4 낮춘다. 두 효과는 전투가 끝날 때까지 지속된다.",
-      "artworkKey": "4bd8217401495c18a30bb3f81b8b9855"
+      "artworkKey": "4bd8217401495c18a30bb3f81b8b9855",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "카드 복제",
       "description": "이번 아군 턴에 실제로 사용한 카드 한 장을 골라 복제한다. 같은 소유자와 강화 상태의 새 카드가 손패에 들어온다.",
-      "artworkKey": "8b4ecd57d95a5e84bf0f8c5a0d41e388"
+      "artworkKey": "8b4ecd57d95a5e84bf0f8c5a0d41e388",
+      "cardType": 3,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "룬의 힘",
       "description": "선택한 아군이 소유한 손패 카드 중 기본 행동력 비용이 있는 일반 카드 한 장의 기본 비용을 무작위로 0으로 바꾼다. 그 카드를 사용할 때까지 적용된다.",
-      "artworkKey": "db3ad9c249eb5dbcae896ce0d0befed8"
+      "artworkKey": "db3ad9c249eb5dbcae896ce0d0befed8",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "제의",
       "description": "시전자의 체력을 5 지불하고 행동력을 2 회복한다. 시전자에게는 체력이 최소 1 남아야 한다.",
-      "artworkKey": "3b1ce08e4f1154bead6bbb0e57ecb208"
+      "artworkKey": "3b1ce08e4f1154bead6bbb0e57ecb208",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "융합의 힘",
       "description": "공용 손패에 카드 두 장을 뽑고 생존 아군 전원의 체력을 10 회복한다. 생존 적 전원에게 일반 피해 15를 준다.",
-      "artworkKey": "829efc3f3dba585b9d4a78400c9eac9f"
+      "artworkKey": "829efc3f3dba585b9d4a78400c9eac9f",
+      "cardType": 3,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "동전 줍기",
       "description": "행동력을 1 회복하고 이 카드를 이번 전투에서 제외한다.",
-      "artworkKey": "d343d35e4f215f75a026ac98fc4b6eca"
+      "artworkKey": "d343d35e4f215f75a026ac98fc4b6eca",
+      "cardType": 3,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "물자 확보",
       "description": "공용 손패에 카드 한 장을 뽑고 시전자가 방어도 3을 얻는다.",
-      "artworkKey": "3fde31a24f8956d883a7a3afaf42b214"
+      "artworkKey": "3fde31a24f8956d883a7a3afaf42b214",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임시 보급",
       "description": "선택한 생존 아군의 체력을 4 회복한다. 별도로 30% 확률로 행동력을 1 회복한다.",
-      "artworkKey": "4eedb2ac99dc56d99334adb57ece396a"
+      "artworkKey": "4eedb2ac99dc56d99334adb57ece396a",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "교환 제안",
       "description": "손패의 다른 카드 한 장을 골라 버린 뒤 공용 손패에 카드 두 장을 뽑는다.",
-      "artworkKey": "c4c11709e3c1561c86b1ea9b21063ca7"
+      "artworkKey": "c4c11709e3c1561c86b1ea9b21063ca7",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "룬 기록",
       "description": "시전자가 다음에 사용하는 기본 행동력 비용이 있는 일반 카드의 기본 비용을 1 낮춘다. 사용 전까지 턴이 바뀌어도 유지된다.",
-      "artworkKey": "6851d2b2eb52590c9d603f5f1e71c461"
+      "artworkKey": "6851d2b2eb52590c9d603f5f1e71c461",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "전술 표시",
       "description": "선택한 생존 적 한 명에게 두 적 턴 동안 표식을 부여한다.",
-      "artworkKey": "d759fbb94c425fa38ce18846ab21671e"
+      "artworkKey": "d759fbb94c425fa38ce18846ab21671e",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "임기응변",
       "description": "시전자가 소유한 일반 등급 무작위 카드 한 장을 이번 전투의 손패에 생성한다.",
-      "artworkKey": "6092bc88fecc5e1ea87e26af789288ab"
+      "artworkKey": "6092bc88fecc5e1ea87e26af789288ab",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "비상금",
       "description": "다음 아군 턴의 시작에 그 턴의 최대 행동력과 현재 행동력을 각각 1 높인다.",
-      "artworkKey": "c7268f5683085298831faefbc5992c40"
+      "artworkKey": "c7268f5683085298831faefbc5992c40",
+      "cardType": 3,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "도구 손질",
       "description": "선택한 아군이 다음에 명중시키는 유효한 직접 공격 타격의 피해를 4 높인다.",
-      "artworkKey": "9e9342da490259c7b4ab8af034b0b144"
+      "artworkKey": "9e9342da490259c7b4ab8af034b0b144",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "패 정리",
       "description": "손패의 다른 카드 한 장 또는 두 장을 골라 버린 뒤 같은 수만큼 공용 손패에 카드가 들어온다.",
-      "artworkKey": "369bbe8fd4895c67a6dc93546b3680d2"
+      "artworkKey": "369bbe8fd4895c67a6dc93546b3680d2",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "기회 포착",
       "description": "이 카드가 이번 아군 턴에 처음 실제로 사용한 카드라면 사용을 마친 후 행동력을 1 회복한다.",
-      "artworkKey": "608ceef1c6215314bd8b114f752d93dc"
+      "artworkKey": "608ceef1c6215314bd8b114f752d93dc",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "자원 순환",
       "description": "이번 전투에서 제외된 카드 중 무작위 한 장을 같은 소유자와 강화 상태로 손패에 되돌린다.",
-      "artworkKey": "a4f5ab0a02d25c08a07acf86180353ac"
+      "artworkKey": "a4f5ab0a02d25c08a07acf86180353ac",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "전략 보관",
       "description": "다른 손패 카드 한 장을 골라 다음 아군 턴까지 보존한다. 그 카드의 기본 행동력 비용을 1 낮춘다.",
-      "artworkKey": "c1fa8a5c70c6525b9560242c9aff0837"
+      "artworkKey": "c1fa8a5c70c6525b9560242c9aff0837",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "약점 분석",
       "description": "선택한 생존 적이 받는 피해를 두 적 턴 동안 20% 높인다.",
-      "artworkKey": "cac1e7de6beb5386b0f708dc1ae4e2f0"
+      "artworkKey": "cac1e7de6beb5386b0f708dc1ae4e2f0",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "계산된 투자",
       "description": "행동력이 2 이상일 때 현재 행동력을 모두 지불한다. 다음 아군 턴에 지불한 수만큼 최대 및 현재 행동력을 높인다.",
-      "artworkKey": "6ae7410adb54563881ce4e95a5a58beb"
+      "artworkKey": "6ae7410adb54563881ce4e95a5a58beb",
+      "cardType": 3,
+      "costLabel": "2+"
     },
     {
       "category": 7,
       "name": "룬 증폭",
       "description": "선택한 생존 아군의 턴 수가 정해진 활성 강화 지속 시간을 각각 1턴 늘린다.",
-      "artworkKey": "55365ec454b955f1acb22ce29947fc71"
+      "artworkKey": "55365ec454b955f1acb22ce29947fc71",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "임시 계약서",
       "description": "시전자의 체력을 6 지불해 공용 손패에 카드 두 장을 뽑는다. 시전자의 체력은 최소 1 남아야 한다.",
-      "artworkKey": "3a06ba2db1c6588383e2acd6a782fad1"
+      "artworkKey": "3a06ba2db1c6588383e2acd6a782fad1",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "도박수",
       "description": "50% 확률로 행동력을 2 회복한다. 실패하면 시전자의 정신력이 5 감소한다.",
-      "artworkKey": "59ad96be1fc2524e948c0e551375c9f1"
+      "artworkKey": "59ad96be1fc2524e948c0e551375c9f1",
+      "cardType": 3,
+      "costLabel": "1"
     },
     {
       "category": 7,
       "name": "기계식 계산",
       "description": "이번 아군 턴 동안 펜타클 카드의 일반 기본 행동력 비용을 1 낮춘다.",
-      "artworkKey": "1af8f5832b335c52be3c5aa9260d359a"
+      "artworkKey": "1af8f5832b335c52be3c5aa9260d359a",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "전장 지도",
       "description": "생존 적 전체에 표식을 한 적 턴 동안 부여한다. 생존 아군 전체의 명중률을 두 아군 턴 동안 10%p 높인다.",
-      "artworkKey": "90ac2deb126155108f69283079e659bb"
+      "artworkKey": "90ac2deb126155108f69283079e659bb",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "비밀 금고",
       "description": "행동력 2를 얻는다. 다음 아군 턴에 기본 드로우가 1장 줄어든다.",
-      "artworkKey": "5896eaccd4f25b82b5956790f2a4e827"
+      "artworkKey": "5896eaccd4f25b82b5956790f2a4e827",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "룬 봉인",
       "description": "선택한 적의 제거 가능한 강화 하나를 해제한다. 두 적 턴 동안 마법 저항력을 10 낮춘다.",
-      "artworkKey": "21b3434b8d04527f93f0743e86069699"
+      "artworkKey": "21b3434b8d04527f93f0743e86069699",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "재분배",
       "description": "생존 아군의 체력 총합을 유지하며 각자의 최대 체력 범위에서 고르게 나눈다. 생존 아군 모두 방어도를 6 얻는다.",
-      "artworkKey": "995610a8139954d58d9d0d2929d6a2ed"
+      "artworkKey": "995610a8139954d58d9d0d2929d6a2ed",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "대가 지불",
       "description": "시전자의 체력을 12 지불하고 행동력 4를 얻는다. 시전자의 체력은 최소 1 남아야 한다.",
-      "artworkKey": "3692f526a7e25b5b93bcc085f4bb75f5"
+      "artworkKey": "3692f526a7e25b5b93bcc085f4bb75f5",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "연금술",
       "description": "다른 일반 손패 카드 한 장을 골라 이번 전투 동안 같은 계열의 무작위 희귀 카드로 바꾼다. 카드 소유자는 유지된다.",
-      "artworkKey": "119c0e32877d507699f83c2dfb4f99cd"
+      "artworkKey": "119c0e32877d507699f83c2dfb4f99cd",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "복리 효과",
       "description": "이번 아군 턴에 행동력을 얻을 때마다 행동력을 1 더 얻는다.",
-      "artworkKey": "ffd4eec24e585107ae6ec3849830176e"
+      "artworkKey": "ffd4eec24e585107ae6ec3849830176e",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "운명 조작",
       "description": "뽑을 카드 더미에서 한 장을 골라 현재 소유자와 강화 상태 그대로 손패로 가져온다.",
-      "artworkKey": "e00fa50da45f5d049cdeaf1db961a331"
+      "artworkKey": "e00fa50da45f5d049cdeaf1db961a331",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "룬 장벽",
       "description": "생존 아군마다 방어도를 10 부여한다. 다음 아군 턴의 최대 및 현재 행동력이 1 증가한다.",
-      "artworkKey": "581b7c5d33e15dce8251b7ac5cc749b6"
+      "artworkKey": "581b7c5d33e15dce8251b7ac5cc749b6",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "금빛 미끼",
       "description": "생존 적 전체에 한 적 턴 동안 표식을 부여한다. 각 적의 직접 공격 피해를 두 적 턴 동안 10% 낮춘다.",
-      "artworkKey": "f5093f9fa69b5c6184213cf4390b0e3b"
+      "artworkKey": "f5093f9fa69b5c6184213cf4390b0e3b",
+      "cardType": 3,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "계약 파기",
       "description": "기본 행동력 3과 추가 행동력 1을 지불한다. 각 생존 아군에게 먼저 적용된 해제 가능한 약화 하나를 제거한다.",
-      "artworkKey": "5191ce33c6ca524ba4b7f7acb37eb7a4"
+      "artworkKey": "5191ce33c6ca524ba4b7f7acb37eb7a4",
+      "cardType": 3,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "고대 계산식",
       "description": "카드 3장을 뽑는다. 이번 아군 턴에 실제로 뽑은 카드의 고정 기본 행동력 비용이 1 증가한다.",
-      "artworkKey": "55a902d1451159d4b1464919983c051a"
+      "artworkKey": "55a902d1451159d4b1464919983c051a",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "룬 폭주 장치",
       "description": "비용 지불 직후 남은 행동력마다 생존 적 전원에게 기본 마법 피해 4를 준다.",
-      "artworkKey": "0435dba275b459159ee8df6ecc0b7615"
+      "artworkKey": "0435dba275b459159ee8df6ecc0b7615",
+      "cardType": 3,
+      "costLabel": "3"
     },
     {
       "category": 7,
       "name": "황금률",
       "description": "비용 지불 직후 남은 행동력마다 생존 아군 전원의 체력을 기본 5 회복한다.",
-      "artworkKey": "e22cf5073c895859ba4b604f6613c97d"
+      "artworkKey": "e22cf5073c895859ba4b604f6613c97d",
+      "cardType": 3,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "운명의 재작성",
       "description": "다른 손패를 모두 버리고 이번 전투에 사용할 서로 다른 전설 카드 2장을 생성한다. 생성 카드의 소유자는 시전자다.",
-      "artworkKey": "af9d5c9442235d4789db2a1c86ebba19"
+      "artworkKey": "af9d5c9442235d4789db2a1c86ebba19",
+      "cardType": 3,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "무한 계약",
       "description": "현재 행동력 전부를 X로 지불하고 시전자의 체력을 X×4 지불한다. 이번 아군 턴의 상한을 확장해 행동력 X×2를 얻는다. 시전자는 체력이 1 이상 남아야 한다.",
-      "artworkKey": "838c80934cb85fddadec940c1475960c"
+      "artworkKey": "838c80934cb85fddadec940c1475960c",
+      "cardType": 3,
+      "costLabel": "X"
     },
     {
       "category": 7,
       "name": "현자의 룬",
       "description": "행동력 2를 얻는다. 이번 아군 턴 동안 아군이 사용하는 카드의 적용 수치가 50% 증가하며 같은 강화는 중첩되지 않는다.",
-      "artworkKey": "218a74d7393a5d5282ac8521f8d3539f"
+      "artworkKey": "218a74d7393a5d5282ac8521f8d3539f",
+      "cardType": 3,
+      "costLabel": "5"
     },
     {
       "category": 7,
       "name": "시간의 동전",
       "description": "이번 아군 턴이 끝나면 적 턴 전에 아군 턴을 한 번 더 시작한다. 추가 턴의 최대 및 현재 행동력이 2 줄며, 적 턴이 끝날 때까지 다시 사용할 수 없다.",
-      "artworkKey": "fc315e7e2e9c5e5a8b335a04180300fd"
+      "artworkKey": "fc315e7e2e9c5e5a8b335a04180300fd",
+      "cardType": 3,
+      "costLabel": "4"
     },
     {
       "category": 7,
       "name": "완성된 의식",
       "description": "공용 손패로 카드 3장을 뽑고 행동력 3을 얻는다. 모든 생존 적의 공격력을 2 적 턴 동안 1 낮춘다.",
-      "artworkKey": "f070e9e689e35791b28c3ebeff55554b"
+      "artworkKey": "f070e9e689e35791b28c3ebeff55554b",
+      "cardType": 3,
+      "costLabel": "6"
     },
     {
       "category": 7,
       "name": "막기",
       "description": "자신이 방어도 4를 얻는다.",
-      "artworkKey": "f41225e39a335364b356d98f99ca6e03"
+      "artworkKey": "f41225e39a335364b356d98f99ca6e03",
+      "cardType": 4,
+      "costLabel": "0"
     },
     {
       "category": 7,
       "name": "흘려내기",
       "description": "자신이 방어도 6을 얻는다. 다음 적 턴이 끝날 때까지 자신의 회피율이 35%p 증가한다.",
-      "artworkKey": "a354ee7a22aa58699978a442ebc140da"
+      "artworkKey": "a354ee7a22aa58699978a442ebc140da",
+      "cardType": 4,
+      "costLabel": "2"
     },
     {
       "category": 7,
       "name": "밀어 막기",
       "description": "지정한 적 하나에게 물리 피해 3을 주고 자신은 방어도 4를 얻는다.",
-      "artworkKey": "1b2c95852b095bfe8d234e273dbf0209"
+      "artworkKey": "1b2c95852b095bfe8d234e273dbf0209",
+      "cardType": 4,
+      "costLabel": "1"
     }
   ]
 }

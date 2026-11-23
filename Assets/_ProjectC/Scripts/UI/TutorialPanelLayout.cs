@@ -4,6 +4,7 @@ using UnityEngine; // 안내 화면 객체 사용
 using UnityEngine.UI; // 예시 이미지와 버튼 사용
 public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란히 표시하는 공통 안내 배치
 { // 공통 안내 배치 시작
+    private const float ExamplePadding = 12f; // 예시 주변 기본 여백
     public TMP_Text Title { get; private set; } // 오른쪽 안내 제목 조회
     public TMP_Text Description { get; private set; } // 오른쪽 안내 설명 조회
     public Button NextButton { get; private set; } // 다음 또는 완료 버튼 조회
@@ -13,6 +14,7 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
     private Button previousPage; // 하단 이전 버튼
     private TMP_Text nextLabel; // 다음과 완료를 전환할 버튼 문구
     private RawImage exampleImage; // 왼쪽 실제 화면 예시 이미지
+    private AspectRatioFitter exampleFit; // 예시와 금색 테두리의 비율 조절
     private TMP_Text exampleCaption; // 예시 이미지 상태 문구
     public static TutorialPanelLayout Create(RectTransform guide, Action next, Action close, Action previous, bool modal = false) // 공통 안내 화면 생성
     { // 공통 안내 화면 생성 시작
@@ -33,17 +35,25 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         panelImage.raycastTarget = modal; // 전투 안내에서 뒤쪽 버튼 입력 차단
         layout.pageLabel = PreparationUi.CreateText("PageLabel", panel, string.Empty, 25f); // 현재 페이지 번호 생성
         PreparationUi.Place(layout.pageLabel.rectTransform, new Vector2(0.5f, 0.95f), Vector2.zero, new Vector2(180f, 48f)); // 안내 상단 중앙 페이지 표시
-        RectTransform preview = PreparationUi.CreatePanel("Preview", panel, new Vector2(0.01f, 0.20f), new Vector2(0.48f, 0.83f)); // 왼쪽 예시 이미지 영역 생성
-        Image previewImage = preview.GetComponent<Image>(); // 예시 영역 배경 조회
-        previewImage.color = new Color(0.015f, 0.025f, 0.03f, 0.98f); // 어두운 예시 영역 배경 설정
-        previewImage.raycastTarget = false; // 예시 영역의 게임 입력 통과
-        Outline previewOutline = preview.gameObject.AddComponent<Outline>(); // 예시 이미지 금색 테두리 생성
+        RectTransform preview = new GameObject("Preview", typeof(RectTransform)).GetComponent<RectTransform>(); // 왼쪽 예시 배치 영역 생성
+        preview.SetParent(panel, false); // 안내 패널에 예시 영역 연결
+        PreparationUi.Stretch(preview, new Vector2(0f, 0.20f), new Vector2(0.50f, 0.83f)); // 패널 왼쪽 절반의 예시 범위
+        float panelBorder = background != null ? background.border.x / panelImage.pixelsPerUnit : 0f; // 왼쪽 금속 장식의 화면 두께
+        preview.offsetMin = new Vector2(panelBorder + ExamplePadding, ExamplePadding); // 왼쪽 장식과 아래쪽 여백
+        preview.offsetMax = new Vector2(-ExamplePadding, -ExamplePadding); // 오른쪽 설명과 위쪽 여백
+        RectTransform frame = PreparationUi.CreatePanel("ExampleFrame", preview, Vector2.zero, Vector2.one); // 그림 크기에 맞출 금색 프레임 생성
+        Image frameImage = frame.GetComponent<Image>(); // 프레임 바탕 이미지 조회
+        frameImage.color = new Color(0.015f, 0.025f, 0.03f, 0.98f); // 예시 아래 어두운 바탕 색상
+        frameImage.raycastTarget = false; // 프레임의 게임 입력 통과
+        layout.exampleFit = frame.gameObject.AddComponent<AspectRatioFitter>(); // 프레임 종횡비 조절 기능 추가
+        layout.exampleFit.aspectMode = AspectRatioFitter.AspectMode.FitInParent; // 예시 전체의 영역 안쪽 중앙 배치
+        Outline previewOutline = frame.gameObject.AddComponent<Outline>(); // 그림에 맞춘 금색 테두리 생성
         previewOutline.effectColor = new Color(1f, 0.75f, 0.28f, 1f); // 예시 테두리 금색 설정
         previewOutline.effectDistance = new Vector2(3f, -3f); // 예시 테두리 두께 설정
         GameObject imageObject = new GameObject("ExampleImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage)); // 실제 게임 화면 예시 생성
-        imageObject.transform.SetParent(preview, false); // 예시 영역에 이미지 연결
+        imageObject.transform.SetParent(frame, false); // 금색 프레임에 그림 연결
         layout.exampleImage = imageObject.GetComponent<RawImage>(); // 실제 예시 이미지 조회
-        PreparationUi.Stretch(layout.exampleImage.rectTransform, new Vector2(0.01f, 0.01f), new Vector2(0.99f, 0.99f)); // 예시 영역 안쪽으로 이미지 배치
+        PreparationUi.Stretch(layout.exampleImage.rectTransform, Vector2.zero, Vector2.one); // 그림과 프레임의 표시 범위 일치
         layout.exampleImage.raycastTarget = false; // 예시 이미지의 게임 입력 통과
         layout.exampleCaption = PreparationUi.CreateText("ExampleCaption", preview, string.Empty, 20f); // 예시 준비 상태 문구 생성
         PreparationUi.Stretch(layout.exampleCaption.rectTransform, new Vector2(0.05f, 0.01f), new Vector2(0.95f, 0.16f)); // 예시 하단 문구 위치 설정
@@ -109,7 +119,9 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
     { // 예시 이미지 설정 시작
         Texture2D image = Resources.Load<Texture2D>("UI/Tutorial/" + name); // 현재 단계의 실제 화면 이미지 조회
         bool missing = image == null; // 예시 이미지 누락 확인
-        exampleImage.texture = missing ? Resources.Load<Texture2D>("UI/Settings/ImageUnavailable") : image; // 누락 시 기존 임시 이미지 사용
+        Texture2D visibleImage = missing ? Resources.Load<Texture2D>("UI/Settings/ImageUnavailable") : image; // 실제 예시 또는 기존 대체 이미지 선택
+        exampleImage.texture = visibleImage; // 화면에 표시할 이미지 연결
+        exampleFit.aspectRatio = visibleImage != null ? (float)visibleImage.width / visibleImage.height : 16f / 9f; // 표시 이미지의 원본 종횡비 적용
         exampleImage.color = Color.white; // 원본 예시 이미지 색상 유지
         exampleCaption.text = missing ? "화면 예시 준비 중" : string.Empty; // 이미지 누락 상태 안내
     } // 예시 이미지 설정 종료

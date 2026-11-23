@@ -17,6 +17,30 @@ public sealed class ExplorationPursuitGridTests // 추적 격자의 탐지와 �
         Assert.IsTrue(ExplorationPursuitGrid.HasLineOfSight(start, end, floor.Contains)); // 벽 제거 후 시야 확보 확인
     } // 직선 시야 검증 종료
 
+    [Test] // 같은 시야 위치의 재사용과 바닥 변경 검증
+    public void CheckLineOfSight_ReusesOnlyTheSameWalkableRevision() // 직선 시야 반복 확인과 새 맵 시야 복원
+    { // 시야 재사용 검증 시작
+        var grid = new ExplorationPursuitGrid(); // 같은 적이 사용하는 추적 탐색기
+        Vector3Int start = Vector3Int.zero; // 적이 서 있는 바닥 셀
+        Vector3Int middle = new Vector3Int(1, 0, 0); // 벽으로 바뀔 가운데 셀
+        Vector3Int end = new Vector3Int(2, 0, 0); // 플레이어가 서 있는 바닥 셀
+        var floor = new HashSet<Vector3Int> { start, middle, end }; // 중간 벽이 없는 처음 통로
+        int visited = 0; // 실제 바닥 조회 반복 횟수
+        bool HasFloor(Vector3Int position) // 실제로 사용하는 바닥과 조회 수 확인
+        { // 바닥 판정 시작
+            visited++; // 현재 시야가 조회한 바닥 수 증가
+            return floor.Contains(position); // 현재 층의 유효 바닥 여부 반환
+        } // 바닥 판정 종료
+        Assert.IsTrue(grid.CheckLineOfSight(start, end, 1, HasFloor)); // 최초에 실제 열린 시야 확인
+        Assert.Greater(visited, 0); // 처음 조회가 원래 바닥 규칙을 검사했는지 확인
+        visited = 0; // 다음 물리 틱을 위한 판정 수 초기화
+        Assert.IsTrue(grid.CheckLineOfSight(start, end, 1, HasFloor)); // 같은 셀과 같은 층의 시야 확인
+        Assert.AreEqual(0, visited); // 이전에 처리한 직선 시야의 반복 탐색 생략 확인
+        floor.Remove(middle); // 동일 좌표에 벽이 생긴 새 층 재현
+        Assert.IsFalse(grid.CheckLineOfSight(start, end, 2, HasFloor)); // 새 바닥 버전에서 이전 시야 재사용 금지 확인
+        Assert.Greater(visited, 0); // 변경한 맵의 실제 바닥 판정 호출 확인
+    } // 시야 재사용 검증 종료
+
     [Test] // 대각선 시야 검증 등록
     public void HasLineOfSight_ChecksBothSidesOfAnExactCorner() // 모서리 양옆의 벽 차단 확인
     { // 모서리 시야 검증 시작

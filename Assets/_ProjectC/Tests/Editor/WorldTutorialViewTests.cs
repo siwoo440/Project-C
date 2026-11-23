@@ -34,9 +34,9 @@ public sealed class WorldTutorialViewTests // 거점과 탐사 안내 화면 검
         Assert.AreSame(Resources.Load<Texture2D>("UI/Tutorial/PageButton"), previous.image.sprite.texture); // 제작한 이전 페이지 버튼 이미지 확인
         Assert.AreSame(previous.image.sprite, forward.image.sprite); // 이전과 다음 버튼 이미지 공유 확인
         Assert.Greater(previous.GetComponent<RectTransform>().sizeDelta.x, previous.GetComponent<RectTransform>().sizeDelta.y); // 가로로 긴 페이지 버튼 크기 확인
-        RawImage preview = guide.Find("Panel/Preview/ExampleImage").GetComponent<RawImage>(); // 실제 탐사 예시 이미지 조회
+        RawImage preview = guide.Find("Panel/Preview/ExampleFrame/ExampleImage").GetComponent<RawImage>(); // 실제 탐사 예시 이미지 조회
         Assert.AreSame(Resources.Load<Texture2D>("UI/Tutorial/Exploration"), preview.texture); // 왼쪽 실제 탐사 예시 이미지 확인
-        Assert.Less(preview.rectTransform.parent.GetComponent<RectTransform>().anchorMax.x, guide.Find("Panel/Title").GetComponent<RectTransform>().anchorMin.x); // 예시 이미지와 오른쪽 설명 배치 확인
+        Assert.Less(guide.Find("Panel/Preview").GetComponent<RectTransform>().anchorMax.x, guide.Find("Panel/Title").GetComponent<RectTransform>().anchorMin.x); // 예시 영역과 오른쪽 설명 배치 확인
         Assert.IsTrue(guide.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("WASD")); // 실제 이동 키 안내 확인
         position = new Vector2(0.2f, 0f); // 실제 이동한 위치 준비
         progress.ObservePosition(position); // 실제 이동 위치 전달
@@ -98,6 +98,49 @@ public sealed class WorldTutorialViewTests // 거점과 탐사 안내 화면 검
         Assert.IsFalse(guide.gameObject.activeSelf); // 마지막 장의 완료 버튼으로 닫기 확인
         Object.DestroyImmediate(root); // 검사 화면 객체 제거
     } // 거점 페이지 검사 종료
+    [TestCase("Lobby")] // 거점 안내 예시 검사
+    [TestCase("Battle")] // 전투 안내 예시 검사
+    [TestCase("Exploration")] // 탐사 안내 예시 검사
+    public void Panel_KeepsFramedExampleInsideWhenResized(string example) // 크기 변경 후 예시와 금색 테두리 확인
+    { // 공용 예시 배치 검사 시작
+        var root = new GameObject("Guide", typeof(RectTransform)); // 크기 조절용 독립 안내 루트
+        try // 화면 검사 후 정리 보장
+        { // 예시 배치 확인 시작
+            var guide = root.GetComponent<RectTransform>(); // 화면 크기 조절 영역 조회
+            guide.sizeDelta = new Vector2(1920f, 1080f); // 기본 가로 화면 크기 설정
+            var layout = TutorialPanelLayout.Create(guide, null, null, null); // 실제 공용 안내 패널 생성
+            layout.SetExample(example); // 현재 안내 예시 적용
+            var panel = guide.Find("Panel").GetComponent<Image>(); // 바깥 장식 패널 조회
+            var art = panel.GetComponentInChildren<RawImage>(); // 표시된 예시 그림 조회
+            var frame = panel.GetComponentInChildren<Outline>(); // 예시의 금색 테두리 조회
+            var title = layout.Title.rectTransform; // 오른쪽 설명 시작 위치 조회
+            var sizes = new[] { guide.sizeDelta, new Vector2(1280f, 960f), new Vector2(2560f, 1080f) }; // 기본·좁은·넓은 화면 크기
+            foreach (Vector2 size in sizes) // 해상도별 같은 예시 배치 검사
+            { // 화면 크기 변경 검사 시작
+                guide.sizeDelta = size; // 안내를 켠 상태에서 화면 크기 변경
+                var artRect = art.rectTransform; // 예시 그림의 실제 표시 영역 조회
+                var frameRect = frame.GetComponent<RectTransform>(); // 예시 테두리의 실제 영역 조회
+                Vector3 artMin = artRect.TransformPoint(artRect.rect.min); // 그림의 왼쪽 아래 좌표
+                Vector3 artMax = artRect.TransformPoint(artRect.rect.max); // 그림의 오른쪽 위 좌표
+                Vector3 frameMin = frameRect.TransformPoint(frameRect.rect.min); // 금색 테두리의 왼쪽 아래 좌표
+                Vector3 frameMax = frameRect.TransformPoint(frameRect.rect.max); // 금색 테두리의 오른쪽 위 좌표
+                Vector3 panelMin = panel.rectTransform.TransformPoint(panel.rectTransform.rect.min); // 패널의 왼쪽 아래 좌표
+                Vector3 panelMax = panel.rectTransform.TransformPoint(panel.rectTransform.rect.max); // 패널의 오른쪽 위 좌표
+                Vector4 panelBorder = panel.sprite.border / panel.pixelsPerUnit; // 네 방향 장식 테두리 두께
+                Assert.Greater(frameMin.x - Mathf.Abs(frame.effectDistance.x), panelMin.x + panelBorder.x); // 금색 선의 왼쪽 장식 안쪽 배치 확인
+                Assert.Less(frameMax.x + Mathf.Abs(frame.effectDistance.x), title.TransformPoint(title.rect.min).x); // 금색 선과 설명 사이 여백 확인
+                Assert.Greater(frameMin.y - Mathf.Abs(frame.effectDistance.y), panelMin.y + panelBorder.y); // 금색 선의 하단 장식 안쪽 배치 확인
+                Assert.Less(frameMax.y + Mathf.Abs(frame.effectDistance.y), panelMax.y - panelBorder.w); // 금색 선의 상단 장식 안쪽 배치 확인
+                Assert.That(Vector3.Distance(artMin, frameMin), Is.LessThan(0.01f)); // 그림과 테두리 시작 좌표 일치 확인
+                Assert.That(Vector3.Distance(artMax, frameMax), Is.LessThan(0.01f)); // 그림과 테두리 끝 좌표 일치 확인
+                Assert.That(artRect.rect.width / artRect.rect.height, Is.EqualTo((float)art.texture.width / art.texture.height).Within(0.001f)); // 원본 종횡비 확인
+            } // 화면 크기 변경 검사 종료
+        } // 예시 배치 확인 종료
+        finally // 실패 여부와 무관한 객체 정리
+        { // 검사 객체 정리 시작
+            Object.DestroyImmediate(root); // 독립 안내 루트 제거
+        } // 검사 객체 정리 종료
+    } // 공용 예시 배치 검사 종료
     private sealed class MemoryStore : ISettingsStore // 안내 화면 검사용 저장소
     { // 임시 저장소 시작
         private readonly Dictionary<string, int> values = new Dictionary<string, int>(); // 설정 값 목록

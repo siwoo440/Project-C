@@ -108,17 +108,31 @@ public sealed partial class RestRoomPrototypeView : MonoBehaviour // 탐사 휴�
             ProjectCLanguageDisplay.SetCaption(resultText, "강화할 수 있는 카드를 선택하세요."); // 실제 덱에서 다시 선택 안내
         } // 선택 해제 종료
 
-        ClearChildren(cardContent); // 갱신할 기존 카드 행 제거
-        cardRows.Clear(); // 기존 UI 카드 슬롯 참조 비우기
         IReadOnlyList<RunDeckCardEntry> entries = deck.Cards; // 실제 저장 데이터 순서 조회
+        int displayed = 0; // 유효한 카드의 화면 행 번호
         for (int index = 0; index < entries.Count; index++) // 필터링 전 실제 슬롯별 순회
         { // 실제 카드 슬롯 조회 시작
             RunDeckCardEntry entry = entries[index]; // 원본 슬롯의 현재 카드 항목
-            if (entry != null && entry.IsValid()) // 표시할 수 있는 원본 카드 확인
-            { // 유효한 카드 행 표시 시작
-                cardRows.Add(BuildCardRow(index, entry, cardRows.Count)); // 부여한 표시 행과 원래 슬롯 분리
-            } // 유효한 카드 행 표시 종료
+            if (entry == null || !entry.IsValid()) // 표시할 수 없는 원본 확인
+            { // 원본 누락 처리 시작
+                continue; // 목록에 나타나지 않는 슬롯 건너뛰기
+            } // 원본 누락 처리 종료
+            if (displayed == cardRows.Count) // 기존 화면보다 새 카드 행이 더 있는지 확인
+            { // 새 카드 행 추가 시작
+                cardRows.Add(BuildCardRow(index, entry, displayed)); // 실제 슬롯에 대응하는 새 행 생성
+            } // 새 카드 행 추가 종료
+            else if (cardRows[displayed].Index != index || !ReferenceEquals(cardRows[displayed].Entry, entry)) // 현재 행의 실제 슬롯 또는 카드 원본 변경 확인
+            { // 바뀐 카드 행 교체 시작
+                RemoveCardRow(cardRows[displayed]); // 이전 슬롯의 원화와 입력 정리
+                cardRows[displayed] = BuildCardRow(index, entry, displayed); // 변경된 슬롯에만 새 버튼 연결
+            } // 바뀐 카드 행 교체 종료
+            displayed++; // 다음 유효 표시 위치로 이동
         } // 실제 카드 슬롯 조회 종료
+        for (int index = cardRows.Count - 1; index >= displayed; index--) // 덱에서 줄어든 마지막 화면 행 순회
+        { // 남은 이전 행 정리 시작
+            RemoveCardRow(cardRows[index]); // 이전 카드 출력과 클릭 즉시 차단
+            cardRows.RemoveAt(index); // 현재 목록에서 사용하지 않는 참조 제거
+        } // 남은 이전 행 정리 종료
         cardContent.sizeDelta = new Vector2(0f, cardRows.Count * RowStep); // 잘리지 않는 전체 스크롤 길이 반영
         cardEmpty.gameObject.SetActive(cardRows.Count == 0); // 실제 목록에 표시할 카드가 없는 경우 안내
         RefreshControls(); // 최신 카드 상태와 버튼 잠금 반영
@@ -136,9 +150,13 @@ public sealed partial class RestRoomPrototypeView : MonoBehaviour // 탐사 휴�
             row.Button.image.color = selected ? SelectedRow : (row.Button.interactable ? CardSurface : LockedRow); // 선택과 잠김에 따른 행 배경 적용
             row.SelectionMark.SetActive(selected); // 선택한 슬롯의 금색 테두리 표시
             row.SelectedText.gameObject.SetActive(selected); // 선택한 행의 상태 문구 표시
-            string level = row.Entry.IsUpgraded ? $"강화 +{row.Entry.UpgradeLevel}" : "미강화"; // 저장 카드의 현재 강화 단계 표기
-            ProjectCLanguageDisplay.SetCaption(row.UpgradeText, level); // 저장 카드의 실제 강화 단계 표시
-            ProjectCLanguageDisplay.SetCaption(row.LockText, row.Entry.CanUpgrade ? string.Empty : "최대 강화"); // 최고 단계에 도달한 카드 표시
+            if (row.DisplayedUpgradeLevel != row.Entry.UpgradeLevel) // 저장 카드의 강화 단계가 바뀌었는지 확인
+            { // 바뀐 카드 설명 갱신 시작
+                row.DisplayedUpgradeLevel = row.Entry.UpgradeLevel; // 화면에 반영할 실제 강화 단계 저장
+                string level = row.Entry.IsUpgraded ? $"강화 +{row.DisplayedUpgradeLevel}" : "미강화"; // 태그가 있는 현재 단계 문구
+                ProjectCLanguageDisplay.SetCaption(row.UpgradeText, level); // 저장 카드의 실제 강화 단계 표시
+                ProjectCLanguageDisplay.SetCaption(row.LockText, row.Entry.CanUpgrade ? string.Empty : "최대 강화"); // 최고 단계의 잠금 표시
+            } // 바뀐 카드 설명 갱신 종료
         } // 카드 행의 선택 상태 표시 종료
     } // 카드 선택 표시 갱신 종료
 

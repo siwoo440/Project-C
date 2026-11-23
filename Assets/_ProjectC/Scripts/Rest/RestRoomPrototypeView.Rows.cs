@@ -81,6 +81,12 @@ public sealed partial class RestRoomPrototypeView // 실제 파티와 카드 행
         return new CardRow(index, entry, button, mark, selected, upgrade, locked); // 실제 덱 슬롯과 화면 요소 연결 반환
     } // 강화 후보 행 종료
 
+    private static void RemoveCardRow(CardRow row) // 변경되거나 빠진 카드 행 제거
+    { // 카드 행 제거 시작
+        row.Button.gameObject.SetActive(false); // 현재 프레임부터 기존 행의 클릭 차단
+        Destroy(row.Button.gameObject); // 프레임 끝에 이전 행 객체 정리
+    } // 카드 행 제거 종료
+
     private static void ClearChildren(RectTransform parent) // 화면 갱신 전 기존 행 제거
     { // 기존 행 정리 시작
         for (int index = parent.childCount - 1; index >= 0; index--) // 기존 행을 끝부터 순회
@@ -100,6 +106,7 @@ public sealed partial class RestRoomPrototypeView // 실제 파티와 카드 행
         public readonly TMP_Text SelectedText; // 선택한 카드의 문자 표시
         public readonly TMP_Text UpgradeText; // 현재 강화 단계 표시
         public readonly TMP_Text LockText; // 최대 강화 상태 표시
+        public int DisplayedUpgradeLevel = -1; // 마지막으로 화면에 표시한 강화 단계
 
         public CardRow(int index, RunDeckCardEntry entry, Button button, GameObject selectionMark, TMP_Text selectedText, TMP_Text upgradeText, TMP_Text lockText) // 실제 덱 슬롯과 행 구성 요소 연결
         { // 행 참조 초기화 시작
