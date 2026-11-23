@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: MetalCenser
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_METAL_CENSER
+  displayName: "금속 향로"
+  description: "전투 시작 시 생존 적 전체의 마법 저항력을 1턴 동안 1 감소"
+  icon: {fileID: 21300000, guid: e9fb1b0e5de44aa98df39fe77b0e2301, type: 3}
+  rarity: 0
+  triggerType: 2
+  effectType: 5
+  targetType: 4
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  damageType: 1
+  statusEffectType: 8
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
