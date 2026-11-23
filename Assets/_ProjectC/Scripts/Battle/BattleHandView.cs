@@ -241,6 +241,14 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 카드 사용 조건 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 사용 조건 오류 처리 종료
+        if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.ChooseDraw && !runtimeDeck.HasDrawableCards) // 생존 소유자의 선택 가능 카드 확인
+        { // 선택 후보 없음 처리 시작
+            return false; // 선택 드로우 카드 사용 차단
+        } // 선택 후보 없음 처리 종료
+        if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.RecoverDiscard && runtimeDeck.DiscardPileCount == 0) // 회수할 버린 카드 확인
+        { // 회수 후보 없음 처리 시작
+            return false; // 버린 카드 회수 사용 차단
+        } // 회수 후보 없음 처리 종료
         return turnRuntime.IsPlayerTurn && sharedActionPoints.CanSpend(cardInstance.ApCost); // 턴과 공용 행동력 검사 결과 반환
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
