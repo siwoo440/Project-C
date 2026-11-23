@@ -167,6 +167,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.ResurrectionSeed || effect == BattleStatusEffectType.PainDistribution || effect == BattleStatusEffectType.MiracleEcho) // 부활과 분담 및 회복 강화 상태를 각각 조회
+                    { // 신규 성배 상태의 기본 수치 설명 시작
+                        int amount = effect == BattleStatusEffectType.ResurrectionSeed ? 20 : effect == BattleStatusEffectType.PainDistribution ? 25 : 6; // 실제 원본 카드의 기본 수치 일치
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 도감과 전투 툴팁의 같은 설명 사용
+                    } // 신규 성배 상태의 기본 수치 설명 종료
                     else if (effect == BattleStatusEffectType.Stealth) // 독립 은신 상태 도감 항목
                     { // 은신 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 0); // 상태 원본의 고유 표시 문구

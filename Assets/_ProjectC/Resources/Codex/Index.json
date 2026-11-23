@@ -2105,6 +2105,54 @@
       "name": "생명수",
       "description": "지정한 아군이 즉시 체력 10을 회복하고, 다음 아군 턴 시작에 체력 6을 더 회복한다.",
       "artworkKey": "cec49e282ad558f0801c79d7a286616b"
+    },
+    {
+      "category": 7,
+      "name": "부활의 씨앗",
+      "description": "선택한 생존 아군이 다음 적 턴 두 번이 끝나기 전에 쓰러지면 최대 체력의 20%로 한 번 부활한다. 소수점은 올린다.",
+      "artworkKey": "1931cdf402d852c9a3bf117869c1f98f"
+    },
+    {
+      "category": 7,
+      "name": "축성 방벽",
+      "description": "생존 아군 각자에게 방어도 12를 주고 다음 적 턴 두 번 동안 마법 피해 저항을 10% 높인다.",
+      "artworkKey": "cfd55206674e55fe8cd2c3b8d6cb1065"
+    },
+    {
+      "category": 7,
+      "name": "빛의 폭우",
+      "description": "모든 생존 적에게 마법 피해 8을 주고 모든 생존 아군을 각각 체력 12만큼 회복한다.",
+      "artworkKey": "700a51967645599c838fb02abf026adc"
+    },
+    {
+      "category": 7,
+      "name": "순백의 맹세",
+      "description": "지정 아군이 받을 다음 피해를 한 번 무효로 하고 정신력을 8 회복시킨다.",
+      "artworkKey": "baf2edb8c4bc5994bb4fd366b5037279"
+    },
+    {
+      "category": 7,
+      "name": "고통 분산",
+      "description": "두 적 턴 동안 보호가 걸린 아군이 적의 직접 공격을 받으면 피해의 25%를 이 효과가 있는 다른 생존 아군과 나눈다.",
+      "artworkKey": "3496e3c3705559d9a3ec13afadf8797a"
+    },
+    {
+      "category": 7,
+      "name": "기적의 잔향",
+      "description": "이번 아군 턴 동안 생존 아군이 사용하는 카드의 직접 체력 회복량을 6 높인다.",
+      "artworkKey": "fe48f6b319a0501ead11a42493748f2e"
+    },
+    {
+      "category": 7,
+      "name": "심판의 성수",
+      "description": "적 하나에게 마법 피해 18을 준다. 공격이 명중하고 적이 생존하면 해제 가능한 강화 하나를 제거한다.",
+      "artworkKey": "b8b14da7be535b1d8fb6742700c23cb2"
+    },
+    {
+      "category": 7,
+      "name": "구원의 원",
+      "description": "생존 아군 전체의 공포를 해제하고 각각 체력 8을 회복한다.",
+      "artworkKey": "c53dc8d24ce95406a37a54662540baf5"
     }
   ]
 }

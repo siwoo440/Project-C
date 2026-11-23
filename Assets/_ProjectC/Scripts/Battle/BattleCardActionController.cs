@@ -384,7 +384,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 실제 카드 정산과 사용한 방어 할인 전달
     { // 카드 정산 범위 시작
-        turnRuntime.BeginCardResolution(cardInstance.TargetType == CardTargetType.EnemyAndAlly); // 두 효과 카드에 한해 승리 결과를 정산 뒤로 예약
+        bool resolveHealingBeforeVictory = cardInstance.TargetType == CardTargetType.EnemyAndAlly || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies; // 피해와 회복을 함께 처리하는 카드 확인
+        turnRuntime.BeginCardResolution(resolveHealingBeforeVictory); // 두 효과가 정산된 뒤 전투 승리 확정
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
             ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount); // 실제 전투 효과와 사용 카드 이동 및 방어 할인 처리
@@ -1155,12 +1156,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 처리 시작
             BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 상태 이상 적용
-            if (cardInstance.StatusEffectType == BattleStatusEffectType.SwordSaintStance && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 시전 턴을 포함하는 검성의 자세 적용 확인
+            bool includesCastTurn = cardInstance.StatusEffectType is BattleStatusEffectType.SwordSaintStance or BattleStatusEffectType.MiracleEcho; // 시전 턴부터 기간을 세는 두 강화 확인
+            if (includesCastTurn && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 실제 신규 적용 또는 갱신 확인
             { // 시전 턴부터 차감 시작
-                targetUnit.GetStatusEffect(BattleStatusEffectType.SwordSaintStance).ConsumeDurationDecreaseSkip(); // 이번 시전 턴도 지속 시간에 포함
+                targetUnit.GetStatusEffect(cardInstance.StatusEffectType).ConsumeDurationDecreaseSkip(); // 시전 턴 종료 때 새 강화의 기간 감소
             } // 시전 턴부터 차감 종료
             BattleUnitView targetView = FindUnitView(targetUnit); // 대상 유닛 화면 조회
             targetView?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, applyResult); // 상태 이상 적용 결과 표시
+            if (cardInstance.SourceData.CupRule == CupCardRule.WhiteVow && applyResult is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked) // 순백의 맹세의 실제 피해 무효 적용 확인
+            { // 보호 이후 정신력 회복 처리 시작
+                targetUnit.ChangeMental(cardInstance.MentalChangeValue, BattleMentalChangeReason.CardEffect); // 이미 적용한 보호와 별개의 지정 아군 정신력 회복
+            } // 보호 이후 정신력 회복 처리 종료
             return applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 상태 이상 적용 수치 반환
         } // 상태 이상 처리 종료
         if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
@@ -1363,7 +1369,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 처치 환급 시작
             sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 공용 행동력 최대치 안에서 환급
         } // 처치 환급 종료
-        if (cardInstance.SourceData.SwordRule == SwordCardRule.JudgmentSlash && !targetUnit.IsDead) // 명중 후 생존 대상의 강화 하나 해제
+        if (!targetUnit.IsDead && (cardInstance.SourceData.SwordRule == SwordCardRule.JudgmentSlash || cardInstance.SourceData.CupRule == CupCardRule.JudgmentWater)) // 두 심판 카드의 명중 후 생존 강화 하나 해제
         { // 단죄 강화 해제 시작
             var buff = targetUnit.FirstRemovableBuff(); // 타격 직후 가장 먼저 부여된 일반 강화 조회
             if (buff != null && targetUnit.RemoveStatusEffect(buff.EffectType)) // 보호 정신 상태를 제외한 실제 해제 확인
@@ -1406,7 +1412,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 타격 판정 종료
     private int GetDirectCardHealing(CardInstance card, int healing) // 회복자의 정신력 기준 직접 카드 회복 총량
     { // 직접 회복 보정 시작
-        int modified = card.OwnerUnit.ModifyOutgoingHealing(healing); // 기존 정신 상태의 비율 보정
+        int echo = healing > 0 && turnRuntime.IsPlayerTurn ? card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.MiracleEcho)?.EffectiveValue ?? 0 : 0; // 이번 아군 턴 직접 회복 카드의 시전자 강화량
+        int modified = (int)Math.Min(int.MaxValue, (long)card.OwnerUnit.ModifyOutgoingHealing(healing) + echo); // 정신 상태 보정 뒤 기적의 잔향 가산
         int bonus = healing > 0 && card.OwnerUnit.CurrentMental >= 50 ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.HighMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이상인 회복자의 흰 장미 가산량
         int confession = healing > 0 && card.OwnerUnit.CurrentMental <= 50 ? BattleSupplyRelics.Find(RelicEffectType.LowMentalCardHealing)?.EffectValue ?? 0 : 0; // 정신력 오십 이하인 시전자의 작은 고백패 가산량
         return (int)Math.Min(int.MaxValue, (long)modified + bonus + confession + (healing > 0 ? bandageBonus : 0)); // 수신 보정과 최대 체력을 적용하기 전 직접 회복 수치

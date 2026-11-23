@@ -9,6 +9,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
     public int AbsorbedDamage { get; } // 방어도 흡수 피해 조회
     public int PreparedBlock { get; } // 공격 직전 준비로 획득할 방어도
     public bool WasDamageNullified { get; } // 양수 피해가 한 번 무효화된 결과
+    internal bool WasTargetDefeated { get; } // 부활 여부와 별개인 이 피해의 실제 전투불능 기록
     internal bool FromEnemyDirectAttack { get; } // 실제 적의 직접 명중과 연결된 체력 피해
     public BattleDamageType DamageType { get; } // 피해 유형 조회
     public bool IsWeakness { get; } // 약점 적중 여부 조회
@@ -49,7 +50,8 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         int absorbedDamage = 0, // 방어도 흡수량 전달
         int preparedBlock = 0, // 준비 방어도 전달
         bool wasDamageNullified = false, // 피해 무효화 여부 전달
-        bool fromEnemyDirectAttack = false) // 직접 적 공격에서 발생한 실제 피해 여부 전달
+        bool fromEnemyDirectAttack = false, // 직접 적 공격에서 발생한 실제 피해 여부 전달
+        bool wasTargetDefeated = false) // 이 피해가 일으킨 실제 전투불능 여부 전달
     {
         RawDamage = rawDamage; // 원본 피해 저장
         DefenseValue = defenseValue; // 적용 방어값 저장
@@ -59,6 +61,7 @@ public readonly struct BattleDamageResult // 피해 계산 결과
         AbsorbedDamage = absorbedDamage; // 방어도 흡수량 저장
         PreparedBlock = preparedBlock; // 준비 방어도 저장
         WasDamageNullified = wasDamageNullified; // 피해 무효화 여부 저장
+        WasTargetDefeated = wasTargetDefeated; // 최종 체력과 별개인 실제 전투불능 기록 저장
         FromEnemyDirectAttack = fromEnemyDirectAttack; // 실제 직접 명중 출처 저장
         ReducedDamage =
             rawDamage > defenseAdjustedDamage
@@ -108,12 +111,17 @@ public readonly struct BattleDamageResult // 피해 계산 결과
             AbsorbedDamage, // 기존 흡수량 유지
             PreparedBlock, // 기존 준비 방어도 유지
             WasDamageNullified, // 기존 피해 무효 기록 유지
-            FromEnemyDirectAttack); // 체력 피해 조정에서 기존 공격 출처 유지
+            FromEnemyDirectAttack, // 체력 피해 조정에서 기존 공격 출처 유지
+            WasTargetDefeated); // 같은 피해의 확정된 전투불능 기록 유지
     }
     internal BattleDamageResult FromResolvedEnemyAttack() // 확정된 적 공격 출처가 포함된 실제 피해 결과 생성
     { // 직접 공격 피해 출처 지정 시작
-        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, AppliedDamage, DamageType, IsWeakness, WeaknessMultiplier, AbsorbedDamage, PreparedBlock, WasDamageNullified, fromEnemyDirectAttack: true); // 모든 피해 내역을 보존한 출처 표시
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, AppliedDamage, DamageType, IsWeakness, WeaknessMultiplier, AbsorbedDamage, PreparedBlock, WasDamageNullified, fromEnemyDirectAttack: true, wasTargetDefeated: WasTargetDefeated); // 전투불능 기록을 유지한 직접 피해 출처 표시
     } // 직접 공격 피해 출처 지정 종료
+    internal BattleDamageResult WithDefeatedTarget() // 이번 피해로 실제 전투불능이 된 결과 기록
+    { // 전투불능 피해 기록 시작
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, AppliedDamage, DamageType, IsWeakness, WeaknessMultiplier, AbsorbedDamage, PreparedBlock, WasDamageNullified, FromEnemyDirectAttack, wasTargetDefeated: true); // 기존 피해 내역과 실제 전투불능 저장
+    } // 전투불능 피해 기록 종료
     internal BattleDamageResult WithoutDamage() // 체력과 방어도 손실이 모두 없는 피해 무효 결과
     { // 피해 무효 결과 작성 시작
         return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, 0, 0, DamageType, IsWeakness, WeaknessMultiplier, wasDamageNullified: true, fromEnemyDirectAttack: FromEnemyDirectAttack); // 원본 정보와 무효 표시 및 기존 출처의 피해 반환
