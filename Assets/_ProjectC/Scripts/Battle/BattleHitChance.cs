@@ -25,7 +25,10 @@ public static class BattleHitChance // 공격 명중 여부 계산
             : 0; // 중독 없는 적과 아군의 기존 명중 보정 유지
         var accuracy = attacker.GetStatusEffect(BattleStatusEffectType.BattlefieldMapAccuracyUp); // 공격자의 현재 지도 명중 강화 조회
         int mapAccuracyBonus = accuracy is { IsExpired: false } ? Math.Clamp(accuracy.EffectiveValue, 0, 100) : 0; // 실제 활성 지도 강화의 정수 퍼센트포인트
-        return Math.Clamp(100 + mapAccuracyBonus - penalty - evasion - disorientation - poisonPenalty, 0, 100); // 기존 모든 감소와 명중 가산을 합한 백분율
+        int markedBonus = attacker.Team == BattleTeam.Ally && target is { Team: BattleTeam.Enemy, IsDead: false } && // 실제 아군 공격과 살아 있는 적 대상 확인
+            (target.HasActiveCardDamageMark || target.GetStatusEffect(BattleStatusEffectType.DuelMark) is { IsExpired: false }) // 기존 카드 표식 또는 현재 활성 결투 표식
+            ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.BrokenLensCapMarkedAccuracy)?.EffectValue ?? 0, 0, 100) : 0; // 원본 렌즈캡의 고정 명중 퍼센트포인트
+        return Math.Clamp(100 + mapAccuracyBonus + markedBonus - penalty - evasion - disorientation - poisonPenalty, 0, 100); // 모든 가감의 최종 명중 백분율을 예고와 실제에서 공용 계산
     } // 명중률 조회 종료
     public static bool Hits(BattleUnitRuntime attacker, int roll, BattleUnitRuntime target = null) // 공격자와 대상의 지정 난수 판정
     { // 명중 계산 시작

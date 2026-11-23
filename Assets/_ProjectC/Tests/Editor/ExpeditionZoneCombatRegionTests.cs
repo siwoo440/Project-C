@@ -6,6 +6,7 @@ public sealed class ExpeditionZoneCombatRegionTests // 선택한 세계 지도 �
     [TestCase(ExpeditionZoneId.FracturedEarth, ExplorationRegion.Neutral)] // 사막과 성채 밖의 암반 구역
     [TestCase(ExpeditionZoneId.CorrodedIndustrialDistrict, ExplorationRegion.Neutral)] // 기존 윈터폴 효과가 없는 산업 구역
     [TestCase(ExpeditionZoneId.FadedDunes, ExplorationRegion.Desert)] // 퇴색의 사막 실제 전투 효과 사용
+    [TestCase(ExpeditionZoneId.SubterraneanVault, ExplorationRegion.Bunker)] // 실제 지하 벙커 조우의 추가 지역 값
     [TestCase(ExpeditionZoneId.RuinedCitadel, ExplorationRegion.Fortress)] // 붕괴된 성채 실제 전투 효과 사용
     [TestCase(ExpeditionZoneId.TheVoid, ExplorationRegion.Neutral)] // 기존 지역의 보정을 받지 않는 공백 구역
     public void SelectsTheCombatRegionOfTheDepartedZone(ExpeditionZoneId zone, ExplorationRegion expected) // 실제 월드맵 선택으로 지역 룰 확인

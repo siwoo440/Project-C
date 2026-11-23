@@ -1519,6 +1519,54 @@
       "artworkKey": "8e45536c21eb5ed187816c6f6ad5d386"
     },
     {
+      "category": 3,
+      "name": "사막의 마지막 물방울",
+      "description": "전투에서 처음으로 부상한 생존 아군이 있는 아군 턴 시작에 생존 아군 전원의 체력을 20 회복한다. 이후 전투가 끝날 때까지 아군이 받는 체력 회복량이 20% 감소한다.",
+      "artworkKey": "5c6844658917597a9dae514a55ef8f2f"
+    },
+    {
+      "category": 3,
+      "name": "폭풍왕의 회전 고리",
+      "description": "아군이 적의 공격을 회피할 때 무작위 생존 적에게 일반 피해 6을 준다.",
+      "artworkKey": "b92500af88e85783ae1ea0fef7c37e8d"
+    },
+    {
+      "category": 3,
+      "name": "묻힌 도시의 문장",
+      "description": "한 탐사에서 한 번 사막 이벤트의 보상을 받은 뒤 추가 보상을 하나 고른다.",
+      "artworkKey": "bebf69e0ed4350b78591e2ccda12a2a6"
+    },
+    {
+      "category": 3,
+      "name": "끊어진 구리선",
+      "description": "아군이 확률로 감전을 부여할 때 적용 확률을 5%p 높인다. 적용 확률의 상한은 100%다.",
+      "artworkKey": "1e43489e9d6759c290e38881231139ee"
+    },
+    {
+      "category": 3,
+      "name": "폐전지 조각",
+      "description": "첫 실제 아군 턴의 최대 및 현재 행동력을 1 높인다. 두 번째 실제 아군 턴의 최대 및 현재 행동력을 1 낮춘다.",
+      "artworkKey": "800386c429fc518b85d4d028e7d1e9fe"
+    },
+    {
+      "category": 3,
+      "name": "녹슨 나사 묶음",
+      "description": "기계형 적이 아군에게 직접 주는 공격 피해를 2 줄인다.",
+      "artworkKey": "fb4b10cbb5f355b1815926dfa48ee92f"
+    },
+    {
+      "category": 3,
+      "name": "깨진 렌즈캡",
+      "description": "표식이 활성인 적에게 아군이 가하는 공격의 명중률을 10%p 높인다.",
+      "artworkKey": "ab2f92ad94b35d4788553141ad3fb9d1"
+    },
+    {
+      "category": 3,
+      "name": "정전 기록칩",
+      "description": "벙커 이벤트의 함정이 주는 체력 피해를 15% 줄인다.",
+      "artworkKey": "a88ba338fc685bec88d9573d5152125a"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

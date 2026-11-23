@@ -67,7 +67,7 @@ public sealed class ExplorationSceneRuntimeRouter : MonoBehaviour
             runtimeRoot.AddComponent<ExplorationBattleResultReceiver>();
         }
 
-        if (!string.IsNullOrEmpty(ExplorationSessionManager.Instance.Cart.AmbushRoom)) // 불러온 저장에 미완료 수레 매복 확인
+        if (!ExplorationEventPanelView.TryResumeRegionalReward() && !string.IsNullOrEmpty(ExplorationSessionManager.Instance.Cart.AmbushRoom)) // 원래 사건 보상부터 정산한 뒤 저장한 수레 매복 재개
         { // 저장 매복 재개 시작
             runtimeRoot.GetComponent<ExplorationBattleResultReceiver>().StartCoroutine(BurntCartEvent.ResumeAmbush()); // 탐사 준비 후 같은 조우 재개
         } // 저장 매복 재개 종료

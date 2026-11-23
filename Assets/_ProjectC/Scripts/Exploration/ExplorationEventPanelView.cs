@@ -341,6 +341,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         { // 이미 반영된 선택 제외 시작
             return; // 처리한 방의 추가 보상 차단
         } // 이미 반영된 선택 제외 종료
+        var priorReward = ExplorationRegionalRewards.BeginEvent(currentEventData, currentRuntimeEventId); // 방에서 실제 보상을 받기 전 현재 지갑과 덱 조회
         choiceCommitted = true; // 선택 완료 상태 저장
         choiceData ??= currentEventData.Choices[choiceIndex]; // 일반 행동의 원래 선택지 조회
 
@@ -351,6 +352,13 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 choiceData, out bool successful); // 실제 선택 결과와 성공 여부 계산
 
         sessionManager.MarkEventResolved(currentRuntimeEventId, successful); // 실제 성공 또는 실패의 구역 진행과 방 완료 기록
+        ExplorationRegionalRewards.FinishEvent(currentRuntimeEventId, priorReward); // 원래 지급과 사건 완료 뒤 사막의 보상 선택 예약
+        if (sessionManager.PendingBuriedCityCrestEventId == currentRuntimeEventId) // 이 사건에서 일회 보상 기회가 실제로 생겼는지 확인
+        { // 원래 사건 결과와 다음 선택의 자동 저장 시작
+            currentEventView?.LockInteraction(); // 기존 이벤트의 실제 재입력 차단 유지
+            SaveStoryResult(resultText); // 원래 결과와 일회 보상 대기를 같은 저장에 기록
+            return; // 실제 추가 선택까지 원래 결과 화면 유지
+        } // 원래 사건 결과와 다음 선택의 자동 저장 종료
         if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 이벤트 결과 자동 저장 확인
         { // 이벤트 저장 실패 처리 시작
             Debug.LogWarning("[ExplorationAutoSave] 이벤트 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
@@ -395,11 +403,13 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
     private bool CommitAshstormChoice(string runtimeId, int choice, CharacterData actor, CharacterData owner) // 최종 대상 확정 후 결과 표시
     { // 결과 확정 시작
+        var priorReward = ExplorationRegionalRewards.BeginEvent(currentEventData, runtimeId); // 재폭풍 선택의 실제 카드 및 자원 지급 전 보상 기준
         if (choiceCommitted || currentRuntimeEventId != runtimeId || currentEventData == null || !AshstormEyeEvent.TryResolve(runtimeId, choice, actor, owner, out string summary, currentEventData.Region)) // 현재 방의 미처리 선택 성공 확인
         { // 지급 실패 처리 시작
             return false; // 선택 취소 또는 재시도 허용
         } // 지급 실패 처리 종료
         choiceCommitted = true; // 결과 화면의 중복 입력 차단
+        ExplorationRegionalRewards.FinishEvent(runtimeId, priorReward); // 사막으로 지정된 원본의 실제 재폭풍 보상만 확인
         string story = BuildResultMessage(currentEventData.Choices[choice].ResultText, summary); // 원문 결말과 실제 변화량 결합
         SaveStoryResult(story); // 확정된 결과 저장과 표시
         return true; // 열린 대상 선택 화면 닫기
@@ -439,6 +449,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 return true; // 행동자 선택 창 닫기
             } // 선택 화면 표시 종료
         } // 지급 전 유물 선택 종료
+        var priorReward = ExplorationRegionalRewards.BeginEvent(currentEventData, runtimeId); // 잿더미의 실제 유물 지급 확인 전 기준
         if (!AshPileEvent.TryResolve(runtimeId, choice, actor, selected, out string story, out string summary)) // 실제 비용과 선택 유물 검증
         { // 비용 또는 보상 누락 처리 시작
             if (!string.IsNullOrEmpty(summary)) // 미확정 사유 확인
@@ -449,6 +460,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return false; // 잘못된 대상의 비용과 보상 보존
         } // 비용 또는 보상 누락 처리 종료
         choiceCommitted = true; // 완료된 행동의 추가 입력 차단
+        ExplorationRegionalRewards.FinishEvent(runtimeId, priorReward); // 실제 지급된 타입의 선택을 마친 뒤 지역 보상 예약
         SaveStoryResult(BuildResultMessage(story, summary)); // 비용과 보상 및 방 완료 기록 함께 저장
         return true; // 대상 선택 완료
     } // 잿더미 확정 종료
@@ -471,6 +483,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         { // 잘못된 선택 확인 시작
             return false; // 이전 화면 중복 입력 차단
         } // 잘못된 선택 확인 종료
+        var priorReward = ExplorationRegionalRewards.BeginEvent(currentEventData, runtimeId); // 지도 조각 선택의 기존 자원 지급 전 기준
         if (!AshMapFragmentEvent.TryResolve(runtimeId, choice, actor, out string summary)) // 지도 보관 또는 소각 결과 확인
         { // 미확정 처리 시작
             if (!string.IsNullOrEmpty(summary)) // 중복 지도 보관 사유 확인
@@ -480,6 +493,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return false; // 방을 사용하지 않은 상태 유지
         } // 미확정 처리 종료
         choiceCommitted = true; // 이번 이벤트 중복 입력 차단
+        ExplorationRegionalRewards.FinishEvent(runtimeId, priorReward); // 실제 자원이 지급된 지역 사건만 추가 보상 확인
         SaveStoryResult(BuildResultMessage(currentEventData.Choices[choice].ResultText, summary)); // 원문과 실제 상태 변경을 함께 저장
         return true; // 지도 조각 행동 완료
     } // 지도 선택 확정 종료
@@ -505,6 +519,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         { // 이전 입력 처리 시작
             return false; // 오래된 선택과 중복 입력 차단
         } // 이전 입력 처리 종료
+        var priorReward = ExplorationRegionalRewards.BeginEvent(currentEventData, runtimeId); // 전용 행동자의 원래 보상 지급 전 상태
         if (!resolve(runtimeId, choice, actor, out string summary)) // 사건별 지급과 비용 처리 확인
         { // 결과 실패 처리 시작
             if (!string.IsNullOrEmpty(summary)) // 선택 실패 사유 확인
@@ -514,6 +529,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return false; // 미처리 상태 보존
         } // 결과 실패 처리 종료
         choiceCommitted = true; // 이번 방 중복 입력 차단
+        ExplorationRegionalRewards.FinishEvent(runtimeId, priorReward); // 사건과 실제 보상 결과가 확정된 경우의 일회 기회
         SaveStoryResult(BuildResultMessage(currentEventData.Choices[choice].ResultText, summary)); // 원문 결말과 실제 결과 저장
         return true; // 행동자 선택 창 닫기
     } // 행동자 선택 확정 종료
@@ -533,6 +549,16 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         } // 전멸 화면 전환 종료
         ClearChoiceButtons(); // 이전 행동 버튼 제거
         bodyText.text = saved ? story : story + "\n결과를 저장하지 못했습니다."; // 저장 결과와 원문 결말 표시
+        string bonusRoom = ExplorationSessionManager.Instance?.PendingBuriedCityCrestEventId; // 현재 저장에 남은 사막 사건의 추가 선택 조회
+        if (bonusRoom != null && bonusRoom == currentRuntimeEventId) // 현재 보여 주는 원래 결과 뒤의 추가 선택 확인
+        { // 정상 사건 결과와 추가 보상 선택을 분리하는 버튼 시작
+            CreateChoiceButton("[추가 보상 선택]", () => ShowRegionalRewardOptions(bonusRoom)); // 원래 결말 읽기 완료 후 다음 지급 방법 선택
+            if (!saved) // 기본 결과의 현재 자동 저장 실패 확인
+            { // 지급 없이 같은 원래 결과를 저장하는 버튼 시작
+                CreateChoiceButton("[다시 저장]", () => SaveStoryResult(story)); // 원래 사건 효과를 재실행하지 않는 저장 재시도
+            } // 지급 없이 같은 원래 결과를 저장하는 버튼 종료
+            return; // 실제 보상 선택을 기다리며 이동 잠금 유지
+        } // 정상 사건 결과와 추가 보상 선택을 분리하는 버튼 종료
         if (saved) // 탐사 자동 저장 성공 확인
         { // 완료 안내 시작
             CreateCloseButton("[확인]"); // 탐사 이동으로 복귀
@@ -543,6 +569,55 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             CreateCloseButton("[계속]"); // 메모리 진행 상태로 탐사 계속
         } // 재시도 버튼 생성 종료
     } // 결과 저장 종료
+
+    internal static bool TryResumeRegionalReward() // 저장에서 원래 완료한 방의 미지급 선택 재표시
+    { // 실제 탐사 씬의 대기 보상 복원 시작
+        var session = ExplorationSessionManager.Instance; // 현재 복원된 탐사 조회
+        string runtimeId = session?.PendingBuriedCityCrestEventId; // 저장한 실제 사막 원본 방 선택
+        if (runtimeId == null || session.IsExplorationCompleted) // 완료했거나 보상을 이미 선택했는지 확인
+        { // 다시 열 선택 없음 처리 시작
+            return false; // 기존 저장이나 매복 재개 흐름 유지
+        } // 다시 열 선택 없음 처리 종료
+        var view = EnsureInstance(); // 원래 탐사 이야기와 같은 버튼 화면 조회
+        view.EnsureEventSystem(); // 실제 버튼 입력의 이벤트 시스템 준비
+        view.currentRuntimeEventId = runtimeId; // 지워진 원본 오브젝트 대신 저장한 실제 방 식별자 지정
+        view.choiceCommitted = true; // 이미 끝난 원래 사건 효과의 재실행 차단
+        view.titleText.text = "묻힌 도시의 문장"; // 사막 보상 선택의 실제 유물 이름 표시
+        var icon = Resources.Load<RelicData>("Relics/BuriedCityCrest")?.Icon; // 출시 유물의 실제 삽화 조회
+        view.illustrationImage.sprite = icon; // 저장 재개 시 보상 유물의 삽화 사용
+        view.illustrationImage.color = Color.white; // 기존 삽화 틴트 초기화
+        view.illustrationImage.enabled = icon != null; // 실제 유물 삽화 표시 가능 확인
+        view.illustrationFallbackText.gameObject.SetActive(false); // 저장 재개의 보조 물음표 제거
+        view.dimOverlayImage.color = new Color(0f, 0f, 0f, 0.45f); // 복원 화면 뒤의 기존 탐사 배경 어둡게 표시
+        view.rootCanvas.enabled = true; // 실제 창의 캔버스 표시
+        view.panelRoot.gameObject.SetActive(true); // 실제 추가 보상 목록 팝업 표시
+        ExplorationPlayerController.SetInputBlocked(true); // 대기했던 선택을 정산할 동안 탐사 이동 차단
+        view.ShowRegionalRewardOptions(runtimeId); // 원래 방의 보상 선택지 다시 표시
+        return true; // 미완료 선택의 원래 배열과 사용 조건 복원 완료
+    } // 실제 탐사 씬의 대기 보상 복원 종료
+
+    private void ShowRegionalRewardOptions(string runtimeId) // 원래 선택 결과 뒤의 추가 자원 목록
+    { // 현재 사건과 저장 대기 요청을 확인하는 목록 생성 시작
+        if (currentRuntimeEventId != runtimeId || ExplorationSessionManager.Instance?.PendingBuriedCityCrestEventId != runtimeId) // 닫힌 창이나 다른 방의 늦은 입력 확인
+        { // 유효하지 않은 대기 선택 표시 거절 시작
+            return; // 현재 창과 지갑 보존
+        } // 유효하지 않은 대기 선택 표시 거절 종료
+        ClearChoiceButtons(); // 기존 사건의 결과 버튼 정리
+        bodyText.text = "묻힌 도시의 문장 · 추가 보상 한 가지를 선택하세요."; // 일회성으로 받을 수 있는 실제 선택 안내
+        foreach (ExplorationRegionalRewards.Option option in System.Enum.GetValues(typeof(ExplorationRegionalRewards.Option))) // 지급 가능한 보상의 실제 종류 순회
+        { // 네이티브 보물 지급량의 알맞은 버튼 생성 시작
+            string label = ExplorationRegionalRewards.GetOptionText(option); // 실제 지급 값과 같은 선택 표기
+            CreateChoiceButton(label, () => ClaimRegionalReward(runtimeId, option, label)); // 선택한 한 종류만 실제 지급
+        } // 네이티브 보물 지급량의 알맞은 버튼 생성 종료
+    } // 현재 사건과 저장 대기 요청을 확인하는 목록 생성 종료
+
+    private void ClaimRegionalReward(string runtimeId, ExplorationRegionalRewards.Option option, string label) // 활성 대기 선택과 실제 지갑 정산 확인
+    { // 보상 확정 이후 저장과 선택 창 정리 시작
+        if (currentRuntimeEventId == runtimeId && ExplorationRegionalRewards.TryClaim(runtimeId, option)) // 현재 창에서 실제로 지급한 새 보상 한 가지 확인
+        { // 같은 스냅샷에 사용 기록과 지갑 저장 시작
+            SaveStoryResult("묻힌 도시의 문장 · " + label); // 지급을 반복하지 않는 기존 저장 및 재시도 결과 표시
+        } // 같은 스냅샷에 사용 기록과 지갑 저장 종료
+    } // 보상 확정 이후 저장과 선택 창 정리 종료
 
     private string ResolveChoice(
         string runtimeEventId,
@@ -688,7 +763,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
 
     public static void CloseForLoad() // 저장 복원 전 열려 있는 이벤트 정리
     { // 열려 있는 이벤트 정리 시작
-        if (instance == null || instance.currentEventData == null) // 현재 열린 이벤트 확인
+        if (instance == null || instance.currentRuntimeEventId == null) // 원본을 이미 마친 복원 보상을 포함한 현재 이벤트 창 확인
         { // 닫힌 화면 처리 시작
             return; // 기존 입력 상태 유지
         } // 닫힌 화면 처리 종료

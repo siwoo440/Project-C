@@ -76,13 +76,24 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
             card.SourceData.SwordRule is not (SwordCardRule.BladeWhirlwind or SwordCardRule.HorizontalSlash or SwordCardRule.SwordDance or SwordCardRule.LastBreakthrough); // 인접 공격과 추가 공격 및 범위 연타 제외
     } // 단일 공격 분류 종료
 
+    internal static int GetShockApplicationChance(BattleUnitRuntime source, BattleUnitRuntime target, BattleStatusEffectType type, int chance) // 실제 아군의 확률 감전에서 구리선의 고정 퍼센트포인트
+    { // 감전 원본과 기존 가능 확률 확인 시작
+        if (chance is <= 0 or >= 100 || type != BattleStatusEffectType.Shock || source is not { Team: BattleTeam.Ally, IsDead: false } || target is not { Team: BattleTeam.Enemy, IsDead: false }) // 원래 시도가 없는 영과 이미 확정된 적용 및 반대 진영 제외
+        { // 확률 보정이 필요 없는 실제 상태 시작
+            return chance; // 원래 가능한 감전인지와 기존 확정 또는 다른 상태 유지
+        } // 확률 보정이 필요 없는 실제 상태 종료
+        int bonus = Find(RelicEffectType.BrokenCopperWireShockChance)?.EffectValue ?? 0; // 실제 보유한 원본 구리선 효과만 조회
+        return (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 원래 감전 성공 범위에 고정 증가를 합산해 백 이하로 제한
+    } // 감전 원본과 기존 가능 확률 확인 종료
+
     internal bool RollOptionalStatus(BattleUnitRuntime target, int chance, BattleStatusEffectType type = BattleStatusEffectType.None, BattleUnitRuntime source = null) // 실제 상태 종류와 출처를 포함한 명중 후 약화 굴림
     { // 명중 후 효과 굴림 시작
         bool alliedAgainstEnemy = source?.Team == BattleTeam.Ally && target?.Team == BattleTeam.Enemy; // 실제 아군이 적에게 시도한 원본 효과 확인
         bool alliedBleed = alliedAgainstEnemy && type == BattleStatusEffectType.Bleed; // 기존 포크의 확률형 출혈 범위
+        bool alliedShock = alliedAgainstEnemy && type == BattleStatusEffectType.Shock; // 실제 아군이 적에게 확률 감전 시도한 경우 확인
         int blindBonus = alliedAgainstEnemy && type == BattleStatusEffectType.Blind && chance is > 0 and < 100 // 실제 아군의 비확정 실명에만 검은 모래병 보정 확인
             ? Find(RelicEffectType.BlackSandBlindChanceBonus)?.EffectValue ?? 0 : 0; // 실제 보유의 다섯 퍼센트포인트 조회
-        if (alliedBleed || blindBonus > 0) // 기존 출혈 처리와 유효한 검은 모래병 실명 보정 확인
+        if (alliedBleed || alliedShock || blindBonus > 0) // 출혈과 감전 및 유효한 검은 모래병 실명 보정 확인
         { // 확률형 약화의 원본 확인 시작
             if (target.IsDead || chance <= 0) // 생존 적과 실제 선택 약화 확률 여부 확인
             { // 무효 약화 처리 시작
@@ -93,8 +104,8 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
                 return true; // 확률을 소비하지 않고 원래 상태 부여에서 면역 결과 반환
             } // 원래 면역 결과 처리 종료
             int bonus = alliedBleed ? Find(RelicEffectType.BleedApplicationChanceBonus)?.EffectValue ?? 0 : blindBonus; // 출혈 또는 실명에 해당하는 실제 유물 확률 가산
-            chance = (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 기존 확률의 수치와 원본 보정을 합친 정수 범위 확인
-            if (chance == 100) // 기존 확률과 유물 보정으로 완전히 보장된 약화 확인
+            chance = alliedShock ? GetShockApplicationChance(source, target, type, chance) : (int)Math.Clamp((long)chance + bonus, 0L, 100L); // 실제 종류별 확률 보정과 영 및 백 경계 적용
+            if (chance >= 100) // 기존 확률과 유물 보정으로 완전히 보장된 약화 확인
             { // 확정 약화 처리 시작
                 return true; // 다른 확률 유물과 무작위 없이 확정 적용 반환
             } // 확정 약화 처리 종료
