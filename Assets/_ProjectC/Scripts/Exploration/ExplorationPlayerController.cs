@@ -6,8 +6,17 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
 {
     private const float MoveSpeed = 4f; // 기본 이동 속도
 
+    private static bool inputBlocked; // 외부 UI 입력 차단 상태
+
     private Rigidbody2D body; // 플레이어 물리 몸체
     private Vector2 moveInput; // 현재 이동 입력
+
+    public static bool InputBlocked => inputBlocked; // 입력 차단 상태 조회
+
+    public static void SetInputBlocked(bool isBlocked) // 입력 차단 상태 설정
+    {
+        inputBlocked = isBlocked; // 전역 입력 차단 상태 저장
+    }
 
     private void Awake() // 플레이어 초기화
     {
@@ -18,6 +27,12 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
 
     private void Update() // 이동 입력 갱신
     {
+        if (inputBlocked)
+        {
+            moveInput = Vector2.zero; // 입력 차단 시 이동 입력 제거
+            return;
+        }
+
         Keyboard keyboard = Keyboard.current; // 현재 키보드 조회
 
         if (keyboard == null)
@@ -63,6 +78,12 @@ public sealed class ExplorationPlayerController : MonoBehaviour // 탐사 플레
     {
         if (body == null)
         {
+            return;
+        }
+
+        if (inputBlocked)
+        {
+            body.linearVelocity = Vector2.zero; // 입력 차단 시 이동 속도 제거
             return;
         }
 

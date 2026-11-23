@@ -8,6 +8,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
+    private const int DefaultEventCount = 2; // 층당 기본 탐사 이벤트 수
     private const int BossFloorInterval = 5; // 43일차 테스트용 보스층 간격
     private const float FloorChangeCooldown = 0.5f; // 연속 층 이동 방지 시간
 
@@ -24,6 +25,15 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
 
     private readonly Dictionary<string, Vector2Int> encounterCoordinates =
         new Dictionary<string, Vector2Int>(); // 런타임 ID별 조우 좌표
+
+    private readonly List<GameObject> eventObjects =
+        new List<GameObject>(); // 현재 층 이벤트 오브젝트 목록
+
+    private readonly Dictionary<GameObject, string> eventRuntimeIds =
+        new Dictionary<GameObject, string>(); // 이벤트 오브젝트별 런타임 ID
+
+    private readonly Dictionary<string, Vector2Int> eventCoordinates =
+        new Dictionary<string, Vector2Int>(); // 런타임 ID별 이벤트 좌표
 
     private ExplorationSessionManager sessionManager; // 탐사 세션 관리자
     private ExplorationTilemapView tilemapView; // 논리 맵 Tilemap 표시기
@@ -48,6 +58,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         EnsureCameraFollow(); // 확장된 탐사 공간 카메라 추적 준비
         RestoreOrCreateCurrentFloor(); // 현재 층 Seed 복원 또는 신규 생성
         EnsureDebugView(); // 절차 맵 디버그 화면 준비
+        ExplorationEventPanelView.EnsureInstance(); // 탐사 이벤트 패널 준비
     }
 
     private void Start() // Scene 시작 후 플레이어 위치 처리
@@ -59,6 +70,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     {
         TryHandleInitialPlayerPlacement(); // 플레이어 생성 지연 대응
         RemoveClearedEncounterObjects(); // 전투 승리 후 남은 조우 표시 제거
+        RemoveResolvedEventObjects(); // 처리 완료 이벤트 표시 제거
 
         Keyboard keyboard =
             Keyboard.current; // 현재 키보드 조회
@@ -120,6 +132,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         bool restoredFromSession) // 지정 Seed로 현재 층 구축
     {
         ClearEncounterObjects(); // 이전 조우 오브젝트 정리
+        ClearEventObjects(); // 이전 이벤트 오브젝트 정리
 
         CurrentMap =
             ExplorationMapGenerator.Generate(
@@ -132,6 +145,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         tilemapView.Build(CurrentMap); // 논리 맵을 실제 방·통로 Tilemap으로 변환
         RefreshStairs(); // Tilemap 기준 계단 위치 복원 또는 생성
         GenerateEncounters(); // 동일 Seed 기반 조우 배치 복원 또는 생성
+        GenerateEvents(); // 동일 Seed 기반 탐사 이벤트 배치 복원 또는 생성
 
         string stateText =
             RestoredFromSession
@@ -358,6 +372,96 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
     }
 
+    private void GenerateEvents() // 현재 맵에 탐사 이벤트 배치
+    {
+        if (CurrentMap == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<ExplorationEventData> loadedEvents =
+            ExplorationEventCatalog.LoadEvents(); // 탐사 이벤트 데이터 로드
+
+        if (loadedEvents == null ||
+            loadedEvents.Count == 0)
+        {
+            return;
+        }
+
+        List<ExplorationMapCell> availableCells =
+            new List<ExplorationMapCell>(); // 이벤트 배치 가능 셀 목록
+
+        foreach (ExplorationMapCell cell in CurrentMap.Cells)
+        {
+            if (cell.Type != ExplorationCellType.Normal)
+            {
+                continue;
+            }
+
+            if (encounterTypes.ContainsKey(cell.Coordinate))
+            {
+                continue;
+            }
+
+            availableCells.Add(cell); // 일반 빈 방만 이벤트 후보 등록
+        }
+
+        if (availableCells.Count == 0)
+        {
+            return;
+        }
+
+        int eventDiscoveryChance =
+            Mathf.Clamp(
+                55 +
+                FacilityUpgradeManager.EnsureInstance().GetCommunicationEventDiscoveryBonusPercent(),
+                0,
+                95); // 통신 기지국 보너스 포함 이벤트 발견 확률 계산
+
+        int maxEventCount =
+            Mathf.Min(
+                DefaultEventCount,
+                availableCells.Count); // 현재 층 최대 이벤트 수 계산
+
+        System.Random random =
+            new System.Random(
+                CurrentMap.Seed ^ 912367421); // 현재 맵 Seed 기반 이벤트 난수 생성
+
+        ShuffleCells(
+            availableCells,
+            random); // 이벤트 후보 셀 순서 무작위화
+
+        int createdEventCount = 0; // 생성 이벤트 수 초기화
+
+        for (int index = 0;
+             index < availableCells.Count &&
+             createdEventCount < maxEventCount;
+             index++)
+        {
+            bool shouldCreate =
+                createdEventCount == 0 ||
+                random.Next(100) < eventDiscoveryChance; // 최소 1개 보장 포함 생성 판정
+
+            if (!shouldCreate)
+            {
+                continue;
+            }
+
+            ExplorationMapCell cell =
+                availableCells[index]; // 이벤트 배치 셀 선택
+
+            ExplorationEventData eventData =
+                loadedEvents[
+                    random.Next(loadedEvents.Count)]; // 이벤트 데이터 선택
+
+            CreateEventObject(
+                cell,
+                eventData); // 탐사 이벤트 오브젝트 생성
+
+            createdEventCount += 1; // 생성 이벤트 수 증가
+        }
+    }
+
     private List<BattleType> BuildEncounterTypePlan(
         int encounterCount,
         bool hasNormal,
@@ -540,6 +644,144 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             data.BattleType; // 현재 좌표 조우 등급 등록
     }
 
+    private void CreateEventObject(
+        ExplorationMapCell cell,
+        ExplorationEventData data) // 탐사 이벤트 오브젝트 생성
+    {
+        if (data == null ||
+            !data.IsValidData())
+        {
+            return;
+        }
+
+        string runtimeEventId =
+            $"EV_F{CurrentFloor}_" +
+            $"X{cell.Coordinate.x}_" +
+            $"Y{cell.Coordinate.y}_" +
+            $"S{CurrentMap.Seed}"; // 층·셀·Seed 기반 런타임 이벤트 ID 생성
+
+        if (sessionManager.IsEventResolved(runtimeEventId))
+        {
+            return;
+        }
+
+        Vector2 worldPosition; // 이벤트 실제 배치 위치
+
+        if (!tilemapView.TryGetRandomEncounterPosition(
+                cell.Coordinate,
+                CurrentMap.Seed ^ 473269,
+                out worldPosition))
+        {
+            worldPosition =
+                GetWorldPosition(
+                    cell.Coordinate); // 안전 위치를 찾지 못하면 방 중심 위치 사용
+        }
+
+        GameObject eventObject =
+            new GameObject(
+                $"ExplorationEvent_{runtimeEventId}",
+                typeof(SpriteRenderer),
+                typeof(CircleCollider2D),
+                typeof(ExplorationEventView)); // 이벤트 오브젝트 생성
+
+        eventObject.transform.SetParent(transform); // 맵 런타임 하위 배치
+
+        eventObject.transform.position =
+            new Vector3(
+                worldPosition.x,
+                worldPosition.y,
+                0f); // 이벤트 월드 위치 지정
+
+        eventObject.transform.localScale =
+            new Vector3(
+                0.68f,
+                0.68f,
+                1f); // 이벤트 임시 표시 크기 설정
+
+        SpriteRenderer spriteRenderer =
+            eventObject.GetComponent<SpriteRenderer>(); // 이벤트 SpriteRenderer 조회
+
+        bool hasFixedWorldSprite =
+            data.WorldSprite != null; // 이벤트별 고정 맵 스프라이트 존재 여부 확인
+
+        spriteRenderer.sprite =
+            hasFixedWorldSprite
+                ? data.WorldSprite
+                : runtimeSquareSprite; // 고정 스프라이트 또는 임시 사각형 표시
+
+        spriteRenderer.color =
+            hasFixedWorldSprite
+                ? Color.white
+                : GetEventColor(); // 고정 스프라이트 원본 색상 또는 청록색 임시 표시
+
+        spriteRenderer.sortingOrder = 4; // 이벤트 표시 순서 지정
+
+        if (!hasFixedWorldSprite)
+        {
+            CreateEventQuestionMark(
+                eventObject.transform); // 임시 이벤트는 청록색 사각형 위 ? 표시
+        }
+
+        CircleCollider2D collider =
+            eventObject.GetComponent<CircleCollider2D>(); // 이벤트 Collider 조회
+
+        collider.isTrigger = true; // 이벤트 Trigger 활성화
+        collider.radius = 0.56f; // 이벤트 Trigger 범위 설정
+
+        ExplorationEventView eventView =
+            eventObject.GetComponent<ExplorationEventView>(); // 이벤트 View 조회
+
+        eventView.Initialize(
+            data,
+            runtimeEventId); // 이벤트 데이터와 런타임 ID 연결
+
+        eventObjects.Add(eventObject); // 현재 층 이벤트 오브젝트 등록
+        eventRuntimeIds[eventObject] = runtimeEventId; // 이벤트 오브젝트 런타임 ID 등록
+        eventCoordinates[runtimeEventId] = cell.Coordinate; // 런타임 ID별 이벤트 좌표 등록
+    }
+
+    private static void CreateEventQuestionMark(
+        Transform eventTransform) // 임시 이벤트 물음표 표시 생성
+    {
+        if (eventTransform == null)
+        {
+            return;
+        }
+
+        GameObject questionObject =
+            new GameObject(
+                "EventQuestionMark",
+                typeof(TextMesh)); // 이벤트 물음표 텍스트 오브젝트 생성
+
+        questionObject.transform.SetParent(
+            eventTransform,
+            false); // 이벤트 표시 오브젝트 하위 배치
+
+        questionObject.transform.localPosition =
+            new Vector3(
+                0f,
+                0f,
+                -0.1f); // 사각형 중앙에 물음표 배치
+
+        TextMesh questionText =
+            questionObject.GetComponent<TextMesh>(); // 물음표 TextMesh 조회
+
+        questionText.text = "?"; // 이벤트 식별용 물음표 지정
+        questionText.anchor = TextAnchor.MiddleCenter; // 물음표 중앙 기준 정렬
+        questionText.alignment = TextAlignment.Center; // 물음표 중앙 정렬
+        questionText.fontSize = 72; // 물음표 글자 해상도 설정
+        questionText.characterSize = 0.08f; // 월드 공간 물음표 크기 설정
+        questionText.color = Color.white; // 물음표 흰색 표시
+
+        MeshRenderer textRenderer =
+            questionObject.GetComponent<MeshRenderer>(); // 물음표 렌더러 조회
+
+        if (textRenderer != null)
+        {
+            textRenderer.sortingOrder = 5; // 이벤트 사각형보다 앞에 표시
+        }
+    }
+
     private static void ShuffleCells(
         List<ExplorationMapCell> cells,
         System.Random random) // 조우 후보 셀 무작위 섞기
@@ -633,6 +875,70 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         encounterRuntimeIds.Clear(); // 오브젝트별 런타임 ID 초기화
         encounterCoordinates.Clear(); // 런타임 ID별 좌표 초기화
         encounterTypes.Clear(); // 좌표별 조우 등급 초기화
+    }
+
+    private void RemoveResolvedEventObjects() // 처리 완료 이벤트 표시 제거
+    {
+        if (sessionManager == null ||
+            eventObjects.Count == 0)
+        {
+            return;
+        }
+
+        for (int index = eventObjects.Count - 1;
+             index >= 0;
+             index--)
+        {
+            GameObject eventObject =
+                eventObjects[index]; // 현재 이벤트 오브젝트 조회
+
+            if (eventObject == null)
+            {
+                eventObjects.RemoveAt(index); // 이미 제거된 이벤트 목록 정리
+                continue;
+            }
+
+            if (!eventRuntimeIds.TryGetValue(
+                    eventObject,
+                    out string runtimeEventId))
+            {
+                continue;
+            }
+
+            if (!sessionManager.IsEventResolved(runtimeEventId))
+            {
+                continue;
+            }
+
+            eventRuntimeIds.Remove(eventObject); // 오브젝트별 런타임 ID 제거
+            eventCoordinates.Remove(runtimeEventId); // 런타임 ID별 좌표 제거
+            eventObjects.RemoveAt(index); // 현재 층 이벤트 목록 제거
+
+            eventObject.SetActive(false); // Trigger와 시각 표시 즉시 비활성화
+            Destroy(eventObject); // 처리 완료 이벤트 오브젝트 제거
+
+            Debug.Log(
+                $"[Exploration][Day49] 처리 이벤트 표시 제거 - " +
+                $"{runtimeEventId}"); // 처리 이벤트 제거 로그
+        }
+    }
+
+    private void ClearEventObjects() // 현재 층 이벤트 오브젝트 정리
+    {
+        foreach (GameObject eventObject in eventObjects)
+        {
+            if (eventObject == null)
+            {
+                continue;
+            }
+
+            eventObject.SetActive(false); // 같은 프레임 재접촉 방지
+            Destroy(eventObject); // 기존 이벤트 오브젝트 제거
+        }
+
+        eventObjects.Clear(); // 이벤트 오브젝트 목록 초기화
+        eventRuntimeIds.Clear(); // 이벤트 런타임 ID 초기화
+        eventCoordinates.Clear(); // 이벤트 좌표 초기화
     }
 
     private void TryHandleInitialPlayerPlacement() // 최초 탐사 진입 플레이어 시작 위치 처리
@@ -820,6 +1126,15 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                     0.15f,
                     1f); // 일반 주황색 반환
         }
+    }
+
+    private static Color GetEventColor() // 탐사 이벤트 임시 색상 조회
+    {
+        return new Color(
+            0.14f,
+            0.70f,
+            0.80f,
+            1f); // 이벤트 청록색 반환
     }
 
     private static void EnsureRuntimeSquareSprite() // 런타임 표시 스프라이트 준비
