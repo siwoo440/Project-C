@@ -11,6 +11,11 @@ public sealed class LobbyController : MonoBehaviour
             Debug.LogError("[LobbyController] 편성 화면에 필요한 캔버스 또는 캐릭터 목록이 없습니다."); // 데이터 누락 안내
             return; // 편성 화면 생성 중단
         } // 누락 처리 종료
+        Texture2D background = Resources.Load<Texture2D>("UI/LobbyBackground"); // 거점 배경 이미지 조회
+        if (background != null) // 배경 이미지 존재 확인
+        { // 배경 연결 시작
+            LobbyBackgroundInstaller.Install(canvas, background); // 거점 배경 표시
+        } // 배경 연결 종료
         CharacterRecoveryManager recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 상태 관리자 준비
         BattleResultManager.EnsureInstance(); // 파티 상태 관리자 준비
         GameObject viewObject = new GameObject("PartyRosterView", typeof(RectTransform), typeof(PartyRosterView)); // 편성 화면 객체 생성
