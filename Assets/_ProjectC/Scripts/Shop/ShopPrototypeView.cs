@@ -18,6 +18,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
     private RectTransform contentRoot; // 상품 또는 카드 목록 부모
     private ScrollRect productScrollRect; // 상품 목록 스크롤 구성
     private bool showingCardRemoval; // 카드 제거 목록 표시 여부
+    private bool showingRelicSales; // 유물 판매 목록 표시 여부
     private float previousTimeScale = 1f; // 상점 열기 전 시간 배율
     private bool pausedByShop; // 상점 시간 정지 적용 여부
 
@@ -136,6 +137,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         }
 
         showingCardRemoval = false; // 기본 상품 모드 저장
+        showingRelicSales = false; // 유물 판매 모드 해제
         ClearContent(); // 기존 목록 제거
         goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 표시
 
@@ -152,12 +154,15 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
         Button removalButton = CreateProductCard("CardRemovalService", null, "서비스", "보유 카드 1장 제거", $"{manager.Catalog.CardRemovalPrice} Gold", "카드\n제거", false, new Color(0.30f, 0.18f, 0.20f, 1f)); // 카드 제거 서비스 카드 생성
         removalButton.onClick.AddListener(ShowCardRemovalList); // 카드 제거 목록 열기 연결
+        Button sellButton = CreateProductCard("RelicSellService", null, "서비스", "보유 유물 판매", "판매할 유물 선택", "유물\n판매", false, new Color(0.18f, 0.30f, 0.28f, 1f)); // 유물 판매 서비스 생성
+        sellButton.onClick.AddListener(ShowRelicSaleList); // 유물 판매 목록 열기 연결
         ResetScrollToTop(); // 상품 목록 시작 위치 복원
     }
 
     private void ShowCardRemovalList() // 카드 제거 선택 목록 표시
     {
         showingCardRemoval = true; // 카드 제거 모드 저장
+        showingRelicSales = false; // 유물 판매 모드 해제
         ClearContent(); // 기존 상품 목록 제거
         Button backButton = CreateProductCard("BackToProducts", null, "이동", "상품 목록", "돌아가기", "←", false, AccentColor); // 상품 목록 복귀 카드 생성
         backButton.onClick.AddListener(RefreshMainView); // 상품 목록 복귀 연결
@@ -174,6 +179,25 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
         ResetScrollToTop(); // 카드 제거 목록 시작 위치 복원
     }
+
+    private void ShowRelicSaleList() // 보유 유물 판매 목록 표시
+    { // 유물 판매 목록 시작
+        showingCardRemoval = false; // 카드 제거 모드 해제
+        showingRelicSales = true; // 유물 판매 모드 저장
+        ClearContent(); // 기존 상품 목록 제거
+        Button backButton = CreateProductCard("BackToProducts", null, "이동", "상품 목록", "돌아가기", "←", false, AccentColor); // 상품 목록 복귀 카드 생성
+        backButton.onClick.AddListener(RefreshMainView); // 상품 목록 복귀 연결
+        foreach (RelicData relic in RelicRunManager.EnsureInstance().Inventory.OwnedRelics) // 보유 유물 순회
+        { // 개별 유물 표시 시작
+            RelicData capturedRelic = relic; // 버튼용 유물 원본 저장
+            int price = manager.GetRelicSellPrice(capturedRelic); // 실제 판매 가격 조회
+            string priceLabel = price >= 0 ? $"+{price} Gold" : "판매 불가"; // 판매 가능 가격 문구
+            Button relicButton = CreateProductCard($"SellRelic_{capturedRelic.RelicId}", capturedRelic.Icon, "유물 판매", capturedRelic.DisplayName, priceLabel, "유물", false, ButtonColor); // 유물 판매 카드 생성
+            relicButton.interactable = price >= 0; // 유효한 가격의 유물만 선택 허용
+            relicButton.onClick.AddListener(() => manager.TrySellRelic(capturedRelic)); // 유물 판매 동작 연결
+        } // 개별 유물 표시 종료
+        ResetScrollToTop(); // 판매 목록 시작 위치 복원
+    } // 유물 판매 목록 종료
 
     private void RemoveCard(int cardIndex) // 선택 카드 제거 실행
     {
@@ -192,7 +216,11 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             goldText.text = $"Gold  {manager.Gold}"; // 현재 골드 갱신
         }
 
-        if (overlayObject != null && overlayObject.activeSelf && !showingCardRemoval) // 열린 상품 목록 확인
+        if (overlayObject != null && overlayObject.activeSelf && showingRelicSales) // 열린 유물 판매 목록 확인
+        { // 유물 판매 목록 갱신 시작
+            ShowRelicSaleList(); // 최신 보유 유물과 가격 갱신
+        } // 유물 판매 목록 갱신 종료
+        else if (overlayObject != null && overlayObject.activeSelf && !showingCardRemoval) // 열린 상품 목록 확인
         {
             RefreshMainView(); // 판매 상태 포함 상품 목록 갱신
         }
