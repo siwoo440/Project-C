@@ -139,7 +139,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         IReadOnlyList<RunDeckCardEntry> activeDeckCards = runDeckManager.GetActiveCards(battleLoadout.Deck); // 상점 변경 포함 현재 카드 목록 조회
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, activeDeckCards, allyUnits, maximumHandSize, shuffleSeed); // 현재 보유 카드 기반 전투 더미 생성
         sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
-        battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn, battleType); // 전투 유형 포함 턴 관리자 생성
+        battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn, battleType, ExplorationSessionManager.Instance); // 실제 전투 유형과 현재 탐사 조우의 공격력 연결
         magicianPassive = new MagicianPassiveRuntime(battleDeck, battleTurn, allyUnits); // 마법사 패시브 연결
         if (!handView.Bind(battleDeck, sharedActionPoints, battleTurn)) // 손패 화면 연결 확인
         { // 손패 화면 오류 처리 시작

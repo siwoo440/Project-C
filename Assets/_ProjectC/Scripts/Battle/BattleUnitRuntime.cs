@@ -15,6 +15,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     private readonly int collapseHealingPercent; // 붕괴 회복 변화율
     public string UnitId { get; } // 유닛 고유 ID
     public string DisplayName { get; } // 유닛 표시 이름
+    internal BattleTurnRuntime ExplorationAttackPowerBattle { get; set; } // 현재 출전한 탐사 전투의 영구 공격력 원본
     public BattleTeam Team { get; } // 유닛 진영
     public Sprite Portrait { get; } // 유닛 초상화
     public int MaxHealth { get; private set; } // 유물 효과 적용 가능한 최대 체력
@@ -31,7 +32,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public int CurrentBlock { get; private set; } // 현재 피해 흡수 방어도
     public bool IsDead { get; private set; } // 사망 여부
     public IReadOnlyList<BattleStatusEffectInstance> StatusEffects => statusEffects; // 현재 상태 이상 조회
-    public int AttackPowerBonus => CalculateAttackPowerBonus(); // 현재 공격력 증가 수치
+    public int AttackPowerBonus => (int)Math.Min(int.MaxValue, (long)CalculateAttackPowerBonus() + NamelessOathAttackPower); // 상태 강화와 전투 서약을 더한 일반 공격력 증가
     public int ActionSpeedModifier => GetStatusEffectValue(BattleStatusEffectType.ActionSpeedUp) - GetStatusEffectValue(BattleStatusEffectType.ActionSpeedDown); // 행동 속도 증가와 감소의 차이
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
     public bool HasRemovableDebuff => ContainsRemovableDebuff(); // 정화 가능한 디버프 존재 여부
@@ -44,10 +45,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
     public event Action<BattleUnitRuntime> BlockChanged; // 방어도 변경 이벤트
+    internal int NamelessOathAttackPower { get; set; } // 현재 전투에서만 유지할 서약의 기본 공격력 증가
+    internal Func<int> GetHostileBlindResistance { get; set; } // 현재 전투가 제공하는 첫 적 턴 실명 저항 조회
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
     internal event Action<BattleUnitRuntime> StealthEnded; // 살아 있는 유닛의 은신 해제 또는 정상 만료 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     internal event Action<BattleUnitRuntime> Revived; // 전투불능 아군의 부활 알림
+    internal event Action<BattleUnitRuntime> AllyDefeatReady; // 사망 알림을 마친 아군의 유물 부활 정산
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
@@ -156,6 +160,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 사망 상태 처리 종료
         return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta, sourceUnit, PreventIncomingMentalLoss); // 교전 보정과 원래 요청 및 공용 피해 보호 전달
     } // 정신력 증감 종료
+    internal void SpendRelicMentalCost(int amount) // 전투 개막 유물의 명시 정신력 비용
+    { // 직접 비용 지불 시작
+        if (Team == BattleTeam.Ally && !IsDead && amount > 0) // 생존 아군과 양수인 실제 비용 확인
+        { // 현재 정신력에서 정수 비용 처리 시작
+            mentalRuntime.ChangeMental(-amount, BattleMentalChangeReason.RelicEffect); // 피해 방어와 감경을 건너뛰는 원래 정신력 범위 및 상태 처리
+        } // 현재 정신력에서 정수 비용 처리 종료
+    } // 직접 비용 지불 종료
     public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
     { // 변경 가능 확인 시작
         return !IsDead && mentalRuntime.CanChangeMental(GetEncounterMentalChange(delta)); // 실제 정신력 감소 완화를 포함한 카드 사용 가능 여부
@@ -537,7 +548,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 봉인핵의 유효 확률 확인 종료
     private int CalculateAttackPowerBonus() // 공격력 증가 합계 계산
     { // 공격력 증가 계산 시작
-        int totalBonus = 0; // 전체 공격력 증가 초기화
+        long totalBonus = ExplorationAttackPowerBattle?.PermanentAttackPower ?? 0; // 탐사 중인 실제 아군의 기존 영구 공격력과 일반 강화 합산 준비
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
             if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp) // 일반 강화와 맥박줄의 독립 공격력 증가 확인
@@ -545,7 +556,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
         } // 공격력 상태 확인 종료
-        return totalBonus; // 전체 공격력 증가 반환
+        return (int)Math.Min(int.MaxValue, totalBonus); // 누적 영구 수치와 기존 공격력 효과의 정수 범위 반환
     } // 공격력 증가 계산 종료
     private int CalculateDefense(int baseDefense, BattleStatusEffectType increaseType, BattleStatusEffectType decreaseType) // 현재 방어력 계산
     { // 방어력 계산 시작
@@ -589,11 +600,18 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         ClearStatusEffects(); // 사망 시 일반 상태와 한 번 사용할 씨앗 제거
         Defeated?.Invoke(sourceUnit, this); // 발생자와 대상을 포함한 실제 처치 한 번 알림
         Died?.Invoke(this); // 기존 사망 수신자에게 체력 영과 전투불능 상태 전달
+        if (Team == BattleTeam.Ally) // 실제 사망을 알린 아군의 즉시 부활 기회 확인
+        { // 유물 부활 정산 신호 시작
+            AllyDefeatReady?.Invoke(this); // 승패 확정과 씨앗보다 앞선 아군 부활 단계
+        } // 유물 부활 정산 신호 종료
         int percent = pendingSeedRevivalPercent; // 사망 당시 예약한 한 번의 부활 비율 확보
         if (percent > 0) // 사망 당시에 활성 씨앗이 있었는지 확인
         { // 부활 씨앗의 실제 복귀 시작
             pendingSeedRevivalPercent = 0; // 부활과 화면 콜백 전 사용한 씨앗 소모
-            Revive(percent); // 기존 정신력과 체력 올림을 사용하는 동일 유닛 복귀
+            if (IsDead) // 먼저 처리한 성배 조각으로 이미 돌아왔는지 확인
+            { // 아직 쓰러진 아군의 씨앗 복귀 시작
+                Revive(percent); // 기존 정신력과 체력 올림을 사용하는 동일 유닛 복귀
+            } // 아직 쓰러진 아군의 씨앗 복귀 종료
             SeedRevivalSettled?.Invoke(this); // 부활 뒤 실제 생존 명단의 승패 판정 요청
         } // 부활 씨앗의 실제 복귀 종료
     } // 전투불능 정산 종료
@@ -1070,7 +1088,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             StatusEffectsChanged?.Invoke(this); // 상태 아이콘과 상세 갱신 알림
         } // 상태 목록 변경 알림 종료
     } // 정신 상태 동기화 종료
-    private static int ApplyPercentage(int baseAmount, int changePercent) // 비율 기반 수치 계산
+    internal static int ApplyPercentage(int baseAmount, int changePercent) // 직접 피해와 기존 전투 수치의 공통 비율 계산
     { // 비율 계산 시작
         int safeBaseAmount = Mathf.Max(0, baseAmount); // 음수 원본 수치 보정
         float adjusted = (long)safeBaseAmount * (100L + changePercent) / 100f; // 큰 가변 회복량도 중간 곱셈 범위 안에서 계산

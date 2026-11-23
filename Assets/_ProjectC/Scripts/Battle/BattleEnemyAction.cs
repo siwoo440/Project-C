@@ -17,6 +17,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     private readonly Func<int> rollPercent; // 명중과 추가 상태 확률 난수
     private readonly int statusChancePercent; // 공격 후 상태 부여 확률
     private readonly int statusValue; // 공격 후 상태 효과 수치
+    private readonly BattleType encounterType; // 생성 시점에 연결된 실제 조우 등급
     public BattleUnitRuntime Actor { get; } // 행동 적 조회
     internal BattleUnitRuntime IntendedTarget { get; private set; } // 전환 효과 전의 지정 대상
     internal BattleUnitRuntime PrioritizedTarget => shieldTauntTarget != null && !shieldTauntTarget.IsDead ? shieldTauntTarget : IntendedTarget; // 대신 받기 전의 우선 공격 대상
@@ -49,7 +50,15 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     private int FearAttackPenalty => Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && Actor.GetStatusEffect(BattleStatusEffectType.Fear) is { IsExpired: false } // 실제 공포가 있는 적의 공격인지 확인
         ? BattleSupplyRelics.Find(RelicEffectType.AfraidEnemyAttackReduction)?.EffectValue ?? 0 // 보유한 침묵 결정종의 추가 공격력 감소량
         : 0; // 다른 행동과 만료된 공포에 적용하는 감소 없음
-    public int AttackAmount => (int)Math.Max(0L, (long)Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty - FearAttackPenalty); // 실제 공격과 예고에 생존한 공포 및 기존 약화의 합 반영
+    public int AttackAmount // 실제 공격과 예고가 공유하는 현재 직접 피해
+    { // 적 공격 피해 조회 시작
+        get // 동일한 공격 약화와 왕관못의 전투 등급 반영
+        { // 현재 적 공격력 계산 시작
+            int damage = (int)Math.Max(0L, (long)Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty - FearAttackPenalty); // 기존 정신 상태와 매 타격 공격 약화 계산
+            bool crownPenalty = damage > 0 && Actor.Team == BattleTeam.Enemy && ActionType == EnemyActionType.Attack && encounterType == BattleType.Normal && BattleSupplyRelics.Find(RelicEffectType.CrownNailBossDamage) != null; // 일반 조우 적 직접 공격과 보유 왕관못 확인
+            return crownPenalty ? BattleUnitRuntime.ApplyPercentage(damage, 10) : damage; // 방어와 분담 이전 동일 원본에 한 번만 십 퍼센트 가산
+        } // 현재 적 공격력 계산 종료
+    } // 적 공격 피해 조회 종료
 
     public bool IsExecutable =>
         Actor != null &&
@@ -80,7 +89,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         int additionalStatusChancePercent = 0, // 공격 후 상태 부여 확률 전달
         int additionalStatusValue = 1, // 공격 후 상태 효과 수치 전달
         Func<int> percentRoll = null, // 테스트 가능한 확률 난수 전달
-        int mentalChangeOnHit = 0) // 적중 시 정신력 변화 전달
+        int mentalChangeOnHit = 0, // 적중 시 정신력 변화 전달
+        BattleType? battleType = null) // 실제 전투에서 선택한 조우 등급 전달
     {
         Actor =
             actor ??
@@ -92,6 +102,7 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
         ActionType = actionType; // 행동 종류 저장
         DamageType = damageType; // 피해 유형 저장
+        encounterType = battleType ?? ExplorationDifficultyCalculator.GetCurrentBattleType(); // 명시한 전투 등급 우선 적용
 
         Amount =
             GetScaledActionAmount(
@@ -320,6 +331,11 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
 
         if (ActionType == EnemyActionType.ApplyStatusEffect)
         {
+            int blindChance = GetHostileStatusChance(Target, 100); // 순수 적 실명 행동의 원래 확정 확률에 현재 저항 적용
+            if (!Target.HasStatusImmunity && blindChance < 100 && (blindChance <= 0 || rollPercent() >= blindChance)) // 면역의 기존 처리와 실제 실명 저항 굴림 구분
+            { // 첫 적 턴 실명 저항 성공 시작
+                return BattleEnemyActionResult.FromStatus(BattleStatusEffectApplyResult.BlockedByImmunity); // 실제 상태 없이 기존 저항 결과 반환
+            } // 첫 적 턴 실명 저항 성공 종료
             BattleStatusEffectApplyResult applyResult =
                 Target.ApplyStatusEffect(
                     StatusEffectType,
@@ -375,7 +391,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         recipient = finalTarget; // 광역 공격 결과에도 수호 전환된 대상 전달
 
         bool survivedImpact = !damageResult.WasTargetDefeated && !attackTarget.IsDead; // 부활과 별개인 이번 실제 타격의 생존 확인
-        bool applyAdditionalStatus = survivedImpact && StatusEffectType != BattleStatusEffectType.None && statusChancePercent > 0 && rollPercent() < statusChancePercent; // 실제로 타격을 버틴 피격자의 추가 상태 판정
+        int statusChance = GetHostileStatusChance(attackTarget, statusChancePercent); // 수호 전환 뒤 실제 피격자의 해당 상태 확률 확인
+        bool applyAdditionalStatus = survivedImpact && StatusEffectType != BattleStatusEffectType.None && statusChance > 0 && rollPercent() < statusChance; // 생존 피격자의 현재 확률을 사용한 기존 추가 상태 판정
         BattleStatusEffectApplyResult statusResult = applyAdditionalStatus ? attackTarget.ApplyStatusEffect(StatusEffectType, statusValue, StatusDuration, StatusMaximumStacks, Actor) : BattleStatusEffectApplyResult.Invalid; // 실제 피격 대상의 추가 상태 적용
         if (survivedImpact && AdditionalMentalChange != 0) // 부활하기 전에 버틴 대상만 추가 정신력 변화 확인
         { // 정신력 압박 적용 시작
@@ -388,6 +405,16 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         } // 응징 방벽 반격 종료
         return BattleEnemyActionResult.FromDamage(damageResult, statusResult, applyAdditionalStatus); // 피해와 추가 상태 결과 반환
     } // 개별 피격 처리 종료
+
+    private int GetHostileStatusChance(BattleUnitRuntime target, int originalChance) // 적이 아군에게 걸려는 실명만 저항으로 변경
+    { // 적 상태 확률 보정 시작
+        if (StatusEffectType != BattleStatusEffectType.Blind || Actor.Team != BattleTeam.Enemy || target.Team != BattleTeam.Ally) // 실명 또는 적과 아군 사이의 실제 상태 적용인지 확인
+        { // 저항할 수 없는 행동 확인 시작
+            return originalChance; // 다른 상태와 진영의 원래 확률 반환
+        } // 저항할 수 없는 행동 확인 종료
+        int resistance = target.GetHostileBlindResistance?.Invoke() ?? 0; // 실제 첫 적 턴에 현재 피격자가 받아 쓸 정수 저항량
+        return Math.Max(0, originalChance - resistance); // 기존 확률에 퍼센트포인트를 빼고 음수 방지
+    } // 적 상태 확률 보정 종료
 
     private static int GetScaledActionAmount(
         EnemyActionType actionType,

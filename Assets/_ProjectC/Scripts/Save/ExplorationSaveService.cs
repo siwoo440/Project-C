@@ -36,6 +36,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public CharredWellRunState well; // 사용자별 물과 현재 및 다음 층 봉인 저장
         public BurntCartRunState cart; // 수레 매복과 상점 할인 저장
         public string[] relics; // 획득 순서 유물 목록
+        public int permanentAttackPower; // 유물을 제거한 뒤에도 보존하는 회차 영구 공격력
         public string[] consumables; // 소모품 슬롯 목록
         public string shopRoom; // 현재 상점 방 식별자
         public ShopRunManager.RelicReserve[] shopRelicReserves; // 방별 유물과 특수 카드의 추가 진열 및 판매 결과
@@ -223,6 +224,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
                 escapeGoldClaims = escapeClaims.ToArray(), // 재도주 방지와 승리 차감에 쓸 실제 지급량 저장
                 relics = relics.ToArray(), // 보유 유물 설정
+                permanentAttackPower = session.PermanentAttackPower, // 유물 목록과 독립된 실제 영구 공격력 기록
                 consumables = consumables, // 소모품 슬롯 설정
                 shopRoom = shop != null ? shop.ActiveRoomRuntimeId : null, // 상점 방 식별자 설정
                 shopRelicReserves = shop?.ExportRelicReserves(), // 열쇠와 도장의 방별 추가 진열 및 판매 결과 보관

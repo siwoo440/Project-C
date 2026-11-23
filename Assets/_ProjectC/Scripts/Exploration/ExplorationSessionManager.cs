@@ -30,6 +30,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     internal IReadOnlyDictionary<string, int> EscapeGoldClaims => escapeGoldClaims; // 저장에 포함할 조우별 도주 골드 조회
 
     private EncounterData activeEncounter; // 현재 전투 조우 데이터
+    private object activeEncounterIdentity; // 이름이 같아도 각각 구분되는 실제 조우 시작 토큰
     private string activeRuntimeEncounterId; // 현재 전투 런타임 조우 ID
     private Vector3 returnPosition; // 전투 후 탐사 복귀 위치
     private bool hasReturnPosition; // 복귀 위치 존재 여부
@@ -58,6 +59,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
     public string ActiveRuntimeEncounterId => activeRuntimeEncounterId; // 현재 런타임 조우 ID 조회
+    internal object ActiveEncounterIdentity => activeEncounter != null ? activeEncounterIdentity : null; // 활성 조우 여부까지 확인한 이번 전투 토큰
     internal bool ActiveEncounterInFade { get; private set; } // 현재 조우가 시작된 방의 퇴색 여부
     public int CurrentFloor => currentFloor; // 현재 층 조회
     public ExpeditionZoneId CurrentZone { get; private set; } // 이번 회차의 해당 탐사 구역
@@ -75,6 +77,13 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public int CompletedFloor => completedFloor; // 탐사 완료 층 조회
     public int CompletedEncounterCount => completedEncounterCount; // 완료 시점 클리어 조우 수 조회
     public int LastExplorationSuccessAffinity => lastExplorationSuccessAffinity; // 마지막 성공 호감도 조회
+    internal int PermanentAttackPower { get; private set; } // 유물 보유 여부와 별개로 유지하는 이번 탐사의 영구 공격력
+    internal int GrantPermanentAttackPower(int amount) // 실제 정예 및 보스 처치의 영구 공격력 누적
+    { // 영구 공격력 정산 시작
+        int gained = System.Math.Min(System.Math.Max(0, amount), int.MaxValue - PermanentAttackPower); // 회차 공격력의 실제 증가량과 정수 상한 확인
+        PermanentAttackPower += gained; // 새 탐사 전까지 유지할 영구 공격력 누적 기록
+        return gained; // 실제로 지급한 영구 수치 반환
+    } // 영구 공격력 정산 종료
     public int RunExperienceGained => runExperienceGained; // 이번 탐사 실제 경험치 조회
     public int RunGoldGained => runGoldGained; // 이번 탐사 실제 골드 조회
     public int RunScrewGained => runScrewGained; // 이번 탐사 실제 나사 조회
@@ -227,6 +236,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         activeEncounter = encounterData; // 현재 전투 데이터 저장
+        activeEncounterIdentity = new object(); // 같은 탐사 방의 재시도와 구분할 실제 조우 생성
         activeRuntimeEncounterId = runtimeEncounterId; // 런타임 조우 ID 저장
         ActiveEncounterInFade = FindFirstObjectByType<ExplorationMapRuntime>()?.IsFadeAtWorldPosition(encounterPosition) == true; // 진입 위치의 퇴색 여부를 전투까지 저장
         LastClearReward = null; // 이전 보상 표시 초기화
@@ -695,6 +705,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             CurrentZoneLevel = snapshot.zoneLevel; // 저장한 회차의 실제 선택 레벨
             IsZoneBossReservedForRun = snapshot.zoneBossReserved; // 도중 백 퍼센트와 구분한 실제 출발 시점 상태
         } // 탐사 선택과 이미 고정한 보스 예약의 복원 종료
+        PermanentAttackPower = System.Math.Max(0, snapshot.permanentAttackPower); // 기존 저장에서 생략된 영 기본값과 정상 비음수 보너스 복원
         encounterPoolVersion = snapshot.encounterPoolVersion; // 저장 당시 조우 목록 버전 복원
         EventPoolVersion = snapshot.eventPoolVersion; // 저장 당시 층의 이벤트 목록 복원
         currentFloor = snapshot.floor; // 저장 탐사 층 적용
@@ -748,6 +759,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         CurrentZone = ExpeditionZoneId.WinterfallAshPlains; // 이전 호출과 저장의 기본 탐사 구역
         CurrentZoneLevel = 1; // 원래 탐사의 기본 첫 난이도
         IsZoneBossReservedForRun = false; // 이전 회차에서 고정한 보스 예약 제거
+        PermanentAttackPower = 0; // 회차가 바뀌면 이전 처치의 영구 수치 초기화
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
         pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거

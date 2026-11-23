@@ -1646,7 +1646,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         long preparedDamage = (long)stealthDamage + (card.CardType == CardType.Wand ? preparedWandDamage : 0); // 같은 명중의 팔찌와 첫 지팡이 집중 가산 합계
         if (damage <= 0) // 기존 양수 피해가 필요한 추가 유물 확인
         { // 영 피해 카드 타격의 예약 보정 시작
-            return (int)Math.Min(int.MaxValue, damage + preparedDamage); // 적 명중에서 실제 예약된 피해 합계 반환
+            int preparedHit = (int)Math.Min(int.MaxValue, damage + preparedDamage); // 적 명중에서 실제 예약된 피해 합계
+            return turnRuntime.ApplyCrownNailOutgoingDamage(target, preparedHit); // 실제 보스 타격인 경우에만 방어 전 피해 증가
         } // 영 피해 카드 타격의 예약 보정 종료
         int firstBonus = usedFirstCardDamageBonus ? 0 : BattleSupplyRelics.Find(RelicEffectType.FirstCardDamageBonus)?.EffectValue ?? 0; // 전투당 첫 명중에 쓸 붉은 잉크병 수치
         if (firstBonus > 0) // 붉은 잉크병의 유효한 가산량 확인
@@ -1659,7 +1660,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 검은 깃털 펜던트 발동 시작
             lastRetainedDamageRound = turnRuntime.CurrentRound; // 같은 아군 턴의 다음 타격 중복 방지
         } // 검은 깃털 펜던트 발동 종료
-        return (int)Math.Min(int.MaxValue, damage + preparedDamage + Math.Max(0, firstBonus) + Math.Max(0, retainedBonus)); // 방어와 방어도 앞에서 명중한 같은 카드의 모든 피해 합산
+        int landedDamage = (int)Math.Min(int.MaxValue, damage + preparedDamage + Math.Max(0, firstBonus) + Math.Max(0, retainedBonus)); // 방어 전 명중한 이 카드의 전체 직접 피해
+        return turnRuntime.ApplyCrownNailOutgoingDamage(target, landedDamage); // 추가 고정 피해와 별개인 실제 보스 타격의 비율 증가
     } // 직접 명중 유물 확인 종료
     private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작

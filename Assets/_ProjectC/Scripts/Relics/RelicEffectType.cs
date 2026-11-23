@@ -145,4 +145,12 @@ public enum RelicEffectType // 유물 효과 종류
     WandResonanceDamage, // 전투의 세 번째 지팡이 카드마다 생존 적 피해
     CleanseReceivedDebuff, // 생존 아군에게 걸리는 약화의 즉시 확률 정화
     StealthBreakDamage, // 은신이 풀린 아군의 다음 직접 명중 피해 증가
+    GainOnHealthLoss, // 실제 체력 감소로 확률에 따라 현재 행동력 회복
+    AbyssLampOpening, // 적 전체 공격 약화와 아군 전체 정신력 비용
+    CrownNailBossDamage, // 보스 직접 피해 증가 및 일반 전투 피격 증가
+    AbyssGrailAllyRevive, // 전투 첫 아군 전투불능을 막는 실제 부활
+    NamelessOathOpening, // 전투 동안 공격력 증가와 종료 후 비치명 체력 비용
+    PermanentAttackPerEliteBoss, // 정예 및 보스 처치로 얻는 회차 영구 공격력
+    FirstTurnBlindResistance, // 첫 적 턴까지 적의 실명 효과에 저항
+    OpeningEnemyAttackReduction, // 조우 시작 무작위 적의 기간제 공격력 감소
 }
