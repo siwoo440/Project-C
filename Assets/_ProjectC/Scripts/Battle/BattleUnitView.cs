@@ -23,6 +23,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private BattleCombatFeedbackView combatFeedbackView; // 전투 결과 피드백 화면
     private BattleUnitMotionView motionView; // 유닛 초상화 움직임 화면
     private Outline targetOutline; // 선택 가능 대상 윤곽선
+    private Outline fallenTargetOutline; // 전투불능 표시에 붙는 부활 대상 윤곽선
+    private bool isTargetable; // 현재 선택할 수 있는 유닛 여부
     private BattleStatusEffectView statusEffectView; // 상태 이상 표시 화면
     private BattleMentalView mentalView; // 정신력 표시 화면
     private Image mentalStateBacklight; // 각성·붕괴 머리 역광 이미지
@@ -47,6 +49,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.BlockChanged += HandleBlockChanged; // 방어도 변경 이벤트 등록
         RuntimeUnit.DamageTaken += HandleDamageTaken; // 피해 적용 이벤트 등록
         RuntimeUnit.HealthRestored += HandleHealthRestored; // 회복 적용 이벤트 등록
+        RuntimeUnit.Revived += HandleRevived; // 별도 부활 이벤트 등록
         RuntimeUnit.Died += HandleDied; // 사망 이벤트 등록
         RuntimeUnit.MentalChanged += HandleMentalChanged; // 정신력 변화 이벤트 등록
         EnsureCombatFeedbackView(); // 전투 결과 피드백 준비
@@ -137,6 +140,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RuntimeUnit.BlockChanged -= HandleBlockChanged; // 방어도 변경 이벤트 해제
         RuntimeUnit.DamageTaken -= HandleDamageTaken; // 피해 적용 이벤트 해제
         RuntimeUnit.HealthRestored -= HandleHealthRestored; // 회복 적용 이벤트 해제
+        RuntimeUnit.Revived -= HandleRevived; // 부활 이벤트 해제
         RuntimeUnit.Died -= HandleDied; // 사망 이벤트 해제
         RuntimeUnit.MentalChanged -= HandleMentalChanged; // 정신력 변화 이벤트 해제
         statusEffectView?.Unbind(); // 상태 이상 화면 연결 해제
@@ -155,10 +159,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         { // 파트너 화면 숨김 시작
             partnerRoot.SetActive(false); // 연결 해제 시 파트너 숨김
         } // 파트너 화면 숨김 종료
-        if (targetOutline != null) // 대상 윤곽선 존재 확인
-        { // 대상 윤곽선 초기화 시작
-            targetOutline.enabled = false; // 기존 선택 강조 해제
-        } // 대상 윤곽선 초기화 종료
+        SetTargetable(false); // 기존 클릭 허용과 두 선택 테두리 해제
         ResetMotion(); // 유닛 움직임 복구
         if (enemyIntentRoot != null) // 행동 예고 오브젝트 확인
         { // 행동 예고 숨김 시작
@@ -276,11 +277,16 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 행동 예고 표시 종료
     public void SetTargetable(bool targetable) // 대상 선택 가능 표시
     { // 대상 표시 시작
-        if (targetOutline == null || RuntimeUnit == null) // 화면 연결 상태 확인
-        { // 연결 없음 처리 시작
-            return; // 대상 표시 중단
-        } // 연결 없음 처리 종료
-        targetOutline.enabled = targetable; // 선택 가능 대상 윤곽선 적용
+        isTargetable = targetable && RuntimeUnit != null; // 화면 연결과 선택 가능 상태 저장
+        bool isFallen = RuntimeUnit?.IsDead == true; // 생존 초상화와 전투불능 표시 구분
+        if (targetOutline != null) // 생존 초상화 윤곽선 확인
+        { // 초상화 강조 설정 시작
+            targetOutline.enabled = isTargetable && !isFallen; // 생존 대상 초상화 강조
+        } // 초상화 강조 설정 종료
+        if (fallenTargetOutline != null) // 전투불능 표시 윤곽선 확인
+        { // 전투불능 강조 설정 시작
+            fallenTargetOutline.enabled = isTargetable && isFallen; // 부활 대상의 전투불능 표시 강조
+        } // 전투불능 강조 설정 종료
     } // 대상 표시 종료
     public void SetPartnerMarker(bool isPartner, bool usedCard) // 파트너 표시 적용
     { // 파트너 표시 시작
@@ -330,11 +336,14 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 파트너 화면 생성 종료
     public void OnPointerClick(PointerEventData eventData) // 유닛 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
-        if (RuntimeUnit == null || RuntimeUnit.IsDead) // 유닛 연결과 생존 상태 확인
+        if (RuntimeUnit == null || RuntimeUnit.IsDead && (RuntimeUnit.Team != BattleTeam.Ally || !isTargetable)) // 생존 유닛 또는 선택 중인 부활 대상 확인
         { // 클릭 불가 처리 시작
             return; // 포인터 클릭 처리 중단
         } // 클릭 불가 처리 종료
-        InformationRequested?.Invoke(RuntimeUnit); // 카드 대상 처리 전 유닛 정보 요청 알림
+        if (!RuntimeUnit.IsDead) // 유닛 정보는 생존 유닛 클릭에서 요청
+        { // 생존 유닛 정보 처리 시작
+            InformationRequested?.Invoke(RuntimeUnit); // 카드 대상 처리 전 유닛 정보 요청 알림
+        } // 생존 유닛 정보 처리 종료
         Clicked?.Invoke(RuntimeUnit); // 유닛 클릭 이벤트 알림
     } // 포인터 클릭 처리 종료
     public void OnPointerEnter(PointerEventData eventData) // 유닛 포인터 진입 처리
@@ -486,6 +495,16 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         combatFeedbackView.ShowHealing(appliedHealing); // 회복 숫자와 강조 표시
         PlayHealReaction(); // 회복 대상 초상화 확대 시작
     } // 회복 이벤트 처리 종료
+    private void HandleRevived(BattleUnitRuntime runtimeUnit) // 부활한 유닛의 별도 화면 반응
+    { // 부활 화면 처리 시작
+        if (runtimeUnit == RuntimeUnit) // 현재 화면에 연결된 부활 유닛 확인
+        { // 연결된 부활 유닛 처리 시작
+            SetTargetable(false); // 부활이 끝난 표시의 강조와 클릭 허용 해제
+            RefreshMentalStateBacklight(); // 다시 살아난 유닛의 기존 정신 상태 역광 적용
+            ShowStatusFeedback($"부활 · 체력 {runtimeUnit.CurrentHealth}", false); // 회복과 구별되는 부활 문구 표시
+            PlayHealReaction(); // 아군 초상화의 지원 반응 연출
+        } // 연결된 부활 유닛 처리 종료
+    } // 부활 화면 처리 종료
     private void HandleDied(BattleUnitRuntime runtimeUnit) // 사망 이벤트 처리
     { // 사망 이벤트 처리 시작
         if (runtimeUnit != RuntimeUnit) // 다른 유닛 이벤트 확인
@@ -616,20 +635,26 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 움직임 준비 종료
     private void EnsureTargetOutline() // 선택 가능 대상 윤곽선 준비
     { // 윤곽선 준비 시작
-        if (portraitImage == null) // 캐릭터 그림 존재 확인
-        { // 그림 누락 처리 시작
-            return; // 윤곽선 준비 중단
-        } // 그림 누락 처리 종료
-        targetOutline = portraitImage.GetComponent<Outline>(); // 기존 윤곽선 조회
-        if (targetOutline == null) // 윤곽선 누락 확인
-        { // 윤곽선 추가 시작
-            targetOutline = portraitImage.gameObject.AddComponent<Outline>(); // 그림 윤곽선 추가
-        } // 윤곽선 추가 종료
-        targetOutline.effectColor = Color.yellow; // 선택 가능 윤곽선 색상 적용
-        targetOutline.effectDistance = new Vector2(3f, -3f); // 윤곽선 두께 적용
-        targetOutline.useGraphicAlpha = true; // 그림 투명도 기준 윤곽선 적용
-        targetOutline.enabled = false; // 기본 윤곽선 숨김
+        targetOutline = CreateTargetOutline(portraitImage); // 생존 아군과 적의 초상화 테두리 준비
+        fallenTargetOutline = CreateTargetOutline(deadMarker == null ? null : deadMarker.GetComponent<Image>()); // 전투불능 표시의 부활 선택 테두리 준비
     } // 윤곽선 준비 종료
+    private static Outline CreateTargetOutline(Image image) // 입력 표시가 붙을 화면의 윤곽선 준비
+    { // 화면별 윤곽선 준비 시작
+        if (image == null) // 그림 여부 확인
+        { // 그림 누락 처리 시작
+            return null; // 설정할 윤곽선 없음 반환
+        } // 그림 누락 처리 종료
+        Outline outline = image.GetComponent<Outline>(); // 그림의 기존 윤곽선 조회
+        if (outline == null) // 윤곽선 누락 확인
+        { // 윤곽선 추가 시작
+            outline = image.gameObject.AddComponent<Outline>(); // 그림 윤곽선 추가
+        } // 윤곽선 추가 종료
+        outline.effectColor = Color.yellow; // 선택 가능 윤곽선 색상 적용
+        outline.effectDistance = new Vector2(3f, -3f); // 윤곽선 두께 적용
+        outline.useGraphicAlpha = true; // 그림 투명도 기준 윤곽선 적용
+        outline.enabled = false; // 기본 윤곽선 숨김
+        return outline; // 선택 표시 설정에 사용할 윤곽선 반환
+    } // 화면별 윤곽선 준비 종료
     private void EnsureStatusEffectView() // 상태 이상 화면 준비
     { // 상태 화면 준비 시작
         if (statusEffectView != null) // 기존 상태 화면 확인

@@ -14,7 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart; // 정해진 행동이나 실제 피해 한 번을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard; // 정해진 행동이나 실제 피해 한 번을 기다리는 상태
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -189,6 +189,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "반사의 성채"; // 반사의 성채 표시 문구 반환
             case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
                 return "수호자의 심장"; // 수호자의 심장 표시 문구 반환
+            case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
+                return "전투불능 방지"; // 해당 화면의 전투불능 방지 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속도 증가"; // 속도 증가 이름
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -315,6 +317,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "반사"; // 반사의 성채 표시 문구 반환
             case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
                 return "수호"; // 수호자의 심장 표시 문구 반환
+            case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
+                return "생존"; // 해당 화면의 전투불능 방지 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return "속+"; // 속도 증가 축약
             case BattleStatusEffectType.Vulnerable: // 검은 왕관의 취약 상태
@@ -441,6 +445,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴에 잃은 체력을 모아 그 {effectiveValue}%만큼 모든 적에게 반사"; // 반사의 성채 표시 문구 반환
             case BattleStatusEffectType.GuardianHeart: // 수호자의 심장 상태 분기
                 return "이 아군이 적의 직접 피해로 쓰러지려 하면 사용자가 한 번 대신 맞고 체력 1 이상으로 생존"; // 수호자의 심장 표시 문구 반환
+            case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
+                return "치명 피해를 한 번 막아 체력 1로 생존"; // 해당 화면의 전투불능 방지 문구
             case BattleStatusEffectType.ActionSpeedUp: // 행동 속도 증가 종류
                 return $"행동 속도 +{effectiveValue}. 첫 적 턴 종료에 해제."; // 증가량과 해제 시점
             case BattleStatusEffectType.Vulnerable: // 방어도 적용 전 받는 피해 증가

@@ -84,6 +84,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 잘못된 카드 처리 시작
             return; // 카드 클릭 처리 중단
         } // 잘못된 카드 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ReviveAlly && !turnRuntime.HasFallenAlly()) // 손패 선택 중 전투불능 대상 확인
+        { // 부활 대상 없음 시작
+            return; // 대상 선택 시작 차단
+        } // 부활 대상 없음 종료
         if (cardInstance.OwnerUnit.IsDead) // 카드 소유자 사망 확인
         { // 사망 소유자 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 사망한 소유자의 카드는 사용할 수 없습니다: {cardInstance.OwnerUnit.DisplayName}"); // 사용 불가 출력
@@ -216,7 +220,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 취소 처리 시작
             CancelSelection(); // 체력 부족 카드 선택 해제
         } // 선택 취소 처리 종료
-        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash || selectedCard?.SourceData.SwordRule == SwordCardRule.BloodTrail || selectedCard?.SourceData.SwordRule == SwordCardRule.JudgmentSlash) // 조건부 카드의 체력과 출혈 및 강화 변화 확인
+        if (selectedCard?.TargetType == CardTargetType.FallenAlly || selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash || selectedCard?.SourceData.SwordRule == SwordCardRule.BloodTrail || selectedCard?.SourceData.SwordRule == SwordCardRule.JudgmentSlash) // 체력과 사망에 따라 바뀌는 카드 대상 확인
         { // 대상 범위 갱신 시작
             UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
         } // 대상 범위 갱신 종료
@@ -234,6 +238,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 실행 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ReviveAlly && (targetUnits.Count != 1 || !IsValidTarget(cardInstance, targetUnits[0]))) // 비용 지불 직전 부활 대상 한 명 재검사
+        { // 부활 대상 변경 처리 시작
+            CancelSelection(); // 비용 차감 전 카드 선택 취소
+            return; // 부활 행동 중단
+        } // 부활 대상 변경 처리 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SplitBarrier && // 분할 방벽의 비용 지불 직전 검사
             (cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || targetUnits[0] == targetUnits[1] || // 소유자 생존과 서로 다른 대상 수 확인
             !IsValidTarget(cardInstance, targetUnits[0]) || !IsValidTarget(cardInstance, targetUnits[1]))) // 두 대상의 진영과 생존 상태 확인
@@ -249,7 +258,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 미지원 효과 처리 종료
         BattleUnitView actorView = FindUnitView(cardInstance.OwnerUnit); // 카드 행동자 화면 조회
         List<BattleUnitView> targetViews = CollectUnitViews(targetUnits); // 카드 대상 화면 목록 생성
-        if (!actionSequenceRunner.CanStartAction(actorView, targetViews)) // 행동 연출 시작 가능 확인
+        if (!actionSequenceRunner.CanStartAction(actorView, targetViews, cardInstance.EffectType == CardEffectType.ReviveAlly)) // 부활 대상 상태를 포함한 연출 시작 조건 확인
         { // 연출 시작 불가 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 카드 행동 연출을 시작할 수 없습니다: {cardInstance.DisplayName}"); // 연출 시작 실패 출력
             CancelSelection(); // 선택 상태 초기화
@@ -639,10 +648,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 선택 화면 정리 종료
     private bool IsValidTarget(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 대상 유효성 검사
     { // 대상 검사 시작
-        if (cardInstance == null || targetUnit == null || targetUnit.IsDead) // 카드와 대상 상태 확인
+        if (cardInstance == null || targetUnit == null) // 카드와 대상 연결 확인
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.TargetType == CardTargetType.FallenAlly || cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군 전용 카드 조합 확인
+        { // 부활 대상 검사 시작
+            return cardInstance.TargetType == CardTargetType.FallenAlly && cardInstance.EffectType == CardEffectType.ReviveAlly && turnRuntime.CanReviveFallenAlly(targetUnit); // 정확한 부활 효과와 현재 명단 검사 결과 반환
+        } // 부활 대상 검사 종료
+        if (targetUnit.IsDead) // 일반 카드 대상의 생존 여부 확인
+        { // 일반 카드 전투불능 대상 차단 시작
+            return false; // 일반 카드 대상으로 선택 불가
+        } // 일반 카드 전투불능 대상 차단 종료
         if ((cardInstance.SourceData.SwordRule == SwordCardRule.BloodTrail || cardInstance.SourceData.SwordRule == SwordCardRule.BloodBackflow) && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) == null) // 대상의 현재 출혈 여부 확인
         { // 추적 대상 제한 시작
             return false; // 출혈 없는 적의 선택 차단
@@ -799,7 +816,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 확인 한도 계산 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ReviveAlly || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -899,6 +916,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 파트너 지정 처리 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 획득 시작
+            if (cardInstance.SourceData.CupRule == CupCardRule.Warmth) // 온기의 지정 아군 화상 확인
+            { // 방어 적용 전 화상 해제 시작
+                RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.Burn); // 선택한 아군에게 남은 화상만 먼저 제거
+            } // 방어 적용 전 화상 해제 종료
             int gainedBlock = targetUnit.GainBlock(cardInstance.EffectValue); // 선택 대상의 실제 방어도 획득
             if (cardInstance.SourceData.ShieldRule == ShieldCardRule.FrontlineProtection) // 방어도를 받은 아군의 전열 보호 상태 확인
             { // 출혈 저항 설정 시작
@@ -962,16 +983,23 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 유도 실패 처리 종료
             return cardInstance.OwnerUnit.GainBlock(cardInstance.EffectValue); // 소유자의 실제 방어도 획득량 반환
         } // 황제 전용 효과 종료
+        if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 회복과 구별되는 부활 확인
+        { // 전투 부활 적용 시작
+            return turnRuntime.TryReviveFallenAlly(targetUnit, cardInstance.SourceData.EffectValue); // 강화와 무관한 원본 최대 체력 비율 적용
+        } // 전투 부활 적용 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
             BattleStatusEffectType removed = cardInstance.SourceData.StatusRemovedByHealing; // 회복 전에 제거할 상태 조회
-            if (removed != BattleStatusEffectType.None && targetUnit.RemoveStatusEffect(removed)) // 지정된 상태가 실제로 제거된 경우 확인
-            { // 상태 해제 표시 시작
-                FindUnitView(targetUnit)?.ShowStatusFeedback(BattleStatusEffectInstance.GetDisplayName(removed) + " 해제", false); // 지정한 상태 해제 표시
-            } // 상태 해제 표시 종료
+            RemoveCardTargetStatus(targetUnit, removed); // 응급 처치와 기존 카드 원본이 지정한 상태 해제
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
-            return RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 첫 부상 회복 유물과 실제 회복량 적용
+            int restored = RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 기존 회복 유물과 실제 체력 상한 반영
+            if (cardInstance.SourceData.CupRule == CupCardRule.CelestialGrace) // 최대 체력과 무관한 은총의 긍정 강화 확인
+            { // 이번 턴 아군 공격력 처리 시작
+                var result = targetUnit.ApplyCurrentAllyTurnAttackPower(cardInstance.SourceData.SecondaryEffectValue, cardInstance.OwnerUnit); // 장기 공격력과 독립인 실제 이번 턴 강화
+                FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.AttackPowerUp, result); // 적용된 공격력 강화 표시
+            } // 이번 턴 아군 공격력 처리 종료
+            return restored; // 카드의 실제 체력 회복량 반환
         } // 회복 효과 처리 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodstainedDuel) // 시전자와 적 한 명의 결투 확인
         { // 결투 표식 처리 시작
@@ -1169,6 +1197,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         modifiedDamage = ApplyFirstAndRetainedDamage(cardInstance, targetUnit, modifiedDamage); // 치명타 직후 첫 피해와 유지 피해 가산
         int bypass = cardInstance.SourceData.SwordRule == SwordCardRule.PiercingLunge ? cardInstance.SourceData.SecondaryEffectValue : 0; // 파고들기의 타격 한정 방어도 우회 비율
         int healthBefore = targetUnit.CurrentHealth; // 카드 타격 직전 대상 체력 보관
+        if (cardInstance.SourceData.CupRule == CupCardRule.HolyJudgment) // 실제 명중한 심판의 기존 불사 해제 확인
+        { // 명중 대상의 생존 보호 제거 시작
+            RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.UndyingGuard); // 피해 직전에 불굴의 일회 생존 보호 제거
+            RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.DefeatWard); // 일반 피해 무효와 별개인 전투불능 방지 제거
+        } // 명중 대상의 생존 보호 제거 종료
         BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
         if (cardInstance.SourceData.SwordRule == SwordCardRule.ExecutionerSword && healthBefore > 0 && damageResult.AppliedDamage == healthBefore && targetUnit.IsDead) // 이 카드의 직접 체력 피해로 적 처치 확인
         { // 처치 환급 시작
@@ -1360,6 +1393,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             FindUnitView(target)?.ShowStatusFeedback("빗나감", false); // 추가 대상의 빗나감 표시
         } // 추가 공격 피드백 종료
     } // 태양 연속 공격 종료
+    private void RemoveCardTargetStatus(BattleUnitRuntime target, BattleStatusEffectType type) // 카드가 지정한 한 종류 상태를 실제로 해제
+    { // 카드 상태 해제 시작
+        if (type != BattleStatusEffectType.None && target.RemoveStatusEffect(type)) // 원본 상태 존재와 실제 해제 성공 확인
+        { // 해제 결과 표시 시작
+            FindUnitView(target)?.ShowStatusFeedback(BattleStatusEffectInstance.GetDisplayName(type) + " 해제", false); // 기존 상태 해제 화면 피드백
+        } // 해제 결과 표시 종료
+    } // 카드 상태 해제 종료
     private static void LogCleanseResults(BattleUnitRuntime targetUnit, IReadOnlyList<BattleStatusEffectProcessResult> cleanseResults) // 정화 상세 결과 출력
     { // 정화 로그 시작
         foreach (BattleStatusEffectProcessResult cleanseResult in cleanseResults) // 정화 결과 목록 순회
@@ -1370,6 +1410,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군의 부활 효과 확인
+        { // 부활 문구 처리 시작
+            return "부활"; // 실제 효과 로그 이름 반환
+        } // 부활 문구 처리 종료
         if (cardInstance.EffectType == CardEffectType.DrawThenDiscard) // 드로우 후 손패 정리 효과 확인
         { // 달 카드 효과 문구 시작
             return "드로우와 손패 선택 버리기"; // 달 전용 효과 이름 반환

@@ -33,13 +33,17 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
         { // 기본 전투 환경 시작
         } // 기본 전투 환경 종료
         internal Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, params string[] ids) // 검사할 실제 적 화면과 보물 원본으로 전투 구성
-            : this(createEnemyView, LoadCards(ids)) // 기존 원본 조회 경로 유지
+            : this(CreateView, createEnemyView, LoadCards(ids)) // 기본 아군과 기존 원본 조회 경로
         { // 보물 카드 전투 시작
         } // 보물 카드 전투 종료
-        internal Fight(CardData[] cards) : this(CreateView, cards) // 기존 카드에 없는 무작위 규칙의 원본으로 전투 구성
+        internal Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, params string[] ids) // 양쪽 화면의 실제 프리팹을 받는 전투 구성
+            : this(createAllyView, createEnemyView, LoadCards(ids)) // 지정 화면 생성과 기존 보물 조회 사용
+        { // 실물 아군과 적 검사 시작
+        } // 실물 아군과 적 검사 종료
+        internal Fight(CardData[] cards) : this(CreateView, CreateView, cards) // 기존 카드에 없는 무작위 규칙의 원본으로 전투 구성
         { // 독립 원본 전투 시작
         } // 독립 원본 전투 종료
-        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards) // 원본 배열을 받는 공통 실제 전투
+        private Fight(Func<Transform, BattleUnitRuntime, BattleUnitView> createAllyView, Func<Transform, BattleUnitRuntime, BattleUnitView> createEnemyView, CardData[] cards) // 양쪽 전투 화면과 원본 배열을 받는 공통 실제 전투
         { // 전투 구성 시작
             var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 아군 명단 조회
             Allies = roster.Characters.Take(3).Select(BattleUnitRuntime.CreateAlly).ToArray(); // 생존자와 전투불능 검사 아군 생성
@@ -52,7 +56,7 @@ public sealed class WinterfallSwordCombatTests // 검 카드 여덟 장의 실�
             var item = new GameObject("Hand", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleHandView)); // 전투 손패 화면 생성
             item.transform.SetParent(canvas.transform, false); // 손패를 전투 화면에 연결
             Hand = item.GetComponent<BattleHandView>(); // 손패 입력 조회
-            var allies = Allies.Select(unit => CreateView(canvas.transform, unit)).ToArray(); // 아군 화면 연결
+            var allies = Allies.Select(unit => createAllyView(canvas.transform, unit)).ToArray(); // 지정한 경량 또는 실물 아군 화면 연결
             EnemyViews = Enemies.Select(unit => createEnemyView(canvas.transform, unit)).ToArray(); // 적 화면 연결
             Runner = canvas.AddComponent<BattleActionSequenceRunner>(); // 실제 연출 생성
             var processor = new BattleStatusEffectProcessor(); // 상태 처리기 생성

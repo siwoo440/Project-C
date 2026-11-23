@@ -4,5 +4,6 @@ public enum CardTargetType
     SingleAlly, // 단일 아군 대상
     AllAllies, // 전체 아군 대상
     SingleEnemy, // 단일 적 대상
-    AllEnemies // 전체 적 대상
+    AllEnemies, // 전체 적 대상
+    FallenAlly // 현재 전투에서 쓰러진 아군 한 명 대상
 }

@@ -283,17 +283,25 @@ public sealed class BattleCardDragHandler :
         return unitView; // 유효 포인터 대상 반환
     }
 
-    private static bool IsValidTarget(
+    private bool IsValidTarget( // 현재 전투 명단을 포함한 대상 검사
         CardInstance card,
         BattleUnitRuntime targetUnit) // 카드 대상 규칙 검사
     {
         if (card == null ||
-            targetUnit == null ||
-            targetUnit.IsDead)
+            targetUnit == null) // 카드와 대상 연결 확인
         {
             return false;
         }
 
+        if (card.TargetType == CardTargetType.FallenAlly || card.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군 전용 효과 확인
+        { // 부활 드롭 대상 검사 시작
+            BattleTurnRuntime turns = cardView.GetComponentInParent<BattleHandView>()?.TurnRuntime; // 손패가 연결된 현재 전투 조회
+            return card.TargetType == CardTargetType.FallenAlly && card.EffectType == CardEffectType.ReviveAlly && turns?.CanReviveFallenAlly(targetUnit) == true; // 실제 명단의 부활 가능 대상 허용
+        } // 부활 드롭 대상 검사 종료
+        if (targetUnit.IsDead) // 일반 카드 드롭 대상의 생존 확인
+        { // 전투불능 대상 차단 시작
+            return false; // 일반 카드 드롭 거절
+        } // 전투불능 대상 차단 종료
         if (card.SourceData.ShieldRule is ShieldCardRule.BodyGuard or ShieldCardRule.ShieldOath or ShieldCardRule.GuardianHeart) // 시전자 밖의 생존 동료를 선택하는 방패 카드 확인
         { // 실제 드롭 보호 대상 검사 시작
             return targetUnit.Team == BattleTeam.Ally && targetUnit != card.OwnerUnit; // 다른 생존 아군 한 명에게만 적용
@@ -344,7 +352,8 @@ public sealed class BattleCardDragHandler :
         cardView.OnPointerClick(
             eventData); // 기존 카드 선택·AP 검사 흐름 호출
 
-        if (card.TargetType == CardTargetType.SingleAlly ||
+        if (card.TargetType == CardTargetType.FallenAlly || // 전투불능 아군의 드롭을 실제 클릭으로 연결
+            card.TargetType == CardTargetType.SingleAlly || // 단일 생존 아군 확인
             card.TargetType == CardTargetType.SingleEnemy)
         {
             targetView.OnPointerClick(

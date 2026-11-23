@@ -5,6 +5,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
 { // 클래스 시작
     private BattleUnitRuntime guardianHeartProtector; // 이 아군의 치명 피해를 대신 받을 시전자
     private readonly List<BattleStatusEffectInstance> statusEffects = new List<BattleStatusEffectInstance>(); // 현재 상태 이상 목록
+    private BattleStatusEffectInstance currentTurnAttackPower; // 장기 강화와 구분할 아군 한 턴의 공격력 상태
+    private bool reportingCurrentTurnAttackPower; // 한 턴 상태 적용 신호의 현재 범위
     private readonly BattleMentalRuntime mentalRuntime; // 개별 정신력 런타임
     private readonly int awakeningDamagePercent; // 각성 피해 변화율
     private readonly int awakeningHealingPercent; // 각성 회복 변화율
@@ -41,6 +43,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime> BlockChanged; // 방어도 변경 이벤트
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
+    internal event Action<BattleUnitRuntime> Revived; // 전투불능 아군의 부활 알림
     internal BattleDuelRuntime ActiveDuel { get; set; } // 해당 유닛이 참여 중인 결투
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
@@ -96,6 +99,23 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         IsDead = CurrentHealth <= 0; // 저장 체력 기준 사망 상태 적용
         return true; // 저장 체력 적용 성공 반환
     } // 저장 체력 적용 종료
+    internal int Revive(int healthPercent) // 사망 아군의 전투 체력 복구
+    { // 부활 처리 시작
+        if (Team != BattleTeam.Ally || !IsDead || healthPercent <= 0) // 부활 가능한 전투불능 아군과 체력 비율 확인
+        { // 부활 불가 처리 시작
+            return 0; // 변경 체력 없음 반환
+        } // 부활 불가 처리 종료
+        int revivedHealth = (int)(((long)MaxHealth * Math.Min(healthPercent, 100) + 99) / 100); // 최대 체력 비율의 소수점 올림
+        CurrentHealth = revivedHealth; // 부활 체력 적용
+        IsDead = false; // 실제 전투 재참여 상태 적용
+        queuedChargeDefense = 0; // 사망 전 예약한 돌진 방어 감소 제거
+        queuedChargeSource = null; // 사망 전 예약한 돌진 시전자 연결 제거
+        HealthLostSinceEnemyTurn = 0; // 사망 전 피해의 반격 누적 제거
+        ClearBlock(); // 사망 전에 남은 방어도 제거
+        HealthChanged?.Invoke(this); // 체력과 사망 표시 갱신
+        Revived?.Invoke(this); // 부활 전용 표시와 광역 예고 갱신
+        return revivedHealth; // 실제 부활 체력 반환
+    } // 부활 처리 종료
     public int ModifyMaxHealth(int delta) // 유물 효과용 최대 체력 변경
     {
         if (delta == 0) // 최대 체력 변화량 확인
@@ -195,21 +215,62 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int reduction = BattleSupplyRelics.Find(RelicEffectType.ShorterFadeDebuffs)?.EffectValue ?? 0; // 실제 보유 방독면의 지속 감소량
             duration = Mathf.Max(1, duration - reduction); // 최소 한 턴을 보장한 이번 적용 지속
         } // 방독면 지속 턴 보정 종료
-        BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 동일 상태 이상 조회
+        BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType, includeCurrentTurnAttackPower: false); // 한 턴 은총을 제외한 기존 상태 조회
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
             statusEffects.Add(new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 신규 상태 이상 추가
             StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
-            StatusEffectResolved?.Invoke(sourceUnit, this, effectType, BattleStatusEffectApplyResult.Applied); // 신규 상태 적용 상세 알림
+            ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Applied); // 신규 일반 상태 적용 상세 알림
             ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
             return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
         } // 신규 상태 처리 종료
         existingEffect.Refresh(value, duration, maximumStacks); // 중첩과 지속 시간 갱신
         StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
-        StatusEffectResolved?.Invoke(sourceUnit, this, effectType, BattleStatusEffectApplyResult.Stacked); // 중첩 상태 적용 상세 알림
+        ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Stacked); // 중첩 일반 상태 적용 상세 알림
         ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
         return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
     } // 상태 이상 적용 종료
+    internal BattleStatusEffectApplyResult ApplyCurrentAllyTurnAttackPower(int amount, BattleUnitRuntime source) // 장기 강화와 독립된 이번 아군 턴 공격력 적용
+    { // 현재 턴 공격력 처리 시작
+        if (IsDead || Team != BattleTeam.Ally || amount <= 0) // 살아 있는 아군과 실제 공격력 증가 확인
+        { // 강화 적용 불가 시작
+            return BattleStatusEffectApplyResult.Invalid; // 무효한 이번 턴 강화 반환
+        } // 강화 적용 불가 종료
+        bool refreshing = currentTurnAttackPower != null; // 이번 턴의 은총이 이미 남아 있는지 확인
+        if (refreshing) // 이번 턴 강화의 중복 요청 확인
+        { // 기존 은총 갱신 시작
+            currentTurnAttackPower.Refresh(amount, 1, 1); // 같은 한 턴 상태의 수치만 갱신
+        } // 기존 은총 갱신 종료
+        else // 처음 부여하는 이번 턴 강화 확인
+        { // 한 턴 강화 생성 시작
+            currentTurnAttackPower = new BattleStatusEffectInstance(BattleStatusEffectType.AttackPowerUp, amount, 1, 1); // 장기 강화와 합쳐지지 않는 공격력 증가 생성
+            statusEffects.Add(currentTurnAttackPower); // 일반 공격력 합계와 상태 화면에 한 턴 효과 추가
+        } // 한 턴 강화 생성 종료
+        var result = refreshing ? BattleStatusEffectApplyResult.Stacked : BattleStatusEffectApplyResult.Applied; // 일반 상태 적용과 같은 결과 표기
+        StatusEffectsChanged?.Invoke(this); // 실제 공격력 수치와 상태 화면의 변경 알림
+        ReportStatusEffectResolution(source, BattleStatusEffectType.AttackPowerUp, result, currentAllyTurnOnly: true); // 이번 턴 강화의 기존 상태 적용 이벤트 전달
+        return result; // 실제 한 턴 공격력 적용 결과 반환
+    } // 현재 턴 공격력 처리 종료
+    private void ReportStatusEffectResolution(BattleUnitRuntime source, BattleStatusEffectType type, BattleStatusEffectApplyResult result, bool currentAllyTurnOnly = false) // 중첩 알림을 포함한 실제 상태 적용 신호 전달
+    { // 상태 알림 범위 지정 시작
+        bool previous = reportingCurrentTurnAttackPower; // 겹친 상태 적용 알림의 이전 범위 보관
+        reportingCurrentTurnAttackPower = currentAllyTurnOnly; // 이번 알림의 일반 또는 현재 턴 적용 구분
+        try // 상태 적용 알림 범위 복원 보장
+        { // 한 턴 상태 알림 시작
+            StatusEffectResolved?.Invoke(source, this, type, result); // 유닛과 공용 전투 상태 적용 신호 전달
+        } // 한 턴 상태 알림 종료
+        finally // 잠시 바꾼 상태 표시 복원
+        { // 상태 알림 범위 복원 시작
+            reportingCurrentTurnAttackPower = previous; // 다른 상태 적용 알림과의 범위 겹침 방지
+        } // 상태 알림 범위 복원 종료
+    } // 상태 알림 범위 지정 종료
+    internal void DeferNewStatusDurationDecrease(BattleStatusEffectType type) // 적용된 일반 상태의 첫 지속 감소 생략
+    { // 첫 지속 감소 확인 시작
+        if (type != BattleStatusEffectType.AttackPowerUp || !reportingCurrentTurnAttackPower) // 이번 아군 턴에 끝나는 은총 상태 제외
+        { // 일반 상태 지속 보호 시작
+            FindStatusEffect(type, includeCurrentTurnAttackPower: false)?.SkipNextDurationDecrease(); // 같은 종류의 장기 강화만 첫 지속 감소 생략
+        } // 일반 상태 지속 보호 종료
+    } // 첫 지속 감소 확인 종료
     private static bool IsStandardTimedDebuff(BattleStatusEffectType effectType) // 턴으로 지속하는 일반 디버프 확인
     { // 턴 디버프 확인 시작
         return BattleStatusEffectInstance.IsDebuffType(effectType) // 기존 디버프 분류 사용
@@ -237,7 +298,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     } // 디버프 전체 제거 종료
     public BattleStatusEffectInstance GetStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 공개 조회
     { // 공개 상태 조회 시작
-        return FindStatusEffect(effectType); // 지정 상태 이상 반환
+        var existing = FindStatusEffect(effectType, includeCurrentTurnAttackPower: false); // 공용 호출이 사용하는 일반 상태 우선 조회
+        return existing ?? (effectType == BattleStatusEffectType.AttackPowerUp ? currentTurnAttackPower : null); // 일반 강화가 없는 경우 이번 턴 공격력 반환
     } // 공개 상태 조회 종료
     internal List<BattleStatusEffectInstance> CreateStatusEffectSnapshot() // 상태 목록 안전 복사
     { // 상태 복사 시작
@@ -253,6 +315,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 제거 불가 시작
             return false; // 상태가 보존된 결과 반환
         } // 제거 불가 종료
+        if (statusEffect == currentTurnAttackPower) // 제거한 상태가 실제 이번 턴 공격력인지 확인
+        { // 한 턴 강화 참조 정리 시작
+            currentTurnAttackPower = null; // 턴 만료 또는 해제 뒤 더 이상 표시하지 않을 상태
+        } // 한 턴 강화 참조 정리 종료
         if (statusEffect.EffectType == BattleStatusEffectType.GuardianHeart) // 수호자의 심장 연결 제거 확인
         { // 시전자 연결 해제 시작
             SetGuardianHeartProtector(null); // 소모나 정화에서 시전자 사망 감시 해제
@@ -315,11 +381,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 상태 알림 시작
         StatusEffectsChanged?.Invoke(this); // 상태 UI와 예고 갱신 알림
     } // 상태 알림 종료
-    private BattleStatusEffectInstance FindStatusEffect(BattleStatusEffectType effectType) // 지정 상태 이상 조회
+    private BattleStatusEffectInstance FindStatusEffect(BattleStatusEffectType effectType, bool includeCurrentTurnAttackPower = true) // 일반 또는 이번 턴 상태에서 지정 종류 조회
     { // 상태 이상 조회 시작
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 상태 이상 비교 시작
-            if (statusEffect.EffectType == effectType) // 상태 종류 일치 확인
+            if (statusEffect.EffectType == effectType && (includeCurrentTurnAttackPower || statusEffect != currentTurnAttackPower)) // 요청한 종류와 강화 수명 구분 확인
             { // 일치 상태 처리 시작
                 return statusEffect; // 일치 상태 이상 반환
             } // 일치 상태 처리 종료
@@ -391,6 +457,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             return; // 전체 상태 제거 중단
         } // 상태 없음 처리 종료
         int removed = statusEffects.RemoveAll(effect => !effect.IsProtectedMentalState); // 보호된 정신 상태를 제외한 상태 제거
+        currentTurnAttackPower = null; // 사망으로 제거한 한 턴 공격력 참조 해제
         SetGuardianHeartProtector(null); // 가려진 아군 사망 시 보호 시전자 감시도 해제
         if (removed > 0) // 실제 상태 제거 여부 확인
         { // 상태 제거 알림 시작
@@ -559,7 +626,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             damageResult = damageResult.WithAppliedDamage(Math.Min(CurrentHealth, reduced)); // 체력 상한 적용 전에 장화 한 점 경감
             paidHealthReduction = (int)Math.Clamp((long)incoming - reduced, 0L, incoming); // 이미 지불한 공용 고정 경감만 대신 받은 피해에 이전
         } // 철제 장화 경감 종료
-        damageResult = damageResult.WithAppliedDamage(ApplyUndyingGuard(damageResult.AppliedDamage)); // 기존 방어와 피해 경감 이후의 불굴 판정
+        damageResult = damageResult.WithAppliedDamage(ApplySurvivalProtection(damageResult.AppliedDamage, allowDefeatWard: !guardianSurvival)); // 방어와 불굴 및 성배 뒤 수호자 대체 판정
         if (guardianSurvival) // 수호자가 대신 받는 바로 이 타격 확인
         { // 대신 받은 피해의 생존 상한 시작
             damageResult = damageResult.WithAppliedDamage(Math.Min(damageResult.AppliedDamage, CurrentHealth - 1)); // 원래 수호자의 체력 한 점 이상 보장
@@ -640,7 +707,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 무방어 피해 무효 시작
             return 0; // 체력 소모와 불굴 발동을 막은 피해 반환
         } // 무방어 피해 무효 종료
-        int applied = ApplyUndyingGuard(Math.Min(CurrentHealth, amount)); // 방어도 없는 피해에서 불굴과 체력 상한 적용
+        int applied = ApplySurvivalProtection(Math.Min(CurrentHealth, amount)); // 방어도 없는 피해에서 불굴과 성배 및 체력 상한 적용
         BattleDamageResult result = new BattleDamageResult(amount, 0, amount, applied, damageType); // 추가 방어와 방어도 없는 피해 결과 생성
         if (fromEnemyDirectAttack && sourceUnit?.Team == BattleTeam.Enemy) // 현재 직접 적 공격에서 파생된 분담 피해 확인
         { // 분담 공격 출처 지정 시작
@@ -664,15 +731,19 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
-    private int ApplyUndyingGuard(int incoming) // 체력 한 점 이하로 떨어지는 피해의 일회성 제한
-    { // 불굴의 실제 피해 확인 시작
+    private int ApplySurvivalProtection(int incoming, bool allowDefeatWard = true) // 기존 불굴과 치명 피해 성배의 적용 순서
+    { // 실제 생존 보호 확인 시작
         int survivableDamage = Math.Max(0, CurrentHealth - 1); // 체력 한 점을 남기는 최대 손실량
         if (incoming > 0 && incoming >= survivableDamage && RemoveStatusEffect(BattleStatusEffectType.UndyingGuard)) // 실제 피해와 체력 임계 및 불굴 소모 성공 확인
         { // 불굴 생존 처리 시작
             return survivableDamage; // 생존에 필요한 체력 손실 상한 반환
         } // 불굴 생존 처리 종료
+        if (allowDefeatWard && incoming > survivableDamage && RemoveStatusEffect(BattleStatusEffectType.DefeatWard)) // 처리 뒤 체력 영이 되는 피해와 성배 한 번 확인
+        { // 성배 보호 발동 시작
+            return survivableDamage; // 정확히 체력 한 점을 남기는 실제 피해량
+        } // 성배 보호 발동 종료
         return incoming; // 보호 조건을 충족하지 않은 피해량 보존
-    } // 불굴의 실제 피해 확인 종료
+    } // 실제 생존 보호 확인 종료
     private BattleStatusEffectInstance GetApplicablePreparation(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit) // 공격별 방어 준비 적용 확인
     { // 준비 적용 확인 시작
         if (damageAmount <= 0 || Team != BattleTeam.Ally || sourceUnit == null || sourceUnit.Team != BattleTeam.Enemy) // 유효한 적의 피해 확인

@@ -1128,7 +1128,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 방어력 +4 (2턴)",
+      "description": "생존 아군 모두의 물리 방어력을 2턴 동안 4 높인다.",
       "area": "4",
       "targets": "아군",
       "imageFileName": "축복.png"
@@ -1139,7 +1139,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "아군 전체 피해 1회 무효",
+      "description": "생존 아군 각자가 받는 다음 피해를 한 번 무효로 한다.",
       "area": "4",
       "targets": "아군",
       "imageFileName": "성스러운 방패.png"
@@ -1150,7 +1150,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "3",
-      "description": "쓰러진 아군 1명 부활(HP 30%)",
+      "description": "이번 전투에서 쓰러진 지정 아군 한 명을 최대 체력의 30%로 되살린다. 체력의 소수점은 올린다.",
       "area": "1",
       "targets": "아군",
       "imageFileName": "생명의 빛.png"
@@ -1161,7 +1161,7 @@
       "attribute": "성배",
       "rarity": "특수",
       "cost": "3",
-      "description": "적 전체에게 피해 12, 불사 해제",
+      "description": "모든 적을 마법 피해 12로 공격한다. 명중한 적의 전투불능 방지와 불굴을 적용 직전에 해제한다.",
       "area": "2",
       "targets": "적",
       "imageFileName": "신성한 심판.png"
@@ -1172,7 +1172,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "4",
-      "description": "아군 전체 회복 20, 버프 1개 부여",
+      "description": "생존 아군 모두의 체력을 각각 20 회복시키고, 이번 아군 턴 동안 공격력을 각각 2 높인다.",
       "area": "4",
       "targets": "아군",
       "imageFileName": "천상의 은총.png"
@@ -1183,7 +1183,7 @@
       "attribute": "성배",
       "rarity": "전설",
       "cost": "5",
-      "description": "아군 전체 전투불능 방어 1회",
+      "description": "생존 아군 각자가 받는 치명적인 피해를 한 번 막아 체력 1로 생존하게 한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "성배의 심판.png"
@@ -1205,7 +1205,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 체력 5 회복, 출혈 1개 제거",
+      "description": "지정한 생존 아군의 체력을 5 회복하고 출혈 상태를 하나 제거한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "응급 처치.png"
@@ -1238,7 +1238,7 @@
       "attribute": "성배",
       "rarity": "일반",
       "cost": "1",
-      "description": "아군 1명 화상 제거, 방어도 +3",
+      "description": "지정한 생존 아군의 화상을 제거하고 방어도 3을 부여한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "온기.png"

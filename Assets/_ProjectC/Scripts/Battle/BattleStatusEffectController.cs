@@ -79,7 +79,7 @@ public sealed class BattleStatusEffectController : IDisposable // 상태 이상 
         bool targetAwaitingEnd = alreadyProcessed && processingEndUnits && !endProcessedUnits.Contains(target); // 종료 처리 대기 중인 대상 확인
         if (type != BattleStatusEffectType.BladeFrenzy && type != BattleStatusEffectType.BloodOath && type != BattleStatusEffectType.FinishingStance && type != BattleStatusEffectType.BladeMaintenance && type != BattleStatusEffectType.AttackPowerDown && ownPhase && (!alreadyProcessed || targetAwaitingEnd)) // 자기 턴 대상의 지속 처리 전 상태 적용 확인
         { // 첫 감소 생략 예약 시작
-            target.GetStatusEffect(type)?.SkipNextDurationDecrease(); // 적용한 상태의 첫 지속 감소 생략
+            target.DeferNewStatusDurationDecrease(type); // 이번 턴 전용 은총을 제외한 일반 상태의 첫 지속 감소 생략
         } // 첫 감소 생략 예약 종료
     } // 상태 적용 감시 종료
     private void HandlePhaseStarted(BattleTurnPhase phase, int round) // 진영 턴 시작 처리
