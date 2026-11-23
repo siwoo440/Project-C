@@ -194,7 +194,7 @@ public sealed class SaveMenuController : MonoBehaviour // 슬롯 화면과 저�
     { // 확인 버튼 생성 시작
         GameObject target = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)); // 확인 버튼 객체 생성
         target.transform.SetParent(confirmation.transform, false); // 확인 화면 자식 배치
-        Place(target.GetComponent<RectTransform>(), new Vector2(0.5f, 0.42f), new Vector2(x, 0f), new Vector2(300f, 96f)); // 확인 버튼 위치와 1.5배 크기 설정
+        Place(target.GetComponent<RectTransform>(), new Vector2(0.5f, 0.42f), new Vector2(x, 0f), new Vector2(300f, 144f)); // 확인 버튼 위치와 세로 크기 확대
         Image background = target.GetComponent<Image>(); // 버튼 배경 조회
         background.color = new Color(0.28f, 0.29f, 0.30f, 1f); // 버튼 배경 색상 설정
         WarningUiArt.ApplyButton(background); // 제작 경고 버튼 이미지 적용

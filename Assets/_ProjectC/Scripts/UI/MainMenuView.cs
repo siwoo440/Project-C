@@ -95,7 +95,7 @@ public sealed class MainMenuView : MonoBehaviour // 메인 메뉴 화면 구성
         rect.anchorMin = new Vector2(0.5f, 0.5f); // 버튼 시작 앵커 설정
         rect.anchorMax = new Vector2(0.5f, 0.5f); // 버튼 끝 앵커 설정
         rect.anchoredPosition = new Vector2(horizontalOffset, -110f); // 버튼 위치 설정
-        rect.sizeDelta = new Vector2(300f, 96f); // 버튼 크기 1.5배 설정
+        rect.sizeDelta = new Vector2(300f, 144f); // 버튼 세로 크기 추가 확대
         Image image = buttonObject.GetComponent<Image>(); // 버튼 배경 조회
         image.color = new Color(0.32f, 0.40f, 0.45f, 1f); // 버튼 배경 색상
         WarningUiArt.ApplyButton(image); // 제작 경고 버튼 이미지 적용
