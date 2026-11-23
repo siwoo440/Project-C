@@ -49,6 +49,19 @@ public sealed class ShopShelfAndConfirmationTests // 실제 상품 진열과 구
         var card = catalog.Offers.Single(item => item.OfferId == "SHOP_SHEET_HEAVY_STRIKE"); // 소유자를 고르는 공용 카드
         var room = "shop-shelf-confirmation"; // 동일 상점 복원 기준 방
         var resources = PlayerResourceManager.EnsureInstance(); // 실제 게임 지갑
+        var unvisitedPath = Path.Combine(Application.temporaryCachePath, Guid.NewGuid().ToString("N") + ".json"); // 첫 상점 방문 전 탐사 저장 경로
+        try // 방문 전 독립 저장 정리 보장
+        { // 아직 상점을 방문하지 않은 탐사의 복원 확인 시작
+            Assert.IsTrue(string.IsNullOrEmpty(shop.ActiveRoomRuntimeId)); // 최초 방문 기록이 비어 있는 출발 상태 확인
+            Assert.IsTrue(ExplorationSaveService.Save(unvisitedPath, Object.FindFirstObjectByType<ExplorationPlayerController>().transform.position)); // 최초 방문 전 탐사 상태 저장
+            Assert.IsTrue(ExplorationSaveService.Load(unvisitedPath)); // 현재 탐사 장면에서 첫 방문 전 저장 불러오기
+            Assert.IsTrue(shop.IsReady); // 기존 장면에서도 다음 상점에 필요한 카탈로그 준비 확인
+            Assert.IsTrue(string.IsNullOrEmpty(shop.ActiveRoomRuntimeId)); // 이전에 방문하지 않은 방을 생성하지 않음 확인
+        } // 이전 탐사 상태 복원 확인 종료
+        finally // 검사 전용 저장만 정리
+        { // 임시 저장 자료 정리 시작
+            ExplorationSaveService.Remove(unvisitedPath); // 첫 방문 전 임시 저장과 복구본 제거
+        } // 임시 저장 자료 정리 종료
         Assert.AreEqual(RelicAcquireResult.Acquired, inventory.TryAcquire(hidden.Relic)); // 상점 밖에서 얻은 실제 유물
         Assert.IsTrue(view.TryOpenFromRoom(room)); // 실제 상점 창 열기
         var content = view.transform.Find("ShopOverlay/ShopPanel/ProductScroll/Viewport/Content"); // 화면의 상품 목록

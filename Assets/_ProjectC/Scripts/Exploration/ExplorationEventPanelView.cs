@@ -231,7 +231,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             } // 허수아비 효과 표시 종료
             if (currentEventData.EventId == BurntCartEvent.Id) // 수레 선택의 비용과 결과 안내
             { // 수레 안내 시작
-                string[] effects = { "철판·나사 각 1개 60% / 사냥꾼 추가 매복 40%", "지정 생존자 체력 -3 · 철판·나사·전선 각 1개", "다음 상점 첫 상품 10% 할인" }; // 수레 선택별 조건
+                string[] effects = { BurntCartEvent.BoxChoiceEffects(), "지정 생존자 체력 -3 · 철판·나사·전선 각 1개", "다음 상점 첫 상품 10% 할인" }; // 보유 유물과 일치하는 현재 수레 선택 확률
                 label += "   " + effects[index]; // 실제 선택 전에 비용과 보상 표시
             } // 수레 안내 종료
             if (currentEventData.EventId == CharredWellEvent.Id) // 우물 행동의 비용과 결과 안내

@@ -927,7 +927,7 @@
     {
       "sourceRow": 86,
       "name": "회색 로프",
-      "description": "탐사 중 강제 전투 확률 감소",
+      "description": "재가 된 수레의 강제 전투 확률을 40%에서 30%로 줄인다. 함정을 피한 결과에서는 물자를 얻지 않는다.",
       "buyMin": 232,
       "buyMax": 279,
       "buyVariance": 47,
@@ -938,7 +938,7 @@
     {
       "sourceRow": 87,
       "name": "금속 서랍손잡이",
-      "description": "상점 첫 구매 시 추가 할인 5%(1회)",
+      "description": "보유한 상태에서 탐사 중 처음 성공한 상점의 유료 상품 구매에 5%를 추가 할인한다.",
       "buyMin": 222,
       "buyMax": 270,
       "buyVariance": 48,
@@ -949,7 +949,7 @@
     {
       "sourceRow": 88,
       "name": "파손된 방패문양",
-      "description": "방어력 -2 상태를 받을 때 1턴 감소",
+      "description": "아군이 원래 방어력을 2 낮추는 기간제 약화를 받으면 그 지속 시간이 1턴 줄어든다. 최소 1턴이다.",
       "buyMin": 264,
       "buyMax": 312,
       "buyVariance": 48,
@@ -960,7 +960,7 @@
     {
       "sourceRow": 89,
       "name": "투박한 표식핀",
-      "description": "표식이 있는 적에게 마법 피해 +1",
+      "description": "표식이 있는 적에게 직접 마법 카드가 명중할 때마다 피해가 1 증가한다.",
       "buyMin": 221,
       "buyMax": 270,
       "buyVariance": 49,
@@ -971,7 +971,7 @@
     {
       "sourceRow": 90,
       "name": "금속 핸드벨",
-      "description": "전투 시작 시 손패 1장 무작위 유지(1턴)",
+      "description": "첫 아군 턴의 시작 손패에서 일반 카드 한 장을 무작위로 고른다. 선택한 카드를 손에 둔 채로 턴을 끝내면 첫 자동 버림에서 한 번 유지한다.",
       "buyMin": 275,
       "buyMax": 324,
       "buyVariance": 49,
@@ -982,7 +982,7 @@
     {
       "sourceRow": 91,
       "name": "여행자의 부적",
-      "description": "탐사 종료 시 골드 +5%",
+      "description": "탐사를 성공적으로 마치면 그 회차에서 번 뒤 남은 골드에 5%를 추가로 얻는다.",
       "buyMin": 192,
       "buyMax": 239,
       "buyVariance": 47,
@@ -993,7 +993,7 @@
     {
       "sourceRow": 92,
       "name": "침식 방울귀걸이",
-      "description": "침식지대에서 정신력 감소 효과 -1",
+      "description": "침식지대의 퇴색 위험과 그곳에서 시작한 전투에서 아군이 잃는 정신력이 1 감소한다.",
       "buyMin": 303,
       "buyMax": 352,
       "buyVariance": 49,
@@ -1015,7 +1015,7 @@
     {
       "sourceRow": 94,
       "name": "잿빛 도장",
-      "description": "상점에 “특수 카드” 1장 추가(확률)",
+      "description": "상점 첫 방문 시 25% 확률로 특수 카드 한 장을 추가 진열한다. 구매할 때 카드 소유자를 고른다.",
       "buyMin": 241,
       "buyMax": 290,
       "buyVariance": 49,

@@ -1209,7 +1209,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     { // 실제 명중 보정 시작
         bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
         int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
-        int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk)); // 기존 검집과 지팡이 심의 명중 보너스
+        int pin = marked && card.DamageType == BattleDamageType.Magical ? BattleSupplyRelics.Find(RelicEffectType.MarkedMagicalCardDamage)?.EffectValue ?? 0 : 0; // 기존 표식이 있는 적을 명중한 직접 마법 타격의 가산 피해
+        int result = suitHitRelics.ApplyHitBonus((int)Math.Min(int.MaxValue, (long)damage + chalk + pin)); // 표식 유물 합계와 기존 속성별 명중 보너스
         result = supplyRelics.AddAttackDamage(card, target, result, turnRuntime.CurrentRound); // 심장핀과 탄약띠의 실제 명중 피해 가산
         if (card.OwnerUnit.CurrentMental > 30 || lastBlackRoseRound == turnRuntime.CurrentRound) // 공격자의 정신력과 파티 공용 턴 횟수 확인
         { // 추가 피해 없음 처리 시작

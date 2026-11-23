@@ -45,5 +45,9 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     CardDrawEffect, // 카드 자체 효과의 드로우 수량을 확정할 때
     BeforeInspectDrawPile, // 덱 위에서 확인할 후보 수량을 정하는 시점
     HandEmptyAtCleanup, // 턴 종료 손패를 자동으로 정리하기 직전
-    BeforeEventTrapDamage // 지정한 탐사 함정에 피해를 적용하기 직전
+    BeforeEventTrapDamage, // 지정한 탐사 함정에 피해를 적용하기 직전
+    ExplorationForcedBattleRoll, // 탐사의 확률 강제 전투 판정 직전
+    BeforeShopPurchase, // 현재 상점에서 상품 골드 결제 직전
+    ExplorationCompleted, // 성공한 탐사 완료를 정산할 때
+    BeforeMentalLoss // 실제 정신력 손실을 확정하기 직전
 }

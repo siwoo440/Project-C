@@ -32,7 +32,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public string[] relics; // 획득 순서 유물 목록
         public string[] consumables; // 소모품 슬롯 목록
         public string shopRoom; // 현재 상점 방 식별자
-        public ShopRunManager.RelicReserve[] shopRelicReserves; // 방별 유물 추가 진열 결과
+        public ShopRunManager.RelicReserve[] shopRelicReserves; // 방별 유물과 특수 카드의 추가 진열 및 판매 결과
+        public bool shopDrawerDiscountUsed; // 금속 손잡이 할인 사용 여부
         public string[] purchasedOffers; // 현재 상점 판매 완료 상품 목록
         public bool restUsed; // 현재 휴식 방 사용 여부
         public int hazardHealth; // 대기 환경 체력 피해
@@ -212,7 +213,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
                 shopRoom = shop != null ? shop.ActiveRoomRuntimeId : null, // 상점 방 식별자 설정
-                shopRelicReserves = shop?.ExportRelicReserves(), // 열쇠의 방별 진열 결과 보관
+                shopRelicReserves = shop?.ExportRelicReserves(), // 열쇠와 도장의 방별 추가 진열 및 판매 결과 보관
+                shopDrawerDiscountUsed = shop?.DrawerDiscountUsed ?? false, // 실제 결제로 소비한 첫 상품 할인 보관
                 purchasedOffers = purchasedOffers.ToArray(), // 판매 완료 상품 설정
                 restUsed = RestRoomRunManager.Instance != null && RestRoomRunManager.Instance.IsUsed, // 휴식 방 사용 상태 설정
                 hazardHealth = session.PendingHazardHealthDamage, // 대기 체력 피해 설정
@@ -334,7 +336,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 이전 저장 호환 시작
             resources.BeginExplorationResourceTracking(); // 기존 잔액을 보존하고 이후 획득분부터 구분
         } // 이전 저장 호환 종료
-        ShopRunManager.EnsureInstance().RestoreSessionWithRelicReserves(run.shopCatalog, sourceDeck, run.snapshot.shopRoom, run.snapshot.purchasedOffers, run.snapshot.shopRelicReserves); // 저장 상점 상태 복원
+        ShopRunManager.EnsureInstance().RestoreSessionWithShopStock(run.shopCatalog, sourceDeck, run.snapshot.shopRoom, run.snapshot.purchasedOffers, run.snapshot.shopRelicReserves, run.snapshot.shopDrawerDiscountUsed); // 저장 상점과 첫 상품 구매 할인 상태 복원
         RestRoomRunManager.EnsureInstance().RestoreSession(sourceDeck, run.snapshot.restUsed); // 저장 휴식 상태 복원
         return true; // 탐사 복원 성공 반환
     } // 탐사 복원 종료
@@ -405,6 +407,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 목록 오류 시작
             return false; // 복원 불가 반환
         } // 목록 오류 종료
+        if (!ValidSpecialStock(snapshot.shopRelicReserves, shopCatalog)) // 방에 추가한 특수 판매 상품의 실제 원본과 식별자 확인
+        { // 특수 상품 저장 형식 실패 시작
+            return false; // 일치하는 특수 카드 재고를 복원할 수 없는 저장 거부
+        } // 특수 상품 저장 형식 실패 종료
         if (string.IsNullOrEmpty(snapshot.shopRoom) && snapshot.purchasedOffers.Length > 0) // 상점 방 없는 판매 기록 확인
         { // 상점 기록 오류 시작
             return false; // 복원 불가 반환
@@ -571,6 +577,36 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         } // 개별 지급 기록 검사 종료
         return claimedGold <= snapshot.runGold; // 실제 탐사 획득량 이내 확인
     } // 지급 기록 검사 종료
+    private static bool ValidSpecialStock(ShopRunManager.RelicReserve[] reserves, ShopCatalogData catalog) // 원본을 조회해 저장된 특수 재고의 복원 가능 여부 확인
+    { // 특수 상품 저장 검증 시작
+        if (reserves == null) // 방별 특수 상품이 없던 기존 저장 확인
+        { // 구버전 저장 처리 시작
+            return true; // 기본 진열만 복원 허용
+        } // 구버전 저장 처리 종료
+        var sheet = CardSheetCatalog.Load(); // 현재 등록 카드의 시트 희귀도 색인
+        foreach (var stock in reserves) // 저장한 방 단위 진열과 판매 정보 순회
+        { // 방별 재고 확인 시작
+            if (stock == null || !stock.specialCardSold && string.IsNullOrEmpty(stock.specialCardOfferId)) // 일반 재고뿐인 방 확인
+            { // 일반 재고 처리 시작
+                continue; // 기존 방의 특수 상품 대조 제외
+            } // 일반 재고 처리 종료
+            bool found = false; // 현재 저장의 특수 상품 원본 발견 여부
+            foreach (var offer in catalog.Offers) // 실물 보상으로 구현된 상점 카탈로그 원본 확인
+            { // 실제 특수 카드 원본 대조 시작
+                if (offer.OfferId == stock.specialCardOfferId && ShopRunManager.IsSpecialCandidate(offer, sheet)) // 기존 원본의 유일한 판매 가능 특수 카드 확인
+                { // 선택한 특수 카드 존재 처리 시작
+                    found = true; // 실제 구매 및 소유자 선택 가능 상태 확인
+                    break; // 지정 상품의 추가 검색 종료
+                } // 선택한 특수 카드 존재 처리 종료
+            } // 실제 특수 카드 원본 대조 종료
+            if (!found || string.IsNullOrWhiteSpace(stock.roomId)) // 판매된 특수 재고의 실제 상점 방과 원본 확인
+            { // 누락된 재고 복원 방지 시작
+                return false; // 유효하지 않은 특수 재고 상태 거부
+            } // 누락된 재고 복원 방지 종료
+        } // 방별 재고 확인 종료
+        return true; // 기존 및 특수 상품의 정상 저장 허용
+    } // 특수 상품 저장 검증 종료
+
     private static bool ValidIds(string[] ids) // 저장 식별자 목록 검증
     { // 식별자 검사 시작
         if (ids == null) // 목록 누락 확인

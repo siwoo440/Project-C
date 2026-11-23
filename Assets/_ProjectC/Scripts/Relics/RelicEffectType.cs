@@ -84,4 +84,12 @@ public enum RelicEffectType // 유물 효과 종류
     AberrationVictoryDraw, // 괴생체 격파 뒤 다음 전투의 시작 카드 추가
     AberrationVictoryActionPoint, // 괴생체 격파 뒤 다음 전투의 시작 행동력 추가
     CardRemovalDiscount, // 상점의 회차 카드 제거 비용 할인
+    ReducedForcedEncounterChance, // 무작위 강제 전투 발생 확률 감소
+    FirstShopPurchaseDiscount, // 회차 첫 유료 상품 구매의 추가 할인
+    ShortenTwoPointDefenseLoss, // 원본 방어력 두 점 감소 약화의 지속 단축
+    MarkedMagicalCardDamage, // 표식 적에게 직접 마법 카드 명중 피해 가산
+    RetainRandomOpeningCard, // 시작 손패 한 장의 첫 자동 버림 방지
+    ExplorationSuccessGoldPercent, // 정상 귀환에서 남은 회차 골드의 비율 추가
+    FadeMentalLossReduction, // 침식지대 정신력 손실의 고정 감소
+    ExtraShopSpecialCard, // 첫 방문 상점에서 특수 카드 추가 판매 판정
 }

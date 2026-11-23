@@ -10,6 +10,8 @@ public static class BurntCartEvent // 불탄 수레의 잔해 원문과 선택 �
     public const int Box = 0; // 상자 열기 선택
     public const int Salvage = 1; // 수레 해체 선택
     public const int Mark = 2; // 표식 남기기 선택
+    private const int SupplyChance = 60; // 수레 상자의 원래 물자 확률
+    private const int AmbushChance = 100 - SupplyChance; // 회색 로프가 없을 때의 강제 매복 확률
     private static bool resolving; // 상태 변경 중 재진입 방지
     public static EnemyData Hunter => Resources.Load<EncounterData>("Encounters/Encounter_WF_AshHunter")?.Enemies[0]; // 실제 잿풍 사냥꾼 원본 조회
 
@@ -40,8 +42,19 @@ public static class BurntCartEvent // 불탄 수레의 잔해 원문과 선택 �
 
     public static bool HasSupplies(string room) // 상자 물자 당첨 여부 조회
     { // 상자 추첨 시작
-        return BoxRandom(room).Next(100) < 60; // 영부터 오십구까지 물자 지급
+        return BoxRandom(room).Next(100) < SupplyChance; // 유물과 독립된 오십구까지의 물자 지급
     } // 상자 추첨 종료
+    internal static string BoxChoiceEffects() // 수레 상자의 실제 추첨 확률 표시
+    { // 상자 안내 시작
+        int avoided = GetAvoidedAmbushChance(); // 현재 회차의 매복 감소 퍼센트포인트
+        string result = $"철판·나사 각 1개 {SupplyChance}% / 사냥꾼 추가 매복 {AmbushChance - avoided}%"; // 물자와 실제 매복 확률 표시
+        return avoided > 0 ? result + $" / 매복 회피 {avoided}%" : result; // 회색 로프의 빈 상자 결과 추가
+    } // 상자 안내 종료
+    private static int GetAvoidedAmbushChance() // 보유 유물의 수레 매복 확률 감소량
+    { // 매복 감소 조회 시작
+        int reduction = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ReducedForcedEncounterChance)?.EffectValue ?? 0; // 실제 획득한 회색 로프의 비율
+        return Mathf.Clamp(reduction, 0, AmbushChance); // 물자 확률을 건드리지 않는 매복 감소 범위
+    } // 매복 감소 조회 종료
 
     internal static EncounterData FindNormal(string id, int version) // 저장한 일반 조우 원본 검색
     { // 조우 원본 조회 시작
@@ -91,6 +104,7 @@ public static class BurntCartEvent // 불탄 수레의 잔해 원문과 선택 �
         resolving = true; // 자원 알림 중 중복 처리 잠금
         try // 처리 후 잠금 해제 보장
         { // 확정 행동 시작
+            int boxRoll = choice == Box ? BoxRandom(room).Next(100) : 0; // 상자 행동에서만 기존 고정 난수 한 번 조회
             if (choice == Mark) // 다음 상점 할인 예약 확인
             { // 표식 남기기 시작
                 session.Cart.SetMark(room); // 다음 상점의 첫 성공 구매에 할인 예약
@@ -103,11 +117,15 @@ public static class BurntCartEvent // 불탄 수레의 잔해 원문과 선택 �
                 PlayerResourceManager.EnsureInstance().AddResources(0, 1, 1, 1); // 나사와 철판과 전선 한 개씩 지급
                 summary = $"{actor.DisplayName} 체력 {health} → {Mathf.Max(0, health - 3)} · 철판 +1 · 나사 +1 · 전선 +1"; // 실제 비용과 보상 표시
             } // 해체 처리 종료
-            else if (HasSupplies(room)) // 상자 물자 당첨 확인
+            else if (boxRoll < SupplyChance) // 기존의 변경 없는 물자 당첨 구간 확인
             { // 물자 획득 시작
                 PlayerResourceManager.EnsureInstance().AddResources(0, 1, 1, 0); // 나사와 철판 한 개씩 지급
                 summary = "철판 +1 · 나사 +1"; // 물자 결과 표시
             } // 물자 획득 종료
+            else if (boxRoll < SupplyChance + GetAvoidedAmbushChance()) // 회색 로프로 줄인 매복 확률 구간 확인
+            { // 강제 매복 회피 시작
+                summary = "회색 로프로 매복을 피했습니다. 상자는 비어 있었습니다."; // 전투와 물자 보상 없는 확정 안내
+            } // 강제 매복 회피 종료
             else // 사냥꾼 매복 당첨
             { // 매복 준비 시작
                 var normal = PickNormal(room, session); // 현재 층의 일반 적 편성 선택

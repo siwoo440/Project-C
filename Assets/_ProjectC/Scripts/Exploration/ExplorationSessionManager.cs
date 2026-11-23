@@ -382,13 +382,25 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             return false;
         }
 
-        PlayerResourceManager.Instance?.EndExplorationResourceTracking(); // 성공한 탐사 재화 확정
+        PlayerResourceManager wallet = PlayerResourceManager.Instance; // 탐사에서 획득해 남은 골드를 보관한 지갑
+        int percent = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ExplorationSuccessGoldPercent)?.EffectValue ?? 0; // 보유한 여행자의 부적 정산 가산율
+        int bonus = wallet != null && wallet.IsTrackingExplorationResources ? (int)((long)wallet.ExplorationGold * Mathf.Clamp(percent, 0, 100) / 100L) : 0; // 기존 보유 골드가 빠진 남은 탐사 수입의 내림 가산액
+        wallet?.EndExplorationResourceTracking(); // 정산 가산액이 탐사 수입에 재계상되지 않도록 기존 획득분 확정
         isExplorationCompleted = true; // 탐사 완료 상태 기록
         completionVersion++; // 새 탐사 종료 처리 순번 증가
         isExplorationSuccess = true; // 탐사 성공 상태 기록
         completedFloor = currentFloor; // 성공 층 기록
         completedEncounterCount = clearedEncounterIds.Count; // 성공 시점 클리어 조우 수 기록
         lastExplorationSuccessAffinity = ExplorationSuccessAffinityReward; // 성공 호감도 보상 기록
+        if (bonus > 0) // 성공 정산에서 지급할 부적 골드 확인
+        { // 여행자의 부적 정산 시작
+            int paid = Mathf.Min(bonus, int.MaxValue - wallet.Gold); // 지갑 범위를 넘지 않는 실제 지급액
+            runGoldGained = (int)System.Math.Min(int.MaxValue, (long)runGoldGained + paid); // 기존 골드를 다시 더하지 않는 실제 신규 지급액만 기록
+            if (paid > 0) // 지갑에 더할 수 있는 골드 확인
+            { // 성공 골드 지급 시작
+                wallet.AddResources(paid, 0, 0, 0); // 거점 저장에 남을 정산 골드 한 번 지급
+            } // 성공 골드 지급 종료
+        } // 여행자의 부적 정산 종료
 
         CharacterAffinityManager affinityManager =
             CharacterAffinityManager.EnsureInstance(); // 호감도 관리자 준비

@@ -325,6 +325,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 비용 감소 종료
         var crown = openingRelics.FindEffect(RelicEffectType.OpeningRandomCardDiscount); // 실제 첫 손패에 적용할 퇴색한 왕관 조회
         runtimeDeck.DiscountRandomOpeningHandCard(crown?.EffectValue ?? 0); // 첫 손패 추첨과 개별 고정 비용 할인
+        if (openingRelics.FindEffect(RelicEffectType.RetainRandomOpeningCard) != null) // 금속 핸드벨의 실제 보유 확인
+        { // 첫 손패 유지 준비 시작
+            runtimeDeck.RetainRandomOpeningHandCard(); // 모든 시작 드로우를 마친 실제 손패 한 장 예약
+        } // 첫 손패 유지 준비 종료
     } // 턴 손패 처리 종료
     private void HandleExcludedCard(CardInstance card, bool fromVolatileHand) // 실제 제외 및 손패 휘발 유물 처리
     { // 제외 유물 처리 시작

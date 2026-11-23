@@ -126,12 +126,20 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 상태 처리 시작
             return BattleMentalChangeResult.NoChange(CurrentMental, MentalState, MentalRemainingTurns, delta, reason); // 변화 없음 반환
         } // 사망 상태 처리 종료
-        return mentalRuntime.ChangeMental(delta, reason); // 정신력 변화 결과 반환
+        return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta); // 퇴색 교전 보정과 원래 변화 요청량 전달
     } // 정신력 증감 종료
     public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
     { // 변경 가능 확인 시작
-        return !IsDead && mentalRuntime.CanChangeMental(delta); // 생존 상태 포함 가능 여부 반환
+        return !IsDead && mentalRuntime.CanChangeMental(GetEncounterMentalChange(delta)); // 실제 정신력 감소 완화를 포함한 카드 사용 가능 여부
     } // 변경 가능 확인 종료
+    public int PreviewMentalChange(int delta) // 현재 정신력과 퇴색 교전 완화를 반영한 변화량 예고
+    { // 정신력 변화 예고 시작
+        return IsDead ? 0 : mentalRuntime.PreviewDelta(GetEncounterMentalChange(delta)); // 이미 사망한 대상을 제외한 실제 변화 예고
+    } // 정신력 변화 예고 종료
+    private int GetEncounterMentalChange(int delta) // 실제 아군이 받는 퇴색 교전 정신력 손실 보정
+    { // 퇴색 교전 정신력 확인 시작
+        return delta < 0 && Team == BattleTeam.Ally && ExplorationSessionManager.Instance?.ActiveEncounterInFade == true ? ExplorationRelicEffects.AdjustFadeMentalChange(delta) : delta; // 퇴색 교전 아군의 음수 변화에만 유물 적용
+    } // 퇴색 교전 정신력 확인 종료
     public BattleMentalChangeResult AdvanceMentalStateTurn() // 정신 특수 상태 턴 진행
     { // 상태 턴 진행 시작
         return mentalRuntime.AdvanceStateTurn(); // 상태 턴 진행 결과 반환
@@ -172,10 +180,15 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
                 return BattleStatusEffectApplyResult.BlockedByImmunity; // 기존 상태 차단 결과로 출혈 저항 표시
             } // 출혈 차단 처리 종료
         } // 출혈 저항 판정 종료
-        if (Team == BattleTeam.Ally && value == 2 && (effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.ChargeDefenseDown) && RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.SoftenDefenseLoss) != null) // 보유 금속판과 물리 방어 두 점 감소 확인
-        { // 금속판 완화 시작
-            value = 1; // 새로 부여되는 약화 한 점으로 완화
-        } // 금속판 완화 종료
+        if (Team == BattleTeam.Ally && value == 2 && (effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.ChargeDefenseDown)) // 보정하기 전 아군의 물리 방어 두 점 감소 확인
+        { // 원본 방어 감소 유물 처리 시작
+            if (BattleSupplyRelics.Find(RelicEffectType.SoftenDefenseLoss) != null) // 보유 금속판의 감소 수치 완화 확인
+            { // 금속판 완화 시작
+                value = 1; // 새로 부여되는 약화 한 점으로 완화
+            } // 금속판 완화 종료
+            int emblemReduction = BattleSupplyRelics.Find(RelicEffectType.ShortenTwoPointDefenseLoss)?.EffectValue ?? 0; // 원래 두 점 약화의 문양 지속 감소량
+            duration = Math.Max(1, duration - emblemReduction); // 방독면 보정과 독립인 약화 지속 감소
+        } // 원본 방어 감소 유물 처리 종료
         if (Team == BattleTeam.Ally && duration > 1 && IsStandardTimedDebuff(effectType) && ExplorationSessionManager.Instance?.ActiveEncounterInFade == true) // 퇴색 교전에서 받는 아군의 지속 디버프 확인
         { // 방독면 지속 턴 보정 시작
             int reduction = BattleSupplyRelics.Find(RelicEffectType.ShorterFadeDebuffs)?.EffectValue ?? 0; // 실제 보유 방독면의 지속 감소량

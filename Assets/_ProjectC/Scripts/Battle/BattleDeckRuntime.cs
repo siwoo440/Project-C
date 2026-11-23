@@ -14,6 +14,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private bool recoveredRandomDiscard; // 회수용 자석의 전투 발동 기록
     private CardInstance firstDrawDiscountCard; // 현재 턴에 개별 드로우 할인을 받은 카드
     private CardInstance openingRandomDiscountCard; // 퇴색한 왕관이 첫 손패에서 선택한 카드
+    private CardInstance openingRetainedCard; // 핸드벨이 첫 손패에서 유지할 카드
     internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
     public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
@@ -390,6 +391,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     { // 전투 카드 정리 시작
         ClearFirstDrawRelicDiscount(); // 종료된 전투의 개별 카드 할인 복원
         ClearOpeningRandomRelicDiscount(); // 종료된 전투의 왕관 할인 복원
+        openingRetainedCard = null; // 전투를 끝낸 미사용 시작 손패 유지 해제
         nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
         if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
         { // 복사본 제거 시작
@@ -411,6 +413,21 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         nextPlayerTurnDraw = 0; // 드로우 알림 전 중복 예약 소비 차단
         return DrawCards((int)Math.Clamp((long)count + bonus, 0L, int.MaxValue)); // 정수 범위와 손패 상한에 따른 실제 드로우 반환
     } // 턴 드로우 종료
+    internal void RetainRandomOpeningHandCard() // 첫 실제 손패의 일반 버림을 한 번 면제할 카드 선택
+    { // 핸드벨 카드 선택 시작
+        var candidates = hand.FindAll(card => IsDrawable(card) && card.EffectType != CardEffectType.Unplayable && !card.SourceData.VolatileInHand); // 살아 있는 소유자의 사용 가능 일반 손패 후보
+        if (candidates.Count > 0) // 선택할 실제 손패 존재 확인
+        { // 균등 유지 대상 선택 시작
+            openingRetainedCard = candidates[random.Next(candidates.Count)]; // 기존 덱 무작위로 같은 확률의 카드 한 장 저장
+        } // 균등 유지 대상 선택 종료
+    } // 핸드벨 카드 선택 종료
+    private void ForgetOpeningRetention(CardInstance card) // 실제로 손패를 떠난 카드의 유물 유지 해제
+    { // 시작 손패 유지 해제 확인 시작
+        if (card == openingRetainedCard) // 핸드벨이 선택했던 인스턴스인지 확인
+        { // 유지 해제 시작
+            openingRetainedCard = null; // 이후 다시 뽑거나 회수한 카드의 예약 복구 차단
+        } // 유지 해제 종료
+    } // 시작 손패 유지 해제 확인 종료
     internal bool RetainHandCard(CardInstance card) // 현재 한 번의 손패 버림 취소
     { // 손패 유지 시작
         if (card == null || card != pendingHandDiscard) // 현재 버리려는 손패와 일치 여부 확인
@@ -443,6 +460,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         if (!IsHandDiscardPrevented(cardInstance)) // 실제 효과 버림 확인
         { // 손패 이동 시작
             hand.Remove(cardInstance); // 원래 손패에서 제거
+            ForgetOpeningRetention(cardInstance); // 실제 수동 및 효과 버림으로 개시 유지 해제
             discardPile.Add(cardInstance); // 사용과 구분해 버림 더미에 추가
             EnsureValidState(); // 이동 뒤 카드 영역 확인
             StateChanged?.Invoke(); // 손패 변경 알림
@@ -466,6 +484,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 카드 버리기 종료
     private void PlacePlayedCard(CardInstance card) // 손패에서 빠진 사용 카드 정산
     { // 사용 위치 처리 시작
+        ForgetOpeningRetention(card); // 정상 사용 정산 후 같은 카드의 개시 유지 해제
         if (card.SourceData.ExcludeOnUse) // 사용 후 제외 규칙 확인
         { // 전투 제외 시작
             excludedPile.Add(card); // 제외 더미에 사용 카드 보관
@@ -502,6 +521,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 다음 카드 할인 갱신 종료
     public int DiscardHand() // 일반 손패 전체 버리기
     { // 손패 정리 시작
+        CardInstance retainedAtOpening = openingRetainedCard; // 첫 자동 버림에서만 확인할 유물 유지 대상
+        openingRetainedCard = null; // 손패가 비어도 첫 버림 정리에서 예약 소모
         int count = hand.Count; // 정리할 손패 수 기록
         HandCountBeforeCleanup = count; // 유지와 버리기 전 손패 상태 기록
         if (count == 0) // 빈 손패 확인
@@ -518,7 +539,8 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
                 volatileCards.Add(card); // 손패 정리 뒤 발동 예약
                 continue; // 일반 버림 검사 생략
             } // 휘발 카드 소멸 종료
-            if (!IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 유지 카드와 이번 버림 취소 확인
+            bool retainedByBell = card == retainedAtOpening && IsDrawable(card); // 여전히 손에 있는 생존 소유자의 개시 유지 카드 확인
+            if (!retainedByBell && !IsRetainedHandCard(card) && !IsHandDiscardPrevented(card)) // 유물 유지와 카드 고유 유지 및 이번 버림 취소 확인
             { // 실제 버림 시작
                 hand.Remove(card); // 원래 손패에서 제거
                 discardPile.Add(card); // 버린 더미 끝에 추가
