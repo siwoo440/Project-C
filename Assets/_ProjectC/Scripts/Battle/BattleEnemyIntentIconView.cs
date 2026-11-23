@@ -12,6 +12,7 @@ public sealed class BattleEnemyIntentIconView :
     private RectTransform rootRect; // 행동 아이콘 RectTransform
     private Image backgroundImage; // 행동 아이콘 이미지
     private TMP_Text iconText; // 행동 아이콘 문자
+    private TMP_Text specialMark; // 특수 공격 구분 기호
     private BattleEnemyAction currentAction; // 현재 표시 행동
     private BattleUnitView actorView; // 행동 적 화면
     private BattleEnemyIntentDetailView detailView; // 상세 설명 화면
@@ -179,6 +180,24 @@ public sealed class BattleEnemyIntentIconView :
         textRect.offsetMin = Vector2.zero; // 문자 왼쪽 아래 여백 제거
         textRect.offsetMax = Vector2.zero; // 문자 오른쪽 위 여백 제거
 
+        GameObject markObject = new GameObject("SpecialMark", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI)); // 특수 공격 표시 글자 생성
+        markObject.transform.SetParent(transform, false); // 행동 아이콘에 특수 표시 연결
+        RectTransform markRect = markObject.GetComponent<RectTransform>(); // 특수 표시 사각형 조회
+        markRect.anchorMin = new Vector2(0f, 1f); // 특수 표시 왼쪽 위 최소 앵커
+        markRect.anchorMax = new Vector2(0f, 1f); // 특수 표시 왼쪽 위 최대 앵커
+        markRect.pivot = new Vector2(0f, 1f); // 특수 표시 왼쪽 위 기준점
+        markRect.anchoredPosition = Vector2.zero; // 아이콘 왼쪽 위 위치 설정
+        markRect.sizeDelta = new Vector2(22f, 24f); // 특수 표시 크기 설정
+        specialMark = markObject.GetComponent<TMP_Text>(); // 특수 표시 글자 조회
+        specialMark.font = ProjectCFontProvider.KoreanFontAsset; // 특수 표시 글꼴 설정
+        specialMark.text = "!"; // 특수 공격 구분 기호 설정
+        specialMark.fontSize = 20f; // 특수 공격 기호 크기 설정
+        specialMark.fontStyle = FontStyles.Bold; // 특수 공격 기호 굵기 설정
+        specialMark.color = new Color(1f, 0.68f, 0.2f, 1f); // 특수 공격 기호 금색 설정
+        specialMark.alignment = TextAlignmentOptions.Center; // 특수 공격 기호 중앙 정렬
+        specialMark.raycastTarget = false; // 특수 기호의 상세 설명 입력 차단 방지
+        specialMark.gameObject.SetActive(false); // 일반 행동의 특수 기호 숨김
+
         visualCreated = true; // 행동 아이콘 화면 생성 완료
     }
 
@@ -194,6 +213,29 @@ public sealed class BattleEnemyIntentIconView :
         int previewAmount =
             GetPreviewAmount(
                 currentAction); // 행동 아이콘 표시 수치 계산
+
+        specialMark.gameObject.SetActive(specialPattern && currentAction.ActionType == EnemyActionType.Attack); // 특수 공격의 별도 구분 표시
+        if (currentAction.ActionType == EnemyActionType.Attack) // 실제 공격 행동 확인
+        { // 공격 유형별 아이콘 표시 시작
+            string imageName = currentAction.DamageType == BattleDamageType.Physical ? "EnemyAttackPhysical" : currentAction.DamageType == BattleDamageType.Magical ? "EnemyAttackMagical" : "EnemyAttackNeutral"; // 실제 피해 유형에 따른 아이콘 이름
+            bool hasIcon = BattleUiArt.Apply(backgroundImage, imageName); // 투명 공격 유형 아이콘 적용
+            backgroundImage.preserveAspect = true; // 사각형 공격 아이콘 비율 유지
+            iconText.alignment = hasIcon ? TextAlignmentOptions.BottomRight : TextAlignmentOptions.Center; // 아이콘 위 수치 또는 대체 문구 정렬
+            iconText.fontSize = hasIcon ? 20f : 15f; // 예상 피해 수치 크기 설정
+            iconText.outlineWidth = 0.25f; // 투명 아이콘 위 예상 피해 가독성 설정
+            iconText.text = hasIcon ? previewAmount.ToString() : $"ATK\n{previewAmount}"; // 실제 예상 피해 또는 이미지 누락 대체 표시
+            if (!hasIcon) // 공격 이미지 누락 확인
+            { // 공격 이미지 대체 시작
+                backgroundImage.sprite = null; // 기존 행동 이미지 제거
+                backgroundImage.color = new Color(0.75f, 0.14f, 0.14f, 0.96f); // 기존 공격 배경색 적용
+            } // 공격 이미지 대체 종료
+            return; // 공격 유형 표시 완료
+        } // 공격 유형별 아이콘 표시 종료
+        backgroundImage.sprite = null; // 이전 공격 아이콘 제거
+        backgroundImage.preserveAspect = false; // 상태 행동 배경 비율 초기화
+        iconText.alignment = TextAlignmentOptions.Center; // 상태 행동 글자 중앙 정렬 복원
+        iconText.fontSize = 15f; // 상태 행동 글자 크기 복원
+        iconText.outlineWidth = 0f; // 상태 행동 글자 외곽선 복원
 
         if (specialPattern)
         {
@@ -229,7 +271,7 @@ public sealed class BattleEnemyIntentIconView :
                     0.96f); // 공격 행동 아이콘 색상
 
             iconText.text =
-                $"ATK\n{previewAmount}"; // 공격 행동 아이콘 표시
+                $"-\n{previewAmount}"; // 공격이 아닌 기타 행동 표시
         }
     }
 
