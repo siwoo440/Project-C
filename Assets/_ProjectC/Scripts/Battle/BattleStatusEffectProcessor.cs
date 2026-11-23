@@ -122,10 +122,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
         } // 상태 변경 알림 종료
         return results; // 턴 종료 처리 결과 반환
     } // 턴 종료 상태 처리 종료
-    public IReadOnlyList<BattleStatusEffectProcessResult> CleanseDebuffs(BattleUnitRuntime runtimeUnit) // 디버프 정화 통합 처리
+    public IReadOnlyList<BattleStatusEffectProcessResult> CleanseDebuffs(BattleUnitRuntime runtimeUnit, int maximumCount = int.MaxValue) // 지정 개수의 디버프 정화 처리
     { // 정화 처리 시작
         List<BattleStatusEffectProcessResult> processResults = new List<BattleStatusEffectProcessResult>(); // 빈 정화 결과 목록 생성
-        if (runtimeUnit == null || runtimeUnit.IsDead || runtimeUnit.StatusEffects.Count < 1) // 정화 대상 유효성 확인
+        if (runtimeUnit == null || runtimeUnit.IsDead || runtimeUnit.StatusEffects.Count < 1 || maximumCount <= 0) // 정화 대상과 개수 유효성 확인
         { // 정화 불가 시작
             return processResults; // 빈 정화 결과 반환
         } // 정화 불가 종료
@@ -141,6 +141,10 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
                 continue; // 다음 상태 이동
             } // 제거 실패 종료
             processResults.Add(CreateResult(statusEffect, 0, 0, statusEffect.RemainingTurns, statusEffect.RemainingTurns, false, BattleStatusEffectRemovalReason.Cleansed)); // 정화 결과 추가
+            if (processResults.Count >= maximumCount) // 정화 개수 도달 확인
+            { // 정화 종료 시작
+                break; // 나머지 디버프 보존
+            } // 정화 종료 완료
         } // 정화 후보 처리 종료
         if (processResults.Count > 0) // 실제 정화 여부 확인
         { // 정화 알림 시작

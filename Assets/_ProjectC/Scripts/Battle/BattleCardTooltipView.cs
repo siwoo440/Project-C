@@ -114,7 +114,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 상태 이상 처리 시작
             return BattleStatusEffectInstance.GetDisplayName(cardInstance.StatusEffectType); // 상태 이상 이름 반환
         } // 상태 이상 처리 종료
-        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
         { // 디버프 해제 처리 시작
             return "디버프 해제"; // 디버프 해제 문구 반환
         } // 디버프 해제 처리 종료
@@ -182,9 +182,9 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 파트너 상세 처리 시작
             return "생존한 다른 아군을 파트너로 지정"; // 파트너 지정 상세 반환
         } // 파트너 상세 처리 종료
-        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs) // 디버프 해제 효과 확인
+        if (cardInstance.EffectType == CardEffectType.RemoveDebuffs || cardInstance.EffectType == CardEffectType.RemoveOneDebuff) // 디버프 해제 효과 확인
         { // 디버프 해제 상세 처리 시작
-            return "모든 디버프 해제"; // 디버프 해제 상세 반환
+            return cardInstance.EffectType == CardEffectType.RemoveOneDebuff ? "먼저 적용된 디버프 1개 해제" : "모든 디버프 해제"; // 카드별 디버프 해제 상세 반환
         } // 디버프 해제 상세 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 상세 처리 시작
