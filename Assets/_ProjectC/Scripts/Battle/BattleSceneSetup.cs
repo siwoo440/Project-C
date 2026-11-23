@@ -81,7 +81,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         CreateAllyUnits(); // 아군 유닛 생성
         CreateEnemyUnits(); // 적 유닛 생성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
-        battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits, maximumHandSize, shuffleSeed); // 전투용 카드 더미 생성
+        RunDeckManager runDeckManager = RunDeckManager.EnsureInstance(); // 탐사 회차 덱 관리자 준비
+        IReadOnlyList<RunDeckCardEntry> activeDeckCards = runDeckManager.GetActiveCards(battleLoadout.Deck); // 상점 변경 포함 현재 카드 목록 조회
+        battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, activeDeckCards, allyUnits, maximumHandSize, shuffleSeed); // 현재 보유 카드 기반 전투 더미 생성
         sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
         battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn, battleType); // 전투 유형 포함 턴 관리자 생성
         if (!handView.Bind(battleDeck, sharedActionPoints, battleTurn)) // 손패 화면 연결 확인
