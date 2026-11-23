@@ -4,12 +4,10 @@ using UnityEngine; // 런타임 오브젝트 기능 사용
 using UnityEngine.InputSystem; // 디버그 재생성 입력 사용
 using UnityEngine.SceneManagement; // 탐사 Scene 감지 기능 사용
 
-public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐사 상태 보존 런타임
+public sealed class ExplorationMapRuntime : MonoBehaviour // 40일차 논리 맵 기반 Tilemap 탐사 런타임
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
-    private const float WorldMin = -3.4f; // 임시 맵 월드 최소 좌표
-    private const float WorldMax = 3.4f; // 임시 맵 월드 최대 좌표
     private const float FloorChangeCooldown = 0.5f; // 연속 층 이동 방지 시간
 
     private static Sprite runtimeSquareSprite; // 런타임 표시용 사각형 스프라이트
@@ -21,6 +19,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
         new HashSet<Vector2Int>(); // 현재 층 조우 셀 좌표 집합
 
     private ExplorationSessionManager sessionManager; // 탐사 세션 관리자
+    private ExplorationTilemapView tilemapView; // 논리 맵 Tilemap 표시기
     private GameObject stairsObject; // 현재 계단 오브젝트
     private float nextFloorChangeAllowedTime; // 다음 층 이동 허용 시각
     private bool initialPlayerPlacementHandled; // 첫 플레이어 위치 처리 여부
@@ -29,6 +28,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
     public int CurrentEncounterCount => encounterCoordinates.Count; // 현재 층 조우 개수 조회
     public bool RestoredFromSession { get; private set; } // 저장된 층 상태 복원 여부
+    public int CurrentFloorTileCount => tilemapView != null ? tilemapView.FloorTileCount : 0; // 현재 Floor 타일 개수
+    public int CurrentWallPreviewTileCount => tilemapView != null ? tilemapView.WallTileCount : 0; // 현재 Wall Preview 타일 개수
 
     private void Awake() // 탐사 맵 런타임 초기화
     {
@@ -36,6 +37,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
         EnsureRuntimeSquareSprite(); // 런타임 사각형 스프라이트 준비
+        EnsureTilemapView(); // 실제 Tilemap 표시기 준비
+        EnsureCameraFollow(); // 확장된 탐사 공간 카메라 추적 준비
         RestoreOrCreateCurrentFloor(); // 현재 층 Seed 복원 또는 신규 생성
         EnsureDebugView(); // 절차 맵 디버그 화면 준비
     }
@@ -112,7 +115,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
         RestoredFromSession =
             restoredFromSession; // 현재 생성이 복원인지 기록
 
-        RefreshStairs(); // 계단 위치 복원 또는 생성
+        tilemapView.Build(CurrentMap); // 논리 맵을 실제 방·통로 Tilemap으로 변환
+        RefreshStairs(); // Tilemap 기준 계단 위치 복원 또는 생성
         GenerateEncounters(); // 동일 Seed 기반 조우 배치 복원 또는 생성
 
         string stateText =
@@ -121,13 +125,15 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
                 : "신규"; // 현재 층 생성 상태 문구 결정
 
         Debug.Log(
-            $"[Exploration][Day39] 절차 층 {stateText} 완료 - " +
+            $"[Exploration][Day40] 절차 층 {stateText} 완료 - " +
             $"Floor {CurrentFloor}F / " +
             $"Seed {CurrentMap.Seed} / " +
             $"Cells {CurrentMap.Cells.Count} / " +
             $"Encounters {CurrentEncounterCount} / " +
+            $"FloorTiles {CurrentFloorTileCount} / " +
+            $"WallPreview {CurrentWallPreviewTileCount} / " +
             $"Start {CurrentMap.StartCoordinate} / " +
-            $"Stairs {CurrentMap.StairsCoordinate}"); // 생성·복원 결과 로그
+            $"Stairs {CurrentMap.StairsCoordinate}"); // Tilemap 생성·복원 결과 로그
     }
 
     private static int CreateSeed() // 신규 절차 맵 Seed 생성
@@ -154,7 +160,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
         MovePlayerToStart(player); // 새 층 시작 셀로 이동
 
         Debug.Log(
-            $"[Exploration][Day39] 계단 이동 완료 - " +
+            $"[Exploration][Day40] 계단 이동 완료 - " +
             $"{CurrentFloor}F / " +
             $"조우 {CurrentEncounterCount}개"); // 계단 이동 완료 로그
 
@@ -162,45 +168,15 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
     }
 
     public Vector2 GetWorldPosition(
-        Vector2Int coordinate) // 논리 셀 좌표를 임시 월드 좌표로 변환
+        Vector2Int coordinate) // 논리 셀의 Tilemap 방 중심 World 좌표 반환
     {
-        if (CurrentMap == null ||
-            CurrentMap.Cells.Count == 0)
+        if (tilemapView == null)
         {
             return Vector2.zero;
         }
 
-        GetMapBounds(
-            out int minX,
-            out int maxX,
-            out int minY,
-            out int maxY); // 현재 맵 좌표 범위 계산
-
-        float normalizedX =
-            maxX == minX
-                ? 0.5f
-                : Mathf.InverseLerp(
-                    minX,
-                    maxX,
-                    coordinate.x); // X 좌표 정규화
-
-        float normalizedY =
-            maxY == minY
-                ? 0.5f
-                : Mathf.InverseLerp(
-                    minY,
-                    maxY,
-                    coordinate.y); // Y 좌표 정규화
-
-        return new Vector2(
-            Mathf.Lerp(
-                WorldMin,
-                WorldMax,
-                normalizedX),
-            Mathf.Lerp(
-                WorldMin,
-                WorldMax,
-                normalizedY)); // 플레이 가능 범위 내 월드 위치 반환
+        return tilemapView.GetWorldPosition(
+            coordinate); // Tilemap 기준 실제 방 중심 위치 반환
     }
 
     public bool HasEncounterAt(
@@ -234,7 +210,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
         if (validData.Count == 0)
         {
             Debug.LogWarning(
-                "[Exploration][Day39] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
+                "[Exploration][Day40] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
 
             return;
         }
@@ -512,49 +488,48 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 39일차 절차 탐
         stairs.Initialize(this); // 현재 맵 런타임 연결
     }
 
+    private void EnsureTilemapView() // 논리 맵 Tilemap 표시기 존재 보장
+    {
+        tilemapView =
+            GetComponent<ExplorationTilemapView>(); // 기존 Tilemap 표시기 조회
+
+        if (tilemapView == null)
+        {
+            tilemapView =
+                gameObject.AddComponent<ExplorationTilemapView>(); // 런타임 Tilemap 표시기 추가
+        }
+    }
+
+    private static void EnsureCameraFollow() // 탐사 카메라 추적 기능 존재 보장
+    {
+        Camera explorationCamera =
+            Camera.main; // Main Camera 우선 조회
+
+        if (explorationCamera == null)
+        {
+            explorationCamera =
+                FindFirstObjectByType<Camera>(); // Main 태그가 없을 경우 Scene 카메라 조회
+        }
+
+        if (explorationCamera == null)
+        {
+            Debug.LogWarning(
+                "[Exploration][Day40] 탐사 카메라를 찾을 수 없어 카메라 추적을 추가하지 않았습니다."); // 카메라 누락 경고
+
+            return;
+        }
+
+        if (explorationCamera.GetComponent<ExplorationCameraFollow>() == null)
+        {
+            explorationCamera.gameObject.AddComponent<ExplorationCameraFollow>(); // 플레이어 카메라 추적 추가
+        }
+    }
+
     private void EnsureDebugView() // 임시 절차 맵 UI 존재 보장
     {
         if (GetComponent<ExplorationMapDebugView>() == null)
         {
             gameObject.AddComponent<ExplorationMapDebugView>(); // 절차 맵 디버그 화면 추가
-        }
-    }
-
-    private void GetMapBounds(
-        out int minX,
-        out int maxX,
-        out int minY,
-        out int maxY) // 현재 논리 맵 좌표 범위 계산
-    {
-        ExplorationMapCell firstCell =
-            CurrentMap.Cells[0]; // 첫 셀 기준값 조회
-
-        minX = firstCell.Coordinate.x; // 최소 X 초기화
-        maxX = firstCell.Coordinate.x; // 최대 X 초기화
-        minY = firstCell.Coordinate.y; // 최소 Y 초기화
-        maxY = firstCell.Coordinate.y; // 최대 Y 초기화
-
-        foreach (ExplorationMapCell cell in CurrentMap.Cells)
-        {
-            minX =
-                Mathf.Min(
-                    minX,
-                    cell.Coordinate.x); // 최소 X 갱신
-
-            maxX =
-                Mathf.Max(
-                    maxX,
-                    cell.Coordinate.x); // 최대 X 갱신
-
-            minY =
-                Mathf.Min(
-                    minY,
-                    cell.Coordinate.y); // 최소 Y 갱신
-
-            maxY =
-                Mathf.Max(
-                    maxY,
-                    cell.Coordinate.y); // 최대 Y 갱신
         }
     }
 
