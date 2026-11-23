@@ -64,7 +64,7 @@ public sealed class PrototypeRelicTests // 시제품 유물 효과 검사
     [Test] // 실제 유물의 획득과 저장 등록 검사 지정
     public void Relics_AreUniqueAndRegisteredForShopAndSave() // 유물 원본과 상점 및 저장 목록 확인
     { // 유물 등록 검사 시작
-        string[] names = { "AshSeal", "BrokenMusicBox", "BronzeCenser", "FloatingStone", "GateKey" }; // 검사할 유물 경로 이름
+        string[] names = { "AshSeal", "BrokenMusicBox", "BronzeCenser", "FloatingStone", "GateKey", "CrackedLens", "SealedEnvelope", "FadedRune" }; // 검사할 유물 경로 이름
         HashSet<string> ids = new HashSet<string>(); // 고유 유물 식별자 집합 생성
         SaveAssetCatalog save = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 실제 저장 원본 목록 조회
         ShopCatalogData shop = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test"); // 실제 상점 상품 목록 조회

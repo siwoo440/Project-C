@@ -9,6 +9,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly RelicGoldRuntime goldRuntime; // 임시 골드 지갑
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 현재 아군 목록
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 현재 적 목록
+    private readonly BattleDeckRuntime battleDeck; // 유물 효과 연결 전투 덱
     private readonly List<IDisposable> subscriptions = new List<IDisposable>(); // 전투 이벤트 구독 목록
     private readonly Dictionary<string, int> turnTriggerCounts = new Dictionary<string, int>(); // 현재 턴 유물 발동 횟수
     private readonly Dictionary<string, int> battleTriggerCounts = new Dictionary<string, int>(); // 현재 전투 유물 발동 횟수
@@ -16,13 +17,14 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
-    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies) // 전투 유물 관리자 생성
+    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleDeckRuntime deck = null) // 전투 유물 관리자 생성
     {
         dispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher)); // 전투 이벤트 발행기 저장
         inventory = relicInventory ?? throw new ArgumentNullException(nameof(relicInventory)); // 유물 보관함 저장
         goldRuntime = wallet ?? throw new ArgumentNullException(nameof(wallet)); // 골드 지갑 저장
         allyUnits = allies ?? throw new ArgumentNullException(nameof(allies)); // 아군 목록 저장
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
+        battleDeck = deck; // 실제 전투 덱 저장
         inventory.RelicAcquired += HandleRelicAcquired; // 전투 중 신규 유물 획득 연결
         RegisterBattleEvents(); // 전투 공용 이벤트 구독
     }
@@ -177,6 +179,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private void ApplyEffect(RelicData relicData, BattleEventContext eventContext) // 유물 효과 적용
     {
+        if (relicData.EffectType == RelicEffectType.DrawCards) // 전투 덱 드로우 효과 확인
+        { // 드로우 효과 처리 시작
+            battleDeck?.DrawCards(relicData.EffectValue); // 실제 전투 덱에서 카드 드로우
+            return; // 대상별 중복 처리 방지
+        } // 드로우 효과 처리 종료
         if (relicData.EffectType == RelicEffectType.GainGold) // 골드 획득 효과 확인
         {
             goldRuntime.AddGold(relicData.EffectValue); // 유물 효과 골드 지급
