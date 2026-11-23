@@ -17,6 +17,9 @@ public sealed class BattleTutorialViewTests // 전투 안내 화면 검사
         Transform overlay = view.transform.Find("Guide"); // 안내 화면 영역 조회
         Assert.IsTrue(overlay.gameObject.activeSelf); // 안내 화면 표시 확인
         Assert.IsFalse(overlay.GetComponent<Image>().raycastTarget); // 전체 안내 영역의 전투 입력 차단 해제 확인
+        RawImage preview = overlay.Find("Panel/Preview/ExampleImage").GetComponent<RawImage>(); // 실제 전투 예시 이미지 조회
+        Assert.IsNotNull(preview.texture); // 왼쪽 실제 전투 예시 이미지 확인
+        Assert.Less(preview.rectTransform.parent.GetComponent<RectTransform>().anchorMax.x, overlay.Find("Panel/Title").GetComponent<RectTransform>().anchorMin.x); // 예시 이미지와 오른쪽 설명 배치 확인
         Assert.IsTrue(overlay.Find("Panel/Description").GetComponent<TMP_Text>().text.Contains("카드")); // 첫 안내 한국어 설명 확인
         overlay.Find("Panel/NextButton").GetComponent<Button>().onClick.Invoke(); // 다음 안내 버튼 클릭
         Assert.AreEqual(BattleTutorialStep.PlayCard, progress.Step); // 실제 카드 사용 대기 단계 확인

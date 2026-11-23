@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI; // 거점 도움말 버튼 연결 사용
 
 public sealed class LobbyController : MonoBehaviour
 {
@@ -31,9 +32,24 @@ public sealed class LobbyController : MonoBehaviour
         { // 이전 버튼 숨김 시작
             oldSettings.gameObject.SetActive(false); // 기존 설정 버튼 숨김
         } // 이전 버튼 숨김 종료
-        LobbyLayoutView.Create(canvas, OpenSettings, OpenFacility, OpenExpedition); // 새 로비 화면 구성
+        LobbyLayoutView layout = LobbyLayoutView.Create(canvas, OpenSettings, OpenFacility, OpenExpedition); // 새 로비 화면 구성
         SaveMenuEntry.Install(canvas, false); // 거점 저장 메뉴 버튼 설치
+        WorldTutorialProgress tutorial = new WorldTutorialProgress(WorldTutorialKind.Lobby, new PlayerPrefsSettingsStore()); // 기기별 거점 안내 진행 생성
+        WorldTutorialView tutorialView = WorldTutorialView.Create(canvas, tutorial, () => Vector2.zero, step => FindTutorialTarget(layout, step), false); // 거점 메뉴별 안내 화면 생성
+        Button help = layout.transform.Find("HelpButton").GetComponent<Button>(); // 기존 거점 도움말 버튼 조회
+        help.onClick.AddListener(tutorialView.Replay); // 기존 도움말 버튼에 거점 안내 다시 보기 연결
+        help.interactable = true; // 거점 도움말 버튼 사용 허용
+        tutorial.StartIfNeeded(GraphicsAudioSettingsRuntime.Current.GetIndex("tutorial") == 0, Vector2.zero); // 사용자 설정에 따른 거점 안내 자동 시작
     } // 시작 처리 종료
+    private static RectTransform FindTutorialTarget(LobbyLayoutView layout, int step) // 거점 안내 단계별 메뉴 조회
+    { // 거점 안내 대상 조회 시작
+        if (layout == null) // 거점 화면 존재 확인
+        { // 거점 화면 누락 처리 시작
+            return null; // 강조 대상 없음 반환
+        } // 거점 화면 누락 처리 종료
+        string name = step == 0 || step == 2 ? "CharacterButton" : step == 3 ? "FacilityButton" : "ExpeditionButton"; // 안내 단계에 맞는 실제 메뉴 이름 결정
+        return layout.transform.Find(name) as RectTransform; // 실제 거점 메뉴 영역 반환
+    } // 거점 안내 대상 조회 종료
     private void OpenFacility() // 설비 강화 화면 열기
     { // 설비 화면 열기 시작
         FacilityUpgradeDebugView view = FacilityUpgradeManager.EnsureInstance().GetComponent<FacilityUpgradeDebugView>(); // 기존 설비 강화 화면 조회
