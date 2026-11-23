@@ -33,6 +33,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [SerializeField] private int testDamage = 10; // 테스트 피해량
     private readonly List<BattleUnitRuntime> allyUnits = new List<BattleUnitRuntime>(); // 생성된 아군 목록
     private readonly List<BattleUnitRuntime> enemyUnits = new List<BattleUnitRuntime>(); // 생성된 적 목록
+    private readonly List<string> defeatedEnemyIds = new List<string>(); // 전투 중 처치 적 ID 목록
     private readonly List<BattleUnitView> allyUnitViews = new List<BattleUnitView>(); // 생성된 아군 화면 목록
     private readonly List<BattleUnitView> enemyUnitViews = new List<BattleUnitView>(); // 생성된 적 화면 목록
     private BattleDeckRuntime battleDeck; // 생성된 런타임 덱
@@ -41,7 +42,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleCardActionController cardActionController; // 카드 행동 관리자
     private BattleEnemyActionRuntime enemyActionRuntime; // 적 행동 관리자
     private BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
+    private BattleResultManager resultManager; // Scene 간 전투 결과 관리자
+    private BattleResultView resultView; // 전투 종료 결과 화면
     private Coroutine enemyTurnCoroutine; // 실행 중인 적 턴 코루틴
+    private bool resultStored; // 전투 결과 저장 여부
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 아군 목록 조회
     public IReadOnlyList<BattleUnitRuntime> EnemyUnits => enemyUnits; // 적 목록 조회
     public BattleDeckRuntime BattleDeck => battleDeck; // 런타임 덱 조회
@@ -64,6 +68,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             return; // 초기화 중단
         } // 설정 오류 처리 종료
         EnsureEventSystem(); // UI 클릭 이벤트 시스템 준비
+        resultManager = BattleResultManager.EnsureInstance(); // Scene 간 결과 관리자 준비
+        resultManager.DiscardPendingResult(); // 이전 미소비 전투 결과 제거
         CreateAllyUnits(); // 아군 유닛 생성
         CreateEnemyUnits(); // 적 유닛 생성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
@@ -187,6 +193,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         foreach (CharacterData characterData in battleLoadout.Party.Members) // 파티원 순회
         { // 파티원 생성 시작
             BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateAlly(characterData); // 아군 런타임 생성
+            resultManager?.ApplySavedAllyState(runtimeUnit); // 이전 전투에서 저장한 아군 체력 적용
             BattleUnitView unitView = Instantiate(unitViewPrefab, allyUnitRoot); // 아군 화면 오브젝트 생성
             unitView.name = $"Ally_{runtimeUnit.UnitId}"; // 아군 오브젝트 이름 적용
             unitView.Bind(runtimeUnit); // 아군 화면 연결
@@ -204,6 +211,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleUnitRuntime CreateEnemyUnit(EnemyData enemyData) // 적 런타임과 화면 생성
     { // 적 유닛 생성 시작
         BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
+        runtimeUnit.Died += HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 등록
         BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
         unitView.name = $"Enemy_{runtimeUnit.UnitId}_{enemyUnits.Count + 1}"; // 적 오브젝트 고유 이름 적용
         unitView.Bind(runtimeUnit); // 적 화면 연결
@@ -271,6 +279,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 없음 처리 종료
         battleTurn?.UnregisterEnemy(enemyUnit); // 승패 판정 사망 연결 해제
         enemyActionRuntime?.UnregisterEnemy(enemyUnit); // 행동 흐름 사망 연결 해제
+        enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
         BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
         if (enemyView != null) // 제거 적 화면 존재 확인
         { // 적 화면 제거 시작
@@ -280,6 +289,14 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         } // 적 화면 제거 종료
         enemyUnits.Remove(enemyUnit); // 적 런타임 목록 제거
     } // 적 제거 종료
+    private void HandleEnemyResultDied(BattleUnitRuntime enemyUnit) // 처치 적 결과 기록
+    { // 처치 적 기록 시작
+        if (enemyUnit == null || string.IsNullOrWhiteSpace(enemyUnit.UnitId) || defeatedEnemyIds.Contains(enemyUnit.UnitId)) // 처치 적 ID 유효성과 중복 확인
+        { // 기록 불가 처리 시작
+            return; // 처치 적 기록 중단
+        } // 기록 불가 처리 종료
+        defeatedEnemyIds.Add(enemyUnit.UnitId); // 처치 적 ID 결과 목록 추가
+    } // 처치 적 기록 종료
     private bool CanUseBattleDeckTest() // 카드 테스트 가능 여부 확인
     { // 카드 테스트 검사 시작
         if (!Application.isPlaying) // 플레이 모드 확인
@@ -454,6 +471,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 적 행동 제거 시작
             enemyActionRuntime.ClearActions(); // 남은 적 행동 제거
         } // 적 행동 제거 종료
+        if (battleTurn.IsBattleEnded) // 전투 결과 확정 확인
+        { // 결과 저장과 표시 시작
+            StoreAndShowBattleResult(); // 전투 결과 스냅샷 저장과 화면 표시
+        } // 결과 저장과 표시 종료
         if (battleTurn.CurrentPhase == BattleTurnPhase.Victory) // 승리 상태 확인
         { // 승리 처리 시작
             Debug.Log("[BattleSceneSetup] 전투 승리", this); // 승리 결과 출력
@@ -467,6 +488,52 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP 유지", this); // 도주 결과 출력
         } // 도주 처리 종료
     } // 턴 상태 처리 종료
+    private void StoreAndShowBattleResult() // 전투 결과 저장과 화면 표시
+    { // 결과 저장 시작
+        if (resultStored || battleTurn == null || !battleTurn.IsBattleEnded) // 결과 저장 상태와 종료 여부 확인
+        { // 저장 불가 처리 시작
+            return; // 결과 저장 중단
+        } // 저장 불가 처리 종료
+        resultManager = resultManager == null ? BattleResultManager.EnsureInstance() : resultManager; // 영구 결과 관리자 확인
+        BattleResultData resultData = new BattleResultData(battleTurn.Result, battleTurn.BattleType, battleTurn.CurrentRound, allyUnits, defeatedEnemyIds); // 현재 전투 결과 스냅샷 생성
+        if (!resultManager.StoreResult(resultData)) // 영구 결과 저장 확인
+        { // 저장 실패 처리 시작
+            Debug.LogError("[BattleSceneSetup] 전투 결과 저장에 실패했습니다.", this); // 결과 저장 오류 출력
+            return; // 결과 화면 표시 중단
+        } // 저장 실패 처리 종료
+        resultStored = true; // 결과 저장 완료 표시
+        EnsureResultView(); // 전투 결과 화면 준비
+        if (resultView == null) // 결과 화면 생성 여부 확인
+        { // 결과 화면 없음 처리 시작
+            return; // 결과 화면 표시 중단
+        } // 결과 화면 없음 처리 종료
+        resultView.Show(resultData, ConfirmBattleResult); // 전투 결과와 확인 처리 표시
+        Debug.Log($"[BattleSceneSetup] 전투 결과 저장 - {resultData.Result} / 라운드 {resultData.CompletedRound} / 생존 아군 {resultData.LivingAllyCount}명 / 보상 {resultData.CanReceiveReward}", this); // 결과 저장 내용 출력
+    } // 결과 저장 종료
+    private void EnsureResultView() // 전투 결과 화면 준비
+    { // 결과 화면 준비 시작
+        if (resultView != null) // 기존 결과 화면 확인
+        { // 기존 화면 처리 시작
+            return; // 결과 화면 준비 중단
+        } // 기존 화면 처리 종료
+        Canvas battleCanvas = handView == null ? null : handView.GetComponentInParent<Canvas>(); // 전투 Canvas 조회
+        if (battleCanvas == null) // 전투 Canvas 존재 확인
+        { // Canvas 없음 처리 시작
+            Debug.LogError("[BattleSceneSetup] 전투 결과 화면을 배치할 Canvas가 없습니다.", this); // Canvas 누락 오류 출력
+            return; // 결과 화면 준비 중단
+        } // Canvas 없음 처리 종료
+        resultView = BattleResultView.Create(battleCanvas.transform); // Canvas 아래 결과 화면 코드 생성
+    } // 결과 화면 준비 종료
+    private bool ConfirmBattleResult() // 전투 결과 확인과 탐사 복귀
+    { // 결과 확인 시작
+        if (SceneFlowManager.Instance == null) // Scene 전환 관리자 확인
+        { // 관리자 없음 처리 시작
+            Debug.LogError("[BattleSceneSetup] 탐사 Scene으로 이동할 SceneFlowManager가 없습니다.", this); // Scene 관리자 누락 오류 출력
+            return false; // 결과 확인 실패 반환
+        } // 관리자 없음 처리 종료
+        SceneFlowManager.Instance.LoadScene("30_Exploration"); // 탐사 Scene 복귀 요청
+        return SceneFlowManager.Instance.IsLoadingScene; // Scene 전환 시작 여부 반환
+    } // 결과 확인 종료
     private void HandleEnemyActionStateChanged() // 적 행동 변경 처리
     { // 적 행동 변경 처리 시작
         foreach (BattleUnitView enemyView in enemyUnitViews) // 적 화면 목록 순회
@@ -539,6 +606,13 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 유닛 화면 조회 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        foreach (BattleUnitRuntime enemyUnit in enemyUnits) // 생성 적 목록 순회
+        { // 결과 기록 이벤트 해제 시작
+            if (enemyUnit != null) // 적 런타임 존재 확인
+            { // 적 이벤트 해제 시작
+                enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
+            } // 적 이벤트 해제 종료
+        } // 결과 기록 이벤트 해제 종료
         if (handView != null) // 손패 화면 존재 확인
         { // 손패 이벤트 해제 시작
             handView.EscapeClicked -= HandleEscapeClicked; // 손패 도주 요청 연결 해제
