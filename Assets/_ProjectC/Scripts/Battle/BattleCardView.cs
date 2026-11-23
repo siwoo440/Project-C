@@ -5,9 +5,10 @@ using UnityEngine.EventSystems; // 유니티 포인터 이벤트 사용
 using UnityEngine.UI; // 유니티 UI 기능 사용
 public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler // 전투 카드 화면 표시
 { // 클래스 시작
-    private const float CardWidth = 160f; // 카드 기본 너비
-    private const float CardHeight = 220f; // 카드 기본 높이
-    private const float HoverScale = 1.08f; // 카드 마우스 확대 배율
+    public const float CardWidth = 160f; // 카드 기본 너비
+    public const float CardHeight = 220f; // 카드 기본 높이
+    public const float HoverScale = 1.08f; // 카드 마우스 확대 배율
+    public const float HoverLift = 24f; // 카드 마우스 진입 상승 높이
     private static readonly Color DefaultBackgroundColor = new Color(0.08f, 0.09f, 0.13f, 0.98f); // 카드 기본 배경 색상
     private static readonly Color SelectedBackgroundColor = new Color(0.72f, 0.45f, 0.08f, 1f); // 카드 선택 배경 색상
     private Image backgroundImage; // 카드 배경 이미지
@@ -22,6 +23,9 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     private bool interactable = true; // 카드 사용 가능 여부
     private bool hovered; // 카드 마우스 진입 여부
     private bool visualStructureCreated; // 화면 구조 생성 여부
+    private Vector2 layoutPosition; // 손패 안의 기본 카드 위치
+    private float layoutScale = 1f; // 화면 크기에 맞춘 기본 배율
+    private int originalSiblingIndex = -1; // 강조 전 카드 순서
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
     public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
     public event Action<BattleCardView> HoverEntered; // 카드 마우스 진입 이벤트
@@ -65,6 +69,12 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 확대 해제 처리 종료
         RefreshVisualState(); // 카드 상태 화면 갱신
     } // 사용 가능 표시 종료
+    public void SetHandLayout(Vector2 position, float scale) // 손패 기준 위치와 배율 설정
+    { // 손패 위치 설정 시작
+        layoutPosition = position; // 기본 카드 위치 저장
+        layoutScale = Mathf.Clamp01(scale); // 화면 범위 내 기본 배율 저장
+        ApplyHandLayout(); // 현재 강조 상태 포함 위치 적용
+    } // 손패 위치 설정 종료
     public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
     { // 포인터 클릭 처리 시작
         if (RuntimeCard == null || !interactable) // 카드 연결과 사용 가능 상태 확인
@@ -93,9 +103,28 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     } // 포인터 이탈 처리 종료
     private void SetHovered(bool hovered) // 카드 확대 상태 설정
     { // 확대 상태 설정 시작
+        if (hovered && !this.hovered) // 새로운 마우스 진입 확인
+        { // 카드 최상단 배치 시작
+            originalSiblingIndex = transform.GetSiblingIndex(); // 강조 전 카드 순서 저장
+            transform.SetAsLastSibling(); // 강조 카드를 다른 카드 위에 배치
+        } // 카드 최상단 배치 종료
+        else if (!hovered && this.hovered && originalSiblingIndex >= 0) // 기존 강조 해제 확인
+        { // 카드 순서 복원 시작
+            transform.SetSiblingIndex(originalSiblingIndex); // 강조 전 카드 순서 복원
+            originalSiblingIndex = -1; // 저장된 순서 초기화
+        } // 카드 순서 복원 종료
         this.hovered = hovered; // 카드 확대 상태 저장
-        transform.localScale = hovered ? Vector3.one * HoverScale : Vector3.one; // 카드 화면 배율 적용
+        ApplyHandLayout(); // 기본 위치와 강조 상태 적용
     } // 확대 상태 설정 종료
+    private void ApplyHandLayout() // 손패 위치와 강조 상태 적용
+    { // 카드 배치 적용 시작
+        RectTransform rootRect = transform as RectTransform; // 카드 사각형 조회
+        if (rootRect != null) // 사각형 존재 확인
+        { // 카드 위치 적용 시작
+            rootRect.anchoredPosition = layoutPosition + (hovered ? Vector2.up * HoverLift * layoutScale : Vector2.zero); // 강조 시 카드 위쪽 이동
+        } // 카드 위치 적용 종료
+        transform.localScale = Vector3.one * layoutScale * (hovered ? HoverScale : 1f); // 화면 크기와 강조 배율 적용
+    } // 카드 배치 적용 종료
     private void EnsureVisualStructure() // 카드 내부 UI 준비
     { // 화면 구조 준비 시작
         if (visualStructureCreated) // 기존 화면 구조 확인
@@ -110,7 +139,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
             backgroundImage = gameObject.AddComponent<Image>(); // 카드 배경 이미지 추가
         } // 카드 배경 추가 종료
         backgroundImage.color = DefaultBackgroundColor; // 카드 배경 색상 설정
-        backgroundImage.raycastTarget = true; // 카드 클릭 입력 허용
+        backgroundImage.raycastTarget = false; // 겹친 카드의 독립 입력 영역 사용
         canvasGroup = GetComponent<CanvasGroup>(); // 카드 투명도 컴포넌트 조회
         if (canvasGroup == null) // 카드 투명도 컴포넌트 누락 확인
         { // 투명도 컴포넌트 추가 시작

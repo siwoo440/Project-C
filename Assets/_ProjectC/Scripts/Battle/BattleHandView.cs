@@ -6,7 +6,10 @@ using UnityEngine.UI; // 유니티 UI 기능 사용
 public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관리
 { // 클래스 시작
     private readonly List<BattleCardView> spawnedCardViews = new List<BattleCardView>(); // 생성된 카드 화면 목록
+    private readonly List<RectTransform> cardHitRegions = new List<RectTransform>(); // 카드별 독립 입력 영역 목록
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
+    private RectTransform handHitRoot; // 손패 입력 영역 배치
+    private float lastLayoutWidth = -1f; // 최근 손패 배치 너비
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
     private Button endTurnButton; // 플레이어 턴 종료 버튼
@@ -30,6 +33,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         EnsureVisualStructure(); // 손패 내부 UI 자동 생성
         Refresh(); // 초기 화면 갱신
     } // 화면 준비 종료
+    private void LateUpdate() // 화면 크기 변경 감지
+    { // 크기 변경 감지 시작
+        if (handLayoutRoot != null && !Mathf.Approximately(lastLayoutWidth, handLayoutRoot.rect.width)) // 손패 너비 변경 확인
+        { // 손패 재배치 시작
+            LayoutHand(); // 변경된 화면 너비 기준 카드 재배치
+        } // 손패 재배치 종료
+    } // 크기 변경 감지 종료
     public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn) // 전투 런타임 상태 연결
     { // 덱 연결 시작
         if (battleDeck == null) // 런타임 덱 누락 확인
@@ -129,7 +139,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         actionPointRect.pivot = new Vector2(1f, 1f); // 행동력 텍스트 오른쪽 피벗 설정
         actionPointRect.anchoredPosition = new Vector2(-8f, -4f); // 행동력 텍스트 오른쪽 위치 설정
         actionPointRect.sizeDelta = new Vector2(0f, 34f); // 행동력 텍스트 높이 설정
-        GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform), typeof(HorizontalLayoutGroup)); // 손패 배치 오브젝트 생성
+        GameObject handRootObject = new GameObject("HandLayoutRoot", typeof(RectTransform)); // 손패 배치 오브젝트 생성
         handRootObject.transform.SetParent(transform, false); // 손패 배치 부모 연결
         handLayoutRoot = handRootObject.GetComponent<RectTransform>(); // 손패 배치 RectTransform 조회
         handLayoutRoot.anchorMin = Vector2.zero; // 손패 배치 최소 앵커 설정
@@ -137,21 +147,21 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         handLayoutRoot.pivot = new Vector2(0.5f, 0.5f); // 손패 배치 중앙 피벗 설정
         handLayoutRoot.offsetMin = new Vector2(8f, 8f); // 손패 배치 왼쪽 아래 여백 설정
         handLayoutRoot.offsetMax = new Vector2(-8f, -42f); // 손패 배치 오른쪽 위 여백 설정
-        HorizontalLayoutGroup layoutGroup = handRootObject.GetComponent<HorizontalLayoutGroup>(); // 손패 가로 배치 조회
-        layoutGroup.padding = new RectOffset(8, 8, 8, 8); // 손패 내부 여백 설정
-        layoutGroup.spacing = 12f; // 카드 사이 간격 설정
-        layoutGroup.childAlignment = TextAnchor.MiddleCenter; // 카드 중앙 정렬 설정
-        layoutGroup.childControlWidth = false; // 카드 너비 자동 제어 해제
-        layoutGroup.childControlHeight = false; // 카드 높이 자동 제어 해제
-        layoutGroup.childForceExpandWidth = false; // 카드 너비 확장 해제
-        layoutGroup.childForceExpandHeight = false; // 카드 높이 확장 해제
+        GameObject hitRootObject = new GameObject("HandHitRoot", typeof(RectTransform)); // 독립 카드 입력 영역 생성
+        hitRootObject.transform.SetParent(transform, false); // 손패 화면 자식 배치
+        handHitRoot = hitRootObject.GetComponent<RectTransform>(); // 입력 영역 사각형 조회
+        handHitRoot.anchorMin = handLayoutRoot.anchorMin; // 카드 배치와 같은 최소 앵커
+        handHitRoot.anchorMax = handLayoutRoot.anchorMax; // 카드 배치와 같은 최대 앵커
+        handHitRoot.pivot = handLayoutRoot.pivot; // 카드 배치와 같은 기준점
+        handHitRoot.offsetMin = handLayoutRoot.offsetMin; // 카드 배치와 같은 아래 여백
+        handHitRoot.offsetMax = handLayoutRoot.offsetMax; // 카드 배치와 같은 위 여백
         GameObject tooltipObject = new GameObject("CardTooltip", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleCardTooltipView)); // 카드 툴팁 오브젝트 생성
         tooltipObject.transform.SetParent(transform, false); // 카드 툴팁 부모 연결
         RectTransform tooltipRect = tooltipObject.GetComponent<RectTransform>(); // 카드 툴팁 RectTransform 조회
-        tooltipRect.anchorMin = new Vector2(0.5f, 0.5f); // 카드 툴팁 최소 앵커 설정
-        tooltipRect.anchorMax = new Vector2(0.5f, 0.5f); // 카드 툴팁 최대 앵커 설정
-        tooltipRect.pivot = new Vector2(0.5f, 0.5f); // 카드 툴팁 중앙 피벗 설정
-        tooltipRect.anchoredPosition = new Vector2(0f, 18f); // 카드 툴팁 카드 영역 내부 위치 설정
+        tooltipRect.anchorMin = new Vector2(0.5f, 1f); // 카드 툴팁 위쪽 최소 앵커 설정
+        tooltipRect.anchorMax = new Vector2(0.5f, 1f); // 카드 툴팁 위쪽 최대 앵커 설정
+        tooltipRect.pivot = new Vector2(0.5f, 0f); // 카드 툴팁 아래 중앙 기준점
+        tooltipRect.anchoredPosition = new Vector2(0f, 8f); // 손패 위쪽에 상세 설명 배치
         tooltipRect.sizeDelta = new Vector2(420f, 145f); // 카드 툴팁 크기 설정
         tooltipView = tooltipObject.GetComponent<BattleCardTooltipView>(); // 카드 툴팁 화면 조회
         tooltipView.Hide(); // 카드 툴팁 시작 숨김
@@ -177,7 +187,9 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             cardView.SetSelected(cardInstance == selectedCard); // 현재 카드 선택 표시 적용
             cardView.SetInteractable(IsCardUsable(cardInstance)); // 카드 사용 가능 표시 적용
             spawnedCardViews.Add(cardView); // 생성 카드 화면 목록 등록
+            cardHitRegions.Add(CreateHitRegion(cardView)); // 카드별 독립 입력 영역 등록
         } // 카드 화면 생성 종료
+        LayoutHand(); // 손패 장수와 화면 너비 기준 카드 배치
     } // 화면 갱신 종료
     private BattleCardView CreateCardView(CardInstance cardInstance) // 카드 화면 코드 생성
     { // 카드 화면 생성 시작
@@ -191,6 +203,47 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         cardView.HoverExited += HandleCardHoverExited; // 카드 마우스 이탈 이벤트 등록
         return cardView; // 생성 카드 화면 반환
     } // 카드 화면 생성 종료
+    private RectTransform CreateHitRegion(BattleCardView cardView) // 카드별 독립 입력 영역 생성
+    { // 입력 영역 생성 시작
+        GameObject hitObject = new GameObject("CardHitRegion", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleCardHitRegion)); // 투명 입력 영역 생성
+        hitObject.transform.SetParent(handHitRoot, false); // 입력 영역 부모 연결
+        Image hitImage = hitObject.GetComponent<Image>(); // 입력 이미지 조회
+        hitImage.color = Color.clear; // 입력 영역 투명 표시
+        hitImage.raycastTarget = true; // 포인터 입력 허용
+        hitObject.GetComponent<CanvasRenderer>().cullTransparentMesh = false; // 투명 입력 영역의 적중 유지
+        hitObject.GetComponent<BattleCardHitRegion>().Bind(cardView); // 대응 카드 화면 연결
+        return hitObject.GetComponent<RectTransform>(); // 생성된 입력 영역 반환
+    } // 입력 영역 생성 종료
+    private void LayoutHand() // 손패 카드와 입력 영역 배치
+    { // 손패 배치 시작
+        if (handLayoutRoot == null || handHitRoot == null) // 배치 영역 준비 확인
+        { // 배치 불가 처리 시작
+            return; // 손패 배치 중단
+        } // 배치 불가 처리 종료
+        lastLayoutWidth = handLayoutRoot.rect.width; // 현재 손패 너비 저장
+        int count = spawnedCardViews.Count; // 현재 손패 카드 수 조회
+        if (count == 0 || lastLayoutWidth <= 0f) // 카드와 화면 너비 확인
+        { // 배치 불가 처리 시작
+            return; // 손패 배치 중단
+        } // 배치 불가 처리 종료
+        float availableWidth = Mathf.Max(1f, lastLayoutWidth - 16f); // 양쪽 여백 제외 너비 계산
+        float scale = Mathf.Min(1f, availableWidth / (BattleCardView.CardWidth * BattleCardView.HoverScale)); // 좁은 화면의 카드 배율 계산
+        float width = BattleCardView.CardWidth * scale; // 기본 카드 표시 너비 계산
+        float step = count == 1 ? 0f : Mathf.Min(width + 12f * scale, Mathf.Max(0f, (availableWidth - width * BattleCardView.HoverScale) / (count - 1))); // 카드 수에 따른 간격 계산
+        float start = -step * (count - 1) * 0.5f; // 전체 카드 중앙 정렬 시작 위치
+        float bottom = -BattleCardView.CardHeight * scale * 0.5f; // 기본 카드 아래쪽 위치
+        float top = BattleCardView.CardHeight * scale * BattleCardView.HoverScale * 0.5f + BattleCardView.HoverLift * scale; // 강조 카드 위쪽 위치
+        for (int index = 0; index < count; index++) // 카드 순서대로 배치
+        { // 개별 카드 배치 시작
+            float x = start + step * index; // 현재 카드 중앙 위치 계산
+            spawnedCardViews[index].SetHandLayout(new Vector2(x, 0f), scale); // 카드 기본 위치와 배율 적용
+            float left = index == 0 ? x - width * 0.5f : x - step * 0.5f; // 카드 입력 영역 왼쪽 경계
+            float right = index == count - 1 ? x + width * 0.5f : x + step * 0.5f; // 카드 입력 영역 오른쪽 경계
+            RectTransform hitRect = cardHitRegions[index]; // 대응 카드 입력 영역 조회
+            hitRect.anchoredPosition = new Vector2((left + right) * 0.5f, (bottom + top) * 0.5f); // 독립 입력 영역 중심 위치
+            hitRect.sizeDelta = new Vector2(Mathf.Max(0.01f, right - left), top - bottom); // 겹치지 않는 입력 영역 크기
+        } // 개별 카드 배치 종료
+    } // 손패 배치 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
     { // 선택 카드 설정 시작
         selectedCard = cardInstance; // 선택 카드 저장
@@ -249,10 +302,23 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 회수 후보 없음 처리 시작
             return false; // 버린 카드 회수 사용 차단
         } // 회수 후보 없음 처리 종료
+        if (cardInstance.EffectType == CardEffectType.SelectPartner && !turnRuntime.HasOtherLivingAlly(cardInstance.OwnerUnit)) // 생존 파트너 후보 확인
+        { // 파트너 후보 없음 처리 시작
+            return false; // 파트너 지정 카드 사용 차단
+        } // 파트너 후보 없음 처리 종료
         return turnRuntime.IsPlayerTurn && sharedActionPoints.CanSpend(cardInstance.ApCost); // 턴과 공용 행동력 검사 결과 반환
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
+        foreach (RectTransform hitRegion in cardHitRegions) // 기존 카드 입력 영역 순회
+        { // 개별 입력 영역 제거 시작
+            if (hitRegion != null) // 입력 영역 존재 확인
+            { // 유효 입력 영역 제거 시작
+                hitRegion.gameObject.SetActive(false); // 기존 입력 즉시 차단
+                Destroy(hitRegion.gameObject); // 기존 입력 영역 제거
+            } // 유효 입력 영역 제거 종료
+        } // 개별 입력 영역 제거 종료
+        cardHitRegions.Clear(); // 입력 영역 목록 초기화
         foreach (BattleCardView cardView in spawnedCardViews) // 생성 카드 화면 순회
         { // 카드 화면 제거 시작
             if (cardView == null) // 제거된 카드 화면 확인

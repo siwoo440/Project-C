@@ -53,6 +53,8 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/EmperorGuard"; // 황제 카드 경로 반환
             case "ARC_05": // 교황 캐릭터
                 return "StarterCards/HierophantPreparation"; // 교황 카드 경로 반환
+            case "ARC_06": // 연인 캐릭터
+                return "StarterCards/LoversPartner"; // 연인 파트너 카드 경로 반환
             case "ARC_07": // 전차 캐릭터
                 return "StarterCards/ChariotMark"; // 전차 카드 경로 반환
             case "ARC_17": // 별 캐릭터

@@ -151,6 +151,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 effectType == CardEffectType.RecoverDiscard || // 버린 카드 회수 지원 연출
                 effectType == CardEffectType.ChooseDraw || // 선택 드로우 지원 연출
                 effectType == CardEffectType.GainBlock || // 방어도 획득 지원 연출
+                effectType == CardEffectType.SelectPartner || // 파트너 지정 지원 연출
                 effectType == CardEffectType.ProtectAttackTarget || // 공격 예고 보호 지원 연출
                 effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
                 effectType == CardEffectType.Heal ||

@@ -436,7 +436,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
-    public IEnumerator ChariotCard_MarksEnemyAndStrengthensFollowupAttack() // 전차 표식과 후속 공격 확인
+    public IEnumerator ChariotCard_MarksEnemyAndBuildsOnSecondAttack() // 전차 표식과 두 번째 공격 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
@@ -492,7 +492,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             yield return null; // 다음 프레임 대기
         } // 표식 대기 종료
         Assert.IsNotNull(enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark)); // 전차 표식 적용 확인
-        Assert.AreEqual(3, enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark).EffectiveValue); // 임시 표식 추가 피해 확인
+        Assert.AreEqual(1, enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark).StackCount); // 전용 카드 표식 한 개 확인
         BattleActionSequenceRunner runner = battle.GetComponent<BattleActionSequenceRunner>(); // 전투 연출 실행기 조회
         float sequenceDeadline = Time.realtimeSinceStartup + 5f; // 전투 연출 제한 시간 설정
         while (Time.realtimeSinceStartup < sequenceDeadline && runner.IsBusy) // 카드 연출 종료 대기
@@ -509,11 +509,6 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
             } // 후속 카드 발견 종료
         } // 후속 카드 검색 종료
         Assert.IsNotNull(attackView); // 후속 공격 카드 존재 확인
-        int ordinaryDamage = Mathf.Max(1, attackView.RuntimeCard.EffectValue - enemy.PhysicalDefense); // 표식 없는 기본 피해 계산
-        if (BattleWeaknessCalculator.IsWeakness(attackView.RuntimeCard.CardType, enemy.EnemySource)) // 카드 약점 여부 확인
-        { // 약점 피해 계산 시작
-            ordinaryDamage = Mathf.RoundToInt(ordinaryDamage * BattleWeaknessCalculator.WeaknessDamageMultiplier); // 약점 피해 배율 적용
-        } // 약점 피해 계산 종료
         int previousHealth = enemy.CurrentHealth; // 후속 공격 전 적 체력 저장
         attackView.OnPointerClick(null); // 후속 공격 카드 선택
         enemyView.OnPointerClick(null); // 동일 적 대상 선택
@@ -522,7 +517,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         { // 피해 대기 시작
             yield return null; // 다음 프레임 대기
         } // 피해 대기 종료
-        Assert.Greater(previousHealth - enemy.CurrentHealth, ordinaryDamage); // 표식 대상 추가 피해 확인
+        Assert.AreEqual(2, enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark).StackCount); // 두 번째 공격의 패시브 표식 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
