@@ -9,5 +9,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     PhysicalDefenseDown, // 물리 방어력 감소
     MagicalResistanceUp, // 마법 저항력 증가
     MagicalResistanceDown, // 마법 저항력 감소
-    Disrupt // 정신력 교란
+    Disrupt, // 정신력 교란
+    ChariotMark // 전차 집중 공격 표식
 } // 열거형 종료

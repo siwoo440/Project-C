@@ -377,4 +377,96 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator ChariotCard_MarksEnemyAndStrengthensFollowupAttack() // 전차 표식과 후속 공격 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[7].onClick.Invoke(); // 전차 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        BattleUnitRuntime enemy = battle.EnemyUnits[0]; // 첫 적 조회
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView markView = null; // 표식 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 표식 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_07_MARK" && candidate.gameObject.activeInHierarchy) // 전차 표식 카드 확인
+            { // 표식 카드 발견 시작
+                markView = candidate; // 표식 카드 화면 저장
+                break; // 카드 검색 종료
+            } // 표식 카드 발견 종료
+        } // 표식 카드 검색 종료
+        Assert.IsNotNull(markView); // 전차 전용 카드 존재 확인
+        BattleUnitView enemyView = null; // 적 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 유닛 화면 순회
+        { // 적 화면 검색 시작
+            if (candidate.RuntimeUnit == enemy) // 첫 적 화면 확인
+            { // 적 화면 발견 시작
+                enemyView = candidate; // 적 화면 저장
+                break; // 화면 검색 종료
+            } // 적 화면 발견 종료
+        } // 적 화면 검색 종료
+        Assert.IsNotNull(enemyView); // 적 화면 존재 확인
+        markView.OnPointerClick(null); // 전차 표식 카드 선택
+        enemyView.OnPointerClick(null); // 적 대상 선택
+        float markDeadline = Time.realtimeSinceStartup + 5f; // 표식 적용 제한 시간 설정
+        while (Time.realtimeSinceStartup < markDeadline && enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark) == null) // 표식 적용 대기
+        { // 표식 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 표식 대기 종료
+        Assert.IsNotNull(enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark)); // 전차 표식 적용 확인
+        Assert.AreEqual(3, enemy.GetStatusEffect(BattleStatusEffectType.ChariotMark).EffectiveValue); // 임시 표식 추가 피해 확인
+        BattleActionSequenceRunner runner = battle.GetComponent<BattleActionSequenceRunner>(); // 전투 연출 실행기 조회
+        float sequenceDeadline = Time.realtimeSinceStartup + 5f; // 전투 연출 제한 시간 설정
+        while (Time.realtimeSinceStartup < sequenceDeadline && runner.IsBusy) // 카드 연출 종료 대기
+        { // 연출 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 연출 대기 종료
+        BattleCardView attackView = null; // 후속 공격 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 화면 순회
+        { // 후속 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_TEMP_ATTACK" && candidate.gameObject.activeInHierarchy) // 공용 공격 카드 확인
+            { // 후속 카드 발견 시작
+                attackView = candidate; // 후속 카드 화면 저장
+                break; // 카드 검색 종료
+            } // 후속 카드 발견 종료
+        } // 후속 카드 검색 종료
+        Assert.IsNotNull(attackView); // 후속 공격 카드 존재 확인
+        int ordinaryDamage = Mathf.Max(1, attackView.RuntimeCard.EffectValue - enemy.PhysicalDefense); // 표식 없는 기본 피해 계산
+        if (BattleWeaknessCalculator.IsWeakness(attackView.RuntimeCard.CardType, enemy.EnemySource)) // 카드 약점 여부 확인
+        { // 약점 피해 계산 시작
+            ordinaryDamage = Mathf.RoundToInt(ordinaryDamage * BattleWeaknessCalculator.WeaknessDamageMultiplier); // 약점 피해 배율 적용
+        } // 약점 피해 계산 종료
+        int previousHealth = enemy.CurrentHealth; // 후속 공격 전 적 체력 저장
+        attackView.OnPointerClick(null); // 후속 공격 카드 선택
+        enemyView.OnPointerClick(null); // 동일 적 대상 선택
+        float attackDeadline = Time.realtimeSinceStartup + 5f; // 후속 공격 제한 시간 설정
+        while (Time.realtimeSinceStartup < attackDeadline && enemy.CurrentHealth == previousHealth) // 후속 공격 피해 대기
+        { // 피해 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 피해 대기 종료
+        Assert.Greater(previousHealth - enemy.CurrentHealth, ordinaryDamage); // 표식 대상 추가 피해 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료
