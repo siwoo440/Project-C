@@ -1,4 +1,5 @@
 using System.Collections; // 코루틴 테스트 기능 사용
+using System.Collections.Generic; // 저장 카드 목록 테스트 사용
 using NUnit.Framework; // 테스트 기능 사용
 using TMPro; // 메뉴 글자 조회 기능 사용
 using UnityEditor; // 테스트용 에셋 조회 기능 사용
@@ -9,6 +10,137 @@ using UnityEngine.TestTools; // 플레이 모드 전환 기능 사용
 using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
+    [Test] // 편집기 테스트 지정
+    public void SaveAssetCatalog_ContainsAllProjectItems() // 저장 원본 목록 누락 검사
+    { // 저장 원본 검사 시작
+        SaveAssetCatalog catalog = Resources.Load<SaveAssetCatalog>("Save/SaveAssetCatalog"); // 저장 원본 목록 조회
+        Assert.IsNotNull(catalog); // 저장 원본 목록 존재 확인
+        string[] roots = new string[] // 프로젝트 검색 폴더 생성
+        { // 검색 폴더 설정 시작
+            "Assets/_ProjectC" // 프로젝트 에셋 폴더 지정
+        }; // 검색 폴더 설정 종료
+        foreach (string guid in AssetDatabase.FindAssets("t:CardData", roots)) // 프로젝트 카드 에셋 순회
+        { // 카드 원본 확인 시작
+            CardData card = AssetDatabase.LoadAssetAtPath<CardData>(AssetDatabase.GUIDToAssetPath(guid)); // 카드 원본 조회
+            CollectionAssert.Contains(catalog.Cards, card); // 카드 복원 목록 포함 확인
+        } // 카드 원본 확인 종료
+        foreach (string guid in AssetDatabase.FindAssets("t:RelicData", roots)) // 프로젝트 유물 에셋 순회
+        { // 유물 원본 확인 시작
+            RelicData relic = AssetDatabase.LoadAssetAtPath<RelicData>(AssetDatabase.GUIDToAssetPath(guid)); // 유물 원본 조회
+            CollectionAssert.Contains(catalog.Relics, relic); // 유물 복원 목록 포함 확인
+        } // 유물 원본 확인 종료
+        foreach (string guid in AssetDatabase.FindAssets("t:PotionData", roots)) // 프로젝트 포션 에셋 순회
+        { // 소모품 원본 확인 시작
+            PotionData potion = AssetDatabase.LoadAssetAtPath<PotionData>(AssetDatabase.GUIDToAssetPath(guid)); // 포션 원본 조회
+            CollectionAssert.Contains(catalog.Consumables, potion); // 소모품 복원 목록 포함 확인
+        } // 소모품 원본 확인 종료
+    } // 저장 원본 검사 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator RestoredEmptyRunDeck_StaysEmpty() // 빈 회차 덱 복원 유지 확인
+    { // 빈 덱 검사 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        CharacterData fool = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster").Characters[0]; // 테스트 캐릭터 조회
+        PartySelection selection = new PartySelection(new CharacterRecoveryDeploymentStatusProvider(CharacterRecoveryManager.EnsureInstance())); // 테스트 파티 선택 생성
+        Assert.IsTrue(selection.TryAdd(fool)); // 테스트 파티원 추가
+        Assert.IsTrue(PartyLoadoutRuntime.Prepare(selection)); // 테스트 편성 준비
+        DeckData sourceDeck = PartyLoadoutRuntime.Active.Deck; // 시작 덱 조회
+        RunDeckManager manager = RunDeckManager.EnsureInstance(); // 회차 덱 관리자 준비
+        System.Reflection.MethodInfo restore = typeof(RunDeckManager).GetMethod("RestoreCards", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 저장 회차 덱 복원 동작 조회
+        Assert.IsNotNull(restore); // 회차 덱 복원 기능 확인
+        restore.Invoke(manager, new object[] // 빈 저장 덱 복원 요청
+        { // 복원 요청 인수 시작
+            sourceDeck, // 원본 시작 덱 전달
+            new List<RunDeckCardEntry>() // 빈 회차 카드 목록 전달
+        }); // 복원 요청 인수 종료
+        Assert.AreEqual(0, manager.GetActiveCards(sourceDeck).Count); // 빈 회차 덱 유지 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 빈 덱 검사 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator ContinueButton_ResumesSavedExploration() // 이어하기 탐사 씬 복원 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 탐사 저장 경로 생성
+        string lobbyPath = path + ".lobby"; // 독립 거점 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 탐사 이어하기 검증 시작
+            SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            { // 메뉴 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 메뉴 대기 종료
+            Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 테스트용 거점 이동
+            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 거점 편성 화면 대기
+            { // 거점 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 거점 대기 종료
+            PartyRosterView rosterView = Object.FindFirstObjectByType<PartyRosterView>(); // 거점 편성 화면 조회
+            Button[] rosterButtons = rosterView.GetComponentsInChildren<Button>(); // 캐릭터와 출발 버튼 조회
+            rosterButtons[0].onClick.Invoke(); // 첫 캐릭터 선택
+            rosterButtons[22].onClick.Invoke(); // 탐사 출발
+            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationPlayerController>() == null; frame++) // 탐사 플레이어 생성 대기
+            { // 탐사 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 탐사 대기 종료
+            yield return null; // 맵과 위치 초기화 대기
+            ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 탐사 플레이어 조회
+            ExplorationSessionManager session = ExplorationSessionManager.Instance; // 탐사 상태 관리자 조회
+            Vector3 savedPosition = player.transform.position; // 현재 플레이어 위치 보관
+            int savedSeed = session.CurrentFloorSeed; // 현재 층 시드 보관
+            Assert.IsTrue(session.MarkEventResolved("resume-event-test")); // 복원할 이벤트 상태 기록
+            PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+            resources.AddResources(77, 0, 0, 0); // 복원할 골드 설정
+            int savedGold = resources.Gold; // 현재 골드 보관
+            resources.ResetResources(); // 오래된 거점 저장용 자원 준비
+            resources.AddResources(5, 0, 0, 0); // 오래된 거점 골드 설정
+            Assert.IsTrue(LobbySaveService.Save(lobbyPath)); // 오래된 거점 상태 저장
+            System.IO.File.SetLastWriteTimeUtc(lobbyPath, System.DateTime.UtcNow.AddMinutes(-1)); // 거점 저장 시간 조정
+            resources.ResetResources(); // 탐사 저장용 자원 초기화
+            resources.AddResources(savedGold, 0, 0, 0); // 탐사 저장 골드 복구
+            Assert.IsTrue(ExplorationSaveService.Save(path, savedPosition)); // 탐사 상태 저장
+            SceneManager.LoadScene("10_MainMenu"); // 메인 메뉴 복귀
+            yield return null; // 메뉴 초기화 대기
+            session.ResetExploration(); // 기존 탐사 상태 제거
+            RunDeckManager.Instance.ResetToSource(null); // 기존 회차 덱 제거
+            PartyLoadoutRuntime.Clear(); // 기존 파티 편성 제거
+            resources.ResetResources(); // 기존 골드 제거
+            MainMenuController controller = Object.FindFirstObjectByType<MainMenuController>(); // 메뉴 관리자 조회
+            typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, lobbyPath); // 독립 거점 경로 지정
+            System.Reflection.FieldInfo explorationPath = typeof(MainMenuController).GetField("explorationSavePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 탐사 경로 필드 조회
+            Assert.IsNotNull(explorationPath); // 탐사 저장 경로 연결 확인
+            explorationPath.SetValue(controller, path); // 독립 탐사 경로 지정
+            controller.SendMessage("Start"); // 저장 경로 기준 메뉴 갱신
+            MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
+            Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
+            Assert.IsTrue(continueButton.interactable); // 탐사 저장 이어하기 활성 확인
+            continueButton.onClick.Invoke(); // 탐사 이어하기 선택
+            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 전환 대기
+            { // 씬 전환 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 씬 전환 대기 종료
+            for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationPlayerController>() == null; frame++) // 복원 플레이어 생성 대기
+            { // 플레이어 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 플레이어 대기 종료
+            player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 복원 플레이어 조회
+            Assert.AreEqual("30_Exploration", SceneManager.GetActiveScene().name); // 탐사 씬 복귀 확인
+            Assert.AreEqual(savedSeed, session.CurrentFloorSeed); // 저장 시드 복원 확인
+            Assert.Less(Vector3.Distance(savedPosition, player.transform.position), 0.1f); // 저장 위치 복원 확인
+            Assert.AreEqual(savedGold, resources.Gold); // 저장 골드 복원 확인
+            Assert.IsTrue(session.IsEventResolved("resume-event-test")); // 이벤트 처리 상태 복원 확인
+        } // 탐사 이어하기 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 탐사 테스트 파일 존재 확인
+            { // 탐사 파일 제거 시작
+                System.IO.File.Delete(path); // 탐사 테스트 파일 제거
+            } // 탐사 파일 제거 종료
+            if (System.IO.File.Exists(lobbyPath)) // 거점 테스트 파일 존재 확인
+            { // 거점 파일 제거 시작
+                System.IO.File.Delete(lobbyPath); // 거점 테스트 파일 제거
+            } // 거점 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
     [System.Serializable] // 탐사 저장 테스트 역직렬화 지정
     private sealed class ExplorationTestSnapshot // 탐사 저장 검사 자료
     { // 탐사 검사 자료 시작
@@ -113,6 +245,34 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Assert.IsTrue(session.BeginEncounter("pending-test", encounter, Vector3.zero, Vector3.right)); // 전투 진행 상태 생성
             Assert.IsFalse(ExplorationSaveService.Save(path, position)); // 진행 중 전투 저장 차단 확인
             Assert.AreEqual(previousJson, System.IO.File.ReadAllText(path)); // 전투 중 기존 저장 보존 확인
+            System.Reflection.MethodInfo load = service.GetMethod("Load"); // 탐사 복원 동작 조회
+            Assert.IsNotNull(load); // 탐사 복원 기능 존재 확인
+            session.ResetExploration(); // 현재 탐사 상태 제거
+            shop.ResetSession(); // 현재 상점 상태 제거
+            deck.ResetToSource(null); // 현재 회차 덱 제거
+            PartyLoadoutRuntime.Clear(); // 현재 탐사 편성 제거
+            ConsumableRunManager.Instance.Inventory.Clear(); // 현재 소모품 제거
+            RelicRunManager.Instance.TryRemove(relic.RelicId); // 현재 유물 제거
+            resources.ResetResources(); // 현재 자원 제거
+            Assert.IsTrue((bool)load.Invoke(null, new object[] { path })); // 파일에서 탐사 상태 복원
+            Assert.AreEqual(2, session.CurrentFloor); // 복원 탐사 층 확인
+            Assert.AreEqual(12345, session.CurrentFloorSeed); // 복원 맵 시드 확인
+            Assert.AreEqual(position, session.GetPlayerSpawnPosition(Vector3.zero)); // 복원 플레이어 위치 확인
+            Assert.IsTrue(session.IsEncounterCleared("encounter-test")); // 복원 조우 상태 확인
+            Assert.IsTrue(session.IsEventResolved("event-test")); // 복원 이벤트 상태 확인
+            Assert.AreEqual(3, session.PendingHazardHealthDamage); // 복원 대기 체력 피해 확인
+            Assert.AreEqual(4, session.PendingHazardMentalDamage); // 복원 대기 정신력 피해 확인
+            Assert.AreEqual(fool.CharacterId, PartyLoadoutRuntime.Active.Party.Members[0].CharacterId); // 복원 파티 확인
+            Assert.AreEqual(snapshot.cards.Length, deck.CardCount); // 복원 회차 덱 수 확인
+            Assert.AreEqual(1, deck.Cards[0].UpgradeLevel); // 복원 카드 강화 확인
+            Assert.AreEqual(savedGold, resources.Gold); // 복원 골드 확인
+            Assert.IsTrue(RelicRunManager.Instance.Inventory.ContainsRelic(relic.RelicId)); // 복원 유물 확인
+            Assert.AreEqual(potion.ItemId, ConsumableRunManager.Instance.Inventory.GetItem(3).ItemId); // 복원 소모품 슬롯 확인
+            Assert.IsTrue(shop.IsPurchased(catalog.Offers[5])); // 복원 상점 판매 상태 확인
+            System.IO.File.WriteAllText(path, previousJson.Replace(snapshot.cards[0].card, "INVALID_CARD_ID")); // 알 수 없는 카드 저장 작성
+            Assert.IsFalse((bool)load.Invoke(null, new object[] { path })); // 잘못된 카드 복원 차단 확인
+            Assert.AreEqual(savedGold, resources.Gold); // 복원 실패 시 기존 골드 유지 확인
+            Assert.AreEqual(2, session.CurrentFloor); // 복원 실패 시 기존 탐사 상태 유지 확인
         } // 탐사 저장 검증 종료
         finally // 테스트 파일 정리
         { // 정리 시작
@@ -151,6 +311,43 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
     [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator NewGameWarning_ConfirmDiscardsOldExplorationSave() // 새 게임 확인 시 이전 탐사 저장 정리 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        string path = System.IO.Path.Combine(Application.temporaryCachePath, System.Guid.NewGuid().ToString("N") + ".json"); // 독립 탐사 저장 경로 생성
+        try // 테스트 파일 정리 보장
+        { // 새 게임 저장 검증 시작
+            System.IO.File.WriteAllText(path, "이전 탐사 저장"); // 이전 탐사 저장 준비
+            SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+            for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+            { // 메뉴 대기 시작
+                yield return null; // 다음 프레임 대기
+            } // 메뉴 대기 종료
+            yield return null; // 메뉴 연결 대기
+            MainMenuController controller = Object.FindFirstObjectByType<MainMenuController>(); // 메뉴 관리자 조회
+            System.Reflection.FieldInfo explorationPath = typeof(MainMenuController).GetField("explorationSavePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 탐사 저장 경로 필드 조회
+            Assert.IsNotNull(explorationPath); // 탐사 저장 경로 연결 확인
+            explorationPath.SetValue(controller, path); // 독립 탐사 저장 경로 지정
+            MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
+            view.NewGameButton.onClick.Invoke(); // 새 게임 경고 표시
+            Transform panel = view.transform.Find("NewGameConfirmation"); // 경고 패널 조회
+            panel.Find("CancelNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 취소
+            Assert.IsTrue(System.IO.File.Exists(path)); // 취소 시 이전 저장 유지 확인
+            view.NewGameButton.onClick.Invoke(); // 새 게임 경고 재표시
+            panel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 확인
+            yield return null; // 거점 씬 이동 대기
+            Assert.IsFalse(System.IO.File.Exists(path)); // 확인 시 이전 탐사 저장 정리 확인
+        } // 새 게임 저장 검증 종료
+        finally // 테스트 파일 정리
+        { // 정리 시작
+            if (System.IO.File.Exists(path)) // 테스트 파일 존재 확인
+            { // 파일 제거 시작
+                System.IO.File.Delete(path); // 테스트 파일 제거
+            } // 파일 제거 종료
+        } // 정리 종료
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
     public IEnumerator ContinueButton_ValidSaveRestoresLobby() // 이어하기 정상 저장 복원 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
@@ -168,6 +365,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             System.Reflection.FieldInfo savePath = typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic); // 테스트 경로 필드 조회
             Assert.IsNotNull(savePath); // 저장 경로 연결 확인
             savePath.SetValue(controller, path); // 독립 테스트 경로 지정
+            typeof(MainMenuController).GetField("explorationSavePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, path + ".run"); // 독립 탐사 경로 지정
             controller.SendMessage("Start"); // 테스트 경로 기준 메뉴 갱신
             Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
             Assert.IsFalse(continueButton.interactable); // 파일 없음 비활성 확인
@@ -218,6 +416,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             int currentGold = resources.Gold; // 현재 골드 보관
             Assert.IsTrue(LobbySaveService.Save(path)); // 유효한 저장 파일 작성
             typeof(MainMenuController).GetField("savePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, path); // 독립 테스트 경로 지정
+            typeof(MainMenuController).GetField("explorationSavePath", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(controller, path + ".run"); // 독립 탐사 경로 지정
             controller.SendMessage("Start"); // 저장 기준 메뉴 갱신
             Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
             Assert.IsTrue(continueButton.interactable); // 정상 저장 활성 확인
@@ -362,7 +561,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         yield return null; // 메뉴 이벤트 연결 대기
         MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
         Assert.IsNotNull(view); // 새 메뉴 화면 존재 확인
-        Assert.AreEqual(LobbySaveService.CanLoad(LobbySaveService.DefaultPath), view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
+        Assert.AreEqual(LobbySaveService.CanLoad(LobbySaveService.DefaultPath) || ExplorationSaveService.CanLoad(ExplorationSaveService.DefaultPath), view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
         view.transform.Find("SettingsButton").GetComponent<Button>().onClick.Invoke(); // 설정 버튼 실행
         yield return null; // 설정 씬 전환 대기
         Assert.AreEqual("90_Settings", SceneManager.GetActiveScene().name); // 설정 진입 확인

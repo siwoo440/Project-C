@@ -1,9 +1,11 @@
 using UnityEngine; // 유니티 기본 기능 사용
 using UnityEngine.EventSystems; // 키보드 메뉴 선택 기능 사용
+using System.IO; // 저장 파일 시간 조회 사용
 public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 연결
 { // 클래스 시작
     [SerializeField] private MainMenuView menuView; // 메인 메뉴 화면
     private string savePath; // 현재 거점 저장 경로
+    private string explorationSavePath; // 현재 탐사 저장 경로
     private void Start() // 메뉴 초기화
     { // 초기화 시작
         if (menuView == null) // 씬 화면 연결 확인
@@ -19,7 +21,11 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         { // 기본 경로 설정 시작
             savePath = LobbySaveService.DefaultPath; // 기본 저장 경로 보관
         } // 기본 경로 설정 종료
-        menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, LobbySaveService.CanLoad(savePath)); // 저장 상태에 맞춰 메뉴 동작 연결
+        if (explorationSavePath == null) // 탐사 저장 경로 초기화 확인
+        { // 탐사 기본 경로 설정 시작
+            explorationSavePath = ExplorationSaveService.DefaultPath; // 탐사 저장 경로 보관
+        } // 탐사 기본 경로 설정 종료
+        menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, CanContinue()); // 저장 상태에 맞춰 메뉴 동작 연결
         if (EventSystem.current != null) // 입력 관리자 존재 확인
         { // 첫 버튼 선택 시작
             EventSystem.current.SetSelectedGameObject(menuView.NewGameButton.gameObject); // 새로하기 기본 선택
@@ -36,6 +42,12 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
             Debug.LogError("[MainMenuController] SceneFlowManager를 찾을 수 없습니다."); // 관리자 누락 안내
             return; // 게임 시작 중단
         } // 관리자 누락 처리 종료
+        string previousExploration = explorationSavePath ?? ExplorationSaveService.DefaultPath; // 이전 탐사 저장 경로 결정
+        if (!ExplorationSaveService.Remove(previousExploration)) // 이전 탐사 저장 제거 확인
+        { // 저장 제거 실패 처리 시작
+            Debug.LogWarning("[MainMenu] 이전 탐사 저장을 정리하지 못했습니다."); // 새 게임 중단 안내
+            return; // 이전 저장 유지 상태에서 시작 중단
+        } // 저장 제거 실패 처리 종료
         PlayerResourceManager.Instance?.ResetResources(); // 이전 게임 자원 초기화
         FacilityUpgradeManager.Instance?.ResetFacilities(); // 이전 게임 설비 초기화
         CharacterProgressionManager.Instance?.ResetProgress(); // 이전 게임 성장 초기화
@@ -46,22 +58,55 @@ public sealed class MainMenuController : MonoBehaviour // 메인 메뉴 동작 �
         ResetRunState(); // 이전 탐사 회차 상태 정리
         SceneFlowManager.Instance.LoadScene("20_Lobby"); // 거점 씬 이동
     } // 게임 시작 종료
-    public void ContinueGame() // 저장된 거점 이어하기
+    public void ContinueGame() // 저장된 게임 이어하기
     { // 이어하기 시작
-        if (SceneFlowManager.Instance == null || SceneFlowManager.Instance.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("20_Lobby")) // 거점 이동 가능 여부 확인
+        bool resumeExploration = IsExplorationLatest(); // 최근 유효 탐사 저장 확인
+        string targetScene = resumeExploration ? "30_Exploration" : "20_Lobby"; // 복원 대상 씬 결정
+        if (SceneFlowManager.Instance == null || SceneFlowManager.Instance.IsLoadingScene || !Application.CanStreamedLevelBeLoaded(targetScene)) // 대상 씬 이동 가능 여부 확인
         { // 씬 이동 불가 처리 시작
             Debug.LogWarning("[MainMenu] 거점 화면을 열 수 없습니다."); // 씬 이동 실패 안내
             return; // 이어하기 중단
         } // 씬 이동 불가 처리 종료
-        if (!LobbySaveService.Load(savePath)) // 저장 상태 복원 시도
+        bool loaded = resumeExploration ? ExplorationSaveService.Load(explorationSavePath) : LobbySaveService.Load(savePath); // 선택한 저장 상태 복원
+        if (!loaded) // 저장 상태 복원 확인
         { // 저장 복원 실패 처리 시작
             menuView.Bind(ShowNewGameWarning, ContinueGame, OpenSettings, QuitGame, false); // 이어하기 버튼 비활성화
             Debug.LogWarning("[MainMenu] 저장 데이터를 불러올 수 없습니다."); // 복원 실패 안내
             return; // 이어하기 중단
         } // 저장 복원 실패 처리 종료
-        ResetRunState(); // 이전 탐사 회차 상태 정리
-        SceneFlowManager.Instance.LoadScene("20_Lobby"); // 복원된 거점 씬 이동
+        if (!resumeExploration) // 거점 저장 복원 확인
+        { // 이전 탐사 정리 시작
+            ResetRunState(); // 이전 탐사 회차 상태 정리
+        } // 이전 탐사 정리 종료
+        SceneFlowManager.Instance.LoadScene(targetScene); // 복원된 게임 씬 이동
     } // 이어하기 종료
+    private bool CanContinue() // 이어하기 가능 여부 확인
+    { // 이어하기 가능 여부 확인 시작
+        return IsExplorationLatest() || LobbySaveService.CanLoad(savePath); // 유효한 탐사 또는 거점 저장 확인
+    } // 이어하기 가능 여부 확인 종료
+    private bool IsExplorationLatest() // 최근 유효 탐사 저장 확인
+    { // 최근 탐사 저장 확인 시작
+        if (!ExplorationSaveService.CanLoad(explorationSavePath)) // 유효한 탐사 저장 확인
+        { // 탐사 저장 없음 처리 시작
+            return false; // 탐사 복원 제외
+        } // 탐사 저장 없음 처리 종료
+        if (!LobbySaveService.CanLoad(savePath)) // 유효한 거점 저장 확인
+        { // 거점 저장 없음 처리 시작
+            return true; // 탐사 저장 우선 사용
+        } // 거점 저장 없음 처리 종료
+        try // 파일 시간 조회 오류 처리 시작
+        { // 저장 시간 비교 시작
+            return File.GetLastWriteTimeUtc(explorationSavePath) >= File.GetLastWriteTimeUtc(savePath); // 최근 탐사 저장 여부 반환
+        } // 저장 시간 비교 종료
+        catch (IOException) // 저장 시간 읽기 오류 확인
+        { // 시간 읽기 오류 처리 시작
+            return false; // 거점 저장 사용
+        } // 시간 읽기 오류 처리 종료
+        catch (System.UnauthorizedAccessException) // 저장 시간 접근 오류 확인
+        { // 시간 접근 오류 처리 시작
+            return false; // 거점 저장 사용
+        } // 시간 접근 오류 처리 종료
+    } // 최근 탐사 저장 확인 종료
     private static void ResetRunState() // 탐사 회차 상태 정리
     { // 회차 상태 정리 시작
         ExplorationSessionManager.Instance?.ResetExploration(); // 이전 게임 탐사 상태 초기화

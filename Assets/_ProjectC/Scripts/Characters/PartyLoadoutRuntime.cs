@@ -61,6 +61,11 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return null; // 공용 카드 사용 반환
         } // 식별자 분기 종료
     } // 경로 조회 종료
+    internal static void Restore(BattleLoadoutData loadout) // 저장된 탐사 편성 복원
+    { // 탐사 편성 복원 시작
+        Clear(); // 이전 런타임 편성 정리
+        Active = loadout; // 복원 편성 보관
+    } // 탐사 편성 복원 종료
     public static void Clear() // 현재 출발 편성 정리
     { // 편성 정리 시작
         if (Active == null) // 현재 편성 존재 확인

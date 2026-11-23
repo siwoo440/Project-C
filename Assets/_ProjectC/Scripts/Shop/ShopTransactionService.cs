@@ -11,6 +11,10 @@ public sealed class ShopTransactionService // 상점 원자 거래 서비스
         wallet = shopWallet ?? throw new ArgumentNullException(nameof(shopWallet)); // 필수 지갑 저장
     } // 거래 서비스 생성 종료
 
+    internal void RestorePurchase(string offerId) // 저장된 판매 완료 상태 복원
+    { // 판매 상태 복원 시작
+        purchasedOfferIds.Add(offerId); // 판매 완료 식별자 등록
+    } // 판매 상태 복원 종료
     public bool IsPurchased(string offerId) // 상품 판매 완료 여부 조회
     { // 판매 완료 조회 시작
         return !string.IsNullOrWhiteSpace(offerId) && purchasedOfferIds.Contains(offerId); // 유효 ID 판매 완료 반환

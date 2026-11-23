@@ -35,6 +35,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private int pendingHazardMentalDamage; // 다음 전투에 적용할 누적 환경 정신력 피해
     private int hazardPenaltyAppliedAllyCount; // 현재 전투에서 환경 피해 적용 완료 아군 수
     private string lastExplorationFailureReason; // 마지막 탐사 실패 원인
+    private float restoredHazardExposure; // 복원 대기 위험 노출도
+    private bool hasRestoredHazardExposure; // 복원 대기 노출도 존재 여부
 
     public static ExplorationSessionManager Instance => instance; // 현재 탐사 관리자 조회
     public EncounterData ActiveEncounter => activeEncounter; // 현재 조우 데이터 조회
@@ -478,6 +480,33 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         return currentFloor; // 변경된 층 반환
     }
 
+    internal void RestoreRunState(ExplorationSaveService.RunSnapshot snapshot) // 저장된 탐사 상태 복원
+    { // 탐사 상태 복원 시작
+        ResetExploration(); // 이전 탐사 상태 제거
+        currentFloor = snapshot.floor; // 저장 탐사 층 적용
+        currentFloorSeed = snapshot.seed; // 저장 맵 시드 적용
+        hasCurrentFloorSeed = true; // 저장 시드 존재 표시
+        returnPosition = snapshot.position; // 저장 플레이어 위치 적용
+        hasReturnPosition = true; // 저장 위치 사용 표시
+        clearedEncounterIds.UnionWith(snapshot.cleared); // 클리어 조우 목록 복원
+        resolvedEventIds.UnionWith(snapshot.events); // 처리 이벤트 목록 복원
+        pendingHazardHealthDamage = snapshot.hazardHealth; // 대기 체력 피해 복원
+        pendingHazardMentalDamage = snapshot.hazardMental; // 대기 정신력 피해 복원
+        restoredHazardExposure = snapshot.hazardExposure; // 위험 노출도 복원 예약
+        hasRestoredHazardExposure = true; // 위험 노출도 복원 대기 표시
+        runExperienceGained = snapshot.runExperience; // 탐사 경험치 합계 복원
+        runGoldGained = snapshot.runGold; // 탐사 골드 합계 복원
+        runScrewGained = snapshot.runScrew; // 탐사 나사 합계 복원
+        runIronPlateGained = snapshot.runIronPlate; // 탐사 철판 합계 복원
+        runWireGained = snapshot.runWire; // 탐사 전선 합계 복원
+    } // 탐사 상태 복원 종료
+    public bool TryConsumeRestoredHazardExposure(out float exposure) // 복원 대기 위험 노출도 조회
+    { // 위험 노출도 조회 시작
+        exposure = restoredHazardExposure; // 저장 노출도 전달
+        bool available = hasRestoredHazardExposure; // 복원 대기 여부 보관
+        hasRestoredHazardExposure = false; // 중복 복원 방지
+        return available; // 복원 대기 여부 반환
+    } // 위험 노출도 조회 종료
     public void ResetExploration() // 다음 탐사를 위한 런 상태 초기화
     {
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
@@ -494,6 +523,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         completedEncounterCount = 0; // 완료 조우 수 초기화
         lastExplorationSuccessAffinity = 0; // 성공 호감도 표시 초기화
         lastExplorationFailureReason = null; // 탐사 실패 원인 초기화
+        restoredHazardExposure = 0f; // 복원 대기 노출도 초기화
+        hasRestoredHazardExposure = false; // 노출도 복원 대기 해제
         runExperienceGained = 0; // 런 경험치 합계 초기화
         runGoldGained = 0; // 런 골드 합계 초기화
         runScrewGained = 0; // 런 나사 합계 초기화
