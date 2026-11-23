@@ -47,4 +47,51 @@ public sealed class BattleDeckDrawRulesTests // 드로우 규칙 테스트
         Object.DestroyImmediate(source); // 덱 원본 정리
         Object.DestroyImmediate(owner); // 캐릭터 원본 정리
     } // 테스트 종료
+    [Test] // 테스트 지정
+    public void DrawChoice_RecyclesDiscardBelowRemainingTopCard() // 선택 드로우와 버린 카드 재구성 확인
+    { // 테스트 시작
+        CharacterData owner = ScriptableObject.CreateInstance<CharacterData>(); // 소유자 생성
+        CardData card = ScriptableObject.CreateInstance<CardData>(); // 카드 원본 생성
+        DeckData source = ScriptableObject.CreateInstance<DeckData>(); // 덱 원본 생성
+        List<IDeckCardEntry> entries = new List<IDeckCardEntry>(); // 카드 항목 목록 생성
+        for (int index = 0; index < 4; index++) // 카드 네 장 반복
+        { // 카드 등록 시작
+            entries.Add(new RunDeckCardEntry(card, owner)); // 소유 카드 추가
+        } // 카드 등록 종료
+        BattleDeckRuntime deck = BattleDeckRuntime.Create(source, entries, new[] { BattleUnitRuntime.CreateAlly(owner) }, 3, 1); // 테스트 전투 덱 생성
+        deck.DrawCards(3); // 카드 세 장 드로우
+        deck.DiscardCard(deck.Hand[0]); // 첫 카드 버리기
+        deck.DiscardCard(deck.Hand[0]); // 두 번째 카드 버리기
+        CardInstance oldTop = deck.DrawPile[deck.DrawPileCount - 1]; // 기존 덱 맨 위 카드 저장
+        IReadOnlyList<CardInstance> choices = deck.PrepareDrawChoices(2); // 맨 위 두 장 선택 준비
+        Assert.AreEqual(2, choices.Count); // 선택 후보 두 장 확인
+        Assert.AreSame(oldTop, choices[0]); // 기존 맨 위 카드 유지 확인
+        Assert.AreEqual(0, deck.DiscardPileCount); // 버린 카드 재구성 확인
+        Assert.IsFalse(deck.TryDrawChoice(deck.Hand[0], 2)); // 후보 밖 카드 선택 차단 확인
+        Assert.IsTrue(deck.TryDrawChoice(choices[1], 2)); // 두 번째 후보 드로우 확인
+        Assert.AreSame(oldTop, deck.DrawPile[deck.DrawPileCount - 1]); // 선택하지 않은 맨 위 카드 유지 확인
+        Assert.AreSame(choices[1], deck.Hand[deck.HandCount - 1]); // 선택한 카드 손패 이동 확인
+        Assert.IsTrue(deck.IsStateValid()); // 전체 카드 보존 확인
+        Object.DestroyImmediate(source); // 덱 원본 정리
+        Object.DestroyImmediate(card); // 카드 원본 정리
+        Object.DestroyImmediate(owner); // 캐릭터 원본 정리
+    } // 테스트 종료
+    [Test] // 테스트 지정
+    public void DrawChoice_FullHandDiscardsSelectedCard() // 손패가 가득 찬 선택 드로우 확인
+    { // 테스트 시작
+        CharacterData owner = ScriptableObject.CreateInstance<CharacterData>(); // 소유자 생성
+        CardData card = ScriptableObject.CreateInstance<CardData>(); // 카드 원본 생성
+        DeckData source = ScriptableObject.CreateInstance<DeckData>(); // 덱 원본 생성
+        List<IDeckCardEntry> entries = new List<IDeckCardEntry> { new RunDeckCardEntry(card, owner), new RunDeckCardEntry(card, owner) }; // 카드 두 장 생성
+        BattleDeckRuntime deck = BattleDeckRuntime.Create(source, entries, new[] { BattleUnitRuntime.CreateAlly(owner) }, 1, 1); // 손패 한 장 제한 덱 생성
+        deck.DrawCards(1); // 손패 채우기
+        CardInstance choice = deck.PrepareDrawChoices(2)[0]; // 남은 선택 후보 조회
+        Assert.IsTrue(deck.TryDrawChoice(choice, 2)); // 가득 찬 손패 선택 처리 확인
+        Assert.AreEqual(1, deck.HandCount); // 손패 상한 유지 확인
+        Assert.AreSame(choice, deck.DiscardPile[0]); // 초과 선택 카드 버림 확인
+        Assert.IsTrue(deck.IsStateValid()); // 전체 카드 보존 확인
+        Object.DestroyImmediate(source); // 덱 원본 정리
+        Object.DestroyImmediate(card); // 카드 원본 정리
+        Object.DestroyImmediate(owner); // 캐릭터 원본 정리
+    } // 테스트 종료
 } // 테스트 클래스 종료

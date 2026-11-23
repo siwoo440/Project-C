@@ -113,6 +113,52 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 상태 알림 종료
         return drawnCount; // 실제 드로우 수 반환
     } // 카드 드로우 종료
+    public IReadOnlyList<CardInstance> PrepareDrawChoices(int maximumChoices) // 덱 위 선택 후보 준비
+    { // 선택 후보 준비 시작
+        List<CardInstance> choices = new List<CardInstance>(); // 빈 선택 후보 목록 생성
+        if (maximumChoices <= 0) // 잘못된 후보 수 확인
+        { // 후보 없음 처리 시작
+            return choices.AsReadOnly(); // 빈 후보 목록 반환
+        } // 후보 없음 처리 종료
+        if (drawPile.Count < maximumChoices && discardPile.Count > 0) // 후보 부족과 버린 카드 확인
+        { // 버린 카드 재구성 시작
+            List<CardInstance> recycled = new List<CardInstance>(discardPile); // 버린 카드 복사
+            ShuffleList(recycled); // 재구성 카드 순서 섞기
+            drawPile.InsertRange(0, recycled); // 기존 카드 아래에 재구성 카드 배치
+            discardPile.Clear(); // 버린 카드 더미 비우기
+            EnsureValidState(); // 재구성 후 덱 상태 검증
+            StateChanged?.Invoke(); // 카드 영역 변경 알림
+        } // 버린 카드 재구성 종료
+        for (int offset = 0; offset < maximumChoices && offset < drawPile.Count; offset++) // 덱 맨 위부터 후보 순회
+        { // 후보 추가 시작
+            choices.Add(drawPile[drawPile.Count - 1 - offset]); // 맨 위 순서로 후보 추가
+        } // 후보 추가 종료
+        return choices.AsReadOnly(); // 외부 변경을 막은 후보 목록 반환
+    } // 선택 후보 준비 종료
+    public bool TryDrawChoice(CardInstance choice, int maximumChoices) // 덱 위 후보 하나 선택 드로우
+    { // 선택 드로우 시작
+        if (choice == null || maximumChoices <= 0) // 선택 카드와 후보 수 확인
+        { // 잘못된 선택 처리 시작
+            return false; // 선택 실패 반환
+        } // 잘못된 선택 처리 종료
+        int index = drawPile.IndexOf(choice); // 선택 카드 위치 조회
+        if (index < 0 || index < drawPile.Count - maximumChoices) // 현재 맨 위 후보 범위 확인
+        { // 후보 이탈 처리 시작
+            return false; // 선택 실패 반환
+        } // 후보 이탈 처리 종료
+        drawPile.RemoveAt(index); // 뽑을 카드 더미에서 선택 카드 제거
+        if (hand.Count < MaxHandSize) // 손패 공간 확인
+        { // 정상 드로우 시작
+            hand.Add(choice); // 선택 카드를 손패에 추가
+        } // 정상 드로우 종료
+        else // 손패 가득 참 확인
+        { // 초과 카드 처리 시작
+            discardPile.Add(choice); // 선택 카드를 버린 더미로 이동
+        } // 초과 카드 처리 종료
+        EnsureValidState(); // 선택 후 덱 상태 검증
+        StateChanged?.Invoke(); // 카드 영역 변경 알림
+        return true; // 선택 처리 성공 반환
+    } // 선택 드로우 종료
     public bool DiscardCard(CardInstance cardInstance) // 손패 카드 버리기
     { // 카드 버리기 시작
         if (cardInstance == null) // 빈 카드 확인
