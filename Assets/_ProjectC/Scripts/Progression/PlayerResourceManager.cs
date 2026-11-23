@@ -124,6 +124,12 @@ public sealed class PlayerResourceManager : MonoBehaviour // 플레이어 영구
         return true; // 자원 차감 성공 반환
     }
 
+    public void RestoreResources(int gold, int screw, int ironPlate, int wire) // 저장 자원 복원
+    { // 자원 복원 시작
+        ResetResources(); // 기존 자원 초기화
+        AddResources(gold, screw, ironPlate, wire); // 저장 자원 적용
+    } // 자원 복원 종료
+
     public void ResetResources() // 모든 영구 자원 초기화
     {
         EnsureGoldRuntime(); // 골드 런타임 연결 보장

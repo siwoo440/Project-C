@@ -65,6 +65,12 @@ public sealed class CharacterAffinityManager : MonoBehaviour
             $"현재 호감도 {Affinity}");
     }
 
+    public void RestoreAffinity(int value) // 저장 호감도 복원
+    { // 호감도 복원 시작
+        Affinity = value; // 저장 호감도 적용
+        AffinityChanged?.Invoke(); // 호감도 변경 알림
+    } // 호감도 복원 종료
+
     public void ResetAffinity()
     {
         Affinity = StartingAffinity;

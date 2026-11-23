@@ -18,6 +18,8 @@ public sealed class LobbyController : MonoBehaviour
         } // 배경 연결 종료
         CharacterRecoveryManager recovery = CharacterRecoveryManager.EnsureInstance(); // 회복 상태 관리자 준비
         BattleResultManager.EnsureInstance(); // 파티 상태 관리자 준비
+        LobbyAutosaveController autosave = gameObject.AddComponent<LobbyAutosaveController>(); // 거점 자동 저장 관리자 추가
+        autosave.Initialize(LobbySaveService.DefaultPath); // 기본 저장 경로 연결
         GameObject viewObject = new GameObject("PartyRosterView", typeof(RectTransform), typeof(PartyRosterView)); // 편성 화면 객체 생성
         viewObject.transform.SetParent(canvas.transform, false); // 거점 캔버스 연결
         viewObject.GetComponent<PartyRosterView>().Initialize(roster, new CharacterRecoveryDeploymentStatusProvider(recovery)); // 캐릭터 목록 화면 구성
