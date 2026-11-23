@@ -20,6 +20,11 @@ public sealed class WinterfallCommonCardExpansionTests // 윈터폴 공용 카�
     [TestCase(214, "QUICK_CALCULATION", "빠른 계산", "QuickCalculation", CardType.Pentacle, "E386AC5732604E9E466DE3D720586B494DF83C6CD007A16B1EB39573E51603E3")] // 빠른 계산 원본
     public void TreasureMatchesSheetArtworkAndSave(int rowNumber, string id, string title, string file, CardType type, string digest) // 시트와 압축 원본 및 지급 경로 대조
     { // 원본 검사 시작
+        VerifyTreasureArtwork(rowNumber, id, title, file, type, digest); // 공용 카드의 시트와 원본 그림 검사
+    } // 원본 검사 종료
+
+    internal static void VerifyTreasureArtwork(int rowNumber, string id, string title, string file, CardType type, string digest) // 실제 보상 원본과 그림 대조
+    { // 원본 비교 시작
         ShopOfferData item = Resources.Load<ShopCatalogData>("Shop/ShopCatalog_Test").Offers.Single(offer => offer.OfferId == "REWARD_SHEET_" + id); // 실제 보물 상품 조회
         Assert.IsTrue(item.RewardOnly && item.RequiresOwnerChoice); // 일반 구매 제외와 소유자 선택 확인
         CardData card = item.Card; // 지급될 카드 원본 조회
@@ -143,7 +148,7 @@ public sealed class WinterfallCommonCardExpansionTests // 윈터폴 공용 카�
         } // 정리 종료
     } // 전투 구성 종료
 
-    private static BattleUnitView CreateView(Transform parent, BattleUnitRuntime unit) // 실제 전투 유닛 화면 연결
+    internal static BattleUnitView CreateView(Transform parent, BattleUnitRuntime unit) // 실제 전투 유닛 화면 연결
     { // 화면 생성 시작
         var item = new GameObject("Unit", typeof(RectTransform), typeof(BattleUnitView)); // 클릭 대상 화면 생성
         item.transform.SetParent(parent, false); // 전투 화면 아래 배치
@@ -152,7 +157,7 @@ public sealed class WinterfallCommonCardExpansionTests // 윈터폴 공용 카�
         return view; // 연결한 화면 반환
     } // 화면 생성 종료
 
-    private static IEnumerator Play(CardData card, BattleHandView hand, BattleUnitView target, BattleActionSequenceRunner runner, BattleDeckRuntime deck, BattleActionPointRuntime points) // 카드와 대상 클릭 후 소모 확인
+    internal static IEnumerator Play(CardData card, BattleHandView hand, BattleUnitView target, BattleActionSequenceRunner runner, BattleDeckRuntime deck, BattleActionPointRuntime points) // 카드와 대상 클릭 후 소모 확인
     { // 카드 입력 시작
         var view = hand.GetComponentsInChildren<BattleCardView>().First(item => item.RuntimeCard != null && item.RuntimeCard.SourceData == card && deck.Hand.Contains(item.RuntimeCard)); // 실제 손패에서 사용할 카드 조회
         CardInstance used = view.RuntimeCard; // 사용할 카드의 개별 인스턴스
