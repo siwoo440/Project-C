@@ -119,4 +119,93 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 정리 종료
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator EmperorCard_RedirectsAttackAndRaisesDefense() // 황제 전용 카드 실제 사용 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        PartyRosterView rosterView = Object.FindFirstObjectByType<PartyRosterView>(); // 편성 화면 조회
+        Button[] buttons = rosterView.GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[4].onClick.Invoke(); // 황제 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        ExplorationEncounterView encounter = Object.FindFirstObjectByType<ExplorationEncounterView>(); // 탐사 조우 조회
+        ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 탐사 플레이어 조회
+        encounter.SendMessage("OnTriggerEnter2D", player.GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        BattleUnitRuntime emperor = battle.AllyUnits[1]; // 황제 전투 유닛 조회
+        BattleUnitRuntime enemy = battle.EnemyUnits[0]; // 첫 적 조회
+        Assert.AreSame(battle.AllyUnits[0], battle.EnemyActionRuntime.FindAction(enemy).Target); // 기존 공격 대상 확인
+        int emperorCardCount = 0; // 황제 전용 카드 장수 초기화
+        foreach (CardInstance card in battle.BattleDeck.Cards) // 시작 덱 카드 순회
+        { // 전용 카드 확인 시작
+            if (card.SourceData.CardId == "CRD_ARC_04_GUARD") // 황제 전용 카드 확인
+            { // 전용 카드 검사 시작
+                emperorCardCount++; // 전용 카드 장수 증가
+                Assert.AreSame(emperor, card.OwnerUnit); // 황제 카드 소유자 확인
+            } // 전용 카드 검사 종료
+        } // 전용 카드 확인 종료
+        Assert.AreEqual(1, emperorCardCount); // 황제 전용 카드 한 장 확인
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView emperorCard = null; // 황제 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 카드 화면 순회
+        { // 전용 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_04_GUARD") // 황제 전용 카드 확인
+            { // 전용 카드 발견 시작
+                emperorCard = candidate; // 황제 카드 저장
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(emperorCard); // 황제 카드 손패 존재 확인
+        BattleUnitView enemyView = null; // 적 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 전투 유닛 화면 순회
+        { // 대상 화면 검색 시작
+            if (candidate.RuntimeUnit == enemy) // 첫 적 화면 확인
+            { // 적 화면 발견 시작
+                enemyView = candidate; // 적 화면 저장
+                break; // 화면 검색 종료
+            } // 적 화면 발견 종료
+        } // 대상 화면 검색 종료
+        Assert.IsNotNull(enemyView); // 적 화면 존재 확인
+        int previousDefense = emperor.PhysicalDefense; // 황제 기존 방어력 저장
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        emperorCard.OnPointerClick(null); // 전용 카드 선택
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 아군 화면 순회
+        { // 잘못된 대상 확인 시작
+            if (candidate.RuntimeUnit == battle.AllyUnits[0]) // 바보 화면 확인
+            { // 잘못된 대상 선택 시작
+                candidate.OnPointerClick(null); // 아군을 잘못 선택
+                break; // 아군 화면 검색 종료
+            } // 잘못된 대상 선택 종료
+        } // 잘못된 대상 확인 종료
+        Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
+        enemyView.OnPointerClick(null); // 공격 중인 적 선택
+        for (int frame = 0; frame < 300 && emperor.PhysicalDefense == previousDefense; frame++) // 카드 연출과 효과 대기
+        { // 카드 효과 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 카드 효과 대기 종료
+        Assert.AreSame(emperor, battle.EnemyActionRuntime.FindAction(enemy).Target); // 황제에게 공격 유도 확인
+        Assert.AreEqual(previousDefense + 3, emperor.PhysicalDefense); // 임시 방어력 증가 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료

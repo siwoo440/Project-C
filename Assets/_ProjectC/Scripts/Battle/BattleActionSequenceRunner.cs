@@ -148,6 +148,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
         try
         {
             bool isSupportAction =
+                effectType == CardEffectType.RedirectAttackAndDefend || // 공격 유도 지원 연출
                 effectType == CardEffectType.Heal ||
                 effectType == CardEffectType.RemoveDebuffs ||
                 effectType == CardEffectType.ApplyStatusEffect &&

@@ -9,6 +9,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly BattleActionSequenceRunner actionSequenceRunner; // 전투 행동 연출 실행기
     private readonly BattleStatusEffectProcessor statusEffectProcessor; // 공통 상태 처리기
+    private readonly BattleEnemyActionRuntime enemyActions; // 적 예정 행동 관리자
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
@@ -16,7 +17,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
     public event Action<CardInstance, IReadOnlyList<BattleUnitRuntime>> CardUsed; // 카드 효과 적용 시작 이벤트
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews, BattleEnemyActionRuntime enemyRuntime) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
@@ -24,6 +25,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         handView = battleHandView ?? throw new ArgumentNullException(nameof(battleHandView)); // 손패 화면 저장
         actionSequenceRunner = sequenceRunner ?? throw new ArgumentNullException(nameof(sequenceRunner)); // 행동 연출 실행기 저장
         statusEffectProcessor = processor ?? throw new ArgumentNullException(nameof(processor)); // 공통 상태 처리기 저장
+        enemyActions = enemyRuntime ?? throw new ArgumentNullException(nameof(enemyRuntime)); // 적 행동 관리자 저장
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
         handView.CardClicked += HandleCardClicked; // 카드 클릭 이벤트 등록
@@ -214,6 +216,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 정신력 변경 불가 처리 시작
             return false; // 정신력 대상 불가 반환
         } // 정신력 변경 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도 카드 확인
+        { // 공격 유도 대상 확인 시작
+            BattleEnemyAction action = enemyActions.FindAction(targetUnit); // 선택 적의 예정 행동 조회
+            if (targetUnit.Team != BattleTeam.Enemy || action == null || !action.IsExecutable || action.ActionType != EnemyActionType.Attack) // 예정 공격 존재 확인
+            { // 공격 유도 불가 처리 시작
+                return false; // 선택 불가 반환
+            } // 공격 유도 불가 처리 종료
+        } // 공격 유도 대상 확인 종료
         switch (cardInstance.TargetType) // 카드 대상 종류 분기
         { // 대상 분기 시작
             case CardTargetType.Self: // 자신 대상 종류
@@ -258,7 +268,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -291,6 +301,13 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도와 방어 효과 확인
+        { // 황제 전용 효과 시작
+            enemyActions.TryRedirectAttack(targetUnit, cardInstance.OwnerUnit); // 선택 적의 공격을 소유자에게 유도
+            BattleStatusEffectApplyResult defenseResult = cardInstance.OwnerUnit.ApplyStatusEffect(BattleStatusEffectType.PhysicalDefenseUp, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 소유자 물리 방어력 증가
+            FindUnitView(cardInstance.OwnerUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.PhysicalDefenseUp, defenseResult); // 방어 효과 적용 결과 표시
+            return defenseResult == BattleStatusEffectApplyResult.Applied || defenseResult == BattleStatusEffectApplyResult.Stacked ? cardInstance.EffectValue : 0; // 실제 방어 효과 수치 반환
+        } // 황제 전용 효과 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 효과 처리 시작
             int modifiedHealing = cardInstance.OwnerUnit.ModifyOutgoingHealing(cardInstance.EffectValue); // 정신 상태 포함 회복량 계산
@@ -334,6 +351,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.RedirectAttackAndDefend) // 공격 유도 문구 확인
+        { // 공격 유도 문구 시작
+            return "공격 유도와 방어"; // 전용 효과 이름 반환
+        } // 공격 유도 문구 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인
         { // 회복 문구 처리 시작
             return "회복"; // 회복 문구 반환

@@ -1,3 +1,4 @@
+using System.Collections.Generic; // 전용 카드 검색표 사용
 using UnityEngine; // 리소스와 런타임 객체 사용
 public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
 { // 편성 관리자 시작
@@ -9,7 +10,24 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
         cards[1] = Resources.Load<CardData>("StarterCards/Defense"); // 방어 역할 카드 조회
         cards[2] = Resources.Load<CardData>("StarterCards/Support"); // 지원 역할 카드 조회
         cards[3] = Resources.Load<CardData>("StarterCards/Strategy"); // 전략 역할 카드 조회
-        BattleLoadoutData next = PartyLoadoutFactory.Create(selection, cards); // 새 출발 편성 생성
+        Dictionary<string, CardData> characterCards = new Dictionary<string, CardData>(); // 전용 카드 검색표 생성
+        if (selection != null) // 파티 선택 상태 확인
+        { // 전용 카드 준비 시작
+            foreach (CharacterData member in selection.Members) // 선택 캐릭터 순회
+            { // 전용 카드 확인 시작
+                if (member.CharacterId != "ARC_04") // 황제 선택 여부 확인
+                { // 다른 캐릭터 처리 시작
+                    continue; // 다음 캐릭터 확인
+                } // 다른 캐릭터 처리 종료
+                CardData emperorCard = Resources.Load<CardData>("StarterCards/EmperorGuard"); // 황제 전용 카드 조회
+                if (emperorCard == null) // 전용 카드 리소스 확인
+                { // 카드 누락 처리 시작
+                    return false; // 편성 준비 실패 반환
+                } // 카드 누락 처리 종료
+                characterCards.Add(member.CharacterId, emperorCard); // 황제 전용 카드 등록
+            } // 전용 카드 확인 종료
+        } // 전용 카드 준비 종료
+        BattleLoadoutData next = PartyLoadoutFactory.Create(selection, cards, characterCards); // 새 출발 편성 생성
         if (next == null) // 편성 생성 실패 확인
         { // 생성 실패 처리 시작
             return false; // 기존 편성 유지와 실패 반환
