@@ -417,7 +417,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 파트너 후보 없음 처리 시작
             return false; // 파트너 지정 카드 사용 차단
         } // 파트너 후보 없음 처리 종료
-        return turnRuntime.IsPlayerTurn && sharedActionPoints.CanSpend(cardInstance.ApCost); // 턴과 공용 행동력 검사 결과 반환
+        return turnRuntime.IsPlayerTurn && SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime); // 턴과 공용 행동력 검사 결과 반환
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작

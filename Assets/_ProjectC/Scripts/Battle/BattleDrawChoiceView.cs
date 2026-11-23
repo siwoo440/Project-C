@@ -45,7 +45,7 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
             art.preserveAspect = true; // 일러스트 비율 유지
             art.raycastTarget = false; // 버튼 입력 방해 방지
             art.enabled = card.Artwork != null; // 일러스트가 있을 때만 표시
-            TMP_Text label = CreateText("Details", buttonRect, $"{card.DisplayName}\n{card.OwnerUnit.DisplayName} · AP {card.ApCost}\n\n{card.SourceData.Description}", 18f); // 카드 이름과 설명 표시
+            TMP_Text label = CreateText("Details", buttonRect, $"{card.DisplayName}\n{card.OwnerUnit.DisplayName} · AP {card.CostLabel}\n\n{card.SourceData.Description}", 18f); // 카드 이름과 설명 표시
             label.rectTransform.anchoredPosition = new Vector2(0f, -65f); // 카드 설명 위치 설정
             label.rectTransform.sizeDelta = new Vector2(185f, 150f); // 카드 설명 크기 설정
             button.onClick.AddListener(() => view.Select(card, selected)); // 후보 선택 동작 연결

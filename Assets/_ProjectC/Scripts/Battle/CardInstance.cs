@@ -20,6 +20,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardType CardType => SourceData.CardType; // 카드 종류 조회
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
+    public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
     public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount); // 강화와 임시 할인 포함 행동력 비용
     public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용
     { // 할인 적용 시작

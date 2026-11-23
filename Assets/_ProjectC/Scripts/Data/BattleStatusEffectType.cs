@@ -19,5 +19,7 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Awakening, // 정신력 최대 각성 상태
     Collapse, // 정신력 최소 붕괴 상태
     Evasion, // 적 공격 회피율 증가
-    Disorientation // 아군 첫 턴의 방향 감각 상실
+    Disorientation, // 아군 첫 턴의 방향 감각 상실
+    CriticalChanceUp, // 직접 카드 공격의 치명타 확률 증가
+    ChargeDefenseDown // 돌진에 의한 다음 공격 턴 물리 방어 감소
 } // 열거형 종료

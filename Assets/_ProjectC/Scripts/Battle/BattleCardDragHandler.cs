@@ -201,8 +201,7 @@ public sealed class BattleCardDragHandler :
             battleSceneSetup.SharedActionPoints == null ||
             !battleSceneSetup.BattleTurn.IsPlayerTurn ||
             battleSceneSetup.BattleTurn.IsBattleEnded ||
-            !battleSceneSetup.SharedActionPoints.CanSpend(
-                cardView.RuntimeCard.ApCost))
+            !SwordCardCombat.CanUse(cardView.RuntimeCard, battleSceneSetup.SharedActionPoints, battleSceneSetup.BattleTurn)) // 카드별 대상과 비용 검사
         {
             return false;
         }

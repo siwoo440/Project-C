@@ -392,6 +392,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CRITICAL_STRIKE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 4b963d64f7394f948ea1a459d9b750ac, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SWORD_DANCE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 66859a3c15914632a84e3cc986d7a3d2, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_CHARGE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 8d2034c9f4d94f24a0cc2f08ff20c3ad, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_COUNTERATTACK
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a75542700d6e428ba033819d1ce120b3, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FINAL_STRIKE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 34f6f43d54da44f4b95bbb83a21a37cc, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_INSPIRE_MORALE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: ab0f5efb47664cb49b73c9ad3420cbfa, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_FLAME_SLASH
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: a5f0f97e4ad24649a7a5e4e4797ff358, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DOOM_BLADE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 5d65243bc83045a68743b5887f86ce2e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: SHOP_RLC_CERULLION_BADGE
     offerType: 1
     price: 230

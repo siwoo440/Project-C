@@ -18,6 +18,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public int BaseMagicalResistance { get; } // 기본 마법 저항력
     public int PhysicalDefense => CalculateDefense(BasePhysicalDefense, BattleStatusEffectType.PhysicalDefenseUp, BattleStatusEffectType.PhysicalDefenseDown); // 현재 물리 방어력
     public int MagicalResistance => CalculateDefense(BaseMagicalResistance, BattleStatusEffectType.MagicalResistanceUp, BattleStatusEffectType.MagicalResistanceDown); // 현재 마법 저항력
+    private bool hasEnemyDamageWindow; // 첫 적 턴의 시작 여부
+    private int queuedChargeDefense; // 다음 아군 턴의 방어 감소량
+    private BattleUnitRuntime queuedChargeSource; // 돌진을 사용한 아군
+    public int HealthLostSinceEnemyTurn { get; private set; } // 직전 적 턴부터 누적한 실제 체력 손실
     public int CurrentHealth { get; private set; } // 현재 체력
     public int CurrentBlock { get; private set; } // 현재 피해 흡수 방어도
     public bool IsDead { get; private set; } // 사망 여부
@@ -283,7 +287,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 방어력 계산 시작
         int increasedDefense = GetStatusEffectValue(increaseType); // 방어 증가 수치 조회
         int decreasedDefense = GetStatusEffectValue(decreaseType); // 방어 감소 수치 조회
-        return Mathf.Max(0, baseDefense + increasedDefense - decreasedDefense); // 영 이상 현재 방어력 반환
+        int charge = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.ChargeDefenseDown) : 0; // 돌진의 물리 방어 감소량 확인
+        return (int)Math.Max(0L, (long)baseDefense + increasedDefense - decreasedDefense - charge); // 영 이상 현재 방어력 반환
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작
@@ -320,13 +325,41 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 체력 비용 확인 시작
         return amount > 0 && !IsDead && CurrentHealth > amount; // 양수 비용과 소모 후 생존 여부 반환
     } // 체력 비용 확인 종료
+    internal void StartEnemyDamageWindow() // 직전 적 턴의 피해 집계 시작
+    { // 체력 손실 집계 초기화 시작
+        hasEnemyDamageWindow = true; // 적 턴 이후의 체력 손실 기록 시작
+        HealthLostSinceEnemyTurn = 0; // 이전 턴의 누적 손실 제거
+    } // 체력 손실 집계 초기화 종료
+    private void LoseHealth(int amount) // 방어 처리 후 실제 체력 손실 반영
+    { // 체력 차감 시작
+        int lost = Math.Min(CurrentHealth, Math.Max(0, amount)); // 남은 체력을 초과한 피해 제외
+        CurrentHealth -= lost; // 실제 체력 차감
+        if (hasEnemyDamageWindow) // 첫 적 턴이 시작된 상태 확인
+        { // 누적 피해 반영 시작
+            HealthLostSinceEnemyTurn = (int)Math.Min(int.MaxValue, (long)HealthLostSinceEnemyTurn + lost); // 회복과 무관한 실제 손실 누적
+        } // 누적 피해 반영 종료
+    } // 체력 차감 종료
+    internal void QueueChargeDefense(BattleUnitRuntime source, int amount) // 다음 아군 턴의 방어 감소 예약
+    { // 다음 턴 약화 예약 시작
+        queuedChargeDefense = Math.Max(queuedChargeDefense, amount); // 중복 사용 시 가장 큰 감소량 보관
+        queuedChargeSource = source; // 약화를 부여한 소유자 보관
+    } // 다음 턴 약화 예약 종료
+    internal void ApplyQueuedCharge() // 예약한 돌진 약화 발동
+    { // 예약 약화 적용 시작
+        if (queuedChargeDefense > 0 && !IsDead) // 생존한 피격 대상과 예약 확인
+        { // 방어 감소 부여 시작
+            ApplyStatusEffect(BattleStatusEffectType.ChargeDefenseDown, queuedChargeDefense, 1, 1, queuedChargeSource); // 이번 아군 턴에 물리 방어 감소
+        } // 방어 감소 부여 종료
+        queuedChargeDefense = 0; // 이전 예약 소진
+        queuedChargeSource = null; // 이전 소유자 해제
+    } // 예약 약화 적용 종료
     public bool TrySpendHealth(int amount) // 방어도를 소모하지 않는 체력 비용 지불
     { // 체력 비용 지불 시작
         if (!CanSpendHealth(amount)) // 유효한 비용과 생존 가능 여부 확인
         { // 비용 지불 불가 시작
             return false; // 체력을 유지한 실패 반환
         } // 비용 지불 불가 종료
-        CurrentHealth -= amount; // 방어도와 무관하게 현재 체력 소모
+        LoseHealth(amount); // 방어도와 무관하게 현재 체력 소모
         HealthChanged?.Invoke(this); // 체력 화면과 영구 상태 갱신 알림
         return true; // 체력 비용 지불 성공 반환
     } // 체력 비용 지불 종료
@@ -382,7 +415,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 발동한 방어 준비 제거
             GainBlock(damageResult.PreparedBlock); // 피해 적용 직전 준비 방어도 획득
         } // 준비 소모 종료
-        CurrentHealth = Mathf.Max(0, CurrentHealth - damageResult.AppliedDamage); // 현재 체력 감소
+        LoseHealth(damageResult.AppliedDamage); // 현재 체력 감소
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
         if (diedNow) // 사망 상태 확인
@@ -417,7 +450,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담 피해 없음 처리 종료
         int applied = Math.Min(CurrentHealth, amount); // 남은 체력에 맞춘 피해량 계산
         BattleDamageResult result = new BattleDamageResult(amount, 0, amount, applied, damageType); // 추가 방어와 방어도 없는 피해 결과 생성
-        CurrentHealth -= applied; // 분담자의 체력 감소
+        LoseHealth(applied); // 분담자의 체력 감소
         bool diedNow = CurrentHealth == 0; // 분담자의 사망 여부 확인
         if (diedNow) // 새 사망 여부 확인
         { // 사망 상태 기록 시작

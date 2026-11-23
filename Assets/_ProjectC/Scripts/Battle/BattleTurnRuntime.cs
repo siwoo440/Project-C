@@ -62,14 +62,14 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             openingHandAfterAmbush = initialHandSize; // 첫 아군 턴의 정상 시작 손패 보관
             sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 적 선제 중 아군 행동력 소모 방지용 비활성화
             CurrentPhase = BattleTurnPhase.EnemyTurn; // 아군 턴을 건너뛰지 않고 적부터 시작
-            PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 진영 첫 턴 알림
+            NotifyPhaseStarted(); // 적 진영 첫 턴 알림
             StateChanged?.Invoke(); // 실제 적 행동 실행
             return true; // 선제 전투 시작 완료
         } // 적의 첫 행동 종료
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
         LastDrawnCardCount = runtimeDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
-        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 첫 플레이어 턴 시작 알림
+        NotifyPhaseStarted(); // 첫 플레이어 턴 시작 알림
         StateChanged?.Invoke(); // 턴 상태 변경 알림
         return true; // 전투 시작 성공 반환
     } // 전투 시작 처리 종료
@@ -80,13 +80,13 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return false; // 턴 종료 실패 반환
         } // 종료 불가 처리 종료
         CleanupPlayerTurn(); // 일반 손패와 남은 행동력 정리
-        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 종료 알림
+        NotifyPhaseEnded(); // 플레이어 턴 종료 알림
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
         } // 종료된 전투 처리 종료
         CurrentPhase = BattleTurnPhase.EnemyTurn; // 적 턴 설정
-        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 턴 시작 알림
+        NotifyPhaseStarted(); // 적 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
         { // 전투 지속 처리 시작
             StateChanged?.Invoke(); // 턴 상태 변경 알림
@@ -117,7 +117,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전환 불가 처리 종료
         HasPendingBossPhaseTransition = false; // 전환 예약 해제
         CleanupPlayerTurn(); // 일반 종료와 동일한 손패와 행동력 정리
-        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 아군 턴 종료 효과 한 번 처리
+        NotifyPhaseEnded(); // 아군 턴 종료 효과 한 번 처리
         if (IsBattleEnded) // 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 확정된 전투 결과 유지
@@ -126,7 +126,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ClearRoundBlock(enemyUnits); // 라운드 전환 적 방어도 정리
         CurrentRound++; // 다음 라운드 진행
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 다음 아군 턴 설정
-        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 다음 아군 턴 시작 효과 처리
+        NotifyPhaseStarted(); // 다음 아군 턴 시작 효과 처리
         if (!IsBattleEnded) // 시작 효과 처리 후 전투 지속 확인
         { // 다음 턴 준비 시작
             sharedActionPoints.Restore(); // 공용 행동력 회복
@@ -146,7 +146,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 완료 불가 처리 시작
             return false; // 적 턴 완료 실패 반환
         } // 완료 불가 처리 종료
-        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 적 턴 종료 알림
+        NotifyPhaseEnded(); // 적 턴 종료 알림
         if (IsBattleEnded) // 턴 종료 효과로 전투 종료 확인
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
@@ -164,7 +164,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             CurrentRound++; // 일반 적 턴이 끝나면 다음 라운드로 이동
         } // 새 라운드 준비 종료
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
-        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 시작 알림
+        NotifyPhaseStarted(); // 플레이어 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
@@ -182,6 +182,47 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         SetBattleResult(BattleResult.Escape); // 도주 결과 확정
         return true; // 도주 성공 반환
     } // 도주 요청 종료
+    internal bool HasFinisherTarget() // 처형 가능한 생존 적 확인
+    { // 처형 후보 확인 시작
+        foreach (var enemy in enemyUnits) // 현재 배치한 적 순회
+        { // 적 체력 검사 시작
+            if (SwordCardCombat.IsFinisherTarget(enemy)) // 생존과 체력 비율 검사
+            { // 유효 대상 확인 시작
+                return true; // 처형 가능 대상 발견
+            } // 유효 대상 확인 종료
+        } // 적 체력 검사 종료
+        return false; // 처형 가능 대상 없음
+    } // 처형 후보 확인 종료
+    private void NotifyPhaseStarted() // 진영 시작 효과를 반영한 턴 알림
+    { // 시작 효과 적용 시작
+        if (CurrentPhase == BattleTurnPhase.EnemyTurn) // 적 행동과 지속 피해 발생 전 확인
+        { // 체력 집계 시작
+            foreach (var ally in allyUnits) // 아군별 체력 손실 기록 준비
+            { // 개별 기록 시작
+                ally?.StartEnemyDamageWindow(); // 직전 적 턴 기준점 갱신
+            } // 개별 기록 종료
+        } // 체력 집계 종료
+        else if (CurrentPhase == BattleTurnPhase.PlayerTurn) // 다음 아군 턴 도착 확인
+        { // 지연 방어 감소 적용 시작
+            foreach (var enemy in enemyUnits) // 적별 돌진 예약 확인
+            { // 개별 약화 시작
+                enemy?.ApplyQueuedCharge(); // 피격한 적의 방어 감소 발동
+            } // 개별 약화 종료
+        } // 지연 방어 감소 적용 종료
+        PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 기존 진영 시작 효과 전달
+    } // 시작 효과 적용 종료
+    private void NotifyPhaseEnded() // 진영 종료와 돌진 지속 시간 정리
+    { // 종료 효과 적용 시작
+        bool endCharge = CurrentPhase == BattleTurnPhase.PlayerTurn; // 아군 턴 종료 여부 보관
+        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 기존 진영 종료 효과 전달
+        if (endCharge) // 돌진의 한 차례 아군 공격 기회 종료 확인
+        { // 돌진 효과 해제 시작
+            foreach (var enemy in enemyUnits) // 적별 활성 약화 확인
+            { // 개별 약화 해제 시작
+                enemy?.RemoveStatusEffect(BattleStatusEffectType.ChargeDefenseDown); // 이번 턴의 임시 방어 감소 제거
+            } // 개별 약화 해제 종료
+        } // 돌진 효과 해제 종료
+    } // 종료 효과 적용 종료
     private static void ClearRoundBlock(IReadOnlyList<BattleUnitRuntime> units) // 진영의 남은 방어도 정리
     { // 방어도 정리 시작
         foreach (BattleUnitRuntime unit in units) // 진영 유닛 순회
