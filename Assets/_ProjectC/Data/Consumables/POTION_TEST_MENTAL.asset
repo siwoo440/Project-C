@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: POTION_TEST_MENTAL
   displayName: "테스트 정신 포션"
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 421bd206c83a459d9a0c036e258e6f04, type: 3}
   category: 0
   effectType: 2
   targetType: 2
