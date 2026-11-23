@@ -111,6 +111,23 @@ public static class LobbySaveService // 거점 상태 저장 서비스
             } // 남은 파일 정리 종료
         } // 임시 파일 정리 종료
     } // 저장 종료
+    public static bool CanLoad(string path) // 저장 파일 복원 가능 여부 검사
+    { // 저장 검사 시작
+        try // 파일 오류 처리 시작
+        { // 저장 검사 처리 시작
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) // 저장 파일 존재 확인
+            { // 파일 없음 처리 시작
+                return false; // 복원 불가 반환
+            } // 파일 없음 처리 종료
+            SaveData data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path)); // 저장 파일 읽기
+            CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 전체 캐릭터 목록 조회
+            return IsValid(data, roster); // 저장 정보 유효성 반환
+        } // 저장 검사 처리 종료
+        catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is ArgumentException || exception is NotSupportedException) // 파일 또는 저장 형식 오류 확인
+        { // 검사 오류 처리 시작
+            return false; // 복원 불가 반환
+        } // 검사 오류 처리 종료
+    } // 저장 검사 종료
     public static bool Load(string path) // 저장된 거점 상태 복원
     { // 복원 시작
         try // 파일 오류 처리 시작
