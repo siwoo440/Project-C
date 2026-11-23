@@ -194,6 +194,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             IsInitialized = false; // 초기화 실패 저장
             return; // 초기화 중단
         } // 전투 시작 실패 처리 종료
+        GlassFieldEvent.ApplyBattleStart(ExplorationSessionManager.Instance, allyUnits); // 실제 교전 시작 성공 뒤 들판 선택 한 번 반영
         int drawnCardCount = battleTurn.LastDrawnCardCount; // 실제 시작 손패 수 조회
         int preparedActionCount = enemyActionRuntime.PrepareActions(); // 첫 적 행동 준비
         InitializeBattleTutorial(battleCanvas); // 전투 안내 화면과 실제 행동 연결

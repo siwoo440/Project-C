@@ -5,9 +5,9 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
     private static readonly Dictionary<int, Sprite> sprites = new Dictionary<int, Sprite>(); // 재사용할 상태 아이콘 목록
     public static Sprite Get(BattleStatusEffectType type) // 상태 종류별 정사각형 이미지 조회
     { // 상태 이미지 조회 시작
-        if (type == BattleStatusEffectType.Awakening || type == BattleStatusEffectType.Collapse) // 별도 투명 정신 상태 아이콘 확인
+        if (type == BattleStatusEffectType.Awakening || type == BattleStatusEffectType.Collapse || type == BattleStatusEffectType.Evasion) // 별도 투명 아이콘 확인
         { // 정신 상태 아이콘 조회 시작
-            return GetMentalStateIcon(type); // 별도 제작한 투명 아이콘 반환
+            return GetIndividualIcon(type); // 별도 제작한 상태 아이콘 반환
         } // 정신 상태 아이콘 조회 종료
         int index = GetIndex(type); // 상태 종류에 맞는 이미지 순서 조회
         if (sprites.TryGetValue(index, out Sprite cached) && cached != null) // 기존 상태 이미지 존재 확인
@@ -28,14 +28,14 @@ public static class BattleStatusIconArt // 상태 종류별 생성 아이콘 제
         sprites[index] = sprite; // 상태 아이콘 재사용 목록 보관
         return sprite; // 생성한 상태 아이콘 반환
     } // 상태 이미지 조회 종료
-    private static Sprite GetMentalStateIcon(BattleStatusEffectType type) // 정신 상태별 투명 아이콘 조회
+    private static Sprite GetIndividualIcon(BattleStatusEffectType type) // 개별 투명 상태 아이콘 조회
     { // 투명 아이콘 조회 시작
-        int index = type == BattleStatusEffectType.Awakening ? 16 : 17; // 정신 상태별 재사용 번호 설정
+        int index = 16 + (int)type; // 공용 시트와 겹치지 않는 개별 상태 키
         if (sprites.TryGetValue(index, out Sprite cached) && cached != null) // 기존 아이콘 확인
         { // 기존 아이콘 반환 시작
             return cached; // 재사용 아이콘 반환
         } // 기존 아이콘 반환 종료
-        string name = type == BattleStatusEffectType.Awakening ? "AwakeningStatusIcon" : "CollapseStatusIcon"; // 상태별 이미지 이름 설정
+        string name = type + "StatusIcon"; // 상태 종류에 해당하는 개별 원화 이름
         Texture2D texture = Resources.Load<Texture2D>("UI/Battle/" + name); // 투명 상태 이미지 조회
         if (texture == null) // 상태 이미지 누락 확인
         { // 이미지 누락 처리 시작

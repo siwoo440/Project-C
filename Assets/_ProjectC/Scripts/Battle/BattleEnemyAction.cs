@@ -211,7 +211,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
                 applyResult); // 상태 적용 결과 반환
         }
 
-        if (Actor.GetStatusEffect(BattleStatusEffectType.Blind) != null && !BattleHitChance.Hits(Actor, rollPercent())) // 실명 공격의 명중 판정
+        int hitChance = BattleHitChance.GetPercent(Actor, Target); // 공격자 실명과 대상 회피를 합산한 명중률
+        if (hitChance < 100 && !BattleHitChance.Hits(Actor, rollPercent(), Target)) // 유효한 난수로 실명과 회피를 함께 판정
         { // 공격 빗나감 처리 시작
             return BattleEnemyActionResult.Missed(DamageType); // 피해와 상태가 없는 빗나감 반환
         } // 공격 빗나감 처리 종료

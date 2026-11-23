@@ -86,7 +86,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark) // 정신 상태와 턴 시작 전용 상태 제외
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.Evasion || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark) // 정신 상태와 턴 시작 전용 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
