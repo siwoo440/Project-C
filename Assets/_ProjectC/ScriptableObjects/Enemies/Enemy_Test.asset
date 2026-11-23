@@ -29,3 +29,26 @@ MonoBehaviour:
   targetRule: 0
   minimumActionSpeed: 1
   maximumActionSpeed: 10
+  actionPatterns:
+  - displayName: "물리 견제"
+    actionType: 1
+    attackPower: 8
+    damageType: 1
+    statusEffectType: 0
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    targetRule: 0
+    minimumActionSpeed: 6
+    maximumActionSpeed: 8
+  - displayName: "마법 집중"
+    actionType: 1
+    attackPower: 10
+    damageType: 2
+    statusEffectType: 0
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    targetRule: 1
+    minimumActionSpeed: 4
+    maximumActionSpeed: 6

@@ -9,11 +9,15 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public BattleStatusEffectType StatusEffectType { get; } // 적용 상태 이상 종류 조회
     public int StatusDuration { get; } // 상태 지속 횟수 조회
     public int StatusMaximumStacks { get; } // 상태 최대 중첩 조회
+    public EnemyTargetRule TargetRule { get; } // 대상 선택 규칙 조회
+    public string PatternDisplayName { get; } // 패턴 행동 이름 조회
+    public int PatternIndex { get; } // 현재 패턴 순번 조회
+    public int PatternCount { get; } // 전체 패턴 수 조회
     public int ActionSpeed { get; } // 결정된 행동 속도 조회
     public int CreationOrder { get; } // 행동 생성 순서 조회
     public int ActionOrder { get; private set; } // 최종 행동 순번 조회
     public bool IsExecutable => Actor != null && !Actor.IsDead && Target != null && !Target.IsDead && IsActionConfigurationValid(); // 실행 가능 여부 조회
-    public BattleEnemyAction(BattleUnitRuntime actor, BattleUnitRuntime target, EnemyActionType actionType, BattleDamageType damageType, int amount, BattleStatusEffectType statusEffectType, int statusDuration, int statusMaximumStacks, int actionSpeed, int creationOrder) // 예정 행동 생성
+    public BattleEnemyAction(BattleUnitRuntime actor, BattleUnitRuntime target, EnemyActionType actionType, BattleDamageType damageType, int amount, BattleStatusEffectType statusEffectType, int statusDuration, int statusMaximumStacks, EnemyTargetRule targetRule, string patternDisplayName, int patternIndex, int patternCount, int actionSpeed, int creationOrder) // 예정 행동 생성
     { // 생성자 시작
         Actor = actor ?? throw new ArgumentNullException(nameof(actor)); // 행동 적 저장
         Target = target ?? throw new ArgumentNullException(nameof(target)); // 대상 아군 저장
@@ -23,6 +27,10 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
         StatusEffectType = statusEffectType; // 상태 이상 종류 저장
         StatusDuration = Math.Max(1, statusDuration); // 보정된 상태 지속 횟수 저장
         StatusMaximumStacks = Math.Max(1, statusMaximumStacks); // 보정된 상태 최대 중첩 저장
+        TargetRule = targetRule; // 대상 선택 규칙 저장
+        PatternDisplayName = string.IsNullOrWhiteSpace(patternDisplayName) ? "행동" : patternDisplayName; // 보정된 패턴 행동 이름 저장
+        PatternIndex = Math.Max(1, patternIndex); // 보정된 현재 패턴 순번 저장
+        PatternCount = Math.Max(PatternIndex, patternCount); // 보정된 전체 패턴 수 저장
         ActionSpeed = Math.Max(1, actionSpeed); // 보정된 행동 속도 저장
         CreationOrder = Math.Max(0, creationOrder); // 보정된 생성 순서 저장
     } // 생성자 종료

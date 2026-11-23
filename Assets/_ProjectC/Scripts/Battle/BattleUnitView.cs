@@ -137,18 +137,19 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             return; // 행동 예고 표시 중단
         } // 행동 예고 숨김 종료
         EnsureEnemyIntentView(); // 행동 예고 화면 준비
+        string patternHeader = $"{action.PatternDisplayName} · 패턴 {action.PatternIndex}/{action.PatternCount}"; // 행동 이름과 패턴 순번 문구 계산
         if (action.ActionType == EnemyActionType.ApplyStatusEffect) // 상태 적용 행동 확인
         { // 상태 예고 처리 시작
             string effectName = BattleStatusEffectInstance.GetDisplayName(action.StatusEffectType); // 상태 이상 이름 조회
             bool blockedByImmunity = BattleStatusEffectInstance.IsDebuffType(action.StatusEffectType) && action.Target.HasStatusImmunity; // 면역 차단 예상 여부 계산
             string statusPreview = blockedByImmunity ? "면역 예상" : $"{effectName} {action.Amount} · {action.StatusDuration}T"; // 상태 적용 예고 문구 계산
-            enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {statusPreview}\n→ {action.Target.DisplayName}"; // 상태 행동 예고 내용 적용
+            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {statusPreview}\n→ {action.Target.DisplayName}"; // 상태 행동 예고 내용 적용
         } // 상태 예고 처리 종료
         else // 공격 행동 처리
         { // 공격 예고 처리 시작
             string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
             BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
-            enemyIntentText.text = $"행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
+            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {action.Amount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
         } // 공격 예고 처리 종료
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
@@ -268,7 +269,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         intentRect.anchorMax = new Vector2(0.5f, 1f); // 상단 중앙 최대 앵커
         intentRect.pivot = new Vector2(0.5f, 1f); // 상단 중앙 기준점
         intentRect.anchoredPosition = new Vector2(0f, -6f); // 유닛 내부 상단 위치
-        intentRect.sizeDelta = new Vector2(165f, 56f); // 세 줄 행동 예고 크기
+        intentRect.sizeDelta = new Vector2(180f, 72f); // 네 줄 행동 예고 크기
         Image intentBackground = enemyIntentRoot.GetComponent<Image>(); // 행동 예고 배경 조회
         intentBackground.color = new Color(0.18f, 0.06f, 0.06f, 0.94f); // 행동 예고 배경색 적용
         intentBackground.raycastTarget = false; // 행동 예고 클릭 차단 해제
@@ -281,7 +282,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         textRect.offsetMax = new Vector2(-5f, -3f); // 글자 오른쪽 위 여백
         enemyIntentText = textObject.GetComponent<TextMeshProUGUI>(); // 행동 예고 텍스트 조회
         enemyIntentText.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
-        enemyIntentText.fontSize = 13f; // 행동 예고 글자 크기
+        enemyIntentText.fontSize = 12.5f; // 네 줄 예고 글자 크기
         enemyIntentText.color = new Color(1f, 0.78f, 0.42f, 1f); // 행동 예고 글자색 적용
         enemyIntentText.alignment = TextAlignmentOptions.Center; // 행동 예고 가운데 정렬
         enemyIntentText.textWrappingMode = TextWrappingModes.NoWrap; // 행동 예고 자동 줄바꿈 해제

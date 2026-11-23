@@ -5,6 +5,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 적 런타임 목록
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 아군 런타임 목록
     private readonly List<BattleEnemyAction> plannedActions = new List<BattleEnemyAction>(); // 예정 행동 목록
+    private readonly Dictionary<BattleUnitRuntime, int> nextPatternIndices = new Dictionary<BattleUnitRuntime, int>(); // 적별 다음 패턴 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
     private BattleEnemyAction executingAction; // 현재 실행 행동
     private bool disposed; // 연결 해제 여부
@@ -25,6 +26,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 연결 불가 처리 종료
         enemyUnit.Died -= HandleEnemyDied; // 기존 중복 사망 연결 제거
         enemyUnit.Died += HandleEnemyDied; // 소환 적 사망 이벤트 등록
+        nextPatternIndices[enemyUnit] = 0; // 소환 적 첫 패턴 순번 저장
         return true; // 소환 적 연결 성공 반환
     } // 소환 적 연결 종료
     public bool UnregisterEnemy(BattleUnitRuntime enemyUnit) // 제거 적 행동 연결 해제
@@ -34,6 +36,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return false; // 연결 해제 실패 반환
         } // 적 없음 처리 종료
         enemyUnit.Died -= HandleEnemyDied; // 적 사망 이벤트 해제
+        nextPatternIndices.Remove(enemyUnit); // 제거 적 패턴 순번 정리
         plannedActions.RemoveAll(action => action.Actor == enemyUnit); // 제거 적 예정 행동 정리
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
         StateChanged?.Invoke(); // 예정 행동 변경 알림
@@ -75,7 +78,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 사망 적 처리 종료
         if (action.Target == null || action.Target.IsDead) // 기존 대상 상태 확인
         { // 대상 재선택 시작
-            BattleUnitRuntime replacementTarget = SelectTarget(action.Actor.EnemySource.TargetRule); // 새 생존 대상 선택
+            BattleUnitRuntime replacementTarget = SelectTarget(action.TargetRule); // 행동 규칙으로 새 생존 대상 선택
             if (!action.ChangeTarget(replacementTarget)) // 대상 변경 결과 확인
             { // 대상 없음 처리 시작
                 plannedActions.Remove(action); // 실행 불가 행동 제거
@@ -119,6 +122,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             return null; // 행동 생성 실패 반환
         } // 잘못된 적 처리 종료
         EnemyData enemyData = enemyUnit.EnemySource; // 적 원본 데이터 조회
+        EnemyActionPatternData patternData = SelectNextActionPattern(enemyUnit, enemyData, out int patternIndex, out int patternCount); // 다음 유효 패턴 행동 선택
+        if (patternData != null) // 패턴 행동 존재 확인
+        { // 패턴 행동 생성 시작
+            BattleUnitRuntime patternTarget = SelectTarget(patternData.TargetRule); // 패턴 대상 규칙으로 대상 선택
+            if (patternTarget == null) // 패턴 대상 존재 확인
+            { // 패턴 대상 없음 처리 시작
+                return null; // 행동 생성 실패 반환
+            } // 패턴 대상 없음 처리 종료
+            int patternSpeed = RollActionSpeed(patternData.MinimumActionSpeed, patternData.MaximumActionSpeed); // 패턴 행동 속도 결정
+            return new BattleEnemyAction(enemyUnit, patternTarget, patternData.ActionType, patternData.DamageType, patternData.ActionAmount, patternData.StatusEffectType, patternData.StatusEffectDuration, patternData.StatusEffectMaximumStacks, patternData.TargetRule, patternData.DisplayName, patternIndex, patternCount, patternSpeed, creationOrder); // 순차 패턴 행동 반환
+        } // 패턴 행동 생성 종료
         if (!IsActionConfigurationValid(enemyData)) // 지원 행동 확인
         { // 미지원 행동 처리 시작
             return null; // 행동 생성 실패 반환
@@ -128,10 +142,39 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         { // 대상 없음 처리 시작
             return null; // 행동 생성 실패 반환
         } // 대상 없음 처리 종료
-        int actionSpeed = RollActionSpeed(enemyData); // 이번 턴 행동 속도 결정
+        int actionSpeed = RollActionSpeed(enemyData.MinimumActionSpeed, enemyData.MaximumActionSpeed); // 이번 턴 행동 속도 결정
         int actionAmount = enemyData.ActionType == EnemyActionType.Attack ? enemyData.BasicAttackPower : enemyData.StatusEffectValue; // 행동 종류별 수치 결정
-        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, actionSpeed, creationOrder); // 예정 행동 반환
+        string actionDisplayName = GetLegacyActionDisplayName(enemyData); // 호환 행동 이름 계산
+        return new BattleEnemyAction(enemyUnit, targetUnit, enemyData.ActionType, enemyData.DamageType, actionAmount, enemyData.StatusEffectType, enemyData.StatusEffectDuration, enemyData.StatusEffectMaximumStacks, enemyData.TargetRule, actionDisplayName, 1, 1, actionSpeed, creationOrder); // 호환 예정 행동 반환
     } // 행동 생성 종료
+    private EnemyActionPatternData SelectNextActionPattern(BattleUnitRuntime enemyUnit, EnemyData enemyData, out int patternIndex, out int patternCount) // 다음 유효 패턴 선택
+    { // 패턴 선택 시작
+        patternIndex = 1; // 기본 화면 순번 초기화
+        patternCount = enemyData.ActionPatternCount; // 전체 패턴 수 조회
+        if (patternCount < 1) // 패턴 존재 확인
+        { // 패턴 없음 처리 시작
+            return null; // 호환 행동 사용 반환
+        } // 패턴 없음 처리 종료
+        if (!nextPatternIndices.TryGetValue(enemyUnit, out int nextPatternIndex)) // 저장 순번 존재 확인
+        { // 첫 패턴 처리 시작
+            nextPatternIndex = 0; // 첫 패턴 순번 적용
+        } // 첫 패턴 처리 종료
+        nextPatternIndex = Math.Max(0, nextPatternIndex) % patternCount; // 패턴 순번 범위 보정
+        for (int patternOffset = 0; patternOffset < patternCount; patternOffset++) // 전체 패턴 후보 순회
+        { // 유효 패턴 검색 시작
+            int candidateIndex = (nextPatternIndex + patternOffset) % patternCount; // 순환 후보 순번 계산
+            EnemyActionPatternData candidatePattern = enemyData.GetActionPattern(candidateIndex); // 후보 패턴 조회
+            if (candidatePattern == null || !candidatePattern.IsValid) // 후보 설정 유효성 확인
+            { // 잘못된 후보 처리 시작
+                continue; // 다음 패턴 후보 이동
+            } // 잘못된 후보 처리 종료
+            patternIndex = candidateIndex + 1; // 화면용 현재 패턴 순번 저장
+            nextPatternIndices[enemyUnit] = (candidateIndex + 1) % patternCount; // 다음 준비 패턴 순번 저장
+            return candidatePattern; // 유효 패턴 반환
+        } // 유효 패턴 검색 종료
+        patternCount = 1; // 호환 행동 전체 순번 적용
+        return null; // 유효 패턴 없음 반환
+    } // 패턴 선택 종료
     private static bool IsActionConfigurationValid(EnemyData enemyData) // 적 행동 설정 유효성 확인
     { // 설정 확인 시작
         if (enemyData.ActionType == EnemyActionType.Attack) // 공격 행동 확인
@@ -140,11 +183,19 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         } // 공격 설정 처리 종료
         return enemyData.ActionType == EnemyActionType.ApplyStatusEffect && enemyData.StatusEffectType != BattleStatusEffectType.None && enemyData.StatusEffectValue > 0 && enemyData.StatusEffectDuration > 0 && enemyData.StatusEffectMaximumStacks > 0; // 상태 행동 설정 유효성 반환
     } // 설정 확인 종료
-    private int RollActionSpeed(EnemyData enemyData) // 적 행동 속도 결정
+    private static string GetLegacyActionDisplayName(EnemyData enemyData) // 호환 행동 이름 조회
+    { // 호환 이름 조회 시작
+        if (enemyData.ActionType == EnemyActionType.ApplyStatusEffect) // 상태 행동 확인
+        { // 상태 이름 처리 시작
+            return BattleStatusEffectInstance.GetDisplayName(enemyData.StatusEffectType); // 상태 이상 이름 반환
+        } // 상태 이름 처리 종료
+        return enemyData.ActionType == EnemyActionType.Attack ? "기본 공격" : "행동 없음"; // 공격 또는 빈 행동 이름 반환
+    } // 호환 이름 조회 종료
+    private int RollActionSpeed(int minimumSpeed, int maximumSpeed) // 적 행동 속도 결정
     { // 속도 결정 시작
-        int minimumSpeed = enemyData.MinimumActionSpeed; // 최소 행동 속도 조회
-        int maximumSpeed = enemyData.MaximumActionSpeed; // 최대 행동 속도 조회
-        return random.Next(minimumSpeed, maximumSpeed + 1); // 양끝 포함 무작위 속도 반환
+        int safeMinimumSpeed = Math.Max(1, minimumSpeed); // 최소 행동 속도 보정
+        int safeMaximumSpeed = Math.Max(safeMinimumSpeed, maximumSpeed); // 최대 행동 속도 보정
+        return random.Next(safeMinimumSpeed, safeMaximumSpeed + 1); // 양끝 포함 무작위 속도 반환
     } // 속도 결정 종료
     private static int CompareActionOrder(BattleEnemyAction leftAction, BattleEnemyAction rightAction) // 적 행동 순서 비교
     { // 행동 비교 시작
@@ -202,6 +253,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private void HandleEnemyDied(BattleUnitRuntime enemyUnit) // 적 사망 처리
     { // 적 사망 처리 시작
         int removedCount = plannedActions.RemoveAll(action => action.Actor == enemyUnit); // 사망 적 행동 제거
+        nextPatternIndices.Remove(enemyUnit); // 사망 적 패턴 순번 정리
         if (removedCount > 0) // 제거 행동 확인
         { // 변경 알림 시작
             ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
@@ -221,7 +273,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             { // 다른 대상 처리 시작
                 continue; // 다음 행동 이동
             } // 다른 대상 처리 종료
-            BattleUnitRuntime replacementTarget = SelectTarget(action.Actor.EnemySource.TargetRule); // 대체 대상 선택
+            BattleUnitRuntime replacementTarget = SelectTarget(action.TargetRule); // 행동 규칙으로 대체 대상 선택
             changed |= action.ChangeTarget(replacementTarget); // 대상 변경 결과 저장
         } // 대상 확인 종료
         if (changed) // 대상 변경 확인
@@ -270,5 +322,6 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         UnregisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 해제
         UnregisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 해제
         plannedActions.Clear(); // 예정 행동 목록 비우기
+        nextPatternIndices.Clear(); // 적별 패턴 순번 비우기
     } // 연결 해제 종료
 } // 클래스 종료

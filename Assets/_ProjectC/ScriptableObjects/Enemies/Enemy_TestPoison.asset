@@ -29,3 +29,26 @@ MonoBehaviour:
   targetRule: 2
   minimumActionSpeed: 3
   maximumActionSpeed: 7
+  actionPatterns:
+  - displayName: "독침 공격"
+    actionType: 1
+    attackPower: 6
+    damageType: 1
+    statusEffectType: 0
+    statusEffectValue: 1
+    statusEffectDuration: 1
+    statusEffectMaximumStacks: 1
+    targetRule: 0
+    minimumActionSpeed: 5
+    maximumActionSpeed: 7
+  - displayName: "중독 분사"
+    actionType: 2
+    attackPower: 0
+    damageType: 0
+    statusEffectType: 1
+    statusEffectValue: 4
+    statusEffectDuration: 2
+    statusEffectMaximumStacks: 3
+    targetRule: 2
+    minimumActionSpeed: 3
+    maximumActionSpeed: 7
