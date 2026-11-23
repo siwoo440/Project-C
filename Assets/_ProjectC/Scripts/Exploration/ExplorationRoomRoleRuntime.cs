@@ -1,33 +1,15 @@
-using System; // 예외 처리 사용
 using System.Collections.Generic; // 콘텐츠 데이터 목록 사용
-using System.Reflection; // 기존 맵 런타임 생성 기능 재사용
 using UnityEngine; // 런타임 오브젝트와 리소스 사용
 
-public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 역할 콘텐츠 통합 런타임
+public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 역할 콘텐츠 통합 런타임
 {
     private const int ContentSeedSalt = 2047189321; // 방 콘텐츠 선택 난수 분리값
-
-    private static readonly BindingFlags PrivateInstanceFlags =
-        BindingFlags.Instance | BindingFlags.NonPublic; // 기존 맵 비공개 기능 조회 범위
-
-    private static readonly MethodInfo ClearEncounterObjectsMethod =
-        typeof(ExplorationMapRuntime).GetMethod("ClearEncounterObjects", PrivateInstanceFlags); // 기존 조우 전체 정리 기능
-
-    private static readonly MethodInfo ClearEventObjectsMethod =
-        typeof(ExplorationMapRuntime).GetMethod("ClearEventObjects", PrivateInstanceFlags); // 기존 이벤트 전체 정리 기능
-
-    private static readonly MethodInfo CreateEncounterObjectMethod =
-        typeof(ExplorationMapRuntime).GetMethod("CreateEncounterObject", PrivateInstanceFlags); // 기존 조우 생성 기능
-
-    private static readonly MethodInfo CreateEventObjectMethod =
-        typeof(ExplorationMapRuntime).GetMethod("CreateEventObject", PrivateInstanceFlags); // 기존 이벤트 생성 기능
 
     private readonly List<GameObject> specialRoomObjects = new List<GameObject>(); // 현재 층 특수 방 표시 목록
 
     private ExplorationMapRuntime mapRuntime; // 기존 탐사 맵 런타임
     private int appliedSeed = int.MinValue; // 마지막 역할 적용 Seed
     private int appliedFloor = int.MinValue; // 마지막 역할 적용 층
-    private bool reflectionErrorLogged; // 기존 비공개 기능 오류 로그 여부
 
     public void Initialize(ExplorationMapRuntime runtime) // 기존 탐사 맵 런타임 연결
     {
@@ -42,29 +24,17 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
 
     private void LateUpdate() // F9 재생성과 층 이동 후 역할 갱신
     {
-        ApplyIfNeeded(); // 현재 Seed 변경 여부 확인 후 재적용
+        ApplyIfNeeded(); // 현재 Seed·층 변경 여부 확인
     }
 
-    public static bool CanDescendCurrentFloor(ExplorationMapRuntime runtime) // 현재 층 계단 이동 가능 여부 확인
+    public static bool CanDescendCurrentFloor(ExplorationMapRuntime runtime) // 현재 층 진행 관문 클리어 여부 확인
     {
         if (runtime == null || runtime.CurrentMap == null) // 맵 준비 여부 확인
         {
             return true; // 기존 동작 유지
         }
 
-        if (!runtime.CurrentMap.TryGetCell(
-                runtime.CurrentMap.StairsCoordinate,
-                out ExplorationMapCell stairsCell)) // 계단 방 데이터 조회
-        {
-            return true; // 계단 데이터 누락 시 기존 동작 유지
-        }
-
-        if (stairsCell.RoomType != ExplorationRoomType.Boss) // 계단 방 보스 역할 여부 확인
-        {
-            return true; // 비보스 계단 이동 허용
-        }
-
-        return !runtime.HasEncounterAt(runtime.CurrentMap.StairsCoordinate); // 보스 조우 제거 후 이동 허용
+        return !runtime.HasEncounterAt(runtime.CurrentMap.StairsCoordinate); // Elite·Boss 관문 조우 제거 후 이동 허용
     }
 
     private void ApplyIfNeeded() // 현재 층 방 역할 콘텐츠 적용
@@ -76,26 +46,22 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
 
         int currentSeed = mapRuntime.CurrentMap.Seed; // 현재 층 Seed 조회
         int currentFloor = mapRuntime.CurrentFloor; // 현재 탐사 층 조회
+
         if (appliedSeed == currentSeed && appliedFloor == currentFloor) // 동일 층 적용 완료 여부 확인
         {
             return; // 중복 역할 적용 방지
         }
 
-        if (!CanReuseMapRuntimeContentMethods()) // 기존 맵 생성 기능 재사용 가능 여부 확인
-        {
-            return; // 비공개 기능 누락 시 적용 중단
-        }
-
         ClearSpecialRoomObjects(); // 이전 특수 방 표시 정리
-        InvokeMapMethod(ClearEncounterObjectsMethod); // 기존 랜덤 조우 전체 정리
-        InvokeMapMethod(ClearEventObjectsMethod); // 기존 랜덤 이벤트 전체 정리
+        mapRuntime.ClearEncounterObjects(); // 기존 절차 조우 전체 정리
+        mapRuntime.ClearEventObjects(); // 기존 절차 이벤트 전체 정리
 
         List<EncounterData> allEncounters = LoadValidEncounters(); // 전체 유효 조우 데이터 로드
-        List<EncounterData> normalEncounters = FilterEncounters(allEncounters, BattleType.Normal); // 일반 조우 데이터 분리
-        List<EncounterData> eliteEncounters = FilterEncounters(allEncounters, BattleType.Elite); // 엘리트 조우 데이터 분리
-        List<EncounterData> bossEncounters = FilterEncounters(allEncounters, BattleType.Boss); // 보스 조우 데이터 분리
-        List<ExplorationEventData> events = LoadValidEvents(); // 전체 유효 탐사 이벤트 로드
-        System.Random random = new System.Random(currentSeed ^ ContentSeedSalt); // 현재 층 콘텐츠 선택 난수 준비
+        List<EncounterData> normalEncounters = FilterEncounters(allEncounters, BattleType.Normal); // 일반 조우 분리
+        List<EncounterData> eliteEncounters = FilterEncounters(allEncounters, BattleType.Elite); // 엘리트 조우 분리
+        List<EncounterData> bossEncounters = FilterEncounters(allEncounters, BattleType.Boss); // 보스 조우 분리
+        List<ExplorationEventData> events = LoadValidEvents(); // 전체 유효 이벤트 로드
+        System.Random random = new System.Random(currentSeed ^ ContentSeedSalt ^ (currentFloor * 733)); // 층별 콘텐츠 난수 준비
 
         int normalCount = 0; // 일반 방 생성 수
         int eliteCount = 0; // 엘리트 방 생성 수
@@ -145,7 +111,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
                     break;
 
                 case ExplorationRoomType.Boss:
-                    CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random); // 최장 거리 보스 전투 생성
+                    CreateEncounterForRoom(cell, BattleType.Boss, bossEncounters, allEncounters, random); // 보스 전투 생성
                     bossCount += 1; // 보스 방 수 증가
                     break;
             }
@@ -155,43 +121,9 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
         appliedFloor = currentFloor; // 현재 층 번호 적용 완료 기록
 
         Debug.Log(
-            $"[Exploration][Day56] 방 역할 적용 완료 - " +
+            $"[Exploration][Day57] 방 역할 통합 완료 - Floor {currentFloor} / " +
             $"Seed {currentSeed} / 일반 {normalCount} / 엘리트 {eliteCount} / 이벤트 {eventCount} / " +
-            $"보물 {treasureCount} / 휴식 {restCount} / 상점 {shopCount} / 보스 {bossCount}"); // 현재 층 방 역할 결과 로그
-    }
-
-    private bool CanReuseMapRuntimeContentMethods() // 기존 맵 콘텐츠 비공개 기능 존재 확인
-    {
-        bool valid =
-            ClearEncounterObjectsMethod != null &&
-            ClearEventObjectsMethod != null &&
-            CreateEncounterObjectMethod != null &&
-            CreateEventObjectMethod != null; // 필수 기존 기능 존재 여부 계산
-
-        if (!valid && !reflectionErrorLogged) // 최초 기능 누락 확인
-        {
-            reflectionErrorLogged = true; // 중복 오류 로그 방지
-            Debug.LogError(
-                "[Exploration][Day56] ExplorationMapRuntime의 기존 콘텐츠 생성 기능을 찾지 못했습니다. " +
-                "57일차 통합 전에 메서드 이름 변경 여부를 확인하세요.",
-                this); // 기존 기능 연결 실패 안내
-        }
-
-        return valid; // 기존 기능 재사용 가능 여부 반환
-    }
-
-    private void InvokeMapMethod(MethodInfo methodInfo, params object[] parameters) // 기존 맵 비공개 기능 호출
-    {
-        try
-        {
-            methodInfo.Invoke(mapRuntime, parameters); // 현재 맵 런타임 기능 실행
-        }
-        catch (Exception exception)
-        {
-            Debug.LogError(
-                $"[Exploration][Day56] 기존 맵 콘텐츠 기능 호출 실패 - {methodInfo.Name}\n{exception}",
-                this); // Prototype 연결 실패 로그
-        }
+            $"보물 {treasureCount} / 휴식 {restCount} / 상점 {shopCount} / 보스 {bossCount}"); // 방 역할 결과 로그
     }
 
     private void CreateEncounterForRoom(
@@ -211,20 +143,17 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
                 ? requestedPool
                 : fallbackPool; // 요청 등급 데이터 누락 시 전체 유효 조우 대체
 
-        EncounterData encounterData =
-            sourcePool[random.Next(sourcePool.Count)]; // Seed 기반 조우 데이터 선택
+        EncounterData encounterData = sourcePool[random.Next(sourcePool.Count)]; // Seed 기반 조우 데이터 선택
 
         if (requestedPool.Count == 0) // 요청 등급 대체 여부 확인
         {
             Debug.LogWarning(
-                $"[Exploration][Day56] {requestedType} 전용 EncounterData가 없어 {encounterData.BattleType} 조우로 대체했습니다.",
+                $"[Exploration][Day57] {requestedType} 전용 EncounterData가 없어 " +
+                $"{encounterData.BattleType} 조우로 대체했습니다.",
                 this); // 등급 데이터 누락 안내
         }
 
-        InvokeMapMethod(
-            CreateEncounterObjectMethod,
-            cell,
-            encounterData); // 기존 조우 생성·세션 등록 흐름 재사용
+        mapRuntime.CreateEncounterObject(cell, encounterData); // 정식 맵 API로 조우 생성
     }
 
     private void CreateEventForRoom(
@@ -237,13 +166,8 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
             return; // 이벤트 생성 불가 처리
         }
 
-        ExplorationEventData eventData =
-            events[random.Next(events.Count)]; // Seed 기반 이벤트 데이터 선택
-
-        InvokeMapMethod(
-            CreateEventObjectMethod,
-            cell,
-            eventData); // 기존 이벤트 생성·세션 등록 흐름 재사용
+        ExplorationEventData eventData = events[random.Next(events.Count)]; // Seed 기반 이벤트 선택
+        mapRuntime.CreateEventObject(cell, eventData); // 정식 맵 API로 이벤트 생성
     }
 
     private void CreateSpecialRoomObject(
@@ -260,18 +184,14 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
             $"X{cell.Coordinate.x}_Y{cell.Coordinate.y}_" +
             $"S{mapRuntime.CurrentMap.Seed}"; // 특수 방 고유 런타임 ID 생성
 
-        ExplorationSessionManager sessionManager =
-            ExplorationSessionManager.EnsureInstance(); // 특수 방 사용 상태 관리자 준비
+        ExplorationSessionManager sessionManager = ExplorationSessionManager.EnsureInstance(); // 특수 방 상태 관리자 준비
 
-        if ((roomType == ExplorationRoomType.Treasure ||
-             roomType == ExplorationRoomType.Rest) &&
-            sessionManager.IsEventResolved(runtimeId)) // 이미 사용한 일회성 특수 방 확인
+        if (sessionManager.IsEventResolved(runtimeId)) // 사용 완료 특수 방 확인
         {
-            return; // 사용 완료 특수 방 재생성 제외
+            return; // 일회성 특수 방 재생성 제외
         }
 
-        Vector2 worldPosition =
-            mapRuntime.GetWorldPosition(cell.Coordinate); // 방 중심 월드 위치 조회
+        Vector2 worldPosition = mapRuntime.GetWorldPosition(cell.Coordinate); // 방 중심 월드 위치 조회
 
         GameObject roomObject = new GameObject(
             $"SpecialRoom_{roomType}_{cell.Coordinate.x}_{cell.Coordinate.y}",
@@ -280,41 +200,20 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
             typeof(ExplorationSpecialRoomView)); // 특수 방 상호작용 오브젝트 생성
 
         roomObject.transform.SetParent(transform); // 탐사 맵 런타임 하위 배치
-        roomObject.transform.position = new Vector3(
-            worldPosition.x,
-            worldPosition.y,
-            0f); // 방 중심 위치 지정
+        roomObject.transform.position = new Vector3(worldPosition.x, worldPosition.y, 0f); // 방 중심 위치 지정
+        roomObject.transform.localScale = new Vector3(0.86f, 0.86f, 1f); // 특수 방 표시 크기 설정
 
-        roomObject.transform.localScale = new Vector3(
-            0.86f,
-            0.86f,
-            1f); // 특수 방 표시 크기 설정
-
-        SpriteRenderer spriteRenderer =
-            roomObject.GetComponent<SpriteRenderer>(); // 특수 방 렌더러 조회
-
-        spriteRenderer.sprite =
-            ExplorationSpecialRoomView.GetRuntimeMarkerSprite(); // 공용 특수 방 임시 스프라이트 지정
-
-        spriteRenderer.color =
-            ExplorationSpecialRoomView.GetRoomColor(roomType); // 방 역할별 임시 색상 지정
-
+        SpriteRenderer spriteRenderer = roomObject.GetComponent<SpriteRenderer>(); // 특수 방 렌더러 조회
+        spriteRenderer.sprite = ExplorationSpecialRoomView.GetRuntimeMarkerSprite(); // 임시 방 표시 스프라이트 지정
+        spriteRenderer.color = ExplorationSpecialRoomView.GetRoomColor(roomType); // 방 역할별 임시 색상 지정
         spriteRenderer.sortingOrder = 4; // 탐사 오브젝트 표시 순서 지정
 
-        CircleCollider2D collider =
-            roomObject.GetComponent<CircleCollider2D>(); // 특수 방 Trigger 조회
-
+        CircleCollider2D collider = roomObject.GetComponent<CircleCollider2D>(); // 특수 방 Trigger 조회
         collider.isTrigger = true; // 특수 방 Trigger 활성화
         collider.radius = 0.7f; // 특수 방 상호작용 범위 설정
 
-        ExplorationSpecialRoomView specialRoomView =
-            roomObject.GetComponent<ExplorationSpecialRoomView>(); // 특수 방 View 조회
-
-        specialRoomView.Initialize(
-            mapRuntime,
-            cell.Coordinate,
-            roomType,
-            runtimeId); // 방 역할과 상태 연결
+        ExplorationSpecialRoomView specialRoomView = roomObject.GetComponent<ExplorationSpecialRoomView>(); // 특수 방 View 조회
+        specialRoomView.Initialize(mapRuntime, cell.Coordinate, roomType, runtimeId); // 방 역할과 상태 연결
 
         specialRoomObjects.Add(roomObject); // 현재 층 특수 방 표시 등록
     }
@@ -358,9 +257,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 56일차 방 �
 
     private static List<ExplorationEventData> LoadValidEvents() // 유효 이벤트 데이터 로드
     {
-        IReadOnlyList<ExplorationEventData> loadedData =
-            ExplorationEventCatalog.LoadEvents(); // 기존 이벤트 카탈로그 로드
-
+        IReadOnlyList<ExplorationEventData> loadedData = ExplorationEventCatalog.LoadEvents(); // 기존 이벤트 카탈로그 로드
         List<ExplorationEventData> result = new List<ExplorationEventData>(); // 유효 이벤트 목록 생성
 
         if (loadedData == null) // 이벤트 카탈로그 존재 확인

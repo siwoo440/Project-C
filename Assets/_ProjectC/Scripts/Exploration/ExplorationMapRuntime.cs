@@ -150,7 +150,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         CurrentMap =
             ExplorationMapGenerator.Generate(
                 DefaultCellCount,
-                seed); // 지정 Seed로 동일 논리 맵 생성
+                seed,
+                CurrentFloor); // 지정 Seed와 현재 층 규칙으로 동일 논리 맵 생성
 
         RestoredFromSession =
             restoredFromSession; // 현재 생성이 복원인지 기록
@@ -702,9 +703,9 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                     right.EncounterId)); // EncounterId 순서 고정
     }
 
-    private void CreateEncounterObject(
+    public void CreateEncounterObject(
         ExplorationMapCell cell,
-        EncounterData data) // 등급 기반 절차 조우 오브젝트 생성
+        EncounterData data) // 57일차 방 역할 런타임용 절차 조우 생성 API
     {
         string runtimeEncounterId =
             $"F{CurrentFloor}_" +
@@ -787,9 +788,9 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             data.BattleType; // 현재 좌표 조우 등급 등록
     }
 
-    private void CreateEventObject(
+    public void CreateEventObject(
         ExplorationMapCell cell,
-        ExplorationEventData data) // 탐사 이벤트 오브젝트 생성
+        ExplorationEventData data) // 57일차 방 역할 런타임용 이벤트 생성 API
     {
         if (data == null ||
             !data.IsValidData())
@@ -1001,7 +1002,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
     }
 
-    private void ClearEncounterObjects() // 현재 층 조우 오브젝트 정리
+    public void ClearEncounterObjects() // 57일차 방 역할 런타임용 현재 층 조우 정리 API
     {
         foreach (GameObject encounterObject in encounterObjects)
         {
@@ -1066,7 +1067,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
         }
     }
 
-    private void ClearEventObjects() // 현재 층 이벤트 오브젝트 정리
+    public void ClearEventObjects() // 57일차 방 역할 런타임용 현재 층 이벤트 정리 API
     {
         foreach (GameObject eventObject in eventObjects)
         {

@@ -24,10 +24,14 @@ public sealed class ExplorationFloorStairs : MonoBehaviour // 다음 층 이동�
             return; // 다른 오브젝트 접촉 무시
         }
 
-        if (!ExplorationRoomRoleRuntime.CanDescendCurrentFloor(mapRuntime)) // 현재 보스 방 클리어 여부 확인
+        if (mapRuntime.CurrentMap != null &&
+            mapRuntime.HasEncounterAt(mapRuntime.CurrentMap.StairsCoordinate)) // 마지막 진행 방 조우 잔존 여부 확인
         {
-            Debug.Log("[Exploration][Day56] 보스 조우를 클리어하기 전에는 다음 층으로 이동할 수 없습니다.", this); // 보스 게이트 안내
-            return; // 보스 미클리어 계단 이동 차단
+            Debug.Log(
+                "[Exploration][Day57] 마지막 진행 전투를 클리어하기 전에는 다음 층으로 이동할 수 없습니다.",
+                this); // 엘리트·보스 관문 안내
+
+            return; // 관문 전투 미클리어 계단 이동 차단
         }
 
         mapRuntime.TryDescendFloor(player); // 다음 층 진행 요청

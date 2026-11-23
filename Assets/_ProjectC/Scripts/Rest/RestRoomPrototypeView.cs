@@ -1,17 +1,17 @@
 using UnityEngine; // Prototype IMGUI와 화면 제어 사용
 
-public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Prototype 화면
+public sealed class RestRoomPrototypeView : MonoBehaviour // 57일차 휴식 Prototype 화면
 {
     private const float WindowWidth = 680f; // 휴식 창 기준 너비
     private const float WindowHeight = 720f; // 휴식 창 기준 높이
 
     private RestRoomRunManager manager; // 휴식 회차 관리자
     private bool isOpen; // 휴식 창 표시 여부
-    private bool isHighRisk; // 현재 휴식 방 고위험 여부
+    private int hazardLevel; // 현재 휴식 방 퇴색 위험도
     private bool roomRiskLocked; // 실제 방 위험도 고정 여부
     private int selectedCardIndex = -1; // 강화 선택 카드 위치
     private Vector2 cardScroll; // 카드 목록 스크롤 위치
-    private string resultMessage = "미강화 카드 1장을 선택한 뒤 휴식을 실행하세요."; // 현재 안내 메시지
+    private string resultMessage = "강화할 카드를 선택한 뒤 휴식을 실행하세요."; // 현재 안내 메시지
     private float previousTimeScale = 1f; // 휴식 창 이전 시간 배율
 
     public void Initialize(RestRoomRunManager runManager) // Prototype 화면 초기화
@@ -19,14 +19,20 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
         manager = runManager; // 휴식 관리자 저장
     }
 
-    public void OpenFromRoom(bool highRisk) // 실제 생성된 휴식 방에서 UI 열기
+    public void OpenFromRoom(int roomHazardLevel) // 실제 생성된 휴식 방에서 UI 열기
     {
-        isHighRisk = highRisk; // 현재 방 위험도 적용
+        hazardLevel = Mathf.Clamp(roomHazardLevel, 0, 3); // 실제 방 위험도 저장
         roomRiskLocked = true; // 실제 방 위험도 수동 변경 차단
-        resultMessage = highRisk
-            ? "고위험 휴식 방: HP 15% / 정신력 +15 / 카드 1장 강화"
-            : "일반 휴식 방: HP 25% / 정신력 +15 / 카드 1장 강화"; // 실제 방 휴식 효과 안내
+        resultMessage =
+            $"위험도 {GetHazardLabel(hazardLevel)}: HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}% / " +
+            $"정신력 +{RestRoomRecoveryService.MentalRecoveryAmount} / 카드 1장 강화"; // 실제 방 휴식 효과 안내
+
         OpenWindow(); // 휴식 창 표시
+    }
+
+    public void OpenFromRoom(bool highRisk) // 56일차 기존 호출 호환
+    {
+        OpenFromRoom(highRisk ? 2 : 0); // 기존 고위험을 Lv2로 변환
     }
 
     private void OnGUI() // Prototype 휴식 UI 표시
@@ -63,7 +69,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             GetInstanceID(),
             windowRect,
             DrawRestWindow,
-            "55일차 - Prototype 휴식 방"); // 휴식 모달 창 표시
+            "57일차 - Prototype 휴식 방"); // 휴식 모달 창 표시
     }
 
     private void DrawRestWindow(int windowId) // 휴식 창 내용 표시
@@ -75,24 +81,22 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
                 ? "상태: 사용 완료"
                 : "상태: 사용 가능"); // 휴식 사용 상태 표시
 
-        GUILayout.BeginHorizontal(); // 위험도 선택 행 시작
+        GUILayout.BeginHorizontal(); // 위험도 표시 행 시작
         GUILayout.Label(
-            roomRiskLocked
-                ? isHighRisk
-                    ? "실제 방 위험도: 고위험 (HP 15%)"
-                    : "실제 방 위험도: 일반 (HP 25%)"
-                : isHighRisk
-                    ? "테스트 지역: 고위험 (HP 15%)"
-                    : "테스트 지역: 일반 (HP 25%)",
-            GUILayout.Width(330f)); // 현재 휴식 위험도 표시
+            $"{(roomRiskLocked ? "실제 방" : "테스트")} 위험도: {GetHazardLabel(hazardLevel)} " +
+            $"(HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}%)",
+            GUILayout.Width(380f)); // 현재 위험도와 회복률 표시
 
         GUI.enabled = !manager.IsUsed && !roomRiskLocked; // 수동 테스트에서만 위험도 변경 허용
-        if (GUILayout.Button("일반 / 고위험 전환", GUILayout.Width(180f))) // 테스트 위험도 변경 입력
+        if (GUILayout.Button("위험도 변경", GUILayout.Width(150f))) // 테스트 위험도 변경 입력
         {
-            isHighRisk = !isHighRisk; // 테스트 위험도 반전
+            hazardLevel = (hazardLevel + 1) % 4; // 안전→Lv1→Lv2→Lv3 순환
+            resultMessage =
+                $"테스트 위험도 {GetHazardLabel(hazardLevel)} / " +
+                $"HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}%"; // 테스트 위험도 안내
         }
         GUI.enabled = true; // UI 입력 상태 복구
-        GUILayout.EndHorizontal(); // 위험도 선택 행 종료
+        GUILayout.EndHorizontal(); // 위험도 표시 행 종료
 
         GUILayout.Space(8f); // 구역 간격 추가
         GUILayout.Label("파티 상태"); // 파티 상태 제목 표시
@@ -106,7 +110,6 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             GUILayout.Height(330f)); // 카드 목록 스크롤 시작
 
         DrawCardList(); // 현재 회차 카드 목록 표시
-
         GUILayout.EndScrollView(); // 카드 목록 스크롤 종료
 
         GUILayout.Space(8f); // 구역 간격 추가
@@ -115,7 +118,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
         GUI.enabled = !manager.IsUsed && selectedCardIndex >= 0; // 휴식 실행 가능 상태 적용
         if (GUILayout.Button("휴식 실행", GUILayout.Height(42f))) // 휴식 실행 입력
         {
-            if (manager.TryUseRest(selectedCardIndex, isHighRisk, out string message)) // 회복과 강화 실행
+            if (manager.TryUseRest(selectedCardIndex, hazardLevel, out string message)) // 위험도별 회복과 강화 실행
             {
                 resultMessage = message; // 성공 결과 표시
             }
@@ -136,7 +139,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
         if (GUILayout.Button("사용 상태만 초기화 (테스트)", GUILayout.Height(34f))) // Prototype 반복 테스트 입력
         {
             manager.ResetPrototypeUsage(); // 휴식 사용 여부만 초기화
-            resultMessage = "휴식 사용 상태만 초기화했습니다. 이미 강화된 카드는 유지됩니다."; // 테스트 초기화 안내
+            resultMessage = "휴식 사용 상태만 초기화했습니다. 카드 강화 상태는 유지됩니다."; // 테스트 초기화 안내
         }
         GUI.enabled = true; // UI 입력 상태 복구
         GUILayout.EndHorizontal(); // 하단 버튼 행 종료
@@ -168,9 +171,9 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             }
 
             string lifeState = currentHealth <= 0 ? "사망" : "생존"; // 현재 생존 상태 계산
-
             GUILayout.Label(
-                $"{member.DisplayName} | HP {currentHealth}/{member.MaxHealth} | 정신 {currentMental} | {lifeState} | 사망 {deathCount}회"); // 파티원 상태 표시
+                $"{member.DisplayName} | HP {currentHealth}/{member.MaxHealth} | 정신 {currentMental} | " +
+                $"{lifeState} | 사망 {deathCount}회"); // 파티원 상태 표시
         }
     }
 
@@ -197,11 +200,11 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             }
 
             bool selected = selectedCardIndex == index; // 현재 선택 카드 여부 계산
-            string upgradeText = entry.IsUpgraded ? "강화됨" : "미강화"; // 강화 상태 문구 계산
+            string upgradeText = entry.IsUpgraded ? $"강화 +{entry.UpgradeLevel}" : "미강화"; // 강화 상태 문구 계산
             string selectionText = selected ? "▶ " : string.Empty; // 선택 표시 계산
             string ownerName = entry.Owner != null ? entry.Owner.DisplayName : "소유자 없음"; // 카드 소유자 이름 계산
 
-            GUI.enabled = !manager.IsUsed && entry.CanUpgrade; // 미사용 미강화 카드만 선택 허용
+            GUI.enabled = !manager.IsUsed && entry.CanUpgrade; // 현재 강화 가능한 카드만 선택 허용
             if (GUILayout.Button(
                     $"{selectionText}{entry.Card.DisplayName} | {ownerName} | {upgradeText}",
                     GUILayout.Height(36f))) // 카드 선택 입력
@@ -211,6 +214,12 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 55일차 휴식 Pro
             }
             GUI.enabled = true; // UI 입력 상태 복구
         }
+    }
+
+    private static string GetHazardLabel(int level) // 위험도 한글 표시 조회
+    {
+        int safeLevel = Mathf.Clamp(level, 0, 3); // 위험도 범위 보정
+        return safeLevel == 0 ? "안전" : $"퇴색 Lv{safeLevel}"; // 안전 또는 퇴색 단계 표시
     }
 
     private void OpenWindow() // 휴식 창 열기
