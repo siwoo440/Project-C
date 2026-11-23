@@ -107,4 +107,10 @@ public enum RelicEffectType // 유물 효과 종류
     BlindTargetDirectDamage, // 실명 적의 카드 직접 피격 보너스
     ShortenBleedOnHeal, // 회복 카드의 출혈 지속 시간 감소
     RepeatTargetHitBonus, // 같은 적 연속 명중 이후 다음 카드 피해 증가
+    CancelIncomingFear, // 아군에게 들어오는 공포를 확률로 취소
+    ReducePeriodicBurnDamage, // 아군에게 예정된 턴 종료 화상 피해 감소
+    LowHealthDamageReduction, // 저체력 아군이 실제로 받는 피해 경감
+    LowMentalCardHealing, // 저정신력 시전자의 직접 체력 회복 가산
+    FirstDebuffedTargetHitDamage, // 약화 적의 첫 직접 명중 피해 가산
+    FirstBattleSwordDamage, // 처음 사용한 검 피해 카드의 첫 명중 피해 가산
 }

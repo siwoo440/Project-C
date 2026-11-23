@@ -119,7 +119,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             } // 출혈 처리 종료
             else if (effect.EffectType == BattleStatusEffectType.Burn) // 기존 화상 피해 확인
             { // 화상 피해 처리 시작
-                applied = runtimeUnit.TakeDamage(previousValue, BattleDamageType.None).AppliedDamage; // 화상 수치만큼 피해 적용
+                int reduction = runtimeUnit.Team == BattleTeam.Ally ? BattleSupplyRelics.Find(RelicEffectType.ReducePeriodicBurnDamage)?.EffectValue ?? 0 : 0; // 실제 생존 아군 화상의 보유 유물 경감량
+                applied = runtimeUnit.TakeDamage(System.Math.Max(0, previousValue - reduction), BattleDamageType.None).AppliedDamage; // 영 미만을 막은 화상 원본을 기존 방어·무효 경로로 전달
             } // 화상 피해 처리 종료
             else if (renew) // 생존 아군 자신의 실제 턴 종료인 경우
             { // 재생 지속 회복 시작

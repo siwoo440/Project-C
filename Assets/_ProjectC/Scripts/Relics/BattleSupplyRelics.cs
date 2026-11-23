@@ -1,10 +1,12 @@
 using System; // 정수 범위와 비율 계산
+using System.Linq; // 명중한 적의 활성 약화 확인
 
 internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위 유물 처리
 { // 전투 유물 처리 시작
     private const int RepeatHitGoal = 3; // 전투 수첩 보너스에 필요한 같은 적 명중 횟수
     private int lastBlackHeartRound; // 검은 심장핀의 마지막 아군 라운드
     private bool usedGlassMarble; // 이번 전투 유리 구슬의 사용 여부
+    private bool usedBlackDustVial; // 이번 전투의 활성 약화 명중에 가루병 사용 여부
     private BattleUnitRuntime repeatedHitTarget; // 전투 수첩에 마지막으로 기록한 적
     private int consecutiveTargetHits; // 같은 적에게 연속으로 명중한 횟수
 
@@ -29,6 +31,12 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         bonus += card.CardType == CardType.Wand && card.EffectType == CardEffectType.Damage ? Find(RelicEffectType.WandDirectHitBonus)?.EffectValue ?? 0 : 0; // 지팡이 피해 카드의 각 명중에 수정못 가산
         bonus += target.GetStatusEffect(BattleStatusEffectType.Blind) != null ? Find(RelicEffectType.BlindTargetDirectDamage)?.EffectValue ?? 0 : 0; // 실제 실명 상태인 적에게 안경 렌즈 가산
         bonus += GetRepeatTargetHitBonus(target); // 전투 수첩의 연속 명중 기록 및 예약 피해 가산
+        var dust = !usedBlackDustVial ? Find(RelicEffectType.FirstDebuffedTargetHitDamage) : null; // 처음 유효한 명중의 검은 가루병 조회
+        if (dust != null && target.StatusEffects.Any(static effect => effect.IsDebuff && !effect.IsExpired)) // 적에게 남아 있는 실제 활성 약화 확인
+        { // 검은 가루병 발동 시작
+            usedBlackDustVial = true; // 방어도가 전부 흡수해도 이번 전투의 기회 소모
+            bonus += dust.EffectValue; // 적 방어 계산 이전에 가루병 피해 가산
+        } // 검은 가루병 발동 종료
         return (int)Math.Min(int.MaxValue, (long)damage + bonus); // 정수 범위의 최종 유물 피해 반환
     } // 유물 피해 계산 종료
 

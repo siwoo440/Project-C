@@ -193,6 +193,14 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 면역 차단 처리 시작
             return BattleStatusEffectApplyResult.BlockedByImmunity; // 면역 차단 결과 반환
         } // 면역 차단 처리 종료
+        if (effectType == BattleStatusEffectType.Fear && Team == BattleTeam.Ally) // 정상 면역 이후 살아 있는 아군에게의 유효 공포 확인
+        { // 무음 방울끈의 실제 공포 취소 시작
+            int chance = BattleSupplyRelics.Find(RelicEffectType.CancelIncomingFear)?.TriggerChancePercent ?? 0; // 실제 보유 유물의 공포 취소 확률
+            if (chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance)) // 부여가 유효한 공포에만 한 번의 난수 사용
+            { // 이번 공포의 확률 취소 시작
+                return BattleStatusEffectApplyResult.BlockedByImmunity; // 원래 상태 차단 피드백 경로 재사용
+            } // 이번 공포의 확률 취소 종료
+        } // 무음 방울끈의 실제 공포 취소 종료
         if (effectType == BattleStatusEffectType.Bleed && Team == BattleTeam.Ally && sourceUnit?.Team == BattleTeam.Enemy) // 적이 아군에게 주는 유효 출혈 시도 확인
         { // 출혈 저항 판정 시작
             int resistance = Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.BleedResistance)); // 출혈 저항의 유효 확률 조회
@@ -569,13 +577,22 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
         int relicReduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
         int shieldReduction = enemyDirectAttack && Team == BattleTeam.Ally ? GetShieldCardReduction(damageResult.FinalDamage, damageType, applyDangerInterception, enemyAreaAttack) : 0; // 의도와 일회성 보호를 포함한 적 피해 감소량
-        int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction); // 방어도 흡수 전 모든 감소량 합산
+        int reduction = (int)Math.Min(int.MaxValue, (long)relicReduction + shieldReduction + GetLowHealthDamageReduction()); // 기존 비율 경감 뒤 저체력 고정 감소와 방어도 이전 정산
         if (damageResult.FinalDamage > reduction && applyDamageNullification && GetStatusEffect(BattleStatusEffectType.DamageNullification) != null) // 경감 뒤 체력이나 방어도에 닿을 양수 피해와 무효 상태 확인
         { // 피해 무효 예고 시작
             return damageResult.WithoutDamage(); // 방어도와 체력을 모두 보존하는 결과 반환
         } // 피해 무효 예고 종료
         return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 실제 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
+    internal int GetLowHealthDamageReduction() // 일반·분담 피해가 공통으로 쓰는 저체력 감소량
+    { // 빛 없는 목걸이 조건 확인 시작
+        if (Team != BattleTeam.Ally || IsDead || (long)CurrentHealth * 10 > (long)MaxHealth * 3) // 피해 이전의 실제 생존 아군과 최대 체력 삼십 퍼센트 확인
+        { // 목걸이 효과 범위 밖 처리 시작
+            return 0; // 일반 피해량 보존
+        } // 목걸이 효과 범위 밖 처리 종료
+        return BattleSupplyRelics.Find(RelicEffectType.LowHealthDamageReduction)?.EffectValue ?? 0; // 실제 보유한 목걸이의 고정 감소량
+    } // 빛 없는 목걸이 조건 확인 종료
+
     private int GetShieldCardReduction(int damage, BattleDamageType type, bool applyDangerInterception, bool enemyAreaAttack) // 방패 상태와 광역 의도의 직접 피해 경감 계산
     { // 방패 피해 경감 계산 시작
         int resistance = type == BattleDamageType.Magical ? Math.Min(100, GetStatusEffectValue(BattleStatusEffectType.ResistanceStance)) : 0; // 마법 공격에만 적용할 추가 저항 비율
@@ -713,12 +730,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 분담 피해 없음 처리 시작
             return 0; // 적용된 체력 피해 없음
         } // 분담 피해 없음 처리 종료
-        if (RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 방어도를 건너뛴 양수 피해의 한 번 보호 확인
+        int reduced = Math.Max(0, amount - GetLowHealthDamageReduction()); // 방어도를 거치지 않는 피해에도 고정 감소 적용
+        if (reduced == 0 || RemoveStatusEffect(BattleStatusEffectType.DamageNullification)) // 충분히 줄어든 피해나 기존 양수 피해 무효 확인
         { // 무방어 피해 무효 시작
             return 0; // 체력 소모와 불굴 발동을 막은 피해 반환
         } // 무방어 피해 무효 종료
-        int applied = ApplySurvivalProtection(Math.Min(CurrentHealth, amount)); // 방어도 없는 피해에서 불굴과 성배 및 체력 상한 적용
-        BattleDamageResult result = new BattleDamageResult(amount, 0, amount, applied, damageType); // 추가 방어와 방어도 없는 피해 결과 생성
+        int applied = ApplySurvivalProtection(Math.Min(CurrentHealth, reduced)); // 저체력 감소 뒤에 불굴과 성배 및 체력 상한 적용
+        BattleDamageResult result = new BattleDamageResult(amount, 0, amount, reduced, applied, damageType, false, 1f); // 원래 피해와 고정 감소 뒤의 실제 피해 결과 기록
         if (fromEnemyDirectAttack && sourceUnit?.Team == BattleTeam.Enemy) // 현재 직접 적 공격에서 파생된 분담 피해 확인
         { // 분담 공격 출처 지정 시작
             result = result.FromResolvedEnemyAttack(); // 지속 피해와 구분한 직접 타격의 실제 분담 기록
