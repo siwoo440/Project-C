@@ -121,4 +121,12 @@ public enum RelicEffectType // 유물 효과 종류
     ExtraEventRewardChoice, // 확률에 맞는 이벤트 방의 추가 보상 선택지
     FearTargetDirectDamage, // 공포 적에 대한 직접 카드 명중 피해 증가
     FirstMechanicalDirectHitBonus, // 처음 기계형 적을 직접 명중한 카드 피해 증가
+    OpeningCorrosionResistanceDown, // 전투 시작에 생존 적의 마법 피해 저항 감소
+    CorrosionDebuffDamage, // 실제로 적용한 침식 계열 약화 대상에 추가 피해
+    PeriodicEnemyMentalLoss, // 설정한 실제 아군 턴 주기의 적 정신력 감소
+    DebuffedTargetCriticalChance, // 현재 약화 상태인 적의 직접 명중 치명 확률 증가
+    BlindApplicationChanceBonus, // 확률형 실명 판정에 더하는 퍼센트
+    OpeningPulseCord, // 무작위 시작 아군의 정신력 비용과 공격력
+    MarkPhysicalDefenseLoss, // 유효한 카드 표식에 따르는 별도 물리 방어 약화
+    SutureCorrosionHealing, // 침식으로 체력을 잃은 생존 아군의 전투 종료 회복
 }

@@ -132,9 +132,9 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             { // 무관한 처치 제외 시작
                 continue; // 턴당 발동 횟수 보존
             } // 무관한 처치 제외 종료
-            if (relicData.EffectType == RelicEffectType.FirstDefensiveCardDiscount) // 실제 카드 지불과 정산이 다루는 방패끈 확인
+            if (relicData.EffectType is RelicEffectType.FirstDefensiveCardDiscount or RelicEffectType.CorrosionDebuffDamage or RelicEffectType.MarkPhysicalDefenseLoss) // 실제 지불과 명시 상태 경로가 처리하는 유물 확인
             { // 일반 사용 이벤트 제외 시작
-                continue; // 카드 종류 확인 이전의 발동 기록과 표시 방지
+                continue; // 카드나 상태 성공을 확인하지 못하는 공용 신호의 가짜 발동 방지
             } // 일반 사용 이벤트 제외 종료
             int interval = relicData.PlayerTurnInterval; // 유물이 요구하는 아군 턴 간격 조회
             if (interval > 0 && (eventContext == null || eventContext.Phase != BattleTurnPhase.PlayerTurn || eventContext.Round <= 0 || eventContext.Round % interval != 0)) // 지정 라운드의 아군 턴 여부 확인
@@ -162,6 +162,10 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
+        if (relicData.EffectType == RelicEffectType.PeriodicEnemyMentalLoss) // 실제 아군 턴 런타임이 이미 처리한 먼지시계 확인
+        { // 공용 발동 제외 시작
+            return false; // 상태 알림과 실제 감소의 중복 처리 방지
+        } // 공용 발동 제외 종료
         if (relicData.EffectType == RelicEffectType.BattleEndCleanseOne) // 순백 손수건의 실제 종료 추첨 확인
         { // 전투 종료 정화 판정 시작
             if (endCleanseChecked || eventContext == null || eventContext.Result == BattleResult.None) // 유효한 실제 종료와 한 번의 판정 확인
@@ -170,6 +174,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 잘못된 정화 판정 종료
             endCleanseChecked = true; // 성공과 실패 모두 한 전투의 추첨 기회 기록
         } // 전투 종료 정화 판정 종료
+        if (relicData.EffectType == RelicEffectType.SutureCorrosionHealing) // 전투 결과 생성 시 적용하는 전용 회복 유물
+        { // 일반 실행 제외 시작
+            return false; // 일반 유물 실행과 성공 로그 생략
+        } // 일반 실행 제외 끝
+
         if (relicData.EffectType == RelicEffectType.JournalCardRemoval) // 승리 시 일지의 확률 판정 확인
         { // 승리 추첨 시작
             if (journalVictoryChecked || eventContext?.Result != BattleResult.Victory) // 도주와 패배 및 같은 승리의 중복 신호 확인

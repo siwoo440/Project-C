@@ -1149,13 +1149,20 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             if (result == BattleStatusEffectApplyResult.Applied) // 두 표식이 모두 붙은 경우 확인
             { // 시전자 표식 표시 시작
                 FindUnitView(source)?.ShowStatusApplyFeedback(BattleStatusEffectType.DuelMark, result); // 결투를 시작한 아군 표시
+                ApplyCrystalMarkDefenseLoss(cardInstance, targetUnit, BattleStatusEffectType.DuelMark, result); // 성립한 결투의 적 표식에만 결정눈 방어 감소
                 return cardInstance.EffectValue; // 실제 결투 피해 가산량 반환
             } // 시전자 표식 표시 종료
             return 0; // 면역 또는 불가 시 효과 미적용
         } // 결투 표식 처리 종료
         if (cardInstance.EffectType == CardEffectType.ApplyStatusEffect) // 상태 이상 효과 확인
         { // 상태 이상 처리 시작
-            BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 대상 상태 이상 적용
+            if (cardInstance.StatusEffectType == BattleStatusEffectType.Blind && cardInstance.SourceData.OptionalBlindChancePercent >= 0 && // 확률 옵션을 별도로 설정한 직접 실명인지 확인
+                !TryRollAuthoredBlind(cardInstance, targetUnit, cardInstance.EffectValue)) // 명시 확률과 살아 있는 대상의 조건 확인
+            { // 선택 실명 미적용 시작
+                return 0; // 별도 확률 효과를 적용하지 않고 카드 사용 정산으로 이동
+            } // 선택 실명 미적용 종료
+            BattleStatusEffectApplyResult applyResult = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.EffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 일반 상태와 명시 침식 상태의 실제 결과 적용
+            ApplyCrystalMarkDefenseLoss(cardInstance, targetUnit, cardInstance.StatusEffectType, applyResult); // 명시한 실제 카드 표식의 적 방어 감소
             bool includesCastTurn = cardInstance.StatusEffectType is BattleStatusEffectType.SwordSaintStance or BattleStatusEffectType.MiracleEcho; // 시전 턴부터 기간을 세는 두 강화 확인
             if (includesCastTurn && (applyResult == BattleStatusEffectApplyResult.Applied || applyResult == BattleStatusEffectApplyResult.Stacked)) // 실제 신규 적용 또는 갱신 확인
             { // 시전 턴부터 차감 시작
@@ -1350,7 +1357,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 약화 대상 추가 피해 종료
         baseDamage = SwordCardCombat.ApplyAttackStances(cardInstance, targetUnit, baseDamage); // 타격 순간의 검 강화와 마무리 체력 조건 적용
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
-        modifiedDamage = SwordCardCombat.RollCritical(cardInstance, modifiedDamage, out bool critical); // 명중한 카드 타격에 치명타 확률 적용
+        modifiedDamage = SwordCardCombat.RollCritical(cardInstance, targetUnit, modifiedDamage, out bool critical); // 현재 피격 대상의 활성 약화를 포함한 치명타 확률 적용
         if (critical) // 치명타 발동 확인
         { // 치명타 표시 시작
             FindUnitView(targetUnit)?.ShowStatusFeedback("치명타", true); // 피격 대상에 치명타 표시
@@ -1381,11 +1388,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 돌진 후속 효과 시작
             targetUnit.QueueChargeDefense(cardInstance.OwnerUnit, cardInstance.SourceData.SecondaryEffectValue); // 피격 대상의 다음 턴 물리 방어 약화 예약
         } // 돌진 후속 효과 종료
-        if (!targetUnit.IsDead && cardInstance.SourceData.SwordRule == SwordCardRule.FlameSlash) // 명중한 화염 참격과 생존 대상 확인
+        bool hasAuthoredBlind = cardInstance.StatusEffectType == BattleStatusEffectType.Blind && cardInstance.SourceData.OptionalBlindChancePercent >= 0; // 별도 판정을 사용하도록 명시한 공격 실명 확인
+        if (!targetUnit.IsDead && !hasAuthoredBlind && cardInstance.SourceData.SwordRule == SwordCardRule.FlameSlash) // 명중한 화염 참격의 일반 상태만 처리
         { // 화상 부여 시작
-            var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit); // 기존 면역과 지속 피해 처리에 화상 전달
+            var result = targetUnit.ApplyStatusEffect(cardInstance.StatusEffectType, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 명시 침식 여부를 보존한 화염 카드 상태 적용
             FindUnitView(targetUnit)?.ShowStatusApplyFeedback(cardInstance.StatusEffectType, result); // 화상 부여 결과 표시
         } // 화상 부여 종료
+        if (hasAuthoredBlind && TryRollAuthoredBlind(cardInstance, targetUnit, cardInstance.SourceData.SecondaryEffectValue)) // 실제 명중 카드에 명시한 확률 실명 한 번 확인
+        { // 명중 후 선택 실명 처리 시작
+            var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.Blind, cardInstance.SourceData.SecondaryEffectValue, cardInstance.StatusDuration, cardInstance.StatusMaximumStacks, cardInstance.OwnerUnit, corrosionFamily: cardInstance.SourceData.IsCorrosionStatus); // 실제 확률 성공 뒤 기존 면역을 거친 실명 부여
+            FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.Blind, result); // 명중 후 실명 결과 표시
+        } // 명중 후 선택 실명 처리 종료
         var appliedStatus = SwordCardCombat.ApplyHitStatus(cardInstance, targetUnit, supplyRelics, out var statusResult); // 실제 명중과 보유 구슬을 반영한 후속 상태 확인
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.ShieldBash && !targetUnit.IsDead && supplyRelics.RollOptionalStatus(targetUnit, cardInstance.SourceData.SecondaryEffectValue)) // 방패 밀치기의 명중 후 행동 제한 확률 확인
         { // 방패로 적 행동 밀어내기 시작
@@ -1405,11 +1418,30 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 태양 추가 공격 시작
             ApplySunChain(cardInstance, targetUnit); // 다른 생존 적에게 두 번째 공격 적용
         } // 태양 추가 공격 종료
-        chariotConcentration.RecordAttack(cardInstance, targetUnit); // 전차의 대상별 공격과 표식 처리
+        var chariotMark = chariotConcentration.RecordAttack(cardInstance, targetUnit); // 자동 패시브와 구별한 전차 전용 카드 표식 결과
+        ApplyCrystalMarkDefenseLoss(cardInstance, targetUnit, BattleStatusEffectType.ChariotMark, chariotMark); // 직접 명중한 전용 카드의 실제 표식에 결정눈 적용
         string damageLabel = cardInstance.DamageType == BattleDamageType.Magical ? "마법" : cardInstance.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
         Debug.Log($"[BattleDamage] 카드 / {cardInstance.DisplayName} / 대상 {targetUnit.DisplayName} / {damageLabel} / 원본 {damageResult.RawDamage} / 방어 {damageResult.DefenseValue} / 감소 {damageResult.ReducedDamage} / 최종 {damageResult.FinalDamage} / 실제 {damageResult.AppliedDamage}"); // 카드 피해 상세 출력
         return damageResult.AppliedDamage; // 실제 피해량 반환
     } // 타격 판정 종료
+    private bool TryRollAuthoredBlind(CardInstance card, BattleUnitRuntime target, int value) // 명시된 실명과 유효한 현재 대상의 선택 확률 확인
+    { // 카드 실명 확률 검사 시작
+        return value > 0 && !target.IsDead && card.SourceData.OptionalBlindChancePercent >= 0 && supplyRelics.RollAuthoredBlind(target, card.SourceData.OptionalBlindChancePercent); // 유효한 양의 명시 효과에만 실제 실명 판정
+    } // 카드 실명 확률 검사 종료
+    private void ApplyCrystalMarkDefenseLoss(CardInstance card, BattleUnitRuntime target, BattleStatusEffectType type, BattleStatusEffectApplyResult result) // 카드 표식 성공으로 실제 적 방어도 약화 처리
+    { // 결정눈 표식의 성공 여부 검사 시작
+        if (result is not (BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked) || target.IsDead || target.Team != BattleTeam.Enemy || // 아군 카드의 생존 적에 대한 성공한 상태 확인
+            type is not (BattleStatusEffectType.ChariotMark or BattleStatusEffectType.PublicMark or BattleStatusEffectType.DuelMark) || target.GetStatusEffect(type) is not { IsExpired: false }) // 합법 카드 표식의 실제 현재 상태 확인
+        { // 결정눈 유효 표식 없음 시작
+            return; // 일반 약화와 상태 반복 및 실패 표식 제외
+        } // 결정눈 유효 표식 없음 종료
+        var relic = BattleSupplyRelics.Find(RelicEffectType.MarkPhysicalDefenseLoss); // 실제 보유한 표식 방어 약화 유물 확인
+        if (relic?.EffectValue > 0) // 활성 유물의 원본 방어 감소량 확인
+        { // 실제 표식 방어 약화 적용 시작
+            var applied = target.ApplyStatusEffect(BattleStatusEffectType.CrystalMarkDefenseDown, relic.EffectValue, relic.StatusDuration, 1, card.OwnerUnit); // 보통 물리 방어 감소와 별개로 적 차례 기준 상태 적용
+            FindUnitView(target)?.ShowStatusApplyFeedback(BattleStatusEffectType.CrystalMarkDefenseDown, applied); // 실제 감소의 상태 적용 결과 표시
+        } // 실제 표식 방어 약화 적용 종료
+    } // 결정눈 표식의 성공 여부 검사 종료
     private int GetDirectCardHealing(CardInstance card, int healing) // 회복자의 정신력 기준 직접 카드 회복 총량
     { // 직접 회복 보정 시작
         int echo = healing > 0 && turnRuntime.IsPlayerTurn ? card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.MiracleEcho)?.EffectiveValue ?? 0 : 0; // 이번 아군 턴 직접 회복 카드의 시전자 강화량

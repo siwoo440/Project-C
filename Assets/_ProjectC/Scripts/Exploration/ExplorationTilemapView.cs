@@ -55,13 +55,11 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
     private GameObject gridObject; // 런타임 Grid 오브젝트
     private Tilemap floorTilemap; // 실제 이동 공간 Floor Tilemap
     private Tilemap wallTilemap; // 실제 충돌 Wall Tilemap
+    private Tilemap wallEdgeTilemap; // 벽과 바닥에 맞닿는 돌 테두리
+    private Tilemap decorationTilemap; // 이동 판정과 분리된 벽·바닥 장식
     private TilemapCollider2D wallTilemapCollider; // Wall 타일 충돌 생성기
     private CompositeCollider2D wallCompositeCollider; // Wall 충돌 합성기
-    private Tile floorTile; // 런타임 Floor Tile
-    private Tile wallTile; // 런타임 Wall Tile
-    private Sprite runtimeSquareSprite; // 런타임 타일 Sprite
-    private Sprite runtimeFloorSprite; // 제작한 던전 바닥 스프라이트
-    private Sprite runtimeWallSprite; // 제작한 던전 벽 스프라이트
+    private ExplorationDungeonTiles dungeonTiles; // 바닥과 벽 및 장식용 타일 풀
 
     public int FloorTileCount => floorCells.Count; // 현재 Floor 타일 개수
     public int WallTileCount => wallCells.Count; // 현재 Wall 타일 개수
@@ -70,10 +68,12 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
         ExplorationMapData mapData) // 논리 맵을 실제 충돌 Tilemap으로 변환
     {
         EnsureTilemapHierarchy(); // Grid와 Tilemap 계층 준비
-        EnsureRuntimeTiles(); // 런타임 타일 준비
+        dungeonTiles ??= new ExplorationDungeonTiles(); // 재생성에도 같은 타일 자산 공유
 
         floorTilemap.ClearAllTiles(); // 이전 Floor 제거
         wallTilemap.ClearAllTiles(); // 이전 Wall 제거
+        wallEdgeTilemap.ClearAllTiles(); // 이전 층의 벽 테두리 제거
+        decorationTilemap.ClearAllTiles(); // 이전 층의 환경 장식 제거
         floorCells.Clear(); // Floor 셀 목록 초기화
         wallCells.Clear(); // Wall 셀 목록 초기화
         roomFloorCells.Clear(); // 방별 Floor 목록 초기화
@@ -106,22 +106,42 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
 
         foreach (Vector3Int floorCell in floorCells)
         {
-            floorTilemap.SetTile(
-                floorCell,
-                floorTile); // Floor Tilemap에 실제 타일 배치
+            floorTilemap.SetTile(floorCell, dungeonTiles.GetFloor(mapData.Seed, floorCell)); // 같은 좌표에 같은 바닥 재질 배치
+            if (ExplorationDungeonTiles.GetCardinalMask(floorCell, floorCells) is 7 or 11 or 13 or 14) // 한 면이 벽과 닿는 바닥 가장자리 확인
+            { // 통행로 외곽 장식 선택 시작
+                Tile detail = dungeonTiles.GetDetail(mapData.Seed, floorCell, false); // 시드로 정한 작은 잔해 조회
+                if (detail != null) // 실제 장식이 있는 바닥 좌표 확인
+                { // 바닥 장식 적용 시작
+                    decorationTilemap.SetTile(floorCell, detail); // 이동 칸 위의 별도 장식 배치
+                } // 바닥 장식 적용 종료
+            } // 통행로 외곽 장식 선택 종료
         }
 
         BuildWalls(); // 전체 Floor 외곽에 실제 Wall 생성
 
         foreach (Vector3Int wallCell in wallCells)
         {
-            wallTilemap.SetTile(
-                wallCell,
-                wallTile); // Wall Tilemap에 충돌 타일 배치
+            wallTilemap.SetTile(wallCell, dungeonTiles.GetWall(mapData.Seed, wallCell)); // 전체 셀 충돌이 있는 벽 배치
+            int mask = ExplorationDungeonTiles.GetWallMask(wallCell, floorCells); // 직선과 대각 바닥으로 벽면 모양 결정
+            Tile edge = dungeonTiles.GetWallEdge(mask); // 벽과 바닥이 닿는 테두리 조회
+            if (edge != null) // 표시할 테두리 원화 확인
+            { // 실제 벽면의 테두리 표시 시작
+                wallEdgeTilemap.SetTile(wallCell, edge); // 벽 충돌 칸 위에 테두리만 배치
+            } // 실제 벽면의 테두리 표시 종료
+            if (mask is 1 or 2 or 4 or 8) // 모서리를 피한 직선 벽에만 장식 허용
+            { // 벽 장식 선택 시작
+                Tile detail = dungeonTiles.GetDetail(mapData.Seed, wallCell, true); // 벽등과 격자 및 사슬 조회
+                if (detail != null) // 실제 벽 장식 원화 확인
+                { // 벽 장식 적용 시작
+                    decorationTilemap.SetTile(wallCell, detail); // 물리 판정 없는 별도 장식 배치
+                } // 벽 장식 적용 종료
+            } // 벽 장식 선택 종료
         }
 
         floorTilemap.CompressBounds(); // Floor 사용 영역 정리
         wallTilemap.CompressBounds(); // Wall 사용 영역 정리
+        wallEdgeTilemap.CompressBounds(); // 벽 테두리의 실제 사용 영역 정리
+        decorationTilemap.CompressBounds(); // 장식 원화의 실제 사용 영역 정리
         RefreshWallCollider(); // 변경된 Wall Collider 즉시 반영
     }
 
@@ -833,6 +853,8 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
     {
         if (floorTilemap != null &&
             wallTilemap != null &&
+            wallEdgeTilemap != null && // 같은 벽 테두리 오브젝트 재사용 확인
+            decorationTilemap != null && // 같은 장식 오브젝트 재사용 확인
             wallTilemapCollider != null &&
             wallCompositeCollider != null)
         {
@@ -916,71 +938,17 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
 
         wallCompositeCollider.isTrigger =
             false; // 실제 물리 충돌 활성화
+        wallEdgeTilemap = CreateVisualLayer("WallEdges", -8); // 재질 벽 위에 이어지는 돌 테두리
+        decorationTilemap = CreateVisualLayer("Decoration", -7); // 플레이어와 조우 뒤쪽의 환경 장식
     }
 
-    private void EnsureRuntimeTiles() // 런타임 Floor와 Wall 타일 생성
-    {
-        if (floorTile != null &&
-            wallTile != null)
-        {
-            return;
-        }
-
-        if (runtimeSquareSprite == null)
-        {
-            runtimeSquareSprite =
-                Sprite.Create(
-                    Texture2D.whiteTexture,
-                    new Rect(
-                        0f,
-                        0f,
-                        1f,
-                        1f),
-                    new Vector2(
-                        0.5f,
-                        0.5f),
-                    1f); // 런타임 1x1 흰색 Sprite 생성
-        }
-
-        runtimeFloorSprite = CreateDungeonSprite("DungeonFloor"); // 제작한 바닥 이미지의 한 칸 스프라이트 생성
-        runtimeWallSprite = CreateDungeonSprite("DungeonWall"); // 제작한 벽 이미지의 한 칸 스프라이트 생성
-
-        floorTile =
-            ScriptableObject.CreateInstance<Tile>(); // Floor Tile 생성
-
-        floorTile.name =
-            "RuntimeExplorationFloorTile"; // Floor Tile 이름 지정
-
-        floorTile.sprite = runtimeFloorSprite != null ? runtimeFloorSprite : runtimeSquareSprite; // 바닥 이미지 또는 기존 단색 대체
-        floorTile.color = runtimeFloorSprite != null ? Color.white : new Color(0.12f, 0.20f, 0.28f, 1f); // 이미지 원본 색상 또는 기존 바닥 색상
-
-        floorTile.colliderType =
-            Tile.ColliderType.None; // Floor 자체는 충돌하지 않음
-
-        wallTile =
-            ScriptableObject.CreateInstance<Tile>(); // Wall Tile 생성
-
-        wallTile.name =
-            "RuntimeExplorationWallTile"; // Wall Tile 이름 지정
-
-        wallTile.sprite = runtimeWallSprite != null ? runtimeWallSprite : runtimeSquareSprite; // 벽 이미지 또는 기존 단색 대체
-        wallTile.color = runtimeWallSprite != null ? Color.white : new Color(0.05f, 0.07f, 0.10f, 1f); // 이미지 원본 색상 또는 기존 벽 색상
-
-        wallTile.colliderType =
-            Tile.ColliderType.Grid; // Grid 셀 전체를 실제 벽 충돌로 사용
-    }
-
-    private static Sprite CreateDungeonSprite(string imageName) // 던전 이미지의 정사각형 타일 생성
-    { // 던전 스프라이트 생성 시작
-        Texture2D texture = Resources.Load<Texture2D>("Exploration/" + imageName); // 제작한 탐사 이미지 조회
-        if (texture == null || texture.width != texture.height) // 이미지 누락과 정사각형 크기 확인
-        { // 이미지 대체 처리 시작
-            return null; // 기존 단색 타일 사용 요청
-        } // 이미지 대체 처리 종료
-        Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), texture.width, 0, SpriteMeshType.FullRect); // 한 칸 크기의 전체 이미지 타일 생성
-        sprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 스프라이트 저장 제외
-        return sprite; // 생성한 던전 타일 이미지 반환
-    } // 던전 스프라이트 생성 종료
+    private Tilemap CreateVisualLayer(string layerName, int sortOrder) // 물리 충돌 없는 탐사 그림 레이어 생성
+    { // 장식 타일맵 생성 시작
+        var layer = new GameObject(layerName, typeof(Tilemap), typeof(TilemapRenderer)); // 그림과 렌더러만 있는 타일맵 객체
+        layer.transform.SetParent(gridObject.transform, false); // 바닥과 벽이 쓰는 같은 격자에 배치
+        layer.GetComponent<TilemapRenderer>().sortingOrder = sortOrder; // 통로와 캐릭터 사이의 표시 순서 지정
+        return layer.GetComponent<Tilemap>(); // 실제 테두리나 장식에 사용할 타일맵 반환
+    } // 장식 타일맵 생성 종료
 
     private void RefreshWallCollider() // Wall Tile 변경 사항을 물리에 즉시 반영
     {
@@ -996,28 +964,7 @@ public sealed class ExplorationTilemapView : MonoBehaviour // 논리 맵을 충�
     }
 
     private void OnDestroy() // 런타임 Tile 리소스 정리
-    {
-        if (floorTile != null)
-        {
-            Destroy(floorTile); // 런타임 Floor Tile 제거
-        }
-
-        if (wallTile != null)
-        {
-            Destroy(wallTile); // 런타임 Wall Tile 제거
-        }
-
-        if (runtimeSquareSprite != null)
-        {
-            Destroy(runtimeSquareSprite); // 런타임 Sprite 제거
-        }
-        if (runtimeFloorSprite != null) // 제작한 바닥 스프라이트 존재 확인
-        { // 바닥 스프라이트 정리 시작
-            Destroy(runtimeFloorSprite); // 런타임 바닥 스프라이트 제거
-        } // 바닥 스프라이트 정리 종료
-        if (runtimeWallSprite != null) // 제작한 벽 스프라이트 존재 확인
-        { // 벽 스프라이트 정리 시작
-            Destroy(runtimeWallSprite); // 런타임 벽 스프라이트 제거
-        } // 벽 스프라이트 정리 종료
-    }
+    { // 씬 종료 시 타일 정리 시작
+        dungeonTiles?.Release(); // 이 씬에서 만든 타일과 스프라이트만 제거
+    } // 씬 종료 시 타일 정리 종료
 }

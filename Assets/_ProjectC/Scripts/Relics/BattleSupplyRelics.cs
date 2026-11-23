@@ -93,4 +93,18 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
         int damage = UnityEngine.Random.Range(0, 100) < chance ? high : card.SourceData.EffectValue; // 높은 피해 또는 기본 피해 결정
         return CardUpgradeProfileCatalog.CalculateEffectValue(card.SourceData, damage, card.UpgradeLevel); // 실제 선택 피해에 카드 강화 반영
     } // 두 피해 굴림 종료
+    internal bool RollAuthoredBlind(BattleUnitRuntime target, int baseChance) // 명시한 아군 카드의 선택적 실명 확률 판정
+    { // 원본 실명 확률 확인 시작
+        if (baseChance < 0) // 확률 효과로 명시하지 않은 카드 확인
+        { // 기존 처리 유지 시작
+            return false; // 이 경로의 신규 실명과 난수 사용 차단
+        } // 기존 처리 유지 종료
+        if (baseChance >= 100) // 원래 보장된 실명 확인
+        { // 원본 보장 효과 시작
+            return true; // 새 난수 없이 원래 확정 결과 반환
+        } // 원본 보장 효과 종료
+        int bonus = Find(RelicEffectType.BlindApplicationChanceBonus)?.EffectValue ?? 0; // 실제 보유한 공허 렌즈의 추가 조건 조회
+        int chance = (int)Math.Clamp((long)baseChance + bonus, 0L, 100L); // 명시된 실명 확률에 렌즈의 수치 가산
+        return chance == 100 || chance > 0 && RollOptionalStatus(target, chance); // 전체 성공과 무효 경계에서 난수를 사용하지 않는 기존 선택 판정
+    } // 원본 실명 확률 확인 종료
 } // 전투 유물 처리 종료

@@ -216,6 +216,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "부활의 씨앗"; // 게임에 표시되는 부활의 씨앗 문구
             case BattleStatusEffectType.PainDistribution: // 고통 분산 종류 확인
                 return "고통 분산"; // 게임에 표시되는 고통 분산 문구
+            case BattleStatusEffectType.CorrosionResistanceDown: // 침식 저항 약화 종류 확인
+                return "침식 저항 약화"; // 게임에 표시되는 침식 저항 약화 문구
+            case BattleStatusEffectType.PulseCordAttackPowerUp: // 침식된 맥박 종류 확인
+                return "침식된 맥박"; // 게임에 표시되는 침식된 맥박 문구
+            case BattleStatusEffectType.CrystalMarkDefenseDown: // 표식 방어 약화 종류 확인
+                return "표식 방어 약화"; // 게임에 표시되는 표식 방어 약화 문구
             case BattleStatusEffectType.MiracleEcho: // 기적의 잔향 종류 확인
                 return "기적의 잔향"; // 게임에 표시되는 기적의 잔향 문구
             case BattleStatusEffectType.Stealth: // 은신 상태 확인
@@ -252,7 +258,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
+        return effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -362,6 +368,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "부활"; // 게임에 표시되는 부활의 씨앗 문구
             case BattleStatusEffectType.PainDistribution: // 고통 분산 종류 확인
                 return "분산"; // 게임에 표시되는 고통 분산 문구
+            case BattleStatusEffectType.CorrosionResistanceDown: // 침식 저항 약화 종류 확인
+                return "저항↓"; // 게임에 표시되는 침식 저항 약화 문구
+            case BattleStatusEffectType.PulseCordAttackPowerUp: // 침식된 맥박 종류 확인
+                return "공격+"; // 게임에 표시되는 침식된 맥박 문구
+            case BattleStatusEffectType.CrystalMarkDefenseDown: // 표식 방어 약화 종류 확인
+                return "방어↓"; // 게임에 표시되는 표식 방어 약화 문구
             case BattleStatusEffectType.MiracleEcho: // 기적의 잔향 종류 확인
                 return "회복+"; // 게임에 표시되는 기적의 잔향 문구
             case BattleStatusEffectType.Stealth: // 은신 상태 확인
@@ -508,6 +520,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"쓰러지면 한 번 최대 체력 {effectiveValue}%로 부활"; // 게임에 표시되는 부활의 씨앗 문구
             case BattleStatusEffectType.PainDistribution: // 고통 분산 종류 확인
                 return $"적 직접 피해의 {effectiveValue}%를 같은 상태의 생존 아군과 분담"; // 게임에 표시되는 고통 분산 문구
+            case BattleStatusEffectType.CorrosionResistanceDown: // 침식 저항 약화 종류 확인
+                return $"받는 마법 피해의 저항률 {effectiveValue}%p 감소"; // 게임에 표시되는 침식 저항 약화 문구
+            case BattleStatusEffectType.PulseCordAttackPowerUp: // 침식된 맥박 종류 확인
+                return $"침식된 맥박줄로 공격력 {effectiveValue} 증가"; // 게임에 표시되는 침식된 맥박 문구
+            case BattleStatusEffectType.CrystalMarkDefenseDown: // 표식 방어 약화 종류 확인
+                return $"표식에 의해 물리 방어력 {effectiveValue} 감소"; // 게임에 표시되는 표식 방어 약화 문구
             case BattleStatusEffectType.MiracleEcho: // 기적의 잔향 종류 확인
                 return $"이번 아군 턴의 직접 카드 체력 회복량 {effectiveValue} 증가"; // 게임에 표시되는 기적의 잔향 문구
             case BattleStatusEffectType.Stealth: // 은신 상태 확인
