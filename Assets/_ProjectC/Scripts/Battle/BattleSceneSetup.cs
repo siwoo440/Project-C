@@ -67,6 +67,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 시작 처리 종료
     public void InitializeBattle() // 전투 초기화
     { // 초기화 시작
+        if (PartyLoadoutRuntime.Active != null) // 탐사 출발 편성 존재 확인
+        { // 출발 편성 적용 시작
+            battleLoadout = PartyLoadoutRuntime.Active; // 선택한 파티와 덱 적용
+        } // 출발 편성 적용 종료
         if (IsInitialized) // 중복 초기화 확인
         { // 중복 처리 시작
             return; // 중복 초기화 중단

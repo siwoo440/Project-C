@@ -10,6 +10,7 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
     private readonly List<TMP_Text> labels = new List<TMP_Text>(); // 캐릭터 표시 문구 목록
     private IPartyDeploymentStatusProvider statusProvider; // 출전 상태 제공자
     private TMP_Text summary; // 현재 편성 안내 문구
+    private Button startButton; // 탐사 출발 버튼
     private CharacterRecoveryManager recoveryManager; // 회복 상태 변경 감시자
     private BattleResultManager resultManager; // 전투 결과 변경 감시자
     public PartySelection Selection { get; private set; } // 현재 편성 상태 조회
@@ -58,13 +59,26 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
             AddCharacterButton(grid, character); // 개별 선택 버튼 추가
         } // 캐릭터 버튼 생성 종료
         summary = CreateLabel("Summary", panel, string.Empty, 20f); // 선택 안내 생성
-        summary.rectTransform.anchoredPosition = new Vector2(0f, -290f); // 안내 위치 설정
-        summary.rectTransform.sizeDelta = new Vector2(780f, 48f); // 안내 크기 설정
+        summary.rectTransform.anchoredPosition = new Vector2(-120f, -290f); // 안내 위치 설정
+        summary.rectTransform.sizeDelta = new Vector2(480f, 48f); // 안내 크기 설정
+        RectTransform startRect = CreateRect("StartExploration", panel); // 탐사 출발 버튼 영역 생성
+        startRect.anchoredPosition = new Vector2(285f, -290f); // 출발 버튼 위치 설정
+        startRect.sizeDelta = new Vector2(180f, 48f); // 출발 버튼 크기 설정
+        Image startImage = startRect.gameObject.AddComponent<Image>(); // 출발 버튼 배경 생성
+        startImage.color = new Color(0.23f, 0.38f, 0.42f); // 출발 버튼 색상 설정
+        startButton = startRect.gameObject.AddComponent<Button>(); // 출발 버튼 컴포넌트 생성
+        startButton.targetGraphic = startImage; // 출발 버튼 배경 연결
+        TMP_Text startLabel = CreateLabel("Label", startRect, "탐사 출발", 22f); // 출발 버튼 문구 생성
+        startLabel.rectTransform.anchorMin = Vector2.zero; // 문구 시작점 설정
+        startLabel.rectTransform.anchorMax = Vector2.one; // 문구 끝점 설정
+        startLabel.rectTransform.offsetMin = Vector2.zero; // 문구 시작 여백 제거
+        startLabel.rectTransform.offsetMax = Vector2.zero; // 문구 끝 여백 제거
+        startButton.onClick.AddListener(StartExploration); // 탐사 출발 동작 연결
         Refresh(); // 최초 상태 표시
     } // 초기화 종료
     public void Refresh() // 캐릭터 선택 상태 갱신
     { // 상태 갱신 시작
-        if (Selection == null) // 초기화 상태 확인
+        if (Selection == null || summary == null || startButton == null) // 화면 초기화 상태 확인
         { // 초기화 전 처리 시작
             return; // 상태 갱신 중단
         } // 초기화 전 처리 종료
@@ -79,7 +93,8 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
             buttons[index].image.color = selected ? new Color(0.28f, 0.48f, 0.35f) : new Color(0.22f, 0.25f, 0.34f); // 선택 배경 색상 설정
             labels[index].text = $"{character.DisplayName}\n{(lockedWorld ? "해금 예정" : selected ? "선택됨" : state.StatusText)}"; // 이름과 상태 표시
         } // 버튼 갱신 종료
-        summary.text = $"선택 {Selection.Members.Count}/4 · 탐사 출발 기능 연결 중"; // 현재 선택 인원 안내
+        summary.text = $"선택 {Selection.Members.Count}/4 · 임시 시작 카드 사용"; // 현재 선택 인원과 임시 덱 안내
+        startButton.interactable = Selection.Validate().CanDeploy; // 출전 가능한 파티만 출발 허용
     } // 상태 갱신 종료
     private void AddCharacterButton(Transform parent, CharacterData character) // 캐릭터 선택 버튼 생성
     { // 버튼 생성 시작
@@ -109,6 +124,23 @@ public sealed class PartyRosterView : MonoBehaviour // 거점 캐릭터 편성 �
         } // 선택 추가 종료
         Refresh(); // 변경된 선택 상태 표시
     } // 선택 전환 종료
+    private void StartExploration() // 선택한 파티로 탐사 출발
+    { // 출발 처리 시작
+        if (SceneFlowManager.Instance == null || SceneFlowManager.Instance.IsLoadingScene || !Application.CanStreamedLevelBeLoaded("30_Exploration")) // 씬 전환 가능 상태 확인
+        { // 씬 전환 불가 처리 시작
+            summary.text = "탐사 화면을 준비할 수 없습니다."; // 씬 전환 실패 안내
+            return; // 탐사 출발 중단
+        } // 씬 전환 불가 처리 종료
+        if (!PartyLoadoutRuntime.Prepare(Selection)) // 파티와 임시 덱 준비 확인
+        { // 편성 실패 처리 시작
+            Refresh(); // 현재 선택 상태 재검증
+            summary.text = "출전 가능 파티와 시작 카드를 확인하세요."; // 편성 실패 안내
+            return; // 탐사 출발 중단
+        } // 편성 실패 처리 종료
+        ExplorationSessionManager.EnsureInstance().ResetExploration(); // 새 탐사 상태 초기화
+        RunDeckManager.EnsureInstance().ResetToSource(PartyLoadoutRuntime.Active.Deck); // 선택한 시작 덱 적용
+        SceneFlowManager.Instance.LoadScene("30_Exploration"); // 탐사 화면 이동
+    } // 출발 처리 종료
     private bool ContainsMember(CharacterData character) // 선택 목록 포함 여부 조회
     { // 포함 확인 시작
         foreach (CharacterData member in Selection.Members) // 선택 캐릭터 순회
