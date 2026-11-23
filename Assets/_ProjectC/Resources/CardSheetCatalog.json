@@ -2470,7 +2470,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "소멸된 카드 1장 무작위 회수",
+      "description": "이번 전투에서 제외된 카드 중 무작위 한 장을 같은 소유자와 강화 상태로 손패에 되돌린다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "자원 순환.png"
@@ -2481,7 +2481,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "1",
-      "description": "손패 1장을 다음 턴까지 보존, 그 카드 코스트 -1",
+      "description": "다른 손패 카드 한 장을 골라 다음 아군 턴까지 보존한다. 그 카드의 기본 행동력 비용을 1 낮춘다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "전략 보관.png"
@@ -2492,7 +2492,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 1명 받는 피해 +20% (2턴)",
+      "description": "선택한 생존 적이 받는 피해를 두 적 턴 동안 20% 높인다.",
       "area": "단일",
       "targets": "적",
       "imageFileName": "약점 분석.png"
@@ -2503,7 +2503,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "현재 코스트를 모두 소모하고 다음 턴 코스트 +소모량",
+      "description": "행동력이 2 이상일 때 현재 행동력을 모두 지불한다. 다음 아군 턴에 지불한 수만큼 최대 및 현재 행동력을 높인다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "계산된 투자.png"
@@ -2514,7 +2514,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명 버프 지속시간 +1턴",
+      "description": "선택한 생존 아군의 턴 수가 정해진 활성 강화 지속 시간을 각각 1턴 늘린다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "룬 증폭.png"
@@ -2525,7 +2525,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "체력 -6, 카드 2장 드로우",
+      "description": "시전자의 체력을 6 지불해 공용 손패에 카드 두 장을 뽑는다. 시전자의 체력은 최소 1 남아야 한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "임시 계약서.png"
@@ -2536,7 +2536,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "1",
-      "description": "50% 확률 코스트 +2, 실패 시 정신력 -5",
+      "description": "50% 확률로 행동력을 2 회복한다. 실패하면 시전자의 정신력이 5 감소한다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "도박수.png"
@@ -2547,7 +2547,7 @@
       "attribute": "펜타클",
       "rarity": "희귀",
       "cost": "2",
-      "description": "이번 턴 펜타클 카드 비용 -1",
+      "description": "이번 아군 턴 동안 펜타클 카드의 일반 기본 행동력 비용을 1 낮춘다.",
       "area": "자기",
       "targets": "아군",
       "imageFileName": "기계식 계산.png"

@@ -41,7 +41,7 @@ internal static class BattleBlessingTransfer // 전투 참가 아군 간 강화 
         } // 복사 불가능 대상 처리 종료
         foreach (var status in source.StatusEffects) // 원본 강화 부여 순서 순회
         { // 개별 강화 검사 시작
-            if (!status.IsExpired && !source.IsTransientTurnBuff(status) && Copyable(status.EffectType) && recipient.CanReceiveBlessingCopy(status)) // 활성 독립 강화와 수령 가능 중첩 확인
+            if (!status.IsExpired && !source.IsTransientTurnBuff(status) && IsCopyableType(status.EffectType) && recipient.CanReceiveBlessingCopy(status)) // 활성 독립 강화와 수령 가능 중첩 확인
             { // 첫 호환 강화 반환 시작
                 return status; // 실제 원본을 변경 없이 복사 대상으로 지정
             } // 첫 호환 강화 반환 종료
@@ -49,7 +49,7 @@ internal static class BattleBlessingTransfer // 전투 참가 아군 간 강화 
         return null; // 두 아군이 공유할 수 있는 강화 없음 반환
     } // 강화 복사 조건 확인 종료
 
-    private static bool Copyable(BattleStatusEffectType type) // 소유자 연결이 없는 일반 기간제 강화 분류
+    internal static bool IsCopyableType(BattleStatusEffectType type) // 소유자 연결이 없는 일반 기간제 강화 분류
     { // 일반 강화 분류 시작
         return type is BattleStatusEffectType.Regeneration or BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.StatusImmunity // 지속 재생과 공격력 및 디버프 면역
             or BattleStatusEffectType.PhysicalDefenseUp or BattleStatusEffectType.MagicalResistanceUp or BattleStatusEffectType.CriticalChanceUp // 물리 방어와 마법 저항 및 치명타 확률

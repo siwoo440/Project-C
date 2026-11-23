@@ -43,6 +43,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             targetLabel = "생존 아군과 적 전체"; // 일반 지원 버튼에서 보여 주는 실제 영향 범위
         } // 혼합 광역 카드 대상 표시 종료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.CalculatedInvestment && availableActionPoints >= cardInstance.SourceData.ApCost) // 실제 최소 비용 이상인 현재 가용 금액 확인
+        { // 정상 투자 금액의 실제 화면 계산 시작
+            effectDetail += $" · 현재 전액 {availableActionPoints.Value} 지불"; // 지금 실제 행동력 중 결제하고 다음 턴에 받을 전체 양 안내
+        } // 정상 투자 금액의 실제 화면 계산 종료
         if (availableActionPoints.HasValue && cardInstance.CardType == CardType.Wand && cardInstance.SourceData.SpendsAllActionPoints && cardInstance.EffectType == CardEffectType.Damage) // 실제 가용 행동력으로 피해가 달라지는 지팡이 카드 확인
         { // 현재 기본 피해 미리보기 시작
             effectDetail += $" · 현재 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, availableActionPoints.Value)}"; // 타격과 같은 계산식의 다음 행동 기본 수치 표시
@@ -213,6 +217,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         { // 계약 상세 수치 표시 시작
             return $"행동력 +{cardInstance.EffectValue} · 시전자 체력 -{cardInstance.SourceData.SecondaryEffectValue}"; // 정상 화면의 실제 두 자원 변화 설명
         } // 계약 상세 수치 표시 종료
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.CalculatedInvestment) // 고정 최소 비용과 전체 지불을 동시에 사용하는 카드
+        { // 실제 하한과 다음 아군 턴 지급 문구
+            return $"최소 행동력 {cardInstance.SourceData.ApCost} · 지불한 전액을 다음 아군 턴에 최대 및 현재 행동력으로 추가"; // 일반 고정 할인과 다른 전액 지불 정보
+        } // 실제 하한과 다음 아군 턴 지급 문구 종료
         var support = cardInstance.SourceData.PentacleRule; // 이번 지원 효과의 분리된 실제 수치 확인
         switch (support) // 펜타클 지원 카드의 실제 두 효과 표시
         { // 지원 카드의 상세 효과 시작

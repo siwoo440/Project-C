@@ -25,5 +25,13 @@ public enum PentacleCardRule // 펜타클 카드의 독립적인 전투 정산 �
     EmergencyFunds, // 다음 아군 턴의 최고치와 현재 행동력 증가
     ToolMaintenance, // 다음 실제 명중한 아군 직접 공격 피해 증가
     HandSorting, // 하나 또는 둘을 골라 같은 수의 공용 드로우
-    SeizeOpportunity // 이 카드가 실제 첫 사용 카드일 때 행동력 회복
+    SeizeOpportunity, // 이 카드가 실제 첫 사용 카드일 때 행동력 회복
+    ResourceCycle, // 무작위 실제 전투 제외 카드 회수
+    StrategicStorage, // 지정 손패 보존과 기본 비용 감소
+    WeaknessAnalysis, // 지정 생존 적의 두 턴 피해 증가
+    CalculatedInvestment, // 현재 행동력 전체와 다음 턴 투자 환급
+    RuneAmplification, // 지정 아군의 시간제 강화 연장
+    TemporaryContract, // 시전자 체력 지불과 두 장 드로우
+    GambleMove, // 행동력 회복 또는 직접 정신력 비용의 단일 판정
+    MechanicalCalculation // 현재 아군 턴의 펜타클 기본 비용 감소
 } // 직렬화 규칙 종료

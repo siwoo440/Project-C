@@ -57,6 +57,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
     internal bool HasPendingSeedRevival => pendingSeedRevivalPercent > 0; // 패배나 승리를 잠시 미뤄야 할 씨앗 부활 여부
     internal int EfficientUseApDiscount { get; set; } // 현재 아군 턴의 펜타클 기본 행동력 할인
+    internal int MechanicalCalculationApDiscount { get; set; } // 현재 아군 턴에 같은 아군의 고정 펜타클 기본 비용만 감소
     internal int RuneRecordingApDiscount { get; set; } // 다음 실제 일반 기본 비용 사용까지 보존되는 이 아군의 한 번 룬 기록
     internal BattleTurnRuntime DamageRelicBattle { get; set; } // 예고와 실제 피해에 연결된 양 진영의 현재 전투 유물 관리자
     internal bool DefeatedWhileBurning { get; private set; } // 일반 상태 정리 전 실제 쓰러질 때의 활성 화상
@@ -266,6 +267,40 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 독립 강화 확인 시작
         return status == currentTurnAttackPower; // 종료 예약이 분리된 은총 상태 확인
     } // 독립 강화 확인 종료
+    internal bool HasRuneAmplifiableBuff() // 생존 아군의 실제 기간제 강화 보유 검사
+    { // 룬 증폭 대상 가능 여부 조회 시작
+        return !IsDead && statusEffects.Exists(IsRuneAmplifiableBuff); // 유지 시간 연장이 가능한 실제 강화만 유효
+    } // 룬 증폭 대상 가능 여부 조회 종료
+
+    internal int ExtendRuneAmplifiableBuffs(int turns) // 해당 아군의 모든 활성 기간제 강화 연장
+    { // 독립 강화의 원래 상태 객체 연장 시작
+        if (IsDead || turns <= 0) // 실제 생존과 유효 연장 수치 확인
+        { // 효과 적용 불가 시작
+            return 0; // 대상의 이전 상태 유지
+        } // 효과 적용 불가 종료
+        int extended = 0; // 실제로 연장한 기존 강화 수
+        foreach (BattleStatusEffectInstance status in statusEffects) // 현재 실제 적용된 모든 상태 순회
+        { // 개별 기간제 강화 검사 시작
+            if (IsRuneAmplifiableBuff(status) && status.TryExtendActiveDuration(turns)) // 원래 상태의 크기와 중첩은 두고 남은 시간만 증가
+            { // 성공한 개별 연장 기록 시작
+                extended++; // 실제 연장한 강화 수 증가
+            } // 성공한 개별 연장 기록 종료
+        } // 개별 기간제 강화 검사 종료
+        if (extended > 0) // 실제 상태 변경이 있는지 확인
+        { // 상태 표시 갱신 시작
+            NotifyStatusEffectsChanged(); // 갱신된 전체 지속 시간을 UI에 한 번 전달
+        } // 상태 표시 갱신 종료
+        return extended; // 카드 결과에 기록할 실제 연장 수
+    } // 독립 강화의 원래 상태 객체 연장 종료
+
+    private bool IsRuneAmplifiableBuff(BattleStatusEffectInstance status) // 정상적 게임 턴에 시간 차감되는 양수 강화 확인
+    { // 룬 증폭의 실제 상태 대상 검사 시작
+        return !status.IsExpired && !status.IsDebuff && !status.WaitsForAction && !status.IsProtectedMentalState && // 만료와 약화 및 소비 대기와 정신력 연동 제외
+            !status.LastsUntilBattleEnd && status.RemainingTurns < int.MaxValue && !IsTransientTurnBuff(status) && // 전투 전용 영속이나 시전자 턴에 종속된 강화 제외
+            (BattleBlessingTransfer.IsCopyableType(status.EffectType) || status.EffectType is BattleStatusEffectType.ArcaneWard or // 기존 일반 독립 강화 및 정상 적 턴의 마력 보호막
+                BattleStatusEffectType.MagicAttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark); // 일반 기간으로 차감되는 추가 전투 강화
+    } // 룬 증폭의 실제 상태 대상 검사 종료
+
     internal bool CanReceiveBlessingCopy(BattleStatusEffectInstance blessing) // 활성 강화의 수령 가능 중첩 확인
     { // 수령 중첩 확인 시작
         var existing = FindStatusEffect(blessing.EffectType, includeCurrentTurnAttackPower: false); // 수령 아군의 같은 일반 강화 상태 확인
