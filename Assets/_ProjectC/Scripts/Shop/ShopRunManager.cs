@@ -263,7 +263,8 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public int GetCardRemovalPrice() // 현재 카드 제거 비용 조회
     { // 카드 제거 비용 조회 시작
-        return catalog != null ? ApplyShopDiscount(catalog.CardRemovalPrice) : 0; // 상점 준비 상태의 할인 적용 비용 반환
+        var voucher = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.FreeCardRemoval); // 실제 보유한 소모성 제거 교환권 조회
+        return catalog != null && voucher == null ? ApplyShopDiscount(catalog.CardRemovalPrice) : 0; // 상점 준비 상태의 할인 적용 비용 반환
     } // 카드 제거 비용 조회 종료
 
     private static int ApplyShopDiscount(int price) // 보유 유물의 상점 할인 계산
@@ -304,6 +305,10 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
 
     public ShopPurchaseResult TrySellRelic(RelicData relic) // 보유 유물 판매 시도
     { // 유물 판매 시작
+        if (purchasing) // 제거 거래의 지갑 알림 중 교환권 판매 확인
+        { // 거래 중 판매 차단 시작
+            return ShopPurchaseResult.Unavailable; // 결제 중인 유물 상태 보존
+        } // 거래 중 판매 차단 종료
         int price = GetRelicSellPrice(relic); // 실제 판매 가격 조회
         if (price < 0) // 판매 불가 유물 확인
         { // 판매 불가 처리 시작
@@ -334,8 +339,27 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
             return CompleteTransaction(ShopPurchaseResult.InvalidOffer, "상점이 준비되지 않았습니다."); // 상점 미준비 결과 반환
         } // 상점 미준비 처리 종료
 
+        if (purchasing) // 이전 구매나 제거의 변경 알림 중 재진입 확인
+        { // 중복 제거 차단 시작
+            return ShopPurchaseResult.Unavailable; // 같은 교환권으로 여러 장 제거 방지
+        } // 중복 제거 차단 종료
         string cardName = cardIndex >= 0 && cardIndex < runDeckManager.CardCount ? runDeckManager.Cards[cardIndex].Card.DisplayName : "카드"; // 제거 대상 카드 이름 결정
-        ShopPurchaseResult result = transactionService.TryCardRemoval(GetCardRemovalPrice(), () => runDeckManager.CanRemoveAt(cardIndex), () => runDeckManager.TryRemoveAt(cardIndex)); // 표시된 할인 비용으로 카드 제거 거래 실행
+        var inventory = RelicRunManager.Instance?.Inventory; // 같은 거래 안에서 사용할 보관함 보관
+        var voucher = inventory?.FindEffect(RelicEffectType.FreeCardRemoval); // 실제로 사용할 교환권 원본 고정
+        ShopPurchaseResult result; // 제거와 교환권 사용 결과 보관
+        purchasing = true; // 지갑과 덱 알림 중 중복 제거 방지
+        try // 거래 실패나 종료 뒤 입력 복구 보장
+        { // 제거 결제 시작
+            result = transactionService.TryCardRemoval(voucher != null ? 0 : GetCardRemovalPrice(), () => runDeckManager.CanRemoveAt(cardIndex), () => runDeckManager.TryRemoveAt(cardIndex)); // 실제 성공 여부를 반환하는 정상 제거 거래
+            if (result == ShopPurchaseResult.Success && voucher != null) // 실제 카드 제거 성공과 결제 교환권 확인
+            { // 무료 제거 교환권 소비 시작
+                inventory.TryRemove(voucher.RelicId); // 성공한 거래에서만 교환권 한 개 소모
+            } // 무료 제거 교환권 소비 종료
+        } // 제거 결제 종료
+        finally // 거래 입력 복구
+        { // 거래 잠금 해제 시작
+            purchasing = false; // 다음 정상 구매와 제거 및 판매 허용
+        } // 거래 잠금 해제 종료
         string message = result == ShopPurchaseResult.Success ? $"{cardName} 제거 완료" : BuildPurchaseMessage(result, cardName); // 카드 제거 결과 문구 생성
         return CompleteTransaction(result, message); // 카드 제거 결과 알림과 반환
     } // 카드 제거 종료

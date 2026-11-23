@@ -24,7 +24,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 57일차 휴식 Pro
         hazardLevel = Mathf.Clamp(roomHazardLevel, 0, 3); // 실제 방 위험도 저장
         roomRiskLocked = true; // 실제 방 위험도 수동 변경 차단
         resultMessage =
-            $"위험도 {GetHazardLabel(hazardLevel)}: HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}% / " +
+            $"위험도 {GetHazardLabel(hazardLevel)}: HP {RestRoomRecoveryService.HealthRecoveryLabel(hazardLevel)} / " +
             $"정신력 +{RestRoomRecoveryService.MentalRecoveryAmount} / 카드 1장 강화"; // 실제 방 휴식 효과 안내
 
         OpenWindow(); // 휴식 창 표시
@@ -84,7 +84,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 57일차 휴식 Pro
         GUILayout.BeginHorizontal(); // 위험도 표시 행 시작
         GUILayout.Label(
             $"{(roomRiskLocked ? "실제 방" : "테스트")} 위험도: {GetHazardLabel(hazardLevel)} " +
-            $"(HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}%)",
+            $"(HP {RestRoomRecoveryService.HealthRecoveryLabel(hazardLevel)})",
             GUILayout.Width(380f)); // 현재 위험도와 회복률 표시
 
         GUI.enabled = !manager.IsUsed && !roomRiskLocked; // 수동 테스트에서만 위험도 변경 허용
@@ -93,7 +93,7 @@ public sealed class RestRoomPrototypeView : MonoBehaviour // 57일차 휴식 Pro
             hazardLevel = (hazardLevel + 1) % 4; // 안전→Lv1→Lv2→Lv3 순환
             resultMessage =
                 $"테스트 위험도 {GetHazardLabel(hazardLevel)} / " +
-                $"HP {RestRoomRecoveryService.GetHealthRecoveryPercent(hazardLevel)}%"; // 테스트 위험도 안내
+                $"HP {RestRoomRecoveryService.HealthRecoveryLabel(hazardLevel)}"; // 테스트 위험도 안내
         }
         GUI.enabled = true; // UI 입력 상태 복구
         GUILayout.EndHorizontal(); // 위험도 표시 행 종료

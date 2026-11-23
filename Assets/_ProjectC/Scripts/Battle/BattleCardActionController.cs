@@ -304,7 +304,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             case CardFollowUpEffect.DrawCards: // 사용한 카드 자리를 비운 뒤 드로우
                 return runtimeDeck.TryPlayAndDraw(card, value, out _); // 자가 재드로우 없이 한 번 버린 더미로 이동
         } // 효과 구분 종료
-        return card.EffectType == CardEffectType.DrawThenDiscard || runtimeDeck.DiscardCard(card); // 기존 선행 드로우 이동 또는 일반 카드 버리기
+        return card.EffectType == CardEffectType.DrawThenDiscard || (turnRuntime.IsBattleEnded && !ContainsHandCard(card)) || runtimeDeck.DiscardPlayedCard(card); // 선행 이동과 전투 종료 복사본 정리 및 일반 카드 사용 정산
     } // 후속 효과 처리 종료
     private void HandleActionSequenceCompleted() // 카드 행동 연출 완료 처리
     { // 연출 완료 처리 시작

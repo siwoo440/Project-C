@@ -378,6 +378,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         out int recoveredMemberCount) // 57일차 위험도별 휴식 회복을 영속 파티 상태에 적용
     {
         recoveredMemberCount = 0; // 회복 적용 생존 인원 초기화
+        int bonus = RestRoomRecoveryService.CampRecoveryBonus; // 이번 휴식에 사용할 회복량 보너스 조회
 
         if (ActiveParty == null) // 등록 파티 존재 확인
         {
@@ -406,7 +407,7 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
                 RestRoomRecoveryService.CalculateRecoveredHealth(
                     currentHealth,
                     member.MaxHealth,
-                    hazardLevel); // 퇴색 위험도별 HP 회복 적용
+                    hazardLevel, bonus); // 퇴색 위험도와 식량팩 보정 적용
 
             savedAllyMental[unitId] =
                 RestRoomRecoveryService.CalculateRecoveredMental(

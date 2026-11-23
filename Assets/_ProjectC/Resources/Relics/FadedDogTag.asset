@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: FadedDogTag
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_FADED_DOG_TAG
+  displayName: 퇴색한 군번줄
+  description: 전투당 파티 전체 1회, 적의 직접 공격으로 생존 아군이 처음 잃을 체력 피해를 무효화한다. 방어도가 전부 흡수하면 소모하지 않으며 지속 피해·체력 비용에는 발동하지 않는다.
+  icon: {fileID: 21300000, guid: fca03b8a4ac541d0ad52605176d32bb0, type: 3}
+  rarity: 0
+  triggerType: 18
+  effectType: 20
+  targetType: 0
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

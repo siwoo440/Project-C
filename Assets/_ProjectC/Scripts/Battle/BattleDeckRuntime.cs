@@ -7,6 +7,11 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private readonly List<CardInstance> hand = new List<CardInstance>(); // 현재 손패
     private readonly List<CardInstance> discardPile = new List<CardInstance>(); // 버린 카드 더미
     private readonly Random random; // 셔플 무작위 생성기
+    private CardInstance battleCopy; // 전투 종료 시 모든 더미에서 지울 복사본
+    private CardInstance pendingHandDiscard; // 현재 한 번의 버림 판정을 기다리는 손패
+    private int nextPlayerTurnDraw; // 다음 아군 턴 시작에 추가할 드로우 수
+    internal int HandCountBeforeCleanup { get; private set; } // 자동 버리기 전의 실제 손패 수
+    internal event Action<CardInstance> BeforeHandDiscard; // 효과 버림과 턴 종료 버림 직전 신호
     public DeckData SourceData { get; } // 덱 원본 데이터
     public IReadOnlyList<CardInstance> Cards => cards; // 전체 카드 목록 조회
     public IReadOnlyList<CardInstance> DrawPile => drawPile; // 뽑을 카드 더미 조회
@@ -65,7 +70,9 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             { // 소유자 없음 처리 시작
                 throw new InvalidOperationException($"카드 소유자 {entry.Owner.DisplayName}의 전투 유닛을 찾을 수 없습니다."); // 소유자 연결 실패 예외
             } // 소유자 없음 처리 종료
-            CardInstance cardInstance = CardInstance.Create(entry.Card, ownerUnit, sequence); // 카드 인스턴스 생성
+            CardInstance cardInstance = entry is RunDeckCardEntry runCard // 전달된 회차 카드의 개별 강화 단계 확인
+                ? CardInstance.Create(entry.Card, ownerUnit, sequence, runCard.UpgradeLevel) // 실제 회차 카드의 강화 단계 반영
+                : CardInstance.Create(entry.Card, ownerUnit, sequence); // 편성 원본만 전달된 기존 호출의 회차 강화 조회
             runtimeDeck.cards.Add(cardInstance); // 전체 카드 목록 등록
             sequence++; // 다음 카드 순번 이동
         } // 카드 변환 종료
@@ -285,7 +292,72 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             StateChanged?.Invoke(); // 손패 비용 화면 갱신 알림
         } // 변경 알림 종료
     } // 임시 비용 초기화 종료
-    public bool DiscardCard(CardInstance cardInstance) // 손패 카드 버리기
+    internal bool TryAddBattleCopy(CardInstance source) // 첫 사용 카드의 독립 전투용 복사본 생성
+    { // 복사 시작
+        if (source == null || battleCopy != null || hand.Count >= MaxHandSize || !hand.Contains(source)) // 복사할 손패와 빈자리 확인
+        { // 복사 불가 시작
+            return false; // 원래 손패와 미사용 기회 유지
+        } // 복사 불가 종료
+        battleCopy = CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 비용과 소유자 및 강화 단계 복사
+        cards.Add(battleCopy); // 전투 전용 카드 등록
+        hand.Add(battleCopy); // 복사본을 실제 손패에 추가
+        StateChanged?.Invoke(); // 변경된 손패 표시
+        return true; // 전투당 한 번 복사 성공
+    } // 복사 종료
+    internal void ClearBattleRelicCards() // 전투가 끝난 뒤 임시 카드와 예약 정리
+    { // 전투 카드 정리 시작
+        nextPlayerTurnDraw = 0; // 미사용 드로우 예약 해제
+        if (battleCopy != null && cards.Remove(battleCopy)) // 실제로 생성한 전투 한정 카드 확인
+        { // 복사본 제거 시작
+            hand.Remove(battleCopy); // 손패 복사본 제거
+            drawPile.Remove(battleCopy); // 뽑을 더미 복사본 제거
+            discardPile.Remove(battleCopy); // 버린 더미 복사본 제거
+            battleCopy = null; // 제거한 전투 카드 참조 해제
+            StateChanged?.Invoke(); // 실제 더미 변화 알림
+        } // 복사본 제거 종료
+    } // 전투 카드 정리 종료
+    internal void QueuePlayerTurnDraw(int count) // 다음 아군 턴에 추가 드로우 보관
+    { // 드로우 예약 시작
+        nextPlayerTurnDraw += count; // 다음 턴 한정 추가 수량 기록
+    } // 드로우 예약 종료
+    internal int DrawForPlayerTurn(int count) // 아군 턴의 기본 수량과 예약 수량 함께 드로우
+    { // 턴 드로우 시작
+        int bonus = nextPlayerTurnDraw; // 이번 턴 보너스 보관
+        nextPlayerTurnDraw = 0; // 드로우 알림 전 중복 예약 소비 차단
+        return DrawCards(count + bonus); // 손패 상한을 따르는 실제 드로우 수 반환
+    } // 턴 드로우 종료
+    internal bool RetainHandCard(CardInstance card) // 현재 한 번의 손패 버림 취소
+    { // 손패 유지 시작
+        if (card == null || card != pendingHandDiscard) // 현재 버리려는 손패와 일치 여부 확인
+        { // 손패 없음 시작
+            return false; // 보존할 카드 없음
+        } // 손패 없음 종료
+        pendingHandDiscard = null; // 이번 버림 한 번만 취소
+        return true; // 손패 유지 성공
+    } // 손패 유지 종료
+    private bool IsHandDiscardPrevented(CardInstance card) // 현재 버림 한 번의 유지 여부 확인
+    { // 버림 판정 시작
+        var previous = pendingHandDiscard; // 이벤트 처리 중 바깥 버림 대상 보관
+        pendingHandDiscard = card; // 이번 버림 대상 지정
+        try // 겹친 버림 판정 복구 보장
+        { // 버림 신호 시작
+            BeforeHandDiscard?.Invoke(card); // 효과 버림이나 턴 종료 버림 직전 알림
+            return pendingHandDiscard == null; // 이번 신호에서 취소한 버림만 면제
+        } // 버림 신호 종료
+        finally // 한 번의 버림 판정 정리
+        { // 대상 복구 시작
+            pendingHandDiscard = previous; // 바깥 버림 대상 복구
+        } // 대상 복구 종료
+    } // 버림 판정 종료
+    public bool DiscardCard(CardInstance cardInstance) // 카드 효과 또는 수동 선택으로 손패 버리기
+    { // 효과 버림 시작
+        if (cardInstance == null || !hand.Contains(cardInstance)) // 실제 버릴 카드 확인
+        { // 유효 대상 없음 시작
+            return false; // 잘못된 버리기 거부
+        } // 유효 대상 없음 종료
+        return IsHandDiscardPrevented(cardInstance) || DiscardPlayedCard(cardInstance); // 이번 버림 취소 또는 실제 버림으로 선택 완료
+    } // 효과 버림 종료
+    internal bool DiscardPlayedCard(CardInstance cardInstance) // 사용을 끝낸 카드의 일반 버림 이동
     { // 카드 버리기 시작
         if (cardInstance == null) // 빈 카드 확인
         { // 빈 카드 처리 시작
@@ -303,15 +375,22 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     public int DiscardHand() // 일반 손패 전체 버리기
     { // 손패 정리 시작
         int count = hand.Count; // 정리할 손패 수 기록
+        HandCountBeforeCleanup = count; // 유지와 버리기 전 손패 상태 기록
         if (count == 0) // 빈 손패 확인
         { // 정리 불필요 시작
             return 0; // 이동 카드 없음 반환
         } // 정리 불필요 종료
-        discardPile.AddRange(hand); // 일반 손패를 버림 더미로 이동
-        hand.Clear(); // 기존 손패 비우기
+        foreach (CardInstance card in hand.ToArray()) // 현재 손패 순서대로 실제 버림 판정
+        { // 카드별 정리 시작
+            if (!IsHandDiscardPrevented(card)) // 이번 턴 종료 버림이 실제로 취소됐는지 확인
+            { // 실제 버림 시작
+                hand.Remove(card); // 원래 손패에서 제거
+                discardPile.Add(card); // 버린 더미 끝에 추가
+            } // 실제 버림 종료
+        } // 카드별 정리 종료
         EnsureValidState(); // 카드 위치 유효성 확인
         StateChanged?.Invoke(); // 변경된 손패 화면 알림
-        return count; // 정리한 카드 수 반환
+        return count - hand.Count; // 실제로 버린 카드 수 반환
     } // 손패 정리 종료
     public void ShuffleDrawPile() // 뽑을 카드 더미 셔플
     { // 카드 더미 셔플 시작

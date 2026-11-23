@@ -13,5 +13,12 @@ public enum RelicEffectType // 유물 효과 종류
     ShopDiscount, // 상점 구매와 서비스 할인
     DiscoverFirstRoomEvent, // 첫 일반 방의 이벤트 발견 확률 증가
     RerollCardTarget, // 카드 무작위 대상 한 번 재추첨
-    GainActionPoints // 공용 행동력 회복
+    GainActionPoints, // 공용 행동력 회복
+    CopyPlayedCard, // 처음 사용한 카드의 전투용 복사본 지급
+    QueueNextTurnDraw, // 다음 아군 턴에 추가 드로우 예약
+    RetainDiscardedHandCard, // 버려질 손패 한 장 유지
+    GainFirstTurnCapacity, // 첫 아군 턴 최대 행동력과 현재 행동력 증가
+    CampHealthRecoveryBonus, // 캠프 체력 회복량 증가
+    FreeCardRemoval, // 상점 카드 제거 비용 면제
+    PreventFirstHealthDamage // 첫 체력 피해 방지
 }

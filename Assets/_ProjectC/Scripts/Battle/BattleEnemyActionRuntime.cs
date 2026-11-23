@@ -9,6 +9,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
     private readonly Dictionary<BattleUnitRuntime, int> phasePatternStarts = new Dictionary<BattleUnitRuntime, int>(); // 적별 현재 페이즈 시작 순번
     private readonly Random random = new Random(); // 무작위 대상 선택기
     private BattleEnemyAction executingAction; // 현재 실행 행동
+    private bool dogTagUsed; // 이번 전투에서 파티가 군번줄을 사용한 여부
     private bool disposed; // 연결 해제 여부
     public IReadOnlyList<BattleEnemyAction> PlannedActions => plannedActions; // 예정 행동 목록 조회
     public IReadOnlyList<BattleUnitRuntime> AllyUnits => allyUnits; // 전투 아군 목록 조회
@@ -126,7 +127,7 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             } // 대상 없음 처리 종료
         } // 대상 재선택 종료
         executingAction = action; // 현재 실행 행동 저장
-        BattleEnemyActionResult actionResult = action.Execute(); // 적 행동 효과 적용
+        BattleEnemyActionResult actionResult = action.Execute(TryPreventFirstHealthDamage); // 적 직접 공격에만 파티 공용 군번줄 연결
         executingAction = null; // 현재 실행 행동 제거
         plannedActions.Remove(action); // 실행 완료 행동 제거
         ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
@@ -324,6 +325,15 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         patternCount = 1; // 호환 행동 전체 순번 적용
         return null; // 유효 패턴 없음 반환
     } // 패턴 선택 종료
+    private bool TryPreventFirstHealthDamage() // 전투 중 처음 발생한 적 직접 체력 피해 차단
+    { // 군번줄 소비 검사 시작
+        if (dogTagUsed || RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.PreventFirstHealthDamage) == null) // 이번 전투의 잔여 횟수와 실제 보유 확인
+        { // 방어 불가 처리 시작
+            return false; // 정상 체력 피해 진행
+        } // 방어 불가 처리 종료
+        dogTagUsed = true; // 파티 전체의 이번 전투 한 번 소진
+        return true; // 이번 대상의 체력 손실 무효
+    } // 군번줄 소비 검사 종료
     private static bool IsActionConfigurationValid(EnemyData enemyData) // 적 행동 설정 유효성 확인
     { // 설정 확인 시작
         if (enemyData.ActionType == EnemyActionType.Attack) // 공격 행동 확인

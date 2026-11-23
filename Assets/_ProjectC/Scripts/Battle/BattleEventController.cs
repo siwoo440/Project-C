@@ -15,6 +15,7 @@ public sealed class BattleEventController : IDisposable // 기존 전투 신호 
         turnRuntime = battleTurn ?? throw new ArgumentNullException(nameof(battleTurn)); // 전투 턴 관리자 저장
         cardActionController = cardController ?? throw new ArgumentNullException(nameof(cardController)); // 카드 행동 관리자 저장
         turnRuntime.PhaseStarted += HandlePhaseStarted; // 턴 시작 신호 등록
+        turnRuntime.Deck.BeforeHandDiscard += HandleBeforeHandDiscard; // 사용 정산을 제외한 실제 손패 버림 신호 등록
         turnRuntime.PhaseEnded += HandlePhaseEnded; // 턴 종료 신호 등록
         turnRuntime.BattleCompleted += HandleBattleCompleted; // 전투 종료 완료 신호 등록
         cardActionController.CardUsed += HandleCardUsed; // 카드 효과 적용 시작 신호 등록
@@ -60,6 +61,10 @@ public sealed class BattleEventController : IDisposable // 기존 전투 신호 
         BattleUnitRuntime targetUnit = targets == null || targets.Count < 1 ? null : targets[0]; // 대표 대상 조회
         dispatcher.Publish(new BattleEventContext(BattleEventType.CardUsed, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, card == null ? null : card.OwnerUnit, targetUnit, targets, card)); // 카드 사용 공용 이벤트 발행
     } // 카드 사용 신호 처리 종료
+    private void HandleBeforeHandDiscard(CardInstance card) // 손패를 버리기 직전 유지 유물에 알림
+    { // 버림 신호 시작
+        dispatcher.Publish(new BattleEventContext(BattleEventType.BeforeHandDiscard, turnRuntime.CurrentRound, turnRuntime.CurrentPhase, card.OwnerUnit, card: card)); // 현재 아군 턴과 버릴 손패 전달
+    } // 버림 신호 종료
     private void HandleDamageResolved(BattleUnitRuntime sourceUnit, BattleUnitRuntime targetUnit, BattleDamageResult damageResult) // 피해 완료 신호 처리
     { // 피해 신호 처리 시작
         int appliedAmount = damageResult.AppliedDamage; // 실제 피해량 조회
@@ -133,6 +138,7 @@ public sealed class BattleEventController : IDisposable // 기존 전투 신호 
         } // 중복 종료 처리 종료
         disposed = true; // 중계기 종료 상태 저장
         turnRuntime.PhaseStarted -= HandlePhaseStarted; // 턴 시작 신호 해제
+        turnRuntime.Deck.BeforeHandDiscard -= HandleBeforeHandDiscard; // 손패 버림 신호 해제
         turnRuntime.PhaseEnded -= HandlePhaseEnded; // 턴 종료 신호 해제
         turnRuntime.BattleCompleted -= HandleBattleCompleted; // 전투 종료 완료 신호 해제
         cardActionController.CardUsed -= HandleCardUsed; // 카드 효과 적용 시작 신호 해제

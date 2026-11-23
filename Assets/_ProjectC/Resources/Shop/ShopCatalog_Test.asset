@@ -534,4 +534,60 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 9ee7d764a43b42f58c7d8d676039e465, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_FRAGMENTED_MIRROR
+    offerType: 1
+    price: 308
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 81773e0f28814ab4b950d558dfb7f4dd, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_EROSION_ECHO_BOTTLE
+    offerType: 1
+    price: 263
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 43123c6be8914b81acbd2ae8617c767b, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_EMERGENCY_RATION_PACK
+    offerType: 1
+    price: 210
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: a0e3c4df2a9046f0b46a353ec4b43f4f, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_SPOOL
+    offerType: 1
+    price: 327
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: f0096fa199d2420db3f8665dc2d747b0, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_GOLDEN_EXCHANGE_VOUCHER
+    offerType: 1
+    price: 285
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 822807d8cc4a43f6bc6c924a6acd4ebf, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RED_REMNANT_CHARM
+    offerType: 1
+    price: 204
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 527fa51cbbe34979be166dfda736f193, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FADED_DOG_TAG
+    offerType: 1
+    price: 336
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 300b67dc74174994887ee569ebf07333, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_MEDAL
+    offerType: 1
+    price: 291
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 34d5aa50b9954fa1a9cbc1098bdcdb5c, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

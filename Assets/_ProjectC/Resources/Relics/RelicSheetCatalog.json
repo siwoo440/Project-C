@@ -69,7 +69,7 @@
     {
       "sourceRow": 8,
       "name": "파편화된 거울",
-      "description": "전투 중 최초 1회, 사용한 카드 1장 복사",
+      "description": "전투 중 처음 사용한 카드의 임시 복사본을 원래 비용으로 같은 소유자의 손패에 추가한다. 손패가 가득 차 있으면 기회를 보존해 다음 사용 때 다시 시도한다. 복사본은 전투가 끝나면 사라진다.",
       "buyMin": 284,
       "buyMax": 333,
       "buyVariance": 49,
@@ -80,7 +80,7 @@
     {
       "sourceRow": 9,
       "name": "침식 잔향병",
-      "description": "턴 종료 손패가 1장 이상이면 다음 턴 드로우 +1",
+      "description": "턴 종료로 카드를 정리하기 직전에 손패가 1장 이상이면 다음 아군 턴에 1장 추가 드로우한다.",
       "buyMin": 241,
       "buyMax": 286,
       "buyVariance": 45,
@@ -102,7 +102,7 @@
     {
       "sourceRow": 11,
       "name": "비상 식량팩",
-      "description": "캠프 회복량 +30%",
+      "description": "캠프에서 생존 아군의 체력 회복량 +30%. 캐릭터별 회복량의 소수점 이하는 버리고 최대 체력까지만 회복한다.",
       "buyMin": 192,
       "buyMax": 229,
       "buyVariance": 37,
@@ -113,7 +113,7 @@
     {
       "sourceRow": 12,
       "name": "검은 실타래",
-      "description": "버림으로 이동 시 1장에게 유지(1턴) 부여(턴당 1회)",
+      "description": "턴당 1회, 카드 효과 또는 턴 종료로 버려질 첫 손패 1장을 유지한다. 사용을 마친 카드, 덱에서 직접 버린 카드, 초과 드로우 카드는 제외한다.",
       "buyMin": 303,
       "buyMax": 352,
       "buyVariance": 49,
@@ -124,7 +124,7 @@
     {
       "sourceRow": 13,
       "name": "금빛 교환권",
-      "description": "상점에서 카드 1회 무료 제거(소모성)",
+      "description": "상점에서 카드 1장 제거 비용을 대신 지불한다. 제거 성공 시 교환권을 소모한다. 취소·실패 시 유지한다.",
       "buyMin": 262,
       "buyMax": 309,
       "buyVariance": 47,
@@ -135,7 +135,7 @@
     {
       "sourceRow": 14,
       "name": "붉은 잔재 부적",
-      "description": "전투 시작 시 정신력 +2",
+      "description": "전투 시작 시 생존 아군 모두의 정신력 +2.",
       "buyMin": 181,
       "buyMax": 228,
       "buyVariance": 47,
@@ -146,7 +146,7 @@
     {
       "sourceRow": 15,
       "name": "퇴색한 군번줄",
-      "description": "전투 중 최초 피해 1회 무효",
+      "description": "전투당 파티 전체 1회, 적의 직접 공격으로 생존 아군이 처음 잃을 체력 피해를 무효화한다. 방어도가 전부 흡수하면 소모하지 않으며 지속 피해·체력 비용에는 발동하지 않는다.",
       "buyMin": 312,
       "buyMax": 361,
       "buyVariance": 49,
@@ -157,7 +157,7 @@
     {
       "sourceRow": 16,
       "name": "부서진 메달",
-      "description": "전투 시작 시 행동력 +1(첫 턴만)",
+      "description": "첫 아군 턴만 현재·최대 행동력 +1. 기본 6이면 7/7로 시작하고 다음 아군 턴에는 정상 최대치로 돌아온다.",
       "buyMin": 268,
       "buyMax": 314,
       "buyVariance": 46,
