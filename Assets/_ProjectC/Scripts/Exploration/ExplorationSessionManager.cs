@@ -107,18 +107,18 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         DontDestroyOnLoad(gameObject); // Scene 전환 상태 유지
     }
 
+    public bool CanBeginEncounter(string runtimeEncounterId, EncounterData encounterData) // 전투 조우 시작 가능 여부 확인
+    { // 조우 시작 가능 여부 확인 시작
+        return !string.IsNullOrWhiteSpace(runtimeEncounterId) && encounterData != null && encounterData.IsValidData() && activeEncounter == null && !isExplorationCompleted && !IsEncounterCleared(runtimeEncounterId); // 유효한 미완료 조우 여부 반환
+    } // 조우 시작 가능 여부 확인 종료
+
     public bool BeginEncounter(
         string runtimeEncounterId,
         EncounterData encounterData,
         Vector3 playerPosition,
         Vector3 encounterPosition) // 절차 조우 시작
     {
-        if (string.IsNullOrWhiteSpace(runtimeEncounterId) ||
-            encounterData == null ||
-            !encounterData.IsValidData() ||
-            activeEncounter != null ||
-            isExplorationCompleted ||
-            IsEncounterCleared(runtimeEncounterId))
+        if (!CanBeginEncounter(runtimeEncounterId, encounterData)) // 실제 조우 시작 가능 여부 확인
         {
             return false;
         }

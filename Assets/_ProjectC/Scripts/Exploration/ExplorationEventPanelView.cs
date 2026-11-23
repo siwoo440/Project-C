@@ -211,6 +211,10 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
 
         sessionManager.MarkEventResolved(currentRuntimeEventId); // 현재 이벤트 처리 완료 기록
+        if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 이벤트 결과 자동 저장 확인
+        { // 이벤트 저장 실패 처리 시작
+            Debug.LogWarning("[ExplorationAutoSave] 이벤트 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
+        } // 이벤트 저장 실패 처리 종료
 
         if (currentEventView != null)
         {

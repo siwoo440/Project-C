@@ -200,6 +200,10 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
 
     private void HandleTransactionCompleted(ShopPurchaseResult result, string message) // 거래 결과 표시 처리
     {
+        if (result == ShopPurchaseResult.Success && FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 성공한 탐사 상점 거래 자동 저장 확인
+        { // 상점 저장 실패 처리 시작
+            Debug.LogWarning("[ExplorationAutoSave] 상점 거래 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
+        } // 상점 저장 실패 처리 종료
         if (resultText == null) // 거래 결과 텍스트 누락 확인
         {
             return; // 거래 결과 표시 중단

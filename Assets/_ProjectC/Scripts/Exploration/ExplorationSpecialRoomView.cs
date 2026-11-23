@@ -78,6 +78,10 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
         }
 
         ExplorationSessionManager.EnsureInstance().MarkEventResolved(runtimeId); // 현재 휴식 방 사용 완료 저장
+        if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 휴식 결과 자동 저장 확인
+        { // 휴식 저장 실패 처리 시작
+            Debug.LogWarning("[ExplorationAutoSave] 휴식 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
+        } // 휴식 저장 실패 처리 종료
         waitingForRestUse = false; // 휴식 사용 감시 종료
         gameObject.SetActive(false); // 사용 완료 휴식 방 표시 숨김
     }
@@ -136,6 +140,10 @@ public sealed class ExplorationSpecialRoomView : MonoBehaviour // 57일차 보�
         }
 
         sessionManager.MarkEventResolved(runtimeId); // 보물 방 사용 완료 저장
+        if (FindFirstObjectByType<ExplorationPlayerController>() != null && !ExplorationAutoSave.SaveCurrentExploration()) // 보물 결과 자동 저장 확인
+        { // 보물 저장 실패 처리 시작
+            Debug.LogWarning("[ExplorationAutoSave] 보물 결과를 저장하지 못했습니다."); // 기존 저장 유지와 저장 실패 안내
+        } // 보물 저장 실패 처리 종료
         Debug.Log($"[Exploration][Day57] {message} / {runtimeId}", this); // 보물 결과 로그
         gameObject.SetActive(false); // 획득 완료 보물 표시 숨김
     }
