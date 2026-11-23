@@ -45,6 +45,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
     public event Action<BattleUnitRuntime> BlockChanged; // 방어도 변경 이벤트
     public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
+    internal event Action<BattleUnitRuntime> StealthEnded; // 살아 있는 유닛의 은신 해제 또는 정상 만료 이벤트
     public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     internal event Action<BattleUnitRuntime> Revived; // 전투불능 아군의 부활 알림
     internal event Action<BattleUnitRuntime> SeedRevivalSettled; // 씨앗으로 인한 실제 전투불능과 부활의 결산 완료
@@ -53,6 +54,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     public event Action<BattleUnitRuntime> StatusEffectsChanged; // 상태 이상 변경 이벤트
     public event Action<BattleUnitRuntime, BattleMentalChangeResult> MentalChanged; // 정신력 변화 이벤트
+    internal Func<BattleMentalChangeReason, bool> PreventIncomingMentalLoss { get; set; } // 실제 전투가 제공하는 공용 정신 피해 보호
     public event Action<BattleUnitRuntime, BattleUnitRuntime, BattleDamageResult> DamageResolved; // 발생자 포함 피해 완료 이벤트
     public event Action<BattleUnitRuntime, BattleUnitRuntime, int> HealingResolved; // 발생자 포함 회복 완료 이벤트
     public event Action<BattleUnitRuntime, BattleUnitRuntime, BattleStatusEffectType, BattleStatusEffectApplyResult> StatusEffectResolved; // 발생자 포함 상태 적용 이벤트
@@ -152,7 +154,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 상태 처리 시작
             return BattleMentalChangeResult.NoChange(CurrentMental, MentalState, MentalRemainingTurns, delta, reason); // 변화 없음 반환
         } // 사망 상태 처리 종료
-        return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta, sourceUnit); // 퇴색 보정과 원래 변화량 및 명시 발생 유닛 전달
+        return mentalRuntime.ChangeMental(GetEncounterMentalChange(delta), reason, delta, sourceUnit, PreventIncomingMentalLoss); // 교전 보정과 원래 요청 및 공용 피해 보호 전달
     } // 정신력 증감 종료
     public bool CanChangeMental(int delta) // 정신력 변경 가능 여부
     { // 변경 가능 확인 시작
@@ -282,11 +284,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 만료된 효과 교체 종료
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
-            statusEffects.Add(blessing?.CopyBlessingState() ?? new BattleStatusEffectInstance(effectType, value, duration, maximumStacks)); // 복사한 독립 상태 또는 일반 신규 상태 추가
-            StatusEffectsChanged?.Invoke(this); // 신규 상태 적용 알림
-            ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Applied, preserveDuration: blessing != null); // 신규 상태 적용과 기존 지속 시간 보존 알림
-            ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
-            return BattleStatusEffectApplyResult.Applied; // 신규 상태 적용 결과 반환
+            var status = blessing?.CopyBlessingState() ?? new BattleStatusEffectInstance(effectType, value, duration, maximumStacks); // 복사한 독립 상태 또는 일반 신규 상태 생성
+            statusEffects.Add(status); // 실제 첫 약화 또는 강화 등록
+            return ResolveAppliedStatus(status, sourceUnit, BattleStatusEffectApplyResult.Applied, blessing != null); // 신규 등록 뒤 상태 정화 및 적용 결과 전달
         } // 신규 상태 처리 종료
         if (blessing == null) // 일반 상태 갱신과 강화 복사 구분
         { // 일반 상태 갱신 시작
@@ -296,11 +296,19 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 복사 중첩 합산 시작
             existingEffect.MergeBlessingCopy(blessing); // 원본을 지키면서 수령자 쪽 중첩과 기존 지속 병합
         } // 복사 중첩 합산 종료
-        StatusEffectsChanged?.Invoke(this); // 상태 이상 변경 알림
-        ReportStatusEffectResolution(sourceUnit, effectType, BattleStatusEffectApplyResult.Stacked, preserveDuration: blessing != null); // 중첩 상태 적용과 기존 지속 시간 보존 알림
-        ApplyDisruptMental(effectType, sourceUnit); // 교란 정신력 변화 적용
-        return BattleStatusEffectApplyResult.Stacked; // 기존 상태 중첩 결과 반환
+        return ResolveAppliedStatus(existingEffect, sourceUnit, BattleStatusEffectApplyResult.Stacked, blessing != null); // 중첩 갱신 뒤 상태 정화 및 적용 결과 전달
     } // 상태 이상 적용 종료
+    private BattleStatusEffectApplyResult ResolveAppliedStatus(BattleStatusEffectInstance status, BattleUnitRuntime source, BattleStatusEffectApplyResult result, bool preserveDuration) // 기존 면역을 통과한 신규 또는 중첩 상태의 최종 정산
+    { // 성공한 상태 정산 시작
+        if (TryCleanseReceivedDebuff(status)) // 실제 아군에게 새로 들어온 일반 약화의 즉시 정화 확인
+        { // 봉인핵의 기존 상태 전체 정화 시작
+            result = BattleStatusEffectApplyResult.CleansedByRelic; // 화면에서 정화와 원래 면역을 구분할 결과
+        } // 봉인핵의 기존 상태 전체 정화 종료
+        StatusEffectsChanged?.Invoke(this); // 정화 또는 활성 상태의 최종 목록 알림
+        ReportStatusEffectResolution(source, status.EffectType, result, preserveDuration); // 최종 상태와 지속 처리 상태의 공유 알림
+        ApplyDisruptMental(status.EffectType, source); // 정상 부여된 공포와 교란의 원래 즉시 정신 변화 보존
+        return result; // 신규 또는 중첩과 즉시 정화의 실제 결과 반환
+    } // 성공한 상태 정산 종료
     internal BattleStatusEffectApplyResult ApplyCurrentAllyTurnAttackPower(int amount, BattleUnitRuntime source) // 장기 강화와 독립된 이번 아군 턴 공격력 적용
     { // 현재 턴 공격력 처리 시작
         if (IsDead || Team != BattleTeam.Ally || amount <= 0) // 살아 있는 아군과 실제 공격력 증가 확인
@@ -380,7 +388,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 상태 존재 확인 시작
         return statusEffect != null && statusEffects.Contains(statusEffect); // 유효 상태 포함 여부 반환
     } // 상태 존재 확인 종료
-    internal bool RemoveStatusEffectInstance(BattleStatusEffectInstance statusEffect) // 상태 인스턴스 조용히 제거
+    internal bool RemoveStatusEffectInstance(BattleStatusEffectInstance statusEffect, bool expiredFromActive = false) // 상태 인스턴스와 실제 만료 경로 처리
     { // 상태 제거 시작
         if (statusEffect == null || statusEffect.IsProtectedMentalState || !statusEffects.Remove(statusEffect)) // 제거 가능한 실제 상태 확인
         { // 제거 불가 시작
@@ -394,6 +402,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 시전자 연결 해제 시작
             SetGuardianHeartProtector(null); // 소모나 정화에서 시전자 사망 감시 해제
         } // 시전자 연결 해제 종료
+        if (statusEffect.EffectType == BattleStatusEffectType.Stealth && !IsDead && (!statusEffect.IsExpired || expiredFromActive)) // 활성 은신 해제 또는 실제 기간 감소로 만료된 생존 유닛 확인
+        { // 은신 종료 발행 시작
+            StealthEnded?.Invoke(this); // 목록에서 한 번 제거한 직후 현재 전투에 종료 알림
+        } // 은신 종료 발행 종료
         return true; // 상태 제거 성공 반환
     } // 상태 제거 종료
     internal BattleStatusEffectApplyResult ApplyGuardianHeart(BattleUnitRuntime protector) // 지정 생존 아군의 다음 치명 피해 보호 예약
@@ -445,6 +457,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             existing.MergeTransferredState(effect); // 이전된 수치 감소와 지속 생략 상태 병합
         } // 상태 중첩 병합 종료
         StatusEffectsChanged?.Invoke(this); // 원래 동료의 상태 화면 갱신
+        recipient.TryCleanseReceivedDebuff(existing ?? effect); // 정상 이전을 마친 동료의 받은 약화 정화
         recipient.StatusEffectsChanged?.Invoke(recipient); // 이전받은 동료의 상태 화면 갱신
         return true; // 디버프 이동 성공 반환
     } // 디버프 이동 종료
@@ -497,6 +510,31 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 정화 가능 상태 확인 종료
         return false; // 정화 가능 상태 없음 반환
     } // 정화 가능 디버프 확인 종료
+    private static bool IsRemovableActiveDebuff(BattleStatusEffectInstance status) // 일반 상태로 제거할 수 있는 활성 약화 확인
+    { // 일반 약화의 제거 가능 여부 검사 시작
+        return status != null && status.IsDebuff && !status.IsExpired && !status.IsProtectedMentalState && status.RemainingTurns != int.MaxValue; // 유효한 기간제 약화만 정화와 새장 조건에 포함
+    } // 일반 약화의 제거 가능 여부 검사 종료
+    internal bool HasAtLeastThreeRemovableDebuffs() // 서로 다른 활성 제거 가능 약화 세 종류 확인
+    { // 약화 종류 확인 시작
+        var types = new HashSet<BattleStatusEffectType>(); // 중첩 개수와 종류 개수를 구분할 집합
+        foreach (var status in statusEffects) // 실제로 남은 상태 항목 확인
+        { // 새 활성 약화 검사 시작
+            if (IsRemovableActiveDebuff(status) && types.Add(status.EffectType) && types.Count == 3) // 세 번째로 구별되는 활성 약화 확인
+            { // 약화 조건 충족 시작
+                return true; // 적 턴 시작의 새장 피해 대상 확인
+            } // 약화 조건 충족 종료
+        } // 새 활성 약화 검사 종료
+        return false; // 서로 다른 활성 약화가 세 종류보다 적은 대상
+    } // 약화 종류 확인 종료
+    private bool TryCleanseReceivedDebuff(BattleStatusEffectInstance status) // 들어온 일반 약화의 즉시 유물 정화
+    { // 봉인핵의 유효 확률 확인 시작
+        if (Team != BattleTeam.Ally || IsDead || !IsRemovableActiveDebuff(status)) // 생존 아군의 활성 제거 가능 약화 여부
+        { // 잘못된 정화 조건 제외 시작
+            return false; // 정화 확률의 난수 사용 생략
+        } // 잘못된 정화 조건 제외 종료
+        int chance = BattleSupplyRelics.Find(RelicEffectType.CleanseReceivedDebuff)?.TriggerChancePercent ?? 0; // 현재 보유한 봉인핵의 유효 확률
+        return chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance) && RemoveStatusEffectInstance(status); // 실제로 성립한 약화의 전체 인스턴스 제거
+    } // 봉인핵의 유효 확률 확인 종료
     private int CalculateAttackPowerBonus() // 공격력 증가 합계 계산
     { // 공격력 증가 계산 시작
         int totalBonus = 0; // 전체 공격력 증가 초기화

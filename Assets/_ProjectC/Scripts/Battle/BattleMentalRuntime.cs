@@ -33,21 +33,21 @@ public sealed class BattleMentalRuntime // 개별 유닛 정신력 상태
     { // 직접 정신력 변화 요청 시작
         return ChangeMental(delta, reason, delta); // 별도 보정이 없는 기존 요청 연결
     } // 직접 정신력 변화 요청 종료
-    internal BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason, int requestedDelta, BattleUnitRuntime sourceUnit = null) // 실제 발생 유닛과 원래 요청 및 보정량 기록
+    internal BattleMentalChangeResult ChangeMental(int delta, BattleMentalChangeReason reason, int requestedDelta, BattleUnitRuntime sourceUnit = null, Func<BattleMentalChangeReason, bool> preventIncomingLoss = null) // 원래 요청과 실제 적용할 정신 손실의 보호 확인
     { // 정신력 변경 시작
-        if (!CanChangeMental(delta)) // 실제 수치 변화 가능 여부 확인
-        { // 변화 없음 처리 시작
-            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 원래 요청을 보존하고 턴 제한을 소비하지 않음
-        } // 변화 없음 처리 종료
-        int adjustedDelta = ApplyTurnLimit(delta, reason); // 원인별 턴 제한 적용
-        if (!CanChangeMental(adjustedDelta)) // 변경 가능 여부 확인
-        { // 변경 불가 처리 시작
-            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 턴 제한에서 차단된 원래 요청 반환
-        } // 변경 불가 처리 종료
+        if (!CanChangeMental(delta) || !HasTurnAllowance(reason)) // 실제 수치 변화와 기존 턴 제한 확인
+        { // 일반 변경 불가 처리 시작
+            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 수치 또는 턴 제한으로 차단된 원래 요청 반환
+        } // 일반 변경 불가 처리 종료
+        if (delta < 0 && preventIncomingLoss?.Invoke(reason) == true) // 실제 감소가 가능한 입력에만 전투 보호 확인
+        { // 정신 피해 방어 처리 시작
+            return BattleMentalChangeResult.NoChange(CurrentMental, CurrentState, RemainingTurns, requestedDelta, reason); // 원래 요청을 보존한 정신 피해 무효 처리
+        } // 정신 피해 방어 처리 종료
+        RecordTurnLimitedChange(reason); // 실제 적용하는 변화만 기존 턴 제한에 반영
         int previousMental = CurrentMental; // 변경 전 정신력 저장
         BattleMentalState previousState = CurrentState; // 변경 전 상태 저장
         int previousRemainingTurns = RemainingTurns; // 변경 전 남은 턴 저장
-        CurrentMental = ClampMental((long)CurrentMental + adjustedDelta); // 정신력 범위 내 변경
+        CurrentMental = ClampMental((long)CurrentMental + delta); // 정신력 범위 내 실제 수치 변경
         if (!IsSpecialStateActive) // 기존 특수 상태 활성 여부 확인
         { // 일반 상태 임계 판정 시작
             EvaluateThreshold(); // 일반 상태에서만 새 특수 상태 판정
@@ -119,34 +119,31 @@ public sealed class BattleMentalRuntime // 개별 유닛 정신력 상태
         healingCountThisTurn = 0; // 회복 횟수 초기화
         disruptInflictedCountThisTurn = 0; // 교란 가함 횟수 초기화
     } // 횟수 초기화 종료
-    private int ApplyTurnLimit(int delta, BattleMentalChangeReason reason) // 원인별 턴 제한 적용
-    { // 턴 제한 처리 시작
-        if (reason == BattleMentalChangeReason.HeavyDamage) // 큰 피해 원인 확인
-        { // 큰 피해 제한 처리 시작
-            if (heavyDamageCountThisTurn >= 2) // 최대 횟수 확인
-            { // 최대 횟수 처리 시작
-                return 0; // 변화 차단 반환
-            } // 최대 횟수 처리 종료
-            heavyDamageCountThisTurn++; // 큰 피해 횟수 증가
-        } // 큰 피해 제한 처리 종료
-        else if (reason == BattleMentalChangeReason.HealingReceived) // 회복 원인 확인
-        { // 회복 제한 처리 시작
-            if (healingCountThisTurn >= 3) // 최대 횟수 확인
-            { // 최대 횟수 처리 시작
-                return 0; // 변화 차단 반환
-            } // 최대 횟수 처리 종료
-            healingCountThisTurn++; // 회복 횟수 증가
-        } // 회복 제한 처리 종료
-        else if (reason == BattleMentalChangeReason.DisruptInflicted) // 교란 가함 원인 확인
-        { // 교란 제한 처리 시작
-            if (disruptInflictedCountThisTurn >= 2) // 최대 횟수 확인
-            { // 최대 횟수 처리 시작
-                return 0; // 변화 차단 반환
-            } // 최대 횟수 처리 종료
-            disruptInflictedCountThisTurn++; // 교란 가함 횟수 증가
-        } // 교란 제한 처리 종료
-        return delta; // 허용 변화량 반환
-    } // 턴 제한 처리 종료
+    private bool HasTurnAllowance(BattleMentalChangeReason reason) // 원인별 턴 사용 가능 횟수 조회
+    { // 횟수 조회 시작
+        return reason switch // 정신력 변화 원인별 기존 한도 검사
+        { // 원인별 횟수 검사 시작
+            BattleMentalChangeReason.HeavyDamage => heavyDamageCountThisTurn < 2, // 큰 피해 적용 횟수 두 번 제한
+            BattleMentalChangeReason.HealingReceived => healingCountThisTurn < 3, // 회복 적용 횟수 세 번 제한
+            BattleMentalChangeReason.DisruptInflicted => disruptInflictedCountThisTurn < 2, // 교란 가함 횟수 두 번 제한
+            _ => true // 그 외 원인의 일반 수치 적용
+        }; // 원인별 횟수 검사 종료
+    } // 횟수 조회 종료
+    private void RecordTurnLimitedChange(BattleMentalChangeReason reason) // 실제로 적용한 한도 대상 정신력 변화 기록
+    { // 적용 횟수 기록 시작
+        switch (reason) // 적용 횟수에 제한이 있는 원인 확인
+        { // 원인별 적용 횟수 기록 시작
+            case BattleMentalChangeReason.HeavyDamage: // 큰 피해 적용 확인
+                heavyDamageCountThisTurn++; // 큰 피해 사용 횟수 증가
+                break; // 큰 피해 횟수 기록 종료
+            case BattleMentalChangeReason.HealingReceived: // 회복 적용 확인
+                healingCountThisTurn++; // 회복 사용 횟수 증가
+                break; // 회복 횟수 기록 종료
+            case BattleMentalChangeReason.DisruptInflicted: // 교란 가함 적용 확인
+                disruptInflictedCountThisTurn++; // 교란 가함 사용 횟수 증가
+                break; // 교란 가함 횟수 기록 종료
+        } // 원인별 적용 횟수 기록 종료
+    } // 적용 횟수 기록 종료
     private void EvaluateThreshold() // 정신력 임계 상태 판정
     { // 임계 상태 판정 시작
         if (CurrentMental >= MaximumMental) // 최대 정신력 확인

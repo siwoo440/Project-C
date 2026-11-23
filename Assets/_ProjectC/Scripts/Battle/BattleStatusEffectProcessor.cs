@@ -173,7 +173,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             BattleStatusEffectRemovalReason reason = BattleStatusEffectRemovalReason.None; // 기본 제거 원인 초기화
             if (effect.IsExpired) // 지속 종료 또는 화상 소진 확인
             { // 상태 만료 처리 시작
-                runtimeUnit.RemoveStatusEffectInstance(effect); // 만료 상태 제거
+                runtimeUnit.RemoveStatusEffectInstance(effect, expiredFromActive: previousTurns > 0); // 활성 상태에서 실제로 만료되었는지 포함한 제거
                 reason = BattleStatusEffectRemovalReason.DurationExpired; // 만료 원인 기록
             } // 상태 만료 처리 종료
             results.Add(new BattleStatusEffectProcessResult(effect.EffectType, round, previousValue, applied, previousTurns, effect.RemainingTurns, effect.StackCount, triggered, reason)); // 턴 종료 처리 결과 기록

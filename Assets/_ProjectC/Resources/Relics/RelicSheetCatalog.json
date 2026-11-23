@@ -1587,7 +1587,7 @@
     {
       "sourceRow": 146,
       "name": "네크레이트 손톱가루",
-      "description": "중독 상태 적에게 검 카드 피해 +3",
+      "description": "중독 상태인 적에게 검 카드가 직접 명중하면 피해가 3 증가한다.",
       "buyMin": 212,
       "buyMax": 248,
       "buyVariance": 36,
@@ -1598,7 +1598,7 @@
     {
       "sourceRow": 147,
       "name": "바닥 없는 병",
-      "description": "전투 시작 시 코스트 +2, 아군 전체 정신력 -4",
+      "description": "전투 시작에 생존 아군 전체의 정신력을 4 낮추고 실제 첫 아군 턴의 현재와 최대 행동력을 각각 2 높인다.",
       "buyMin": 229,
       "buyMax": 272,
       "buyVariance": 43,
@@ -1609,7 +1609,7 @@
     {
       "sourceRow": 148,
       "name": "검은 심연판",
-      "description": "아군이 받는 첫 정신 피해 1회 무효",
+      "description": "전투에서 생존 아군이 처음 받을 실제 정신 피해를 한 번 무효로 한다.",
       "buyMin": 246,
       "buyMax": 282,
       "buyVariance": 36,
@@ -1620,7 +1620,7 @@
     {
       "sourceRow": 149,
       "name": "뒤집힌 별문장",
-      "description": "한 턴에 서로 다른 속성 카드 3장 사용 시 카드 1장 드로우",
+      "description": "한 아군 턴에 서로 다른 속성의 카드 세 종류를 사용하면 카드 한 장을 뽑는다. 아군 턴마다 한 번 적용한다.",
       "buyMin": 263,
       "buyMax": 306,
       "buyVariance": 43,
@@ -1631,7 +1631,7 @@
     {
       "sourceRow": 150,
       "name": "균열 먹는 새장",
-      "description": "적에게 디버프 3개 이상이면 턴 시작 시 5 피해",
+      "description": "적 턴 시작에 서로 다른 활성 약화가 세 개 이상인 생존 적에게 각각 일반 피해 5를 준다.",
       "buyMin": 280,
       "buyMax": 316,
       "buyVariance": 36,
@@ -1642,7 +1642,7 @@
     {
       "sourceRow": 151,
       "name": "어비스 공명석",
-      "description": "지팡이 카드 사용 3회마다 적 전체 6 피해",
+      "description": "전투에서 지팡이 카드를 세 번 사용할 때마다 정산 뒤 생존 적 전체에 일반 피해 6을 준다.",
       "buyMin": 297,
       "buyMax": 340,
       "buyVariance": 43,
@@ -1653,7 +1653,7 @@
     {
       "sourceRow": 152,
       "name": "네크레이트 봉인핵",
-      "description": "아군 전체가 디버프를 받을 때 20% 확률로 즉시 제거",
+      "description": "생존 아군에게 제거 가능한 약화가 걸릴 때 20% 확률로 해당 약화를 즉시 제거한다.",
       "buyMin": 314,
       "buyMax": 350,
       "buyVariance": 36,
@@ -1664,7 +1664,7 @@
     {
       "sourceRow": 153,
       "name": "어둠에 잠긴 팔찌",
-      "description": "은신 상태가 풀릴 때 다음 공격 피해 +8",
+      "description": "은신이 풀린 생존 아군의 다음 카드 직접 명중 피해가 8 증가한다.",
       "buyMin": 181,
       "buyMax": 224,
       "buyVariance": 43,
