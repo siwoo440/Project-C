@@ -18,6 +18,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     public int DiscardPileCount => discardPile.Count; // 버린 카드 수 조회
     public int MaxHandSize { get; } // 최대 손패 수
     public event Action StateChanged; // 덱 상태 변경 이벤트
+    public event Action<CardInstance> CardRecovered; // 버린 카드 회수 이벤트
     private BattleDeckRuntime(DeckData sourceData, int maxHandSize, int? shuffleSeed) // 런타임 덱 생성자
     { // 생성자 시작
         SourceData = sourceData; // 덱 원본 저장
@@ -167,10 +168,23 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 회수 불가 처리 종료
         discardPile.Remove(choice); // 버린 더미에서 카드 제거
         hand.Add(choice); // 같은 카드를 손패에 추가
+        CardRecovered?.Invoke(choice); // 카드 회수 효과 처리 알림
         EnsureValidState(); // 회수 후 덱 상태 검증
         StateChanged?.Invoke(); // 카드 영역 변경 알림
         return true; // 회수 성공 반환
     } // 카드 회수 종료
+    public void ClearTemporaryCardCosts() // 모든 카드의 턴 한정 비용 초기화
+    { // 임시 비용 초기화 시작
+        bool changed = false; // 비용 변경 여부 초기화
+        foreach (CardInstance card in cards) // 전투 카드 전체 순회
+        { // 카드 비용 초기화 시작
+            changed |= card.ClearTemporaryApDiscount(); // 카드별 임시 할인 제거
+        } // 카드 비용 초기화 종료
+        if (changed) // 실제 비용 변경 확인
+        { // 변경 알림 시작
+            StateChanged?.Invoke(); // 손패 비용 화면 갱신 알림
+        } // 변경 알림 종료
+    } // 임시 비용 초기화 종료
     public bool DiscardCard(CardInstance cardInstance) // 손패 카드 버리기
     { // 카드 버리기 시작
         if (cardInstance == null) // 빈 카드 확인

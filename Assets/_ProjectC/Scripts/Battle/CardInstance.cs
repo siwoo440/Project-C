@@ -4,6 +4,7 @@ using UnityEngine; // 스프라이트와 수치 계산 사용
 public sealed class CardInstance // 전투용 카드 인스턴스
 {
     private const int FallbackUpgradeEffectPercent = 25; // 기존 테스트 호환 강화 효과 증가율
+    private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
 
     public string InstanceId { get; }
     public CardData SourceData { get; }
@@ -19,11 +20,20 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardType CardType => SourceData.CardType; // 카드 종류 조회
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
-    public int ApCost =>
-        CardUpgradeProfileCatalog.CalculateApCost(
-            SourceData,
-            SourceData.ApCost,
-            UpgradeLevel); // 카드별 강화 AP 비용
+    public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount); // 강화와 임시 할인 포함 행동력 비용
+    public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용
+    { // 할인 적용 시작
+        temporaryApDiscount = Mathf.Max(temporaryApDiscount, Mathf.Max(0, amount)); // 높은 할인값 유지
+    } // 할인 적용 종료
+    public bool ClearTemporaryApDiscount() // 임시 행동력 할인 제거
+    { // 할인 제거 시작
+        if (temporaryApDiscount == 0) // 할인 존재 여부 확인
+        { // 할인 없음 처리 시작
+            return false; // 변경 없음 반환
+        } // 할인 없음 처리 종료
+        temporaryApDiscount = 0; // 할인값 초기화
+        return true; // 변경 완료 반환
+    } // 할인 제거 종료
 
     public CardEffectType EffectType => SourceData.EffectType; // 카드 효과 종류 조회
     public BattleDamageType DamageType => SourceData.DamageType; // 카드 피해 종류 조회

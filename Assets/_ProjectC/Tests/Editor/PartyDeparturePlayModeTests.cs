@@ -616,9 +616,40 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         next.onClick.Invoke(); // 세 번째 후보 페이지 이동
         panel.transform.Find("Choice_2").GetComponent<Button>().onClick.Invoke(); // 세 번째 버린 카드 선택
         Assert.IsTrue(battle.BattleDeck.Hand.Contains(discarded[2])); // 선택 카드 손패 회수 확인
+        Assert.AreEqual(0, discarded[2].ApCost); // 마법사 패시브 회수 카드 할인 확인
+        BattleCardView recoveredView = null; // 회수 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 갱신된 손패 화면 순회
+        { // 회수 카드 화면 검색 시작
+            if (candidate.RuntimeCard == discarded[2] && candidate.gameObject.activeInHierarchy) // 회수된 카드 화면 확인
+            { // 회수 화면 발견 시작
+                recoveredView = candidate; // 회수 카드 화면 저장
+                break; // 화면 검색 종료
+            } // 회수 화면 발견 종료
+        } // 회수 카드 화면 검색 종료
+        Assert.IsNotNull(recoveredView); // 회수 카드 화면 존재 확인
+        Assert.AreEqual("0", recoveredView.transform.Find("CostBadge/CostText").GetComponent<TMPro.TMP_Text>().text); // 손패의 할인 비용 표시 확인
         Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(discarded[0])); // 선택하지 않은 카드 유지 확인
         Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(magicianCard)); // 사용한 마법사 카드 버림 확인
         Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 회수 카드 행동력 소비 확인
+        BattleUnitView targetView = null; // 적 화면 초기화
+        foreach (BattleUnitView candidate in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 유닛 화면 순회
+        { // 적 화면 검색 시작
+            if (candidate.RuntimeUnit == battle.EnemyUnits[0]) // 첫 적 화면 확인
+            { // 적 화면 발견 시작
+                targetView = candidate; // 적 화면 저장
+                break; // 화면 검색 종료
+            } // 적 화면 발견 종료
+        } // 적 화면 검색 종료
+        Assert.IsNotNull(targetView); // 적 화면 존재 확인
+        recoveredView.OnPointerClick(null); // 할인된 회수 카드 선택
+        targetView.OnPointerClick(null); // 회수 카드의 적 대상 선택
+        float useDeadline = Time.realtimeSinceStartup + 5f; // 카드 사용 제한 시간 설정
+        while (Time.realtimeSinceStartup < useDeadline && !battle.BattleDeck.DiscardPile.Contains(discarded[2])) // 회수 카드 사용 대기
+        { // 카드 사용 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 카드 사용 대기 종료
+        Assert.IsTrue(battle.BattleDeck.DiscardPile.Contains(discarded[2])); // 할인된 카드 사용 확인
+        Assert.AreEqual(previousPoints - 1, battle.SharedActionPoints.CurrentActionPoints); // 할인 카드 추가 행동력 미소비 확인
         Assert.IsTrue(battle.BattleDeck.IsStateValid()); // 전체 카드 보존 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
