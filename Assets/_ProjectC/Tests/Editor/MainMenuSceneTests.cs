@@ -83,6 +83,15 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             } // 탐사 대기 종료
             yield return null; // 맵과 위치 초기화 대기
             ExplorationPlayerController player = Object.FindFirstObjectByType<ExplorationPlayerController>(); // 탐사 플레이어 조회
+            GameObject saveEntry = GameObject.Find("SaveMenuEntry"); // 탐사 저장 메뉴 버튼 조회
+            Assert.IsNotNull(saveEntry); // 탐사 저장 메뉴 버튼 존재 확인
+            saveEntry.GetComponent<Button>().onClick.Invoke(); // 탐사 저장 화면 열기
+            SaveMenuController explorationMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 탐사 저장 화면 조회
+            Assert.IsNotNull(explorationMenu); // 탐사 저장 화면 표시 확인
+            Assert.IsTrue(ExplorationPlayerController.InputBlocked); // 저장 화면 중 이동 차단 확인
+            explorationMenu.transform.Find("SaveMenu/CloseButton").GetComponent<Button>().onClick.Invoke(); // 저장 화면 닫기
+            yield return null; // 저장 화면 제거 대기
+            Assert.IsFalse(ExplorationPlayerController.InputBlocked); // 저장 화면 닫기 후 이동 복원 확인
             ExplorationSessionManager session = ExplorationSessionManager.Instance; // 탐사 상태 관리자 조회
             Vector3 savedPosition = player.transform.position; // 현재 플레이어 위치 보관
             int savedSeed = session.CurrentFloorSeed; // 현재 층 시드 보관
@@ -113,6 +122,9 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
             Assert.IsTrue(continueButton.interactable); // 탐사 저장 이어하기 활성 확인
             continueButton.onClick.Invoke(); // 탐사 이어하기 선택
+            SaveMenuController slotMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 슬롯 화면 조회
+            Assert.IsNotNull(slotMenu); // 슬롯 화면 표시 확인
+            slotMenu.transform.Find("SaveMenu/Slot_0/LoadButton").GetComponent<Button>().onClick.Invoke(); // 자동 탐사 저장 불러오기 실행
             for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 전환 대기
             { // 씬 전환 대기 시작
                 yield return null; // 다음 프레임 대기
@@ -371,7 +383,7 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             Assert.IsFalse(continueButton.interactable); // 파일 없음 비활성 확인
             System.IO.File.WriteAllText(path, "{\"version\":1}"); // 잘못된 저장 작성
             controller.SendMessage("Start"); // 손상 저장 기준 메뉴 갱신
-            Assert.IsFalse(continueButton.interactable); // 손상 저장 비활성 확인
+            Assert.IsTrue(continueButton.interactable); // 손상 저장 관리 화면 진입 확인
             PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
             resources.AddResources(41, 0, 0, 0); // 저장할 자원 설정
             int savedGold = resources.Gold; // 저장 골드 보관
@@ -381,6 +393,9 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             controller.SendMessage("Start"); // 유효 저장 기준 메뉴 갱신
             Assert.IsTrue(continueButton.interactable); // 유효 저장 활성 확인
             continueButton.onClick.Invoke(); // 이어하기 실행
+            SaveMenuController slotMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 저장 슬롯 화면 조회
+            Assert.IsNotNull(slotMenu); // 저장 슬롯 화면 표시 확인
+            slotMenu.transform.Find("SaveMenu/Slot_0/LoadButton").GetComponent<Button>().onClick.Invoke(); // 자동 슬롯 불러오기 실행
             yield return null; // 거점 씬 전환 대기
             yield return null; // 거점 초기화 대기
             Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 복원 진입 확인
@@ -420,11 +435,17 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             controller.SendMessage("Start"); // 저장 기준 메뉴 갱신
             Button continueButton = view.transform.Find("ContinueButton").GetComponent<Button>(); // 이어하기 버튼 조회
             Assert.IsTrue(continueButton.interactable); // 정상 저장 활성 확인
+            continueButton.onClick.Invoke(); // 저장 슬롯 화면 열기
+            SaveMenuController slotMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 저장 슬롯 화면 조회
+            Assert.IsNotNull(slotMenu); // 저장 슬롯 화면 표시 확인
             System.IO.File.WriteAllText(path, "{\"version\":1}"); // 클릭 전 저장 손상
-            continueButton.onClick.Invoke(); // 손상된 저장 이어하기 시도
+            slotMenu.transform.Find("SaveMenu/Slot_0/LoadButton").GetComponent<Button>().onClick.Invoke(); // 손상된 저장 이어하기 시도
             yield return null; // 씬 전환 여부 대기
             Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메뉴 유지 확인
             Assert.AreEqual(currentGold, resources.Gold); // 현재 자원 유지 확인
+            slotMenu.transform.Find("SaveMenu/Slot_0/DeleteButton").GetComponent<Button>().onClick.Invoke(); // 손상 저장 삭제 요청
+            slotMenu.transform.Find("SaveMenu/SlotConfirmation/ConfirmButton").GetComponent<Button>().onClick.Invoke(); // 손상 저장 삭제 확인
+            slotMenu.transform.Find("SaveMenu/CloseButton").GetComponent<Button>().onClick.Invoke(); // 저장 슬롯 화면 닫기
             Assert.IsFalse(continueButton.interactable); // 이어하기 비활성 확인
         } // 손상 저장 검증 종료
         finally // 테스트 파일 정리
@@ -561,7 +582,13 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         yield return null; // 메뉴 이벤트 연결 대기
         MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
         Assert.IsNotNull(view); // 새 메뉴 화면 존재 확인
-        Assert.AreEqual(LobbySaveService.CanLoad(LobbySaveService.DefaultPath) || ExplorationSaveService.CanLoad(ExplorationSaveService.DefaultPath), view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
+        SaveSlotService slots = SaveSlotService.CreateDefault(); // 기본 저장 슬롯 서비스 조회
+        bool hasAnySlot = false; // 저장 슬롯 존재 여부 초기화
+        for (int index = 0; index < SaveMenuView.SlotCount; index++) // 전체 저장 슬롯 순회
+        { // 저장 파일 확인 시작
+            hasAnySlot |= slots.HasFile(index); // 손상 파일 포함 슬롯 존재 확인
+        } // 저장 파일 확인 종료
+        Assert.AreEqual(hasAnySlot, view.transform.Find("ContinueButton").GetComponent<Button>().interactable); // 저장 상태별 이어하기 확인
         view.transform.Find("SettingsButton").GetComponent<Button>().onClick.Invoke(); // 설정 버튼 실행
         yield return null; // 설정 씬 전환 대기
         Assert.AreEqual("90_Settings", SceneManager.GetActiveScene().name); // 설정 진입 확인
@@ -595,11 +622,21 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         Transform warningPanel = view.transform.Find("NewGameConfirmation"); // 새 게임 경고 패널 조회
         Assert.IsNotNull(warningPanel); // 경고 패널 존재 확인
         Assert.IsTrue(warningPanel.gameObject.activeSelf); // 경고 패널 표시 확인
+        Assert.IsNotNull(warningPanel.Find("WarningBackdrop").GetComponent<Image>().sprite); // 제작된 경고 배경 이미지 확인
+        Assert.IsNotNull(warningPanel.Find("ConfirmNewGame").GetComponent<Image>().sprite); // 제작된 확인 버튼 이미지 확인
+        Assert.IsNotNull(warningPanel.Find("CancelNewGame").GetComponent<Image>().sprite); // 제작된 취소 버튼 이미지 확인
         warningPanel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 시작 확인
         yield return null; // 거점 씬 전환 대기
         yield return null; // 거점 초기화 대기
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 진입 확인
         Assert.IsNotNull(Object.FindFirstObjectByType<PartyRosterView>()); // 편성 화면 연결 확인
+        GameObject saveEntry = GameObject.Find("SaveMenuEntry"); // 거점 저장 메뉴 버튼 조회
+        Assert.IsNotNull(saveEntry); // 거점 저장 메뉴 버튼 존재 확인
+        saveEntry.GetComponent<Button>().onClick.Invoke(); // 거점 저장 화면 열기
+        SaveMenuController lobbyMenu = Object.FindFirstObjectByType<SaveMenuController>(); // 거점 저장 화면 조회
+        Assert.IsNotNull(lobbyMenu); // 거점 저장 화면 표시 확인
+        Assert.IsTrue(lobbyMenu.transform.Find("SaveMenu/Slot_1/SaveButton").GetComponent<Button>().interactable); // 거점 수동 저장 버튼 활성 확인
+        lobbyMenu.transform.Find("SaveMenu/CloseButton").GetComponent<Button>().onClick.Invoke(); // 저장 화면 닫기
         Assert.AreEqual(0, PlayerResourceManager.Instance.Gold); // 이전 골드 초기화 확인
         Assert.AreEqual(0, PlayerResourceManager.Instance.Screw); // 이전 나사 초기화 확인
         Assert.AreEqual(1, CharacterProgressionManager.Instance.Level); // 이전 성장 초기화 확인

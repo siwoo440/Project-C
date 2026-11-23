@@ -143,6 +143,8 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
 
         CreateExplorationSuccessText(
             canvasObject.transform); // 탐사 성공 결과 HUD 생성
+
+        SaveMenuEntry.Install(canvas, true); // 탐사 저장 메뉴 버튼 설치
     }
 
     private static void CreateInstructionText(

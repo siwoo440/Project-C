@@ -15,6 +15,7 @@ public sealed class SaveMenuView : MonoBehaviour // 저장·불러오기 화면
     { // 슬롯 화면 요소 시작
         public TMP_Text description; // 슬롯 상태 문구
         public TMP_Text timestamp; // 슬롯 저장 시각
+        public Button saveButton; // 슬롯 저장 버튼
         public Button loadButton; // 슬롯 불러오기 버튼
         public Button deleteButton; // 슬롯 삭제 버튼
     } // 슬롯 화면 요소 종료
@@ -48,6 +49,16 @@ public sealed class SaveMenuView : MonoBehaviour // 저장·불러오기 화면
         slot.loadButton.interactable = occupied; // 저장이 있을 때 불러오기 활성화
         slot.deleteButton.interactable = occupied; // 저장이 있을 때 삭제 활성화
     } // 슬롯 상태 표시 종료
+    public void SetSlotActions(int index, bool canSave, bool canLoad, bool canDelete) // 슬롯별 버튼 사용 상태 설정
+    { // 슬롯 버튼 상태 설정 시작
+        if (index < 0 || index >= slots.Length) // 슬롯 번호 범위 확인
+        { // 잘못된 슬롯 처리 시작
+            throw new ArgumentOutOfRangeException(nameof(index)); // 슬롯 번호 오류
+        } // 잘못된 슬롯 처리 종료
+        slots[index].saveButton.interactable = canSave; // 저장 버튼 사용 상태 설정
+        slots[index].loadButton.interactable = canLoad; // 불러오기 버튼 사용 상태 설정
+        slots[index].deleteButton.interactable = canDelete; // 삭제 버튼 사용 상태 설정
+    } // 슬롯 버튼 상태 설정 종료
     private void Initialize(Action<int> onSave, Action<int> onLoad, Action<int> onDelete, Action onClose) // 저장 화면 내용 구성
     { // 화면 구성 시작
         backgroundSprite = CreateSprite("UI/SaveMenu/Background"); // 종이 배경 이미지 준비
@@ -116,6 +127,7 @@ public sealed class SaveMenuView : MonoBehaviour // 저장·불러오기 화면
         { // 슬롯 화면 요소 설정 시작
             description = description, // 저장 상태 문구 연결
             timestamp = timestamp, // 저장 시각 문구 연결
+            saveButton = saveButton, // 저장 버튼 연결
             loadButton = loadButton, // 불러오기 버튼 연결
             deleteButton = deleteButton // 삭제 버튼 연결
         }; // 슬롯 화면 요소 설정 종료
