@@ -1375,6 +1375,54 @@
       "artworkKey": "dc033edb8d205a40821414eea16f3fba"
     },
     {
+      "category": 3,
+      "name": "유리모래 렌즈",
+      "description": "아군이 실명 중인 적에게 명중시키는 직접 마법 카드 타격의 피해가 4 증가한다.",
+      "artworkKey": "4e68ae147e50599db6fd40d112645ba8"
+    },
+    {
+      "category": 3,
+      "name": "말라붙은 선인장즙",
+      "description": "아군이 건 중독의 지속 피해가 1 증가하고 전투 중 생존 아군이 받는 체력 회복이 5% 감소한다.",
+      "artworkKey": "b41d8c6643d3573bb019ded5fd5090ff"
+    },
+    {
+      "category": 3,
+      "name": "폭풍막이 천조각",
+      "description": "아군이 적의 직접 광역 공격에 실제로 명중당할 때 피해 적용 직전에 방어도 3을 얻는다.",
+      "artworkKey": "256d90ca7acc523cb10a46484f853a2e"
+    },
+    {
+      "category": 3,
+      "name": "잠복충 더듬이",
+      "description": "첫 실제 아군 턴에 사용한 첫 직접 공격 카드의 첫 타격 피해가 6 증가한다.",
+      "artworkKey": "52a0d1ae482651ba9315a0d3c10fa25d"
+    },
+    {
+      "category": 3,
+      "name": "폐광 검은 모래",
+      "description": "아군이 적에게 물리 방어력을 낮추는 상태를 실제로 부여하면 20% 확률로 두 적 턴 동안 중독을 부여한다.",
+      "artworkKey": "4804c2c0b94a5910a44f770f0bfb46ca"
+    },
+    {
+      "category": 3,
+      "name": "황폐한 가죽끈",
+      "description": "현재 체력이 최대 체력의 50% 이하인 적에게 아군이 주는 직접 카드 타격 피해가 10% 증가한다.",
+      "artworkKey": "d17e901984bb52299e3ace4cb8634b59"
+    },
+    {
+      "category": 3,
+      "name": "순례자의 깨진 나침판",
+      "description": "정신력이 최대 정신력의 30% 이하인 생존 아군이 적에게서 받는 정신 피해가 30% 감소한다.",
+      "artworkKey": "210d8cccc703586ea293f0df8a9a5bd9"
+    },
+    {
+      "category": 3,
+      "name": "재폭풍 재주머니",
+      "description": "화상 중인 적이 실제로 쓰러지면 다른 무작위 생존 적 한 명에게 같은 수치의 화상을 두 적 턴 동안 부여한다.",
+      "artworkKey": "45827429c7e05b52abd34b54775cbb4d"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

@@ -193,4 +193,12 @@ public enum RelicEffectType // 유물 효과 종류
     BlackSandBlindChanceBonus, // 아군이 확률로 거는 적 실명 부여 확률 증가
     CaravanScalesShopRelicDraw, // 상점의 실제 유물 획득에 탐사 드로우 보상 예약
     DesertKingBraceletOpeningWeakness, // 첫 조우에 무작위 적의 공격력 감소
+    GlassSandLensMagicVsBlind, // 실명 중인 적에 대한 직접 마법 카드 타격 피해 증가
+    DriedCactusSapPoisonDamageBonus, // 아군발 중독 피해 증가 및 아군이 받는 체력 회복 감소
+    StormguardClothAreaDamageBlock, // 실제 적 광역 타격에 명중당할 아군의 피해 전 방어도
+    AmbushBugAntennaFirstTurnFirstAttackDamage, // 첫 실제 아군 턴의 최초 직접 공격 선언 효과
+    MineBlackSandPoisonOnDefenseDown, // 생존 적의 물리 방어 감소가 실제 성공한 뒤 확률 중독
+    RuinedLeatherStrapLowHealthEnemyDamage, // 최대 체력 절반 이하인 적에게 주는 직접 타격 피해 증가
+    PilgrimBrokenCompassLowMentalProtection, // 정신력이 낮은 아군이 적에게 받는 정신 피해 감소
+    AshstormAshPouchBurnOnDefeat, // 화상 중인 적의 실제 사망에서 다른 생존 적에게 화상 전이
 }

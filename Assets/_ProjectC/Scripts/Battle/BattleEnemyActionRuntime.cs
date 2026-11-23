@@ -121,7 +121,8 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
                 continue; // 다음 공격 확인
             } // 피해 미포함 처리 종료
             var preview = candidate.PreviewDamageBeforeShare(target, block, preparation, interception, nullification, illusionAvailable, out var illusion); // 이전 타격의 방어 결과와 환영 소모 예측
-            block += preview.PreparedBlock - preview.AbsorbedDamage; // 준비 방어와 흡수량을 반영한 잔여 방어도
+            int areaBlock = candidate.GetStormguardAreaBlock(target, candidate.AttackAmount, block); // 이전 실제 광역 명중의 사전 방어도가 남을 경우 확인
+            block = (int)Math.Clamp((long)block + areaBlock + preview.PreparedBlock - preview.AbsorbedDamage, 0L, int.MaxValue); // 올바른 공격 순서의 추가 방어와 흡수까지 포함한 남은 방어도
             preparation &= preview.WasDamageNullified; // 실제 무효화된 공격에서만 방어 준비 보존
             interception = false; // 앞선 양수 직접 공격의 위험 차단 소모 반영
             nullification &= !preview.WasDamageNullified; // 실제 무효화 이후의 보호 소모 반영
