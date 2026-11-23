@@ -469,4 +469,60 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         Assert.Greater(previousHealth - enemy.CurrentHealth, ordinaryDamage); // 표식 대상 추가 피해 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator EmpressCard_ProtectsAllLivingAllies() // 여황제 전체 아군 방어 카드 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메인 메뉴 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 거점 이동 요청
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<PartyRosterView>() == null; frame++) // 편성 화면 대기
+        { // 편성 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 편성 대기 종료
+        Button[] buttons = Object.FindFirstObjectByType<PartyRosterView>().GetComponentsInChildren<Button>(); // 선택 버튼 목록 조회
+        buttons[0].onClick.Invoke(); // 바보 캐릭터 선택
+        buttons[3].onClick.Invoke(); // 여황제 캐릭터 선택
+        buttons[22].onClick.Invoke(); // 탐사 출발
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<ExplorationEncounterView>() == null; frame++) // 탐사 조우 대기
+        { // 조우 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 조우 대기 종료
+        Object.FindFirstObjectByType<ExplorationEncounterView>().SendMessage("OnTriggerEnter2D", Object.FindFirstObjectByType<ExplorationPlayerController>().GetComponent<Collider2D>()); // 조우 접촉 처리
+        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<BattleSceneSetup>() == null; frame++) // 전투 씬 대기
+        { // 전투 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 전투 대기 종료
+        yield return null; // 전투 초기화 대기
+        BattleSceneSetup battle = Object.FindFirstObjectByType<BattleSceneSetup>(); // 전투 관리자 조회
+        Assert.IsTrue(battle.IsInitialized); // 전투 준비 확인
+        battle.BattleDeck.DrawCards(12); // 남은 시작 덱 드로우
+        BattleCardView empressCard = null; // 여황제 카드 화면 초기화
+        foreach (BattleCardView candidate in Object.FindObjectsByType<BattleCardView>(FindObjectsSortMode.None)) // 손패 카드 화면 순회
+        { // 전용 카드 검색 시작
+            if (candidate.RuntimeCard != null && candidate.RuntimeCard.SourceData.CardId == "CRD_ARC_03_FEAST" && candidate.gameObject.activeInHierarchy) // 여황제 카드 확인
+            { // 전용 카드 발견 시작
+                empressCard = candidate; // 여황제 카드 저장
+                Assert.AreSame(battle.AllyUnits[1], candidate.RuntimeCard.OwnerUnit); // 카드 소유자 확인
+                break; // 카드 검색 종료
+            } // 전용 카드 발견 종료
+        } // 전용 카드 검색 종료
+        Assert.IsNotNull(empressCard); // 여황제 카드 손패 존재 확인
+        int firstDefense = battle.AllyUnits[0].PhysicalDefense; // 첫 아군 기존 방어력 저장
+        int secondDefense = battle.AllyUnits[1].PhysicalDefense; // 여황제 기존 방어력 저장
+        int previousPoints = battle.SharedActionPoints.CurrentActionPoints; // 기존 행동력 저장
+        empressCard.OnPointerClick(null); // 여황제 전체 방어 카드 사용
+        float effectDeadline = Time.realtimeSinceStartup + 5f; // 카드 효과 제한 시간 설정
+        while (Time.realtimeSinceStartup < effectDeadline && battle.AllyUnits[0].PhysicalDefense == firstDefense) // 방어 효과 적용 대기
+        { // 효과 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 효과 대기 종료
+        Assert.AreEqual(firstDefense + 3, battle.AllyUnits[0].PhysicalDefense); // 첫 아군 방어 증가 확인
+        Assert.AreEqual(secondDefense + 3, battle.AllyUnits[1].PhysicalDefense); // 여황제 방어 증가 확인
+        Assert.AreEqual(previousPoints - 2, battle.SharedActionPoints.CurrentActionPoints); // 행동력 소비 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
 } // 테스트 클래스 종료
