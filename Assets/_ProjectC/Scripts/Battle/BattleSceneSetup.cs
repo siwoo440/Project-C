@@ -43,6 +43,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     private BattleActionPointRuntime sharedActionPoints; // 생성된 공용 행동력
     private BattleTurnRuntime battleTurn; // 생성된 전투 턴 관리자
     private BattleCardActionController cardActionController; // 카드 행동 관리자
+    private BattleUnitInfoPanel unitInfoPanel; // 아군과 적 선택 정보 패널
     private BattleStatusEffectProcessor statusEffectProcessor; // 상태 발동과 정화 공통 처리기
     private BattleStatusEffectController statusEffectController; // 상태 이상 발동 관리자
     private BattleMentalController mentalController; // 정신력 흐름 관리자
@@ -163,6 +164,15 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         Canvas battleCanvas = handView.GetComponentInParent<Canvas>(); // 전투 UI Canvas 조회
         if (battleCanvas != null) // 전투 Canvas 존재 확인
         { // 컷인 생성 시작
+            unitInfoPanel = BattleUnitInfoPanel.Create(battleCanvas, handView, () => cardActionController != null && cardActionController.SelectedCard != null); // 실제 카드 대상 선택 상태를 확인하는 정보 패널 생성
+            foreach (BattleUnitView view in allyUnitViews) // 실제 아군 화면 순회
+            { // 아군 정보 요청 연결 시작
+                unitInfoPanel.Register(view); // 실제 아군 선택 정보 연결
+            } // 아군 정보 요청 연결 종료
+            foreach (BattleUnitView view in enemyUnitViews) // 실제 적 화면 순회
+            { // 적 정보 요청 연결 시작
+                unitInfoPanel.Register(view); // 실제 적 선택 정보 연결
+            } // 적 정보 요청 연결 종료
             mentalStateCutInView = BattleMentalStateCutInView.Create(battleCanvas.transform, battleEvents); // 각성·붕괴 전체 화면 컷인 코드 생성
         } // 컷인 생성 종료
         else // 전투 Canvas 누락 처리
@@ -361,6 +371,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         unitView.Bind(runtimeUnit); // 적 화면 연결
         enemyUnits.Add(runtimeUnit); // 적 목록 등록
         enemyUnitViews.Add(unitView); // 적 화면 목록 등록
+        unitInfoPanel?.Register(unitView); // 전투 중 소환 적의 정보 요청 연결
         return runtimeUnit; // 생성 적 런타임 반환
     } // 적 유닛 생성 종료
     private static void ConfigureBattlefieldRoot(Transform unitRoot) // 전투 진영 영역의 배경 위치 설정
@@ -444,6 +455,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
         if (enemyView != null) // 제거 적 화면 존재 확인
         { // 적 화면 제거 시작
+            unitInfoPanel?.Unregister(enemyView); // 제거 적의 정보 요청 연결 해제
             enemyView.Unbind(); // 적 화면 런타임 연결 해제
             enemyUnitViews.Remove(enemyView); // 적 화면 목록 제거
             Destroy(enemyView.gameObject); // 적 화면 오브젝트 제거
@@ -872,6 +884,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 유닛 화면 조회 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        if (unitInfoPanel != null) // 전투 유닛 정보 패널 존재 확인
+        { // 전투 정보 패널 정리 시작
+            Destroy(unitInfoPanel.gameObject); // 실제 유닛 정보 화면과 연결 정리
+            unitInfoPanel = null; // 기존 유닛 정보 패널 참조 제거
+        } // 전투 정보 패널 정리 종료
         if (cardActionController != null) // 카드 행동 관리자 존재 확인
         { // 안내 카드 연결 해제 시작
             cardActionController.CardUsed -= HandleTutorialCardUsed; // 카드 사용 안내 연결 해제

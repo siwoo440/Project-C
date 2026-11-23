@@ -32,6 +32,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
     private bool statusTooltipHovered; // 상태 상세 대상에 마우스 진입 여부
     public BattleUnitRuntime RuntimeUnit { get; private set; } // 연결된 런타임 유닛
     public event Action<BattleUnitRuntime> Clicked; // 유닛 클릭 이벤트
+    public event Action<BattleUnitRuntime> InformationRequested; // 카드 대상 처리 전 유닛 정보 요청 이벤트
     public void Bind(BattleUnitRuntime runtimeUnit) // 런타임 유닛 연결
     { // 연결 시작
         if (runtimeUnit == null) // 런타임 유닛 누락 확인
@@ -316,6 +317,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         { // 클릭 불가 처리 시작
             return; // 포인터 클릭 처리 중단
         } // 클릭 불가 처리 종료
+        InformationRequested?.Invoke(RuntimeUnit); // 카드 대상 처리 전 유닛 정보 요청 알림
         Clicked?.Invoke(RuntimeUnit); // 유닛 클릭 이벤트 알림
     } // 포인터 클릭 처리 종료
     public void OnPointerEnter(PointerEventData eventData) // 유닛 포인터 진입 처리
