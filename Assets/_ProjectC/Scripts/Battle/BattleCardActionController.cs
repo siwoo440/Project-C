@@ -15,6 +15,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     private bool actionPending; // 카드 행동 연출 진행 여부
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
+    public event Action<CardInstance, IReadOnlyList<BattleUnitRuntime>> CardUsed; // 카드 효과 적용 시작 이벤트
     public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, BattleActionSequenceRunner sequenceRunner, BattleStatusEffectProcessor processor, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
@@ -172,6 +173,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 실행 종료
     private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
     { // 카드 충돌 처리 시작
+        CardUsed?.Invoke(cardInstance, targetUnits); // 피해와 회복 전 카드 사용 상세 알림
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
         foreach (BattleUnitRuntime targetUnit in targetUnits) // 대상 유닛 순회
         { // 효과 적용 시작
