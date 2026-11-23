@@ -200,6 +200,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         enemyActionRuntime.StateChanged += HandleEnemyActionStateChanged; // 적 행동 변경 이벤트 등록
         RegisterAllyStatusIntentEvents(); // 아군 상태 변경 예고 갱신 등록
         RegisterMentalIntentEvents(); // 정신 상태 변경 예고 갱신 등록
+        battleTurn.TimeCoinTurnStarted += HandleTimeCoinTurnStarted; // 추가 아군 시작 뒤 같은 보스 전환 처리 등록
         battleTurn.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         IsInitialized = true; // 초기화 완료 저장
         var exploration = ExplorationSessionManager.Instance; // 실제 교전을 요청한 탐사 상태
@@ -693,6 +694,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogWarning("[BattleSceneSetup] 보스 전투에서는 도주할 수 없습니다.", this); // 보스전 도주 불가 안내
         } // 보스전 거부 처리 종료
     } // 도주 요청 처리 종료
+    private void HandleTimeCoinTurnStarted() // 적을 건너뛴 아군 시작 효과의 보스 전환 후속 처리
+    { // 확정된 시작 유물과 상태 처리 다음 단계 시작
+        bossPhaseRuntime?.CompletePendingTransition(); // 새 적 계획을 독립적으로 굴리지 않고 기존 보스 전환 처리만 재사용
+    } // 확정된 시작 유물과 상태 처리 다음 단계 종료
+
     private void HandleTurnStateChanged() // 전투 턴 상태 변경 처리
     { // 턴 상태 처리 시작
         if (battleTurn == null) // 턴 관리자 존재 확인
@@ -1071,6 +1077,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         magicianPassive = null; // 마법사 패시브 참조 제거
         if (battleTurn != null) // 전투 턴 관리자 확인
         { // 턴 관리자 해제 시작
+            battleTurn.TimeCoinTurnStarted -= HandleTimeCoinTurnStarted; // 다른 교전에서 현재 보스 연결이 남지 않는 해제
             battleTurn.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
             battleTurn.Dispose(); // 유닛 사망 이벤트 연결 해제
             battleTurn = null; // 턴 관리자 참조 제거

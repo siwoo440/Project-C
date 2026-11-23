@@ -49,7 +49,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
     private List<(BattleUnitRuntime Caster, int Amount)> nextPlayerTurnActionPointLosses; // 다음 아군 턴에 차감할 명시 요청과 실제 원본 시전자
     private int pendingEmergencyActionPoints; // 다음 실제 아군 턴에만 지급할 예비 자금의 누적 행동력
+    private int pendingTimeCoinActionPointLoss; // 아직 실행하지 않은 추가 턴의 원본 행동력 대가
+    private bool timeCoinBookedBeforeEnemyTurn; // 실제 적 차례가 끝나기 전 두 번째 동전 예약 방지
     private int pendingSecretVaultDrawReduction; // 다음 실제 아군 턴 기본 손패에서만 차감할 금고 사용 합계
+    private bool sageRuneActive; // 이번 실제 아군 턴의 공용 카드 수치 강화 여부
+    internal bool HasActiveSageRune => sageRuneActive && IsPlayerTurn && !IsBattleEnded && !disposed; // 같은 교전의 현재 아군 차례에서만 유효한 룬
     private int lastCompletedCardRound; // 아군 전체의 실제 원본 사용이 마지막으로 완료된 라운드
     private int lastVolatileDrawRound; // 안전핀의 마지막 발동 라운드
     private bool openingTemporaryCardChecked; // 첫 아군 손패의 단추 생성 기회 처리 여부
@@ -81,6 +85,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public ExplorationRegion Region { get; } // 시작할 때 확정한 실제 조우 지역
     public BattleResult Result { get; private set; } = BattleResult.None; // 현재 전투 결과 조회
     public bool IsPlayerTurn => CurrentPhase == BattleTurnPhase.PlayerTurn; // 플레이어 턴 여부
+    internal bool CanQueueTimeCoinTurn => !disposed && IsPlayerTurn && !IsBattleEnded && !HasPendingBossPhaseTransition && !timeCoinBookedBeforeEnemyTurn; // 완료한 실제 적 차례 사이의 한 번 예약 조건
     private bool playerCardDecisionPending; // 실제 손패 선택의 중복 사용 잠금
     public bool CanAcceptPlayerInput => !disposed && IsPlayerTurn && !IsBattleEnded && OpeningBookmarkChoices == null && !playerCardDecisionPending; // 개막 선택과 카드 결정을 모두 마친 일반 턴 입력
     public bool IsBattleEnded => Result != BattleResult.None; // 전투 종료 여부
@@ -197,6 +202,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     public event Action StateChanged; // 턴 상태 변경 이벤트
     public event Action<BattleTurnPhase, int> PhaseStarted; // 진영 턴 시작 이벤트
     public event Action<BattleTurnPhase, int> PhaseEnded; // 진영 턴 종료 이벤트
+    internal event Action TimeCoinTurnStarted; // 실제 적 코루틴 없이 열린 추가 턴의 보스 단계 연결
     public event Action<BattleResult> BattleCompleted; // 전투 종료 처리 완료 이벤트
     public BattleTurnRuntime(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, int drawCountPerTurn, BattleType battleType, ExplorationSessionManager exploration = null, ExplorationRegion region = ExplorationRegion.Winterfall) // 실제 탐사 조우와 원본 지역을 선택 연결하는 턴 관리자
     { // 생성자 시작
@@ -314,6 +320,18 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             StateChanged?.Invoke(); // 손패와 턴 종료 버튼의 실제 상태 갱신
         } // 진행 중인 선택 복구 종료
     } // 카드 선택 잠금 복구 종료
+    internal int QueueTimeCoinTurn(int actionPointLoss) // 실제 결제를 마친 한 장의 추가 아군 턴 예약
+    { // 현재 턴과 원본 행동력 대가 확인 시작
+        if (!CanQueueTimeCoinTurn || actionPointLoss <= 0) // 정상 아군 턴에서 승인하지 않은 유효한 이번 예약 확인
+        { // 미등록 추가 턴 확인 시작
+            return 0; // 이전 예약과 비용 감소량 유지
+        } // 미등록 추가 턴 확인 종료
+        timeCoinBookedBeforeEnemyTurn = true; // 외부 손패 알림 앞에서 같은 차례의 중복 및 추가 턴 반복 차단
+        pendingTimeCoinActionPointLoss = actionPointLoss; // 다음 정상 종료에 쓸 원본 두 행동력 대가 기록
+        StateChanged?.Invoke(); // 같은 손패의 남은 시간 동전 활성 상태 갱신
+        return 1; // 정상적으로 예약한 실제 추가 턴 한 차례
+    } // 현재 턴과 원본 행동력 대가 확인 종료
+
     public bool EndPlayerTurn() // 플레이어 턴 종료
     { // 플레이어 턴 종료 처리 시작
         if (!CanAcceptPlayerInput) // 실제 개막 선택을 마친 플레이어 턴 확인
@@ -327,6 +345,17 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
         } // 종료된 전투 처리 종료
+        if (pendingTimeCoinActionPointLoss > 0) // 정상 아군 차례가 끝나며 시간의 동전 예약 확인
+        { // 실제 적 시작 없이 아군 턴 다시 시작
+            int loss = pendingTimeCoinActionPointLoss; // 새 차례에서 쓸 이전 카드 원본의 고정 대가
+            pendingTimeCoinActionPointLoss = 0; // 새 진영 알림 전 동일 예약의 재호출 차단
+            StartAllyTurnAfterSkippedEnemy(loss, clearEnemyBlock: false); // 적 상태나 방어도를 건드리지 않는 실제 전체 아군 차례 준비
+            if (!IsBattleEnded) // 시작 효과를 받은 뒤 아직 유효한 전투 확인
+            { // 정상 씬의 후속 보스 전환 검사 시작
+                TimeCoinTurnStarted?.Invoke(); // 적 코루틴을 타지 않는 새 차례의 보스 정산 알림
+            } // 정상 씬의 후속 보스 전환 검사 종료
+            return true; // 이번 종료는 실제 적 시작 없이 완결
+        } // 실제 적 시작 없이 아군 턴 다시 종료
         CurrentPhase = BattleTurnPhase.EnemyTurn; // 적 턴 설정
         NotifyPhaseStarted(); // 적 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
@@ -365,19 +394,27 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 종료된 전투 처리 시작
             return true; // 확정된 전투 결과 유지
         } // 종료된 전투 처리 종료
-        ClearRoundBlock(allyUnits); // 라운드 전환 아군 방어도 정리
-        ClearRoundBlock(enemyUnits); // 라운드 전환 적 방어도 정리
-        CurrentRound++; // 다음 라운드 진행
-        CurrentPhase = BattleTurnPhase.PlayerTurn; // 다음 아군 턴 설정
-        NotifyPhaseStarted(); // 다음 아군 턴 시작 효과 처리
-        if (!IsBattleEnded) // 시작 효과 처리 후 전투 지속 확인
-        { // 다음 턴 준비 시작
-            sharedActionPoints.Restore(); // 공용 행동력 회복
-            DrawPlayerHand(cardsPerPlayerTurn); // 다음 턴의 기본 및 예약 손패 드로우
-            StateChanged?.Invoke(); // 전투 화면 갱신 알림
-        } // 다음 턴 준비 종료
+        StartAllyTurnAfterSkippedEnemy(0, clearEnemyBlock: true); // 기존 강제 보스 차례를 그대로 진행하고 별도 동전 예약 보존
         return true; // 강제 턴 전환 성공 반환
     } // 강제 턴 전환 종료
+
+    private void StartAllyTurnAfterSkippedEnemy(int timeCoinActionPointLoss, bool clearEnemyBlock) // 실제 적 행동 없이 열리는 아군 턴의 기존 흐름
+    { // 아군의 실제 다음 차례 시작
+        ClearRoundBlock(allyUnits); // 기존 새 아군 차례의 남은 방어도 정리
+        if (clearEnemyBlock) // 실제 보스 페이즈 전환의 기존 방어도 초기화 확인
+        { // 강제 보스 전환의 방어도 정리 시작
+            ClearRoundBlock(enemyUnits); // 이전 보스 단계의 적 방어도 정리
+        } // 강제 보스 전환의 방어도 정리 종료
+        CurrentRound++; // 턴별 원래 상태와 유물이 독립적으로 진행하도록 실제 아군 번호 증가
+        CurrentPhase = BattleTurnPhase.PlayerTurn; // 이동 뒤에도 아군 차례 유지
+        NotifyPhaseStarted(); // 실제 아군의 정상 시작 상태와 유물 처리
+        if (!IsBattleEnded) // 실제 시작 처리 뒤 진행 중인 전투 확인
+        { // 다음 실제 손패와 행동력 준비 시작
+            sharedActionPoints.Restore(); // 새 아군 턴의 원래 공용 행동력 전체 회복
+            DrawPlayerHand(cardsPerPlayerTurn, timeCoinActionPointLoss); // 원래 예약과 같은 손패 정산에서 임시 두 점 대가 처리
+            StateChanged?.Invoke(); // 실제 행동력과 새 손패의 화면 상태 갱신
+        } // 다음 실제 손패와 행동력 준비 종료
+    } // 아군의 실제 다음 차례 종료
     internal int SetEfficientUseDiscount(int amount) // 현재 전투 아군 전체의 독립 펜타클 턴 할인 변경
     { // 현재 아군과 이후 생성 카드의 비용 갱신 시작
         amount = Math.Max(0, amount); // 실제 기본 할인과 초기화에 허용할 값
@@ -437,13 +474,21 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         lastCompletedCardRound = CurrentRound; // 이 아군 턴에서 다음 성공부터는 첫 카드가 아닌 기록
         return first; // 실제 이번 원본이 턴에서 처음인지 정산에 전달
     } // 아군 턴의 실제 카드 사용 기록 종료
+    internal void ActivateSageRune() // 정상 완료한 원본의 비중첩 공용 강화 설정
+    { // 이번 실제 아군 차례 하나의 수치 강화 시작
+        sageRuneActive = true; // 같은 턴의 추가 원본도 공용 효과 한 번만 유지
+    } // 이번 실제 아군 차례 하나의 수치 강화 종료
+
     private void ClearEconomyReservations() // 전투가 끝난 경우의 소유자 룬 예약과 예비 자금 초기화
     { // 전투 한정 자원 정리 시작
         pendingEmergencyActionPoints = 0; // 사용하지 않고 전투가 끝난 다음 행동력 제거
         pendingSecretVaultDrawReduction = 0; // 새 교전에 남기지 않을 금고의 기본 손패 대가 제거
+        sageRuneActive = false; // 다음 전투에 넘기지 않을 아군 공용 강화 정리
         sharedActionPoints.ClearCompoundGainBonus(); // 종료된 실제 아군 턴의 복리 즉시 회수
         nextPlayerTurnActionPointLosses = null; // 끝난 교전의 미집행 행동력 감소와 대상 해제
         SetWindWornCrownDiscount(0); // 전투가 끝나거나 해제된 실제 아군의 사막 비용 자격 회수
+        pendingTimeCoinActionPointLoss = 0; // 끝난 전투에서 사용하지 않은 추가 턴 예약 회수
+        timeCoinBookedBeforeEnemyTurn = false; // 실제 교전과 독립으로 종료 뒤 상태 정리
         SetMechanicalCalculationDiscount(0); // 실제 전투 종료 후 소유자에 남은 기계식 계산 해제
         foreach (var ally in allyUnits) // 같은 전투에 실제 참가한 모든 소유 아군 순회
         { // 아군별 전투 할인 정리 시작
@@ -457,6 +502,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     { // 플레이어 턴 정리 시작
         SetEfficientUseDiscount(0); // 일반 종료와 강제 턴 전환에서 기본 할인 복원
         SetMechanicalCalculationDiscount(0); // 현재 아군 턴과 함께 종료되는 펜타클 전용 비용 할인 회수
+        sageRuneActive = false; // 일반 종료와 추가 또는 강제 아군 차례의 공용 룬 회수
         runtimeDeck.EndAllyTurnDrawTracking(); // 원래 일반 종료와 보스 강제 턴 경계에서 드로우 기록 및 비용 증가 해제
         if (runtimeDeck.HandCount == 0 && lastEmptyHandDrawRound != CurrentRound) // 자동 버림 전 빈손과 중복 발동 확인
         { // 패치 노끈 발동 검사 시작
@@ -491,6 +537,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 종료된 전투 처리 시작
             return true; // 종료 결과 단계 유지
         } // 종료된 전투 처리 종료
+        timeCoinBookedBeforeEnemyTurn = false; // 실제 적 차례 완료 뒤 다음 정상 아군의 새 예약 허용
         ClearRoundBlock(allyUnits); // 라운드 전환 시 아군 방어도 정리
         ClearRoundBlock(enemyUnits); // 라운드 전환 시 적 방어도 정리
         int drawCount = cardsPerPlayerTurn; // 보통 다음 라운드의 드로우 수
@@ -1194,7 +1241,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 이번 턴 한정 행동력 대가 처리 종료
     } // 같은 조우의 실제 턴 정산 종료
 
-    private void DrawPlayerHand(int count) // 아군 턴의 기본과 유물 드로우 적용
+    private void DrawPlayerHand(int count, int timeCoinActionPointLoss = 0) // 아군 턴의 기본과 유물 드로우 및 선택적인 임시 대가
     { // 턴 손패 처리 시작
         runtimeDeck.BeginAllyTurnDrawTracking(); // 단계 시작 알림보다 먼저 뽑는 실제 첫 시작 손패도 기록
         ApplyQueuedPlayerTurnActionPointLosses(); // 기본 회복에 이어 이전 명시 감소와 실제 시전 대상의 유물 피해
@@ -1216,6 +1263,10 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             int bossActionPoints = openingRelics?.FindEffect(RelicEffectType.ThroneScrewBossOpeningActionPoints)?.EffectValue ?? 0; // 실제 보유한 왕좌 나사의 원본 행동력 수치
             sharedActionPoints.AddTurnCapacity(bossActionPoints); // 바닥 없는 병과 독립으로 더하고 현재 턴 종료에 회수할 상한과 현재 행동력
         } // 우두머리 전투 개막 행동력 지급 종료
+        if (timeCoinActionPointLoss > 0) // 동전으로 시작한 이번 아군 턴에만 원본 대가 확인
+        { // 현재와 최대 행동력의 임시 감소 시작
+            sharedActionPoints.ReduceTurnCapacity(timeCoinActionPointLoss); // 기존 턴 행동력과 다른 시작 지급 뒤에 적용되는 영 하한 감소
+        } // 현재와 최대 행동력의 임시 감소 종료
         var pouch = openingRelics?.FindEffect(RelicEffectType.LargeDiscardDraw); // 보유한 잔해 주머니 조회
         int additionalDraw = 0; // 기본 드로우와 분리할 주머니 보너스 초기화
         if (pouch != null && runtimeDeck.DiscardPileCount >= 10) // 재섞기 전에 버린 더미 확인
@@ -2440,7 +2491,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 중복 해제 처리 종료
         runtimeDeck.CardExcluded -= HandleExcludedCard; // 카드 제외 연결 해제
         disposed = true; // 연결 해제 상태 저장
-        if (lastUsedBatteryShardRound > 0 && lastUsedBatteryShardRound == CurrentRound) // 종료 결과 없이 해제한 실제 배터리 턴 여부
+        if (timeCoinBookedBeforeEnemyTurn || (lastUsedBatteryShardRound > 0 && lastUsedBatteryShardRound == CurrentRound)) // 결과 확정 없이 해제하는 배터리나 시간 동전의 임시 행동력 확인
         { // 해당 교전의 임시 행동력 정리 시작
             sharedActionPoints.ClearTurnCapacity(); // 원래 임시 행동력 상한의 이번 교전 해제
         } // 해당 교전의 임시 행동력 정리 종료

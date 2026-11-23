@@ -54,7 +54,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         if (availableActionPoints is int current && current >= cardInstance.ApCost && // 고정 비용을 실제 결제할 수 있는 현재 가용 행동력 확인
             cardInstance.SourceData.PentacleRule is PentacleCardRule.RunawayRuneDevice or PentacleCardRule.GoldenRule) // 자기 비용 결제 뒤 잔여를 쓰는 실제 두 카드
         { // 알려진 실제 가용 상태에서 원본 금액 미리보기 시작
-            int projected = SwordCardCombat.ScaleByActionPoints(current - cardInstance.ApCost, cardInstance.EffectValue); // 명중과 수신 보정 이전의 실제 공유 기본 수치
+            int projected = cardInstance.ScaleQuantitativeEffect(SwordCardCombat.ScaleByActionPoints(current - cardInstance.ApCost, cardInstance.EffectValue)); // 통상 비용 뒤의 실제 가변 효과와 원래 룬을 함께 예고
             effectDetail += cardInstance.SourceData.PentacleRule == PentacleCardRule.RunawayRuneDevice ? $" · 현재 기본 피해 {projected}" : $" · 현재 기본 회복 {projected}"; // 각 대상에게 적용할 지불 직후 현재 기본 수치
         } // 알려진 실제 가용 상태에서 원본 금액 미리보기 종료
         if (cardInstance.IsBattleOnlySingleUse) // 실제 전투 한정으로 생성된 무료 카드 확인
@@ -215,6 +215,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
     } // 효과 문구 조회 종료
     private static string GetEffectDetail(CardInstance cardInstance) // 카드 효과 상세 문구 조회
     { // 효과 상세 조회 시작
+        if (cardInstance.SourceData.PentacleRule == PentacleCardRule.SageRune) // 이번 아군 턴 전체의 카드 수치 및 고정 행동력 원본
+        { // 실제 공용 지원 수치 안내 시작
+            return $"행동력 +{cardInstance.SourceData.EffectValue} · 이번 아군 턴에 이후 사용하는 카드의 기본 수치 +50%"; // 원래 수치와 현재 실제 적용 시간 표시
+        } // 실제 공용 지원 수치 안내 종료
         if (cardInstance.SourceData.PentacleRule == PentacleCardRule.RunawayRuneDevice) // 결제하고 남은 행동력을 피해에 사용하는 광역 마법 원본
         { // 실제 기본 마법 피해 산식 표시 시작
             return $"지불 뒤 남은 행동력 × {cardInstance.EffectValue} 마법 피해"; // 고정 비용과 분리된 전체 적 기본 피해 안내

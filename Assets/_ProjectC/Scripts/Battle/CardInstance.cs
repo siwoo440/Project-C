@@ -97,7 +97,13 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     internal void ConsumeRunePower() => HasRunePower = false; // 실제 사용한 실물의 기본 비용 복원
     private int enchantmentPercent; // 이 실물 카드의 다음 사용에만 남는 강화 백분율
     public int EnchantmentPercent => enchantmentPercent; // 현재 카드 상세 화면의 일회 강화 표시
-    public int EffectValue => EnchantmentPercent == 0 ? EffectValueBeforeEnchantment : ApplyEnchantment(EffectValueBeforeEnchantment, EnchantmentPercent); // 실제 다음 한 번의 기본 효과
+    public int EffectValue => BattleSageRune.ScalesPrimary(SourceData) ? ScaleQuantitativeEffect(EffectValueWithoutSageRune) : EffectValueWithoutSageRune; // 실제 카드 기본 수치와 현재 룬의 적용 범위
+    internal int EffectValueWithoutSageRune => EnchantmentPercent == 0 ? EffectValueBeforeEnchantment : ApplyEnchantment(EffectValueBeforeEnchantment, EnchantmentPercent); // 기존 영구 강화와 원래 일회 강화의 기본 효과
+    internal int ScaleQuantitativeEffect(int value) // 이 카드를 쓰는 실제 아군의 고정 효과에만 공용 룬 적용
+    { // 현재 전투의 원래 소유자 범위 확인 시작
+        return OwnerUnit.Team == BattleTeam.Ally && OwnerUnit.DamageRelicBattle?.HasActiveSageRune == true ? BattleSageRune.ScaleAmount(value) : value; // 이번 아군 턴의 수치를 한 번 올리고 다른 경우 보존
+    } // 현재 전투의 원래 소유자 범위 확인 종료
+    internal int ScaleStatusAmount(BattleStatusEffectType type, int value) => BattleSageRune.ScalesStatus(type) ? ScaleQuantitativeEffect(value) : value; // 실제 상태의 고정 수치만 현재 룬 적용
     internal static int ApplyEnchantment(int value, int percent) => (int)Math.Clamp((long)value + (long)value * percent / 100, int.MinValue, int.MaxValue); // 정수 내림과 상한을 지킨 숫자 효과 강화
     internal void SetEffectEnchantment(int percent) => enchantmentPercent = Math.Max(enchantmentPercent, percent); // 여러 번 강화해도 가장 높은 단일 예약만 유지
     internal void ConsumeEffectEnchantment() => enchantmentPercent = 0; // 실제 사용한 카드의 한 번 강화 제거
@@ -108,10 +114,10 @@ public sealed class CardInstance // 전투용 카드 인스턴스
             : CardUpgradeProfileCatalog.CalculateEffectValue(SourceData, SourceData.EffectValue, UpgradeLevel); // 일반 카드의 강화 효과 수치
 
     public int MentalChangeValue =>
-        CardUpgradeProfileCatalog.CalculateSignedMentalValue(
-            SourceData,
-            SourceData.MentalChangeValue,
-            UpgradeLevel); // 카드별 강화 정신력 변화값
+        ScaleQuantitativeEffect(CardUpgradeProfileCatalog.CalculateSignedMentalValue( // 계산한 실제 정신력의 양수 카드 효과
+            SourceData, // 실제 정신력 회복 원본
+            SourceData.MentalChangeValue, // 회복이나 별도 기존 비용의 부호
+            UpgradeLevel)); // 양수 카드 회복만 올리고 기존 음수 대가 유지
 
     public BattleStatusEffectType StatusEffectType => SourceData.StatusEffectType; // 상태 이상 종류 조회
 
