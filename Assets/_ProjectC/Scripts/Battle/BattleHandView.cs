@@ -8,20 +8,24 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private readonly List<BattleCardView> spawnedCardViews = new List<BattleCardView>(); // 생성된 카드 화면 목록
     private RectTransform handLayoutRoot; // 손패 가로 배치 영역
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
+    private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
+    private Button endTurnButton; // 플레이어 턴 종료 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
     private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
+    private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private CardInstance selectedCard; // 현재 선택 카드
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
+    public BattleTurnRuntime TurnRuntime => turnRuntime; // 연결된 전투 턴 관리자 조회
     public event Action<CardInstance> CardClicked; // 손패 카드 클릭 이벤트
     private void Awake() // 손패 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 손패 내부 UI 자동 생성
         Refresh(); // 초기 화면 갱신
     } // 화면 준비 종료
-    public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints) // 런타임 덱과 공용 행동력 연결
+    public bool Bind(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn) // 전투 런타임 상태 연결
     { // 덱 연결 시작
         if (battleDeck == null) // 런타임 덱 누락 확인
         { // 덱 누락 처리 시작
@@ -33,11 +37,18 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             Debug.LogError("[BattleHandView] 연결할 공용 행동력이 없습니다.", this); // 행동력 누락 출력
             return false; // 화면 연결 실패 반환
         } // 행동력 누락 처리 종료
+        if (battleTurn == null) // 전투 턴 관리자 누락 확인
+        { // 턴 관리자 누락 처리 시작
+            Debug.LogError("[BattleHandView] 연결할 전투 턴 관리자가 없습니다.", this); // 턴 관리자 누락 출력
+            return false; // 화면 연결 실패 반환
+        } // 턴 관리자 누락 처리 종료
         Unbind(); // 기존 런타임 덱 연결 해제
         runtimeDeck = battleDeck; // 새 런타임 덱 저장
         sharedActionPoints = actionPoints; // 새 공용 행동력 저장
+        turnRuntime = battleTurn; // 새 전투 턴 관리자 저장
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
         sharedActionPoints.StateChanged += HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 등록
+        turnRuntime.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         Refresh(); // 현재 덱 상태 표시
         return true; // 덱 연결 성공 반환
     } // 덱 연결 종료
@@ -51,8 +62,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 행동력 이벤트 해제 시작
             sharedActionPoints.StateChanged -= HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 해제
         } // 행동력 이벤트 해제 종료
+        if (turnRuntime != null) // 기존 전투 턴 관리자 확인
+        { // 턴 이벤트 해제 시작
+            turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+        } // 턴 이벤트 해제 종료
         runtimeDeck = null; // 런타임 덱 참조 제거
         sharedActionPoints = null; // 공용 행동력 참조 제거
+        turnRuntime = null; // 전투 턴 관리자 참조 제거
         selectedCard = null; // 선택 카드 제거
         Refresh(); // 빈 손패 화면 표시
     } // 덱 연결 해제 종료
@@ -72,10 +88,25 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
         statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(0.78f, 1f); // 수량 텍스트 최대 앵커 설정
+        statusRect.anchorMax = new Vector2(0.42f, 1f); // 수량 텍스트 최대 앵커 설정
         statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
         statusRect.anchoredPosition = new Vector2(0f, -4f); // 수량 텍스트 위치 설정
         statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
+        turnStatusText = CreateText("TurnStatusText", transform, "전투 준비", 20f, new Color(1f, 0.82f, 0.35f, 1f)); // 턴 상태 텍스트 생성
+        RectTransform turnStatusRect = turnStatusText.rectTransform; // 턴 상태 RectTransform 조회
+        turnStatusRect.anchorMin = new Vector2(0.42f, 1f); // 턴 상태 최소 앵커 설정
+        turnStatusRect.anchorMax = new Vector2(0.62f, 1f); // 턴 상태 최대 앵커 설정
+        turnStatusRect.pivot = new Vector2(0.5f, 1f); // 턴 상태 위쪽 피벗 설정
+        turnStatusRect.anchoredPosition = new Vector2(0f, -4f); // 턴 상태 위치 설정
+        turnStatusRect.sizeDelta = new Vector2(0f, 34f); // 턴 상태 높이 설정
+        endTurnButton = CreateButton("EndTurnButton", transform, "턴 종료"); // 턴 종료 버튼 생성
+        RectTransform endTurnRect = endTurnButton.transform as RectTransform; // 턴 종료 RectTransform 조회
+        endTurnRect.anchorMin = new Vector2(0.64f, 1f); // 턴 종료 최소 앵커 설정
+        endTurnRect.anchorMax = new Vector2(0.78f, 1f); // 턴 종료 최대 앵커 설정
+        endTurnRect.pivot = new Vector2(0.5f, 1f); // 턴 종료 위쪽 피벗 설정
+        endTurnRect.anchoredPosition = new Vector2(0f, -4f); // 턴 종료 위치 설정
+        endTurnRect.sizeDelta = new Vector2(0f, 34f); // 턴 종료 높이 설정
+        endTurnButton.onClick.AddListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 등록
         actionPointText = CreateText("ActionPointText", transform, "AP -- / --", 24f, new Color(0.45f, 0.8f, 1f, 1f)); // 공용 행동력 텍스트 생성
         RectTransform actionPointRect = actionPointText.rectTransform; // 행동력 텍스트 RectTransform 조회
         actionPointRect.anchorMin = new Vector2(0.8f, 1f); // 행동력 텍스트 최소 앵커 설정
@@ -109,10 +140,12 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 덱 미연결 처리 시작
             deckStatusText.text = "Waiting for deck"; // 덱 미연결 상태 표시
             actionPointText.text = "AP -- / --"; // 행동력 미연결 상태 표시
+            RefreshTurnStatus(); // 전투 준비 상태 표시
             return; // 화면 갱신 중단
         } // 덱 미연결 처리 종료
         deckStatusText.text = $"Deck {runtimeDeck.DrawPileCount} | Hand {runtimeDeck.HandCount}/{runtimeDeck.MaxHandSize} | Discard {runtimeDeck.DiscardPileCount}"; // 카드 영역 수량 표시
         RefreshActionPointStatus(); // 공용 행동력 수량 표시
+        RefreshTurnStatus(); // 라운드와 턴 상태 표시
         foreach (CardInstance cardInstance in runtimeDeck.Hand) // 현재 손패 카드 순회
         { // 카드 화면 생성 시작
             BattleCardView cardView = CreateCardView(cardInstance); // 카드 화면 코드 생성
@@ -159,11 +192,11 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 카드 연결 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 연결 오류 처리 종료
-        if (cardInstance.OwnerUnit.IsDead || sharedActionPoints == null) // 소유자 생존과 행동력 연결 확인
+        if (cardInstance.OwnerUnit.IsDead || sharedActionPoints == null || turnRuntime == null) // 카드 사용 기본 조건 확인
         { // 카드 사용 조건 오류 처리 시작
             return false; // 카드 사용 불가 반환
         } // 카드 사용 조건 오류 처리 종료
-        return sharedActionPoints.CanSpend(cardInstance.ApCost); // 공용 행동력 검사 결과 반환
+        return turnRuntime.IsPlayerTurn && sharedActionPoints.CanSpend(cardInstance.ApCost); // 턴과 공용 행동력 검사 결과 반환
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
@@ -196,6 +229,51 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         RefreshActionPointStatus(); // 행동력 수량 표시 갱신
         RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
     } // 행동력 변경 처리 종료
+    private void HandleTurnStateChanged() // 전투 턴 변경 처리
+    { // 턴 변경 처리 시작
+        RefreshTurnStatus(); // 라운드와 턴 상태 갱신
+        RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+    } // 턴 변경 처리 종료
+    private void HandleEndTurnClicked() // 턴 종료 버튼 클릭 처리
+    { // 턴 종료 클릭 처리 시작
+        if (turnRuntime == null) // 턴 관리자 연결 확인
+        { // 미연결 처리 시작
+            return; // 턴 종료 처리 중단
+        } // 미연결 처리 종료
+        turnRuntime.EndPlayerTurn(); // 플레이어 턴 종료 요청
+    } // 턴 종료 클릭 처리 종료
+    private void RefreshTurnStatus() // 라운드와 턴 상태 갱신
+    { // 턴 상태 갱신 시작
+        if (turnStatusText == null || endTurnButton == null) // 턴 UI 존재 확인
+        { // 턴 UI 누락 처리 시작
+            return; // 턴 상태 갱신 중단
+        } // 턴 UI 누락 처리 종료
+        if (turnRuntime == null) // 턴 관리자 연결 확인
+        { // 미연결 처리 시작
+            turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
+            endTurnButton.interactable = false; // 턴 종료 버튼 비활성화
+            return; // 턴 상태 갱신 중단
+        } // 미연결 처리 종료
+        switch (turnRuntime.CurrentPhase) // 현재 턴 단계 분기
+        { // 턴 단계 분기 시작
+            case BattleTurnPhase.PlayerTurn: // 플레이어 턴 단계
+                turnStatusText.text = $"라운드 {turnRuntime.CurrentRound} | 플레이어 턴"; // 플레이어 턴 표시
+                break; // 플레이어 턴 분기 종료
+            case BattleTurnPhase.EnemyTurn: // 적 턴 단계
+                turnStatusText.text = $"라운드 {turnRuntime.CurrentRound} | 적 턴"; // 적 턴 표시
+                break; // 적 턴 분기 종료
+            case BattleTurnPhase.Victory: // 승리 단계
+                turnStatusText.text = "전투 승리"; // 승리 상태 표시
+                break; // 승리 분기 종료
+            case BattleTurnPhase.Defeat: // 패배 단계
+                turnStatusText.text = "전투 패배"; // 패배 상태 표시
+                break; // 패배 분기 종료
+            default: // 전투 시작 전 단계
+                turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
+                break; // 기본 분기 종료
+        } // 턴 단계 분기 종료
+        endTurnButton.interactable = turnRuntime.IsPlayerTurn; // 플레이어 턴 버튼 활성화
+    } // 턴 상태 갱신 종료
     private void RefreshActionPointStatus() // 공용 행동력 수량 갱신
     { // 행동력 수량 갱신 시작
         if (actionPointText == null) // 행동력 텍스트 존재 확인
@@ -217,6 +295,26 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         text.font = ProjectCFontProvider.KoreanFontAsset; // 한글 지원 글꼴 적용
         return text; // 생성 텍스트 반환
     } // 텍스트 생성 종료
+    private static Button CreateButton(string objectName, Transform parent, string label) // 공용 버튼 생성
+    { // 버튼 생성 시작
+        GameObject buttonObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)); // 버튼 오브젝트 생성
+        buttonObject.transform.SetParent(parent, false); // 버튼 부모 연결
+        Image buttonImage = buttonObject.GetComponent<Image>(); // 버튼 배경 이미지 조회
+        buttonImage.color = new Color(0.2f, 0.32f, 0.5f, 1f); // 버튼 배경 색상 설정
+        Button button = buttonObject.GetComponent<Button>(); // 버튼 컴포넌트 조회
+        button.targetGraphic = buttonImage; // 버튼 대상 그래픽 설정
+        Navigation navigation = button.navigation; // 버튼 이동 설정 조회
+        navigation.mode = Navigation.Mode.None; // 키보드 자동 이동 해제
+        button.navigation = navigation; // 버튼 이동 설정 적용
+        TMP_Text labelText = CreateText("Label", buttonObject.transform, label, 18f, Color.white); // 버튼 글자 생성
+        RectTransform labelRect = labelText.rectTransform; // 버튼 글자 RectTransform 조회
+        labelRect.anchorMin = Vector2.zero; // 버튼 글자 최소 앵커 설정
+        labelRect.anchorMax = Vector2.one; // 버튼 글자 최대 앵커 설정
+        labelRect.pivot = new Vector2(0.5f, 0.5f); // 버튼 글자 중앙 피벗 설정
+        labelRect.offsetMin = Vector2.zero; // 버튼 글자 왼쪽 아래 여백 제거
+        labelRect.offsetMax = Vector2.zero; // 버튼 글자 오른쪽 위 여백 제거
+        return button; // 생성 버튼 반환
+    } // 버튼 생성 종료
     private void OnDestroy() // 손패 화면 제거 처리
     { // 제거 처리 시작
         if (runtimeDeck != null) // 연결된 런타임 덱 확인
@@ -227,5 +325,13 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 행동력 이벤트 해제 시작
             sharedActionPoints.StateChanged -= HandleActionPointStateChanged; // 행동력 상태 변경 이벤트 해제
         } // 행동력 이벤트 해제 종료
+        if (turnRuntime != null) // 연결된 전투 턴 관리자 확인
+        { // 턴 이벤트 해제 시작
+            turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
+        } // 턴 이벤트 해제 종료
+        if (endTurnButton != null) // 턴 종료 버튼 확인
+        { // 버튼 이벤트 해제 시작
+            endTurnButton.onClick.RemoveListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 해제
+        } // 버튼 이벤트 해제 종료
     } // 제거 처리 종료
 } // 클래스 종료

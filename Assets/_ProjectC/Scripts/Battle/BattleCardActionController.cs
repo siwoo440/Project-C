@@ -5,16 +5,18 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
 { // 클래스 시작
     private readonly BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
     private readonly BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
+    private readonly BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private readonly BattleHandView handView; // 연결된 손패 화면
     private readonly IReadOnlyList<BattleUnitView> allyUnitViews; // 아군 유닛 화면 목록
     private readonly IReadOnlyList<BattleUnitView> enemyUnitViews; // 적 유닛 화면 목록
     private CardInstance selectedCard; // 현재 선택 카드
     private bool disposed; // 연결 해제 여부
     public CardInstance SelectedCard => selectedCard; // 현재 선택 카드 조회
-    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleHandView battleHandView, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
+    public BattleCardActionController(BattleDeckRuntime battleDeck, BattleActionPointRuntime actionPoints, BattleTurnRuntime battleTurn, BattleHandView battleHandView, IReadOnlyList<BattleUnitView> allyViews, IReadOnlyList<BattleUnitView> enemyViews) // 카드 행동 관리자 생성
     { // 생성자 시작
         runtimeDeck = battleDeck ?? throw new ArgumentNullException(nameof(battleDeck)); // 런타임 덱 저장
         sharedActionPoints = actionPoints ?? throw new ArgumentNullException(nameof(actionPoints)); // 공용 행동력 저장
+        turnRuntime = battleTurn ?? throw new ArgumentNullException(nameof(battleTurn)); // 전투 턴 관리자 저장
         handView = battleHandView ?? throw new ArgumentNullException(nameof(battleHandView)); // 손패 화면 저장
         allyUnitViews = allyViews ?? throw new ArgumentNullException(nameof(allyViews)); // 아군 화면 목록 저장
         enemyUnitViews = enemyViews ?? throw new ArgumentNullException(nameof(enemyViews)); // 적 화면 목록 저장
@@ -22,10 +24,15 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         RegisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 등록
         RegisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 등록
         runtimeDeck.StateChanged += HandleDeckStateChanged; // 덱 상태 변경 이벤트 등록
+        turnRuntime.StateChanged += HandleTurnStateChanged; // 턴 상태 변경 이벤트 등록
         handView.RefreshCardAvailability(); // 시작 카드 사용 가능 상태 갱신
     } // 생성자 종료
     private void HandleCardClicked(CardInstance cardInstance) // 카드 클릭 처리
     { // 카드 클릭 처리 시작
+        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        { // 플레이어 턴 아님 처리 시작
+            return; // 카드 클릭 처리 중단
+        } // 플레이어 턴 아님 처리 종료
         if (cardInstance == null || !ContainsHandCard(cardInstance)) // 유효한 손패 카드 확인
         { // 잘못된 카드 처리 시작
             return; // 카드 클릭 처리 중단
@@ -74,6 +81,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 카드 클릭 처리 종료
     private void HandleUnitClicked(BattleUnitRuntime runtimeUnit) // 유닛 클릭 처리
     { // 유닛 클릭 처리 시작
+        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        { // 플레이어 턴 아님 처리 시작
+            return; // 유닛 클릭 처리 중단
+        } // 플레이어 턴 아님 처리 종료
         if (selectedCard == null || runtimeUnit == null) // 카드와 대상 존재 확인
         { // 선택 없음 처리 시작
             return; // 유닛 클릭 처리 중단
@@ -92,6 +103,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 카드 선택 상태 초기화
         } // 손패 이탈 처리 종료
     } // 덱 상태 처리 종료
+    private void HandleTurnStateChanged() // 턴 상태 변경 처리
+    { // 턴 상태 처리 시작
+        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 종료 확인
+        { // 입력 잠금 처리 시작
+            CancelSelection(); // 카드 선택 상태 초기화
+        } // 입력 잠금 처리 종료
+        handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
+    } // 턴 상태 처리 종료
     private void HandleUnitDied(BattleUnitRuntime runtimeUnit) // 유닛 사망 처리
     { // 유닛 사망 처리 시작
         handView.RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
@@ -102,6 +121,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유닛 사망 처리 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
+        if (!turnRuntime.IsPlayerTurn) // 플레이어 턴 여부 확인
+        { // 실행 불가 처리 시작
+            CancelSelection(); // 선택 상태 초기화
+            return; // 카드 실행 중단
+        } // 실행 불가 처리 종료
         if (!ContainsHandCard(cardInstance) || targetUnits == null || targetUnits.Count < 1) // 카드와 대상 유효성 확인
         { // 실행 불가 처리 시작
             CancelSelection(); // 선택 상태 초기화
@@ -251,6 +275,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             handView.CardClicked -= HandleCardClicked; // 카드 클릭 이벤트 해제
         } // 손패 이벤트 해제 종료
         runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
+        turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제
         UnregisterUnitViewEvents(allyUnitViews); // 아군 클릭 이벤트 해제
         UnregisterUnitViewEvents(enemyUnitViews); // 적 클릭 이벤트 해제
         selectedCard = null; // 선택 카드 참조 제거
