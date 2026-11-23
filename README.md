@@ -98,6 +98,12 @@
 
 윈터폴의 ‘재폭풍의 눈’에서는 행동할 생존자와 획득한 희귀 카드를 받을 파티원을 각각 고른다. [세 가지 선택과 결과 화면](Devlogs/Day201/README.md) · [체력·정신력과 보상 처리 코드](Assets/_ProjectC/Scripts/Exploration/AshstormEyeEvent.cs)
 
+| 잿더미 조사 방법 선택 | 도구로 유물을 찾은 결과 |
+| --- | --- |
+| ![맨손·철판·덮어두기의 비용과 확률이 표시된 이벤트 화면](Devlogs/Day204/AshPileChoices.png) | ![철판 한 개를 소비하고 유물을 얻은 결과](Devlogs/Day204/AshPileOutcome.png) |
+
+맨손 조사와 덮기는 생존 파티원 한 명을 직접 고른다. [행동자 선택 화면](Devlogs/Day204/AshPileActor.png) · [유물 추첨과 비용 처리 코드](Assets/_ProjectC/Scripts/Exploration/AshPileEvent.cs)
+
 162·165일차 사진에는 당시의 상점 열기 버튼이 보인다. 현재는 지도에서 상점 방에 들어가 상품을 확인한다. [네 가지 자원의 수량 표시 · 192일차](Devlogs/Day192/ExplorationResources.png) · [네 명을 편성한 탐사 화면 · 195일차](Devlogs/Day195/Exploration.png)
 
 </details>

@@ -181,6 +181,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "정신력 -8 · 희귀 카드 1장", "체력 -7 · 철판 +1 · 나사 +1", "정신력 +1" }; // 선택 전 확인할 비용과 보상
                 label += "   " + effects[index]; // 선택지 옆에 효과 표시
             } // 행동 효과 표시 종료
+            else if (currentEventData.EventId == AshPileEvent.Id) // 잿더미 조사 비용 안내 여부 확인
+            { // 잿더미 선택 효과 표시 시작
+                string[] effects = { "체력 -6 · 유물 40%", "철판 -1 · 유물 70%", "정신력 +3" }; // 원문 선택 비용과 확률 표시
+                label += "   " + effects[index]; // 행동 확정 전 효과 안내
+            } // 잿더미 선택 효과 표시 종료
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
@@ -205,6 +210,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             SelectAshstormActor(choiceIndex); // 행동 확정 전 대상 선택 표시
             return; // 선택 대기 중 비용과 완료 처리 보류
         } // 행동자 선택 종료
+        if (currentEventData.EventId == AshPileEvent.Id) // 윈터폴 잿더미 조사 확인
+        { // 잿더미 선택 시작
+            SelectAshPileChoice(choiceIndex); // 비용과 대상 확인 후 조사 확정
+            return; // 자원 전용 기본 선택 처리 제외
+        } // 잿더미 선택 종료
         choiceCommitted = true; // 선택 완료 상태 저장
 
         ExplorationEventChoiceData choiceData =
@@ -270,11 +280,44 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         } // 지급 실패 처리 종료
         choiceCommitted = true; // 결과 화면의 중복 입력 차단
         string story = BuildResultMessage(currentEventData.Choices[choice].ResultText, summary); // 원문 결말과 실제 변화량 결합
-        SaveAshstormResult(story); // 확정된 결과 저장과 표시
+        SaveStoryResult(story); // 확정된 결과 저장과 표시
         return true; // 열린 대상 선택 화면 닫기
     } // 결과 확정 종료
 
-    private void SaveAshstormResult(string story) // 확정 결과만 저장하고 실패 시 같은 상태로 재시도
+    private void SelectAshPileChoice(int choice) // 잿더미 행동에 맞는 비용과 대상 확인
+    { // 잿더미 행동 시작
+        string runtimeId = currentRuntimeEventId; // 행동할 방 식별자 보관
+        if (choice == AshPileEvent.UseTool) // 파티 철판으로 조사하는 행동 확인
+        { // 도구 조사 시작
+            CommitAshPileChoice(runtimeId, choice, null); // 행동자 비용 없이 파티 자원으로 조사
+            return; // 도구 선택 처리 종료
+        } // 도구 조사 종료
+        var allies = BattleResultManager.EnsureInstance(); // 현재 파티 상태 조회
+        string hint = choice == AshPileEvent.BareHands ? "체력 6을 잃고 잿더미를 뒤질 생존자를 선택하세요." : "잿더미를 덮고 정신력 3을 회복할 생존자를 선택하세요."; // 행동 비용과 대상 안내
+        ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, currentEventData.Choices[choice].ChoiceText, hint, "선택 취소", allies.IsLivingPartyMember, actor => CommitAshPileChoice(runtimeId, choice, actor)); // 대상 확정 전 비용과 추첨 보류
+    } // 잿더미 행동 종료
+
+    private bool CommitAshPileChoice(string runtimeId, int choice, CharacterData actor) // 잿더미 비용과 보상 처리
+    { // 잿더미 확정 시작
+        if (choiceCommitted || currentEventData == null || currentEventData.EventId != AshPileEvent.Id || currentRuntimeEventId != runtimeId) // 오래된 선택 창과 중복 입력 확인
+        { // 이전 입력 처리 시작
+            return false; // 현재 방 이외의 결과 적용 차단
+        } // 이전 입력 처리 종료
+        if (!AshPileEvent.TryResolve(runtimeId, choice, actor, out string story, out string summary)) // 실제 비용과 보상 확정 여부 확인
+        { // 비용 또는 보상 누락 처리 시작
+            if (!string.IsNullOrEmpty(summary)) // 미확정 사유 확인
+            { // 재선택 안내 시작
+                bodyText.text = summary; // 이벤트 화면에서 비용 없는 재선택 안내
+                return true; // 대상 선택 창을 닫고 원래 선택지로 복귀
+            } // 재선택 안내 종료
+            return false; // 잘못된 대상의 비용과 보상 보존
+        } // 비용 또는 보상 누락 처리 종료
+        choiceCommitted = true; // 완료된 행동의 추가 입력 차단
+        SaveStoryResult(BuildResultMessage(story, summary)); // 비용과 보상 및 방 완료 기록 함께 저장
+        return true; // 대상 선택 완료
+    } // 잿더미 확정 종료
+
+    private void SaveStoryResult(string story) // 확정 결과만 저장하고 실패 시 같은 상태로 재시도
     { // 결과 저장 시작
         bool defeated = ExplorationSessionManager.EnsureInstance().IsExplorationCompleted; // 마지막 생존자 사망 확인
         bool saved = defeated ? ExplorationAutoSave.SaveAfterBattle(Vector3.zero) : ExplorationAutoSave.SaveCurrentExploration(); // 전멸은 거점에 생존은 현재 탐사에 저장
@@ -282,7 +325,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         { // 전멸 화면 전환 시작
             if (!saved) // 종료 상태 저장 실패 확인
             { // 실패 기록 시작
-                Debug.LogWarning("[ExplorationAutoSave] 재폭풍의 눈 전멸 상태를 저장하지 못했습니다."); // 거점 복귀 시 재시도할 저장 실패 안내
+                Debug.LogWarning("[ExplorationAutoSave] 탐사 이벤트 전멸 상태를 저장하지 못했습니다."); // 거점 복귀 시 재시도할 저장 실패 안내
             } // 실패 기록 종료
             CloseCurrentEvent(); // 거점 복귀 결과 화면에 입력 반환
             return; // 종료된 탐사 화면 정리
@@ -295,7 +338,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         } // 완료 안내 종료
         else // 동일 결과 재저장 처리
         { // 재시도 버튼 생성 시작
-            CreateChoiceButton("[다시 저장]", () => SaveAshstormResult(story)); // 비용과 보상의 재적용 없는 저장 재시도
+            CreateChoiceButton("[다시 저장]", () => SaveStoryResult(story)); // 비용과 보상의 재적용 없는 저장 재시도
             CreateCloseButton("[계속]"); // 메모리 진행 상태로 탐사 계속
         } // 재시도 버튼 생성 종료
     } // 결과 저장 종료
