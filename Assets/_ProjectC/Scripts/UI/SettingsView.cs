@@ -39,7 +39,7 @@ public sealed class SettingsView : MonoBehaviour // 설정 탭과 항목 화면
             int category = index; // 탭별 분류 번호 보관
             tabs[index] = PreparationUi.CreateButton("Tab_" + index, tabArea, SettingsCatalog.Tabs[index], new Vector2(0.17f + index * 0.165f, 0.83f), Vector2.zero, new Vector2(270f, 76f), () => SelectTab(category)); // 설정 분류 버튼 생성
         } // 설정 탭 생성 종료
-        TMP_Text notice = PreparationUi.CreateText("Notice", transform, "표시된 값은 기획 기본값이며 아직 변경할 수 없습니다.", 20f); // 기본값 안내 문구 생성
+        TMP_Text notice = PreparationUi.CreateText("Notice", transform, "변경 가능한 항목은 즉시 적용됩니다. 비활성 항목은 준비 중입니다.", 20f); // 설정 적용 상태 안내 생성
         PreparationUi.Place(notice.rectTransform, new Vector2(0.5f, 0.755f), Vector2.zero, new Vector2(1100f, 42f)); // 기본값 안내 위치 설정
         BuildOptions(); // 스크롤 가능한 설정 항목 영역 생성
         SelectTab(0); // 그래픽 탭 기본 선택
@@ -92,11 +92,11 @@ public sealed class SettingsView : MonoBehaviour // 설정 탭과 항목 화면
         rows.anchoredPosition = Vector2.zero; // 설정 목록 맨 위로 이동
         for (int index = 0; index < items.Length; index++) // 선택 분류 설정 항목 순회
         { // 설정 항목 생성 시작
-            CreateRow(items[index], index); // 설정 이름과 기획 기본값 표시
+            CreateRow(items[index], category, index); // 설정 이름과 현재 값 표시
         } // 설정 항목 생성 종료
         scroll.verticalNormalizedPosition = 1f; // 설정 목록 시작 위치 복원
     } // 설정 분류 선택 종료
-    private void CreateRow(SettingItem item, int index) // 개별 설정 항목 생성
+    private void CreateRow(SettingItem item, int category, int index) // 개별 설정 항목 생성
     { // 설정 항목 생성 시작
         RectTransform row = PreparationUi.CreatePanel("Row_" + index, rows, Vector2.zero, Vector2.one); // 설정 항목 배경 생성
         row.GetComponent<Image>().color = new Color(0.055f, 0.1f, 0.11f, 0.9f); // 설정 항목 배경 색상 설정
@@ -105,9 +105,25 @@ public sealed class SettingsView : MonoBehaviour // 설정 탭과 항목 화면
         TMP_Text name = PreparationUi.CreateText("Name", row, item.Name, 26f); // 설정 항목 이름 생성
         PreparationUi.Stretch(name.rectTransform, new Vector2(0.04f, 0.08f), new Vector2(0.48f, 0.92f)); // 항목 이름 영역 설정
         name.alignment = TextAlignmentOptions.MidlineLeft; // 항목 이름 왼쪽 정렬
-        PreparationUi.CreateButton("Previous", row, "◀", new Vector2(0.59f, 0.5f), Vector2.zero, new Vector2(65f, 55f), null); // 연결 전 이전 값 버튼 표시
-        TMP_Text value = PreparationUi.CreateText("Value", row, item.DefaultValue, 25f); // 기획서 기본값 생성
+        GraphicsAudioSettings settings = GraphicsAudioSettingsRuntime.Current; // 저장된 화면과 음량 설정 조회
+        bool supported = settings.Supports(category, index); // 실제 설정 변경 지원 여부 확인
+        TMP_Text value = PreparationUi.CreateText("Value", row, supported ? settings.GetLabel(category, index) : item.DefaultValue, 25f); // 현재 값 또는 기획 기본값 생성
         PreparationUi.Place(value.rectTransform, new Vector2(0.74f, 0.5f), Vector2.zero, new Vector2(320f, 65f)); // 설정 기본값 위치 설정
-        PreparationUi.CreateButton("Next", row, "▶", new Vector2(0.89f, 0.5f), Vector2.zero, new Vector2(65f, 55f), null); // 연결 전 다음 값 버튼 표시
+        Action previous = supported ? () => ChangeValue(settings, category, index, -1, value) : null; // 지원 항목의 이전 값 동작 생성
+        Action next = supported ? () => ChangeValue(settings, category, index, 1, value) : null; // 지원 항목의 다음 값 동작 생성
+        Button previousButton = PreparationUi.CreateButton("Previous", row, "◀", new Vector2(0.59f, 0.5f), Vector2.zero, new Vector2(65f, 55f), previous); // 이전 설정 값 버튼 생성
+        Button nextButton = PreparationUi.CreateButton("Next", row, "▶", new Vector2(0.89f, 0.5f), Vector2.zero, new Vector2(65f, 55f), next); // 다음 설정 값 버튼 생성
+        if (!supported) // 미연결 설정 확인
+        { // 변경 불가 상태 표시 시작
+            previousButton.GetComponentInChildren<TMP_Text>().color = new Color(0.45f, 0.45f, 0.45f, 0.7f); // 이전 버튼 비활성 표시
+            nextButton.GetComponentInChildren<TMP_Text>().color = new Color(0.45f, 0.45f, 0.45f, 0.7f); // 다음 버튼 비활성 표시
+        } // 변경 불가 상태 표시 종료
     } // 설정 항목 생성 종료
+    private static void ChangeValue(GraphicsAudioSettings settings, int category, int index, int direction, TMP_Text value) // 설정 변경과 표시 갱신
+    { // 설정 값 변경 시작
+        if (settings.Change(category, index, direction)) // 설정 값 변경 성공 확인
+        { // 변경 결과 표시 시작
+            value.text = settings.GetLabel(category, index); // 실제 적용된 설정 값 표시
+        } // 변경 결과 표시 종료
+    } // 설정 값 변경 종료
 } // 설정 화면 종료

@@ -191,7 +191,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         } // 잘못된 대상 확인 종료
         Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
         enemyView.OnPointerClick(null); // 공격 중인 적 선택
-        for (int frame = 0; frame < 300 && emperor.PhysicalDefense == previousDefense; frame++) // 카드 연출과 효과 대기
+        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && emperor.PhysicalDefense == previousDefense;) // 카드 연출과 효과 대기
         { // 카드 효과 대기 시작
             yield return null; // 다음 프레임 대기
         } // 카드 효과 대기 종료
@@ -266,7 +266,7 @@ public sealed class PartyDeparturePlayModeTests // 파티 출발 실제 씬 흐�
         priestessView.OnPointerClick(null); // 공격 예고가 없는 아군 선택
         Assert.AreEqual(previousPoints, battle.SharedActionPoints.CurrentActionPoints); // 잘못된 대상 행동력 유지 확인
         targetView.OnPointerClick(null); // 공격 예고 대상 선택
-        for (int frame = 0; frame < 300 && target.PhysicalDefense == previousPhysical; frame++) // 카드 효과 대기
+        for (float effectDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < effectDeadline && target.PhysicalDefense == previousPhysical;) // 카드 효과 대기
         { // 카드 효과 대기 시작
             yield return null; // 다음 프레임 대기
         } // 카드 효과 대기 종료

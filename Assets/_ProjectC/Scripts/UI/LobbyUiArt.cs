@@ -18,7 +18,8 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
             if (texture != null) // 이미지 텍스처 존재 확인
             { // 텍스처 이미지 준비 시작
                 Rect area = GetImageArea(name, texture); // 불필요한 투명 여백 제외 영역 조회
-                sprite = Sprite.Create(texture, area, new Vector2(0.5f, 0.5f)); // 이미지 표시 영역 스프라이트 생성
+                Vector4 border = name == "FormationPanel" ? new Vector4(area.width * 0.05f, area.height * 0.05f, area.width * 0.05f, area.height * 0.05f) : Vector4.zero; // 패널 모서리 고정 영역 설정
+                sprite = Sprite.Create(texture, area, new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border); // 이미지 표시 영역 스프라이트 생성
                 sprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 공용 이미지 보관 설정
             } // 텍스처 이미지 준비 종료
             else // 텍스처 리소스 없음 확인
@@ -33,6 +34,10 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
             sprites[name] = sprite; // 재사용할 이미지 보관
         } // 로비 이미지 준비 종료
         target.sprite = sprite; // 제작한 이미지 연결
+        if (name == "FormationPanel") // 공용 패널 디자인 확인
+        { // 패널 모서리 비율 보존 시작
+            target.type = Image.Type.Sliced; // 크기 변경 시 모서리 형태 유지
+        } // 패널 모서리 비율 보존 종료
         target.color = Color.white; // 이미지 원본 색상 유지
     } // 로비 이미지 적용 종료
     private static Rect GetImageArea(string name, Texture2D texture) // 이미지의 실제 표시 영역 계산
@@ -51,7 +56,7 @@ public static class LobbyUiArt // 공통 로비 이미지 제공
         } // 정사각형 버튼 여백 조정 종료
         if (name == "FormationPanel") // 편성 화면 패널 이미지 확인
         { // 편성 패널 여백 조정 시작
-            return new Rect(texture.width * 0.09f, texture.height * 0.02f, texture.width * 0.82f, texture.height * 0.96f); // 패널 외부 투명 여백 제외
+            return new Rect(texture.width * 0.025f, texture.height * 0.025f, texture.width * 0.95f, texture.height * 0.95f); // 새 패널 외부 여백 축소
         } // 편성 패널 여백 조정 종료
         if (name == "FormationCard") // 캐릭터 편성 칸 이미지 확인
         { // 편성 칸 여백 조정 시작

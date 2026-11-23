@@ -10,6 +10,11 @@ using UnityEngine.TestTools; // 플레이 모드 전환 기능 사용
 using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
+    [System.Serializable] // 저장 골드 검사 직렬화 지정
+    private sealed class SavedGoldProbe // 자동 저장 결과 확인용 정보
+    { // 저장 골드 정보 시작
+        public int gold; // 저장된 골드 값
+    } // 저장 골드 정보 종료
     [Test] // 편집기 테스트 지정
     public void SaveAssetCatalog_ContainsAllProjectItems() // 저장 원본 목록 누락 검사
     { // 저장 원본 검사 시작
@@ -562,7 +567,14 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
             PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 조회
             resources.AddResources(41, 0, 0, 0); // 자동 저장 대상 자원 변경
             int expectedGold = resources.Gold; // 변경 골드 보관
-            yield return null; // 변경 저장 프레임 대기
+            for (float saveDeadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < saveDeadline; ) // 변경 내용의 자동 저장 대기
+            { // 자동 저장 결과 확인 시작
+                if (System.IO.File.Exists(path) && JsonUtility.FromJson<SavedGoldProbe>(System.IO.File.ReadAllText(path)).gold == expectedGold) // 변경 골드가 저장된 파일 확인
+                { // 자동 저장 완료 처리 시작
+                    break; // 변경 저장 대기 종료
+                } // 자동 저장 완료 처리 종료
+                yield return null; // 다음 프레임 대기
+            } // 자동 저장 결과 확인 종료
             resources.ResetResources(); // 저장 후 자원 변경
             Assert.IsTrue(LobbySaveService.Load(path)); // 자동 저장 파일 복원
             Assert.AreEqual(expectedGold, resources.Gold); // 자동 저장 자원 확인
