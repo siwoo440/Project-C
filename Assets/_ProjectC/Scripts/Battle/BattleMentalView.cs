@@ -5,11 +5,12 @@ public sealed class BattleMentalView : MonoBehaviour // 유닛 정신력 게이�
 { // 클래스 시작
     private static readonly Color CollapseColor = new Color(0.88f, 0.14f, 0.14f, 1f); // 붕괴 표시 색상
     private static readonly Color NeutralColor = new Color(0.92f, 0.92f, 0.92f, 1f); // 중립 표시 색상
-    private static readonly Color AwakeningColor = new Color(1f, 0.72f, 0.08f, 1f); // 각성 표시 색상
+    private static readonly Color AwakeningColor = new Color(0.13f, 0.48f, 0.98f, 1f); // 높은 정신력의 파란색
     private BattleUnitRuntime runtimeUnit; // 연결된 런타임 유닛
     private GameObject viewRoot; // 정신력 화면 루트
     private RectTransform gaugeFillRect; // 정신력 채움 사각형
     private Image gaugeFillImage; // 정신력 채움 이미지
+    private Image gaugeTrackImage; // 정신력 색상을 표시하는 바탕 이미지
     private TMP_Text mentalText; // 정신력 수치 텍스트
     public void Bind(BattleUnitRuntime targetUnit) // 런타임 유닛 연결
     { // 연결 시작
@@ -49,6 +50,15 @@ public sealed class BattleMentalView : MonoBehaviour // 유닛 정신력 게이�
         backgroundImage.color = new Color(0.04f, 0.04f, 0.06f, 0.9f); // 어두운 배경색 적용
         BattleUiArt.Apply(backgroundImage, "GaugeFrame"); // 새로 제작한 정신력 게이지 테두리 적용
         backgroundImage.raycastTarget = false; // 배경 클릭 차단 해제
+        GameObject trackObject = new GameObject("GaugeTrack", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 정신력 바탕 생성
+        trackObject.transform.SetParent(viewRoot.transform, false); // 바탕을 테두리 안쪽에 배치
+        RectTransform trackRect = trackObject.GetComponent<RectTransform>(); // 바탕 사각형 조회
+        trackRect.anchorMin = Vector2.zero; // 바탕 왼쪽 아래 앵커
+        trackRect.anchorMax = Vector2.one; // 바탕 오른쪽 위 앵커
+        trackRect.offsetMin = new Vector2(5f, 4f); // 금속 테두리 안쪽 시작 여백
+        trackRect.offsetMax = new Vector2(-5f, -4f); // 금속 테두리 안쪽 끝 여백
+        gaugeTrackImage = trackObject.GetComponent<Image>(); // 바탕 이미지 조회
+        gaugeTrackImage.raycastTarget = false; // 바탕 클릭 차단 해제
         GameObject fillObject = new GameObject("GaugeFill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)); // 정신력 채움 생성
         fillObject.transform.SetParent(viewRoot.transform, false); // 채움 배경 자식 배치
         gaugeFillRect = fillObject.GetComponent<RectTransform>(); // 채움 사각형 조회
@@ -93,9 +103,12 @@ public sealed class BattleMentalView : MonoBehaviour // 유닛 정신력 게이�
         } // 연결 없음 처리 종료
         float normalizedMental = runtimeUnit.CurrentMental / 100f; // 정신력 비율 계산
         gaugeFillRect.anchorMax = new Vector2(normalizedMental, 1f); // 정신력 채움 너비 적용
-        gaugeFillImage.color = GetMentalColor(runtimeUnit.CurrentMental, runtimeUnit.MentalState); // 정신력 상태 색상 적용
+        Color mentalColor = GetMentalColor(runtimeUnit.CurrentMental); // 현재 수치에 따른 게이지 색상 계산
+        gaugeFillImage.color = mentalColor; // 정신력 수치 색상 적용
+        gaugeTrackImage.color = Color.Lerp(Color.black, mentalColor, 0.45f); // 빈 게이지에도 수치 방향 표시
         mentalText.text = GetMentalLabel(runtimeUnit); // 정신력 상태 문구 적용
-        mentalText.color = runtimeUnit.MentalState == BattleMentalState.Neutral && runtimeUnit.CurrentMental < 35 ? Color.white : Color.black; // 낮은 정신력 글자색 적용
+        float brightness = mentalColor.r * 0.2126f + mentalColor.g * 0.7152f + mentalColor.b * 0.0722f; // 게이지 색상 밝기 계산
+        mentalText.color = normalizedMental < 0.5f || brightness < 0.55f ? Color.white : Color.black; // 게이지 대비에 맞는 글자색 적용
         viewRoot.SetActive(!runtimeUnit.IsDead); // 생존 유닛 게이지 표시
     } // 표시 갱신 종료
     private void HandleMentalChanged(BattleUnitRuntime changedUnit, BattleMentalChangeResult changeResult) // 정신력 변화 처리
@@ -105,21 +118,13 @@ public sealed class BattleMentalView : MonoBehaviour // 유닛 정신력 게이�
             Refresh(); // 정신력 표시 갱신
         } // 연결 유닛 처리 종료
     } // 변화 처리 종료
-    private static Color GetMentalColor(int mental, BattleMentalState state) // 정신력 색상 계산
+    private static Color GetMentalColor(int mental) // 정신력 수치 색상 계산
     { // 색상 계산 시작
-        if (state == BattleMentalState.Awakening) // 각성 상태 확인
-        { // 각성 색상 처리 시작
-            return AwakeningColor; // 각성 색상 반환
-        } // 각성 색상 처리 종료
-        if (state == BattleMentalState.Collapse) // 붕괴 상태 확인
-        { // 붕괴 색상 처리 시작
-            return CollapseColor; // 붕괴 색상 반환
-        } // 붕괴 색상 처리 종료
         if (mental <= BattleMentalRuntime.NeutralMental) // 중간 이하 정신력 확인
         { // 붉은색 보간 시작
-            return Color.Lerp(CollapseColor, NeutralColor, mental / 50f); // 붉은색에서 흰색 보간 반환
+            return Color.Lerp(CollapseColor, NeutralColor, Mathf.InverseLerp(BattleMentalRuntime.MinimumMental, BattleMentalRuntime.NeutralMental, mental)); // 빨강에서 중립색 보간 반환
         } // 붉은색 보간 종료
-        return Color.Lerp(NeutralColor, AwakeningColor, (mental - 50) / 50f); // 흰색에서 금색 보간 반환
+        return Color.Lerp(NeutralColor, AwakeningColor, Mathf.InverseLerp(BattleMentalRuntime.NeutralMental, BattleMentalRuntime.MaximumMental, mental)); // 중립색에서 파랑 보간 반환
     } // 색상 계산 종료
     private static string GetMentalLabel(BattleUnitRuntime targetUnit) // 정신력 문구 계산
     { // 문구 계산 시작
