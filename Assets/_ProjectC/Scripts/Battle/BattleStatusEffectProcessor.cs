@@ -86,15 +86,19 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
-            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.EffectType == BattleStatusEffectType.Evasion || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark) // 정신 상태와 턴 시작 전용 상태 제외
+            if (!runtimeUnit.ContainsStatusEffectInstance(effect) || effect.WaitsForAction || effect.EffectType == BattleStatusEffectType.Evasion || effect.IsProtectedMentalState || effect.EffectType == BattleStatusEffectType.StarReservedHealing || effect.EffectType == BattleStatusEffectType.StarPassiveReservedHealing || effect.EffectType == BattleStatusEffectType.ChariotMark) // 다른 시점에 소모되는 상태 제외
             { // 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 처리 제외 종료
             int previousTurns = effect.RemainingTurns; // 처리 전 지속 횟수 저장
             int previousValue = effect.EffectiveValue; // 처리 전 효과 수치 저장
             int applied = 0; // 실제 피해 초기화
-            bool triggered = effect.EffectType == BattleStatusEffectType.Burn; // 화상 피해 발동 여부 기록
-            if (triggered) // 화상 종료 피해 확인
+            bool triggered = effect.EffectType == BattleStatusEffectType.Burn || effect.EffectType == BattleStatusEffectType.Bleed; // 화상과 출혈의 턴 종료 발동 확인
+            if (effect.EffectType == BattleStatusEffectType.Bleed) // 방어도를 우회하는 고정 체력 손실 확인
+            { // 출혈 처리 시작
+                applied = runtimeUnit.TakeUnblockedDamage(previousValue, BattleDamageType.None, null); // 현재 체력만 감소시키고 사망 알림 처리
+            } // 출혈 처리 종료
+            else if (effect.EffectType == BattleStatusEffectType.Burn) // 기존 화상 피해 확인
             { // 화상 피해 처리 시작
                 applied = runtimeUnit.TakeDamage(previousValue, BattleDamageType.None).AppliedDamage; // 화상 수치만큼 피해 적용
             } // 화상 피해 처리 종료

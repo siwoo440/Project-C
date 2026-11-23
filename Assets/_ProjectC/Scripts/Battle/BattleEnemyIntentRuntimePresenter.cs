@@ -163,7 +163,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                 orderViews[action.Actor] = orderView; // 생성한 적별 행동 순번 화면 저장
             } // 행동 순번 화면 준비 종료
             orderView.Bind(plannedActions, action.Actor); // 현재 적의 실제 남은 행동 순번 표시
-            if (action.Target != null && !action.Target.IsDead && (arrowDisplayMode != ArrowDisplayMode.Single || action == selectedAction)) // 살아 있는 대상과 화살표 표시 방식 확인
+            if (action.IsExecutable && (arrowDisplayMode != ArrowDisplayMode.Single || action == selectedAction)) // 이번에 실제로 실행할 행동의 대상만 연결
             { // 행동 대상 화살표 연결 시작
                 BattleUnitView targetView = FindUnitView(unitViews, action.Target); // 실제 행동 대상 화면 조회
                 RectTransform targetPortrait = targetView != null ? targetView.transform.Find("Portrait") as RectTransform : null; // 대상 캐릭터 그림 영역 조회
@@ -223,8 +223,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                 BattleEnemyAction action =
                     plannedActions[index]; // 현재 행동 조회
 
-                if (BattleEnemyIntentDetailView.Instance.IsFocused(
-                        action))
+                if (action != null && action.IsExecutable && BattleEnemyIntentDetailView.Instance.IsFocused(action)) // 실제로 실행할 수 있는 고정 행동 우선
                 {
                     return action; // 마우스 오버·고정된 행동의 화살표 우선 표시
                 }
@@ -238,11 +237,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
             BattleEnemyAction action =
                 plannedActions[index]; // 기본 표시 후보 조회
 
-            if (action != null &&
-                action.Actor != null &&
-                action.Target != null &&
-                !action.Actor.IsDead &&
-                !action.Target.IsDead)
+            if (action != null && action.IsExecutable) // 취소된 예고 다음의 실행 가능한 행동 선택
             {
                 return action; // 선택 행동이 없으면 첫 행동 화살표 표시
             }

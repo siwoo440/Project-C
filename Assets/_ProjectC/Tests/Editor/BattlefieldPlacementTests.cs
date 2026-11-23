@@ -196,6 +196,16 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
         yield return new WaitForSecondsRealtime(0.1f); // 전체 화살표 화면 갱신 대기
         Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 전체 표시 시 모든 행동 화살표 복원 확인
         BattleEnemyAction redirected = battle.EnemyActionRuntime.PlannedActions[0]; // 첫 번째 예정 행동 조회
+        redirected.Actor.ApplyStatusEffect(BattleStatusEffectType.Stagger, 1, 1, 1); // 첫 적의 예고 행동 한 번 취소
+        yield return new WaitForSecondsRealtime(0.1f); // 실제 취소 예고와 화살표 갱신 대기
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count - 1, arrows.ArrowCount); // 전체 표시에서 취소된 적의 대상선만 숨김
+        arrowButton.onClick.Invoke(); // 한 개 표시에서 취소된 첫 순번 건너뛰기
+        yield return new WaitForSecondsRealtime(0.1f); // 실행 가능한 다음 공격선 대기
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count > 1 ? 1 : 0, arrows.ArrowCount); // 남은 실전 행동 하나 또는 대상선 없음
+        arrowButton.onClick.Invoke(); // 전체 화살표 방식 복구
+        redirected.Actor.RemoveStatusEffect(BattleStatusEffectType.Stagger); // 행동 취소 정화
+        yield return new WaitForSecondsRealtime(0.1f); // 정화 뒤 대상선 갱신 대기
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 취소 해제 후 모든 대상선 복원
         BattleUnitRuntime replacement = redirected.Target == battle.AllyUnits[0] ? battle.AllyUnits[1] : battle.AllyUnits[0]; // 기존 대상과 다른 아군 선택
         Assert.IsTrue(redirected.ChangeTarget(replacement)); // 실제 예정 행동의 대상 변경 확인
         yield return new WaitForSecondsRealtime(0.1f); // 변경된 대상 화살표 갱신 대기

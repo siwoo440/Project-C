@@ -239,7 +239,11 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 행동 예고 숨김 종료
         EnsureEnemyIntentView(); // 행동 예고 화면 준비
         string patternHeader = $"{action.PatternDisplayName} · 패턴 {action.PatternIndex}/{action.PatternCount}"; // 행동 이름과 패턴 순번 문구 계산
-        if (action.ActionType == EnemyActionType.ApplyStatusEffect) // 상태 적용 행동 확인
+        if (action.BlockingStatus != BattleStatusEffectType.None) // 실제 예고 행동을 막는 상태 확인
+        { // 행동 취소 예고 시작
+            enemyIntentText.text = $"{patternHeader}\n{BattleStatusEffectInstance.GetDisplayName(action.BlockingStatus)} · 이번 행동 취소"; // 취소될 행동의 원인 표시
+        } // 행동 취소 예고 종료
+        else if (action.ActionType == EnemyActionType.ApplyStatusEffect) // 상태 적용 행동 확인
         { // 상태 예고 처리 시작
             string effectName = BattleStatusEffectInstance.GetDisplayName(action.StatusEffectType); // 상태 이상 이름 조회
             bool blockedByImmunity = BattleStatusEffectInstance.IsDebuffType(action.StatusEffectType) && action.Target.HasStatusImmunity; // 면역 차단 예상 여부 계산
@@ -249,7 +253,7 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         else // 공격 행동 처리
         { // 공격 예고 처리 시작
             string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
-            int modifiedAmount = action.Actor.ModifyOutgoingDamage(action.Amount); // 정신 상태 포함 원본 피해 계산
+            int modifiedAmount = action.AttackAmount; // 정신 상태와 공격 약화를 반영한 원본 피해
             BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
             string sharedText = action.SharedDamageRecipient != null && !action.SharedDamageRecipient.IsDead ? $"\n분담: {action.SharedDamageRecipient.DisplayName} {action.PreviewSharedDamage()}" : string.Empty; // 생존 분담자와 예상 피해 문구 계산
             enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {modifiedAmount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}{sharedText}"; // 분담 피해를 포함한 공격 예고 내용 적용

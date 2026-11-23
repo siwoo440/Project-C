@@ -210,6 +210,15 @@ public sealed class BattleEnemyIntentIconView :
             return;
         }
 
+        if (currentAction.BlockingStatus != BattleStatusEffectType.None) // 실제 취소될 공격 또는 상태 행동 확인
+        { // 제한 상태 예고 시작
+            specialMark.gameObject.SetActive(false); // 취소된 보스 공격 표시 숨김
+            backgroundImage.sprite = BattleStatusIconArt.Get(currentAction.BlockingStatus); // 행동을 막는 상태 그림 표시
+            backgroundImage.color = Color.white; // 원래 상태 그림 색 표시
+            backgroundImage.preserveAspect = true; // 상태 그림 비율 유지
+            iconText.text = string.Empty; // 취소된 공격의 예상 수치 숨김
+            return; // 남은 일반 예고 표시 생략
+        } // 제한 상태 예고 종료
         int previewAmount =
             GetPreviewAmount(
                 currentAction); // 행동 아이콘 표시 수치 계산

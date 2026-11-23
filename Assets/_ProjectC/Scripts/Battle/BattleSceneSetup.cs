@@ -434,6 +434,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 소환 적의 전투 연결에 실패했습니다.", this); // 소환 연결 오류 출력
             return false; // 적 소환 실패 반환
         } // 연결 실패 복구 종료
+        summonedEnemy.StatusEffectsChanged += HandleAllyStatusEffectsChanged; // 소환 적의 상태 변경 예고 갱신
         summonedEnemy.MentalChanged += HandleMentalIntentChanged; // 소환 적 정신 상태 예고 갱신 등록
         Debug.Log($"[BattleSceneSetup] 적 소환 - {summonedEnemy.DisplayName} / 현재 생존 적 {CountLivingEnemies()}명 / 다음 행동 준비부터 참여", this); // 적 소환 결과 출력
         return true; // 적 소환 성공 반환
@@ -477,6 +478,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         mentalController?.UnregisterEnemy(enemyUnit); // 정신력 흐름 사망 연결 해제
         statusEffectController?.UnregisterEnemy(enemyUnit); // 상태 적용 감시 연결 해제
         battleEventController?.UnregisterEnemy(enemyUnit); // 공용 이벤트 흐름 상세 신호 해제
+        enemyUnit.StatusEffectsChanged -= HandleAllyStatusEffectsChanged; // 제거 적의 상태 변경 예고 해제
         enemyUnit.MentalChanged -= HandleMentalIntentChanged; // 적 정신 상태 예고 갱신 해제
         enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
         BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
@@ -814,6 +816,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 개별 등록 시작
             if (runtimeUnit != null) // 유닛 존재 확인
             { // 유효 유닛 처리 시작
+                if (runtimeUnit.Team == BattleTeam.Enemy) // 기존 아군 감시를 제외한 적 상태 변경 확인
+                { // 적 예고 갱신 연결 시작
+                    runtimeUnit.StatusEffectsChanged += HandleAllyStatusEffectsChanged; // 적 약화와 행동 취소의 예고 갱신 연결
+                } // 적 예고 갱신 연결 종료
                 runtimeUnit.MentalChanged += HandleMentalIntentChanged; // 정신 상태 예고 갱신 연결
             } // 유효 유닛 처리 종료
         } // 개별 등록 종료
@@ -829,6 +835,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 개별 해제 시작
             if (runtimeUnit != null) // 유닛 존재 확인
             { // 유효 유닛 처리 시작
+                if (runtimeUnit.Team == BattleTeam.Enemy) // 기존 아군 감시를 제외한 적 상태 변경 확인
+                { // 적 예고 갱신 연결 시작
+                    runtimeUnit.StatusEffectsChanged -= HandleAllyStatusEffectsChanged; // 적 약화와 행동 취소의 예고 갱신 연결
+                } // 적 예고 갱신 연결 종료
                 runtimeUnit.MentalChanged -= HandleMentalIntentChanged; // 정신 상태 예고 갱신 해제
             } // 유효 유닛 처리 종료
         } // 개별 해제 종료
@@ -853,6 +863,12 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             } // 적 행동 대기 종료
             BattleEnemyActionResult actionResult = BattleEnemyActionResult.Empty(enemyAction.ActionType, enemyAction.DamageType); // 적 행동 결과 초기화
             BattleUnitView actorView = FindUnitView(enemyAction.Actor, enemyUnitViews); // 행동 적 화면 조회
+            if (enemyAction.BlockingStatus != BattleStatusEffectType.None) // 예고된 행동의 실제 취소 확인
+            { // 행동 취소 처리 시작
+                actorView?.ShowStatusFeedback(BattleStatusEffectInstance.GetDisplayName(enemyAction.BlockingStatus), true); // 공격자 위에 행동 제한 사유 표시
+                enemyActionRuntime.ExecuteAction(enemyAction); // 기존 순서대로 취소된 행동 하나 정리
+                continue; // 취소한 공격의 이동과 충돌 연출 생략
+            } // 행동 취소 처리 종료
             BattleUnitView targetView = FindUnitView(enemyAction.Target, allyUnitViews); // 대상 아군 화면 조회
             List<BattleUnitView> targetViews = new List<BattleUnitView>(); // 적 행동 대상 화면 목록 생성
             if (targetView != null) // 대상 아군 화면 확인
