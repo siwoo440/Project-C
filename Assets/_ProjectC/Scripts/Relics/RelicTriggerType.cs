@@ -42,5 +42,7 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforeStatusDuration, // 기간제 상태의 남은 턴 지정 직전
     BattleEscaped, // 실제 조우에서 전투 도주 성공 시점
     CardDrawn, // 드로우한 카드가 손패에 들어갈 때
-    CardDrawEffect // 카드 자체 효과의 드로우 수량을 확정할 때
+    CardDrawEffect, // 카드 자체 효과의 드로우 수량을 확정할 때
+    BeforeInspectDrawPile, // 덱 위에서 확인할 후보 수량을 정하는 시점
+    HandEmptyAtCleanup // 턴 종료 손패를 자동으로 정리하기 직전
 }

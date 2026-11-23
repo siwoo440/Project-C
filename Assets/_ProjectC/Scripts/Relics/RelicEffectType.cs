@@ -68,4 +68,12 @@ public enum RelicEffectType // 유물 효과 종류
     OpeningDroneWeakness, // 전투 시작 무작위 적의 공격력 감소
     FirstDrawCardDiscount, // 전투 첫 손패 도착 카드의 일시 사용 비용 감소
     FirstCardDrawBonus, // 첫 장수 기반 카드 드로우 증가
+    FirstCardDamageBonus, // 전투 첫 유효 카드 직접 피해 증가
+    InspectionChoiceBonus, // 덱 상단 확인 후보 수 증가
+    DiscardFirstUnplayableDraw, // 최초 사용 불가 드로우 카드를 버린 더미로 이동
+    RecoverRandomDiscard, // 아군 턴 첫 회수 가능한 무작위 한 장 지급
+    RetainedHandHealing, // 유지 카드가 남은 첫 유효 카드 회복 증가
+    RetainedHandDamage, // 유지 카드가 남은 첫 유효 카드 직접 피해 증가
+    FoldingCotRecovery, // 캠프의 생존 아군별 고정 체력 회복량 증가
+    EmptyHandNextTurnDraw, // 정리 이전 빈 손패의 다음 턴 추가 드로우
 }

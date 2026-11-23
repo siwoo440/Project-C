@@ -32,8 +32,10 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
 
     [SerializeField] private bool volatileInHand; // 턴 종료 손패에서 소멸하는 휘발 카드
     [SerializeField] private bool excludeOnUse; // 사용 후 전투 덱에서 제외하는 카드
+    [SerializeField] private bool retainInHand; // 일반 턴 종료에 손패를 떠나지 않는 유지 카드
     public bool VolatileInHand => volatileInHand; // 손패 휘발 규칙 조회
     public bool ExcludeOnUse => excludeOnUse; // 사용 후 제외 규칙 조회
+    public bool RetainInHand => retainInHand; // 카드 원본의 손패 유지 규칙 조회
 
     [Header("정신력 규칙")]
     [Range(-100, 100)]

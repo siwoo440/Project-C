@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: RedInkBottle
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_RED_INK_BOTTLE
+  displayName: 붉은 잉크병
+  description: "각 전투에서 첫 유효 카드 직접 명중의 피해가 2 증가한다."
+  icon: {fileID: 21300000, guid: 40fe883c851c5f5ba6ab653c8825e1a2, type: 3}
+  rarity: 0
+  triggerType: 21
+  effectType: 68
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 2
+  maximumTriggersPerTurn: 0
+  maximumTriggersPerBattle: 1
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50

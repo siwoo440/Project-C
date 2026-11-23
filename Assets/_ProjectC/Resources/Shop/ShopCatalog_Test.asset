@@ -1427,4 +1427,68 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 718ef09715c75db4b7fe3de78e190125, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_RED_INK_BOTTLE
+    offerType: 1
+    price: 277
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1672e418f89f5211b83ec7d03cd04da1, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_GOLD_BOOKMARK
+    offerType: 1
+    price: 285
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 8e0996f930465626b3b0cac1106cffd7, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RIFT_SEALING_TAPE
+    offerType: 1
+    price: 269
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1e4c6ae110925088ad8c0775a1a9feac, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RETRIEVAL_MAGNET
+    offerType: 1
+    price: 295
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: e23eee7405e757669a5b1d90ab6a5dba, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WHITE_FEATHER_PENDANT
+    offerType: 1
+    price: 308
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: f9bb44bd3a2e5adfac1712e89e0c88eb, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_FEATHER_PENDANT
+    offerType: 1
+    price: 287
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 61cf35dd1ea150c5b2db3b1d17e48ee0, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FOLDING_COT
+    offerType: 1
+    price: 296
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 18ebd95cc3ce554fb829c88a041a0122, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WORN_PATCH_CORD
+    offerType: 1
+    price: 286
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 5dd186913f0f5288ad85a91901efcba1, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

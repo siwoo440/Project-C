@@ -12,7 +12,9 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
     { // 기본 연속 공격 시작
         return TryAttack(card, primary, enemies, out _); // 명중 결과를 생략한 연속 공격 반환
     } // 기본 연속 공격 종료
-    public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies, out bool missed, Func<int, int> applyHitBonus = null, int preparedSwordDamage = 0, Func<BattleUnitRuntime, int, int> applyTargetBonus = null) // 추가 대상과 빗나감 결과 조회
+    public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies, out bool missed, // 추가 대상과 빗나감 결과 조회
+        Func<int, int> applyHitBonus = null, int preparedSwordDamage = 0, Func<BattleUnitRuntime, int, int> applyTargetBonus = null, // 기존 명중 보정과 정비량
+        Func<BattleUnitRuntime, int, int> applyFlatTargetBonus = null) // 치명타 이후 방어 판정 전 대상별 고정 피해 가산
     { // 연속 공격 시작
         missed = false; // 빗나감 결과 초기화
         if (!IsChainCard(card) || card.OwnerUnit == null || card.OwnerUnit.IsDead || primary == null || enemies == null) // 유효한 카드와 공격자 확인
@@ -45,7 +47,9 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정
         try // 피해 판정 문맥 정리 보장
         { // 두 번째 공격 적용 시작
-            target.TakeDamage(SwordCardCombat.RollCritical(card, damage, out _), card.DamageType, card.OwnerUnit); // 다른 적의 방어도와 약점을 반영한 피해 적용
+            damage = SwordCardCombat.RollCritical(card, damage, out _); // 기존 치명타 보정 계산
+            damage = applyFlatTargetBonus?.Invoke(target, damage) ?? damage; // 이번 명중의 고정 가산량 적용
+            target.TakeDamage(damage, card.DamageType, card.OwnerUnit); // 다른 적의 방어도와 약점을 반영한 피해 적용
         } // 두 번째 공격 적용 종료
         finally // 카드 피해 문맥 정리
         { // 피해 문맥 정리 시작

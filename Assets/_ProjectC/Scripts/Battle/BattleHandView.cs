@@ -385,14 +385,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 체력 비용 부족 처리 시작
             return false; // 체력 비용 카드 사용 차단
         } // 체력 비용 부족 처리 종료
-        if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.ChooseDraw && !runtimeDeck.HasDrawableCards) // 생존 소유자의 선택 가능 카드 확인
+        if (runtimeDeck != null && !BattleCardActionController.CanUseDrawInspection(cardInstance, runtimeDeck)) // 유물을 반영한 확인 카드의 공통 사용 조건
         { // 선택 후보 없음 처리 시작
-            return false; // 선택 드로우 카드 사용 차단
+            return false; // 유효 후보가 없는 확인 카드 사용 차단
         } // 선택 후보 없음 처리 종료
-        if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.ArrangeDrawTop && runtimeDeck.PeekDrawTop(1).Count == 0) // 현재 덱 위 정리 가능 카드 확인
-        { // 정리 후보 없음 처리 시작
-            return false; // 덱 순서 정리 카드 사용 차단
-        } // 정리 후보 없음 처리 종료
         if (runtimeDeck != null && cardInstance.EffectType == CardEffectType.DrawThenDiscard && !runtimeDeck.HasDrawableCards && runtimeDeck.HandCount <= 1) // 드로우와 사용 후 남을 손패 확인
         { // 버릴 손패 없음 처리 시작
             return false; // 드로우 후 버리기 카드 사용 차단

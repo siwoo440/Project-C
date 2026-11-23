@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de242b67e933a145bfaf7d67bae0c72, type: 3}
+  m_Name: BlackFeatherPendant
+  m_EditorClassIdentifier: Assembly-CSharp::RelicData
+  relicId: RLC_BLACK_FEATHER_PENDANT
+  displayName: 검은 깃털 펜던트
+  description: "유지 카드가 손에 있을 때 적에게 명중한 첫 카드 직접 공격 피해가 1 증가한다. 아군 턴당 한 번 발동한다."
+  icon: {fileID: 21300000, guid: c513284e545651fdb533f329fbab73e0, type: 3}
+  rarity: 0
+  triggerType: 21
+  effectType: 73
+  targetType: 6
+  triggerChancePercent: 100
+  effectValue: 1
+  maximumTriggersPerTurn: 1
+  maximumTriggersPerBattle: 0
+  playerTurnInterval: 0
+  damageType: 1
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1
+  duplicateGoldValue: 50
