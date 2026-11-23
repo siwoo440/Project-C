@@ -15,7 +15,7 @@ MonoBehaviour:
   cardId: CRD_TEMP_ATTACK
   displayName: 임시 공격
   description: 적 하나에게 물리 피해 10
-  artwork: {fileID: 0}
+  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
   cardType: 0
   cardTags: 0
   targetType: 3

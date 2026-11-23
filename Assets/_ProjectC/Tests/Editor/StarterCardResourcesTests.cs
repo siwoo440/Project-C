@@ -13,6 +13,7 @@ public sealed class StarterCardResourcesTests // 역할별 임시 시작 카드 
             Assert.IsNotNull(card, names[index]); // 역할 카드 존재 확인
             Assert.AreEqual(effects[index], card.EffectType); // 카드 효과 종류 확인
             Assert.Greater(card.EffectValue, 0); // 양수 임시 효과 확인
+            Assert.IsNotNull(card.Artwork); // 시작 카드 일러스트 연결 확인
         } // 역할 카드 확인 종료
     } // 테스트 종료
 } // 테스트 클래스 종료
