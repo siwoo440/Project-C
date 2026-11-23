@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: SaveAssetCatalog
   m_EditorClassIdentifier: Assembly-CSharp::SaveAssetCatalog
   cards:
+  - {fileID: 11400000, guid: 2b3f1fe102054b03b1b698f4e77a6aaa, type: 2}
+  - {fileID: 11400000, guid: 03740483875a4d40bc887cbd38ba89e1, type: 2}
   - {fileID: 11400000, guid: ea80e33036da4d4b9d9d0092cca25807, type: 2}
   - {fileID: 11400000, guid: c0926a54b31e4a5a9d71000000000120, type: 2}
   - {fileID: 11400000, guid: a15e144fc4fa4721a6199c12253b459e, type: 2}

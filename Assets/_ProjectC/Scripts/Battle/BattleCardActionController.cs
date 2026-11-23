@@ -240,7 +240,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogError("[BattleCardActionController] 선택 드로우 화면을 표시할 캔버스가 없습니다."); // 화면 생성 실패 출력
             return; // 선택 화면 표시 중단
         } // 화면 누락 처리 종료
-        string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
+        string title = pendingChoiceEffect == CardEffectType.RecoverDiscard ? "회수할 버린 카드 선택" : pendingChoiceEffect == CardEffectType.ArrangeDrawTop ? "다음에 뽑을 카드 선택" : "가져올 카드 한 장 선택"; // 카드 선택 안내 설정
         drawChoiceView = BattleDrawChoiceView.Show(canvas.transform, pendingCardChoices, HandleCardChoiceSelected, title); // 선택 화면 생성
         handView.SetInteractionLocked(true); // 선택 중 손패와 턴 종료 잠금
     } // 선택 화면 표시 종료
@@ -264,6 +264,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 버린 카드 회수 시작
             processed = runtimeDeck.TryRecoverDiscard(choice); // 선택한 버린 카드 회수
         } // 버린 카드 회수 종료
+        else if (pendingChoiceEffect == CardEffectType.ArrangeDrawTop) // 덱 순서 정리 선택 확인
+        { // 덱 순서 변경 시작
+            processed = runtimeDeck.TryMoveDrawTop(choice, choiceCount); // 선택한 카드를 맨 위에 배치
+        } // 덱 순서 변경 종료
         else // 덱 위 카드 선택 확인
         { // 선택 드로우 시작
             processed = runtimeDeck.TryDrawChoice(choice, choiceCount); // 선택 카드를 손패로 이동
@@ -343,6 +347,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 선택 불가 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop && runtimeDeck.PeekDrawTop(1).Count == 0) // 현재 덱 위 정리 가능 카드 확인
+        { // 덱 순서 정리 불가 시작
+            return false; // 선택 불가 반환
+        } // 덱 순서 정리 불가 종료
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack && !enemyActions.CanProtectAlly(cardInstance.OwnerUnit, targetUnit)) // 대신 받을 동료 공격 확인
+        { // 동료 보호 불가 시작
+            return false; // 선택 불가 반환
+        } // 동료 보호 불가 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner && !loversPartner.CanSetPartner(cardInstance.OwnerUnit, targetUnit)) // 생존한 다른 파트너 후보 확인
         { // 파트너 지정 불가 처리 시작
             return false; // 선택 불가 반환
@@ -413,7 +425,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 유효 대상 생성 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop; // 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -446,6 +458,16 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 대상 화면 생성 종료
     private int ApplyCardEffect(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 효과 단일 대상 적용
     { // 단일 효과 적용 시작
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 힘의 동료 보호 효과 확인
+        { // 동료 보호 처리 시작
+            return enemyActions.TryProtectAlly(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 첫 예정 공격 대신 받기 결과 반환
+        } // 동료 보호 처리 종료
+        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 은둔자의 덱 순서 정리 확인
+        { // 덱 순서 정리 준비 시작
+            pendingChoiceEffect = CardEffectType.ArrangeDrawTop; // 덱 순서 정리 선택 효과 저장
+            pendingCardChoices = runtimeDeck.PeekDrawTop(cardInstance.EffectValue); // 현재 덱 위의 후보만 조회
+            return pendingCardChoices.Count; // 확인 가능한 후보 수 반환
+        } // 덱 순서 정리 준비 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner) // 연인 파트너 지정 효과 확인
         { // 파트너 지정 처리 시작
             return loversPartner.TrySetPartner(cardInstance.OwnerUnit, targetUnit) ? 1 : 0; // 지정 성공 여부 반환
@@ -530,6 +552,14 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 정화 로그 종료
     private static string GetEffectLabel(CardInstance cardInstance) // 카드 효과 로그 문구 조회
     { // 효과 문구 조회 시작
+        if (cardInstance.EffectType == CardEffectType.GuardAllyAttack) // 동료 보호 효과 확인
+        { // 동료 보호 문구 시작
+            return "동료 공격 대신 받기"; // 동료 보호 이름 반환
+        } // 동료 보호 문구 종료
+        if (cardInstance.EffectType == CardEffectType.ArrangeDrawTop) // 덱 순서 정리 효과 확인
+        { // 덱 정리 문구 시작
+            return "덱 순서 정리 후보"; // 덱 정리 효과 이름 반환
+        } // 덱 정리 문구 종료
         if (cardInstance.EffectType == CardEffectType.SelectPartner) // 파트너 지정 문구 확인
         { // 파트너 문구 시작
             return "파트너 지정"; // 파트너 효과 이름 반환
