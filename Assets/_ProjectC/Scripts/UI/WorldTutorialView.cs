@@ -73,7 +73,7 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
             image.color = new Color(1f, 0.75f, 0.28f, 1f); // 금색 강조 색상 설정
             image.raycastTarget = false; // 강조 테두리 입력 통과
         } // 테두리 생성 종료
-        panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip()); // 왼쪽 예시와 오른쪽 설명 배치 생성
+        panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip(), () => progress.GoBack()); // 예시와 페이지 이동 안내 배치 생성
         title = panelLayout.Title; // 오른쪽 안내 제목 연결
         description = panelLayout.Description; // 오른쪽 안내 설명 연결
         nextButton = panelLayout.NextButton; // 오른쪽 확인 버튼 연결
@@ -101,6 +101,7 @@ public sealed class WorldTutorialView : MonoBehaviour // 거점과 탐사 안내
             panelLayout.SetExample("Exploration"); // 탐사 화면 예시 또는 임시 이미지 표시
         } // 탐사 안내 내용 설정 종료
         nextButton.interactable = progress.CanAdvance; // 실제 이동을 반영한 다음 버튼 설정
+        panelLayout.SetPage(progress.StepIndex + 1, progress.StepCount, progress.CanGoBack, progress.CanAdvance); // 현재 안내 페이지와 이동 버튼 갱신
         nextButton.image.raycastTarget = progress.CanAdvance; // 이동 대기 중 비활성 확인 버튼의 화면 입력 통과
         UpdateHighlight(); // 현재 화면 대상 강조 갱신
     } // 안내 내용 갱신 종료

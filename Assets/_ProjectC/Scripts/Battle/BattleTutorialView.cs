@@ -44,7 +44,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
             shades[index] = CreateOverlayRect("Shade" + index, new Color(0f, 0f, 0f, 0.8f)); // 입력을 막지 않는 어두운 영역 생성
             borders[index] = CreateOverlayRect("Border" + index, new Color(1f, 0.75f, 0.28f, 1f)); // 금색 강조 테두리 생성
         } // 주변 화면 구성 종료
-        panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip()); // 왼쪽 예시와 오른쪽 설명 배치 생성
+        panelLayout = TutorialPanelLayout.Create(guide, () => progress.Advance(), () => progress.Skip(), () => progress.GoBack()); // 예시와 페이지 이동 안내 배치 생성
         panelLayout.SetExample("Battle"); // 실제 전투 화면 예시 표시
         title = panelLayout.Title; // 오른쪽 안내 제목 연결
         description = panelLayout.Description; // 오른쪽 안내 설명 연결
@@ -104,6 +104,7 @@ public sealed class BattleTutorialView : MonoBehaviour // 전투 튜토리얼 �
                 break; // 적 행동 안내 설정 종료
         } // 단계별 문구 설정 종료
         nextButton.interactable = progress.CanAdvance; // 실제 진행 가능 여부에 맞춘 다음 버튼 설정
+        panelLayout.SetPage(progress.PageNumber, progress.PageCount, progress.CanGoBack, progress.CanAdvance); // 현재 안내 페이지와 이동 버튼 갱신
         nextButton.image.raycastTarget = progress.CanAdvance; // 행동 대기 중 비활성 확인 버튼의 전투 입력 통과
         UpdateHighlight(); // 현재 대상 화면 강조 갱신
     } // 안내 화면 갱신 종료

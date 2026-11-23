@@ -7,15 +7,25 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
     public TMP_Text Title { get; private set; } // 오른쪽 안내 제목 조회
     public TMP_Text Description { get; private set; } // 오른쪽 안내 설명 조회
     public Button NextButton { get; private set; } // 오른쪽 확인 버튼 조회
+    private static Sprite pageButtonSprite; // 재사용할 페이지 버튼 이미지
+    private TMP_Text pageLabel; // 현재 페이지 안내 문구
+    private Button previousPage; // 이전 페이지 버튼
+    private Button nextPage; // 다음 페이지 버튼
     private RawImage exampleImage; // 왼쪽 실제 화면 예시 이미지
     private TMP_Text exampleCaption; // 예시 이미지 상태 문구
-    public static TutorialPanelLayout Create(RectTransform guide, Action next, Action skip) // 공통 안내 화면 생성
+    public static TutorialPanelLayout Create(RectTransform guide, Action next, Action skip, Action previous) // 공통 안내 화면 생성
     { // 공통 안내 화면 생성 시작
         TutorialPanelLayout layout = new TutorialPanelLayout(); // 새 공통 안내 배치 생성
         RectTransform panel = PreparationUi.CreatePanel("Panel", guide, new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.84f)); // 화면 중앙의 넓은 안내 영역 생성
         Image panelImage = panel.GetComponent<Image>(); // 공통 안내 영역 배경 조회
-        panelImage.color = Color.clear; // 기존 패널 테두리와 배경 제거
+        panelImage.color = new Color(0.24f, 0.24f, 0.24f, 0.78f); // 반투명 회색 안내 배경 설정
         panelImage.raycastTarget = false; // 안내 영역의 게임 입력 통과
+        layout.pageLabel = PreparationUi.CreateText("PageLabel", panel, string.Empty, 25f); // 현재 페이지 번호 생성
+        PreparationUi.Place(layout.pageLabel.rectTransform, new Vector2(0.5f, 0.95f), Vector2.zero, new Vector2(180f, 48f)); // 안내 상단 중앙 페이지 표시
+        layout.previousPage = PreparationUi.CreateButton("PreviousPage", panel, "<", new Vector2(0.5f, 0.95f), new Vector2(-145f, 0f), new Vector2(84f, 46f), previous); // 페이지 왼쪽 이전 버튼 생성
+        layout.nextPage = PreparationUi.CreateButton("NextPage", panel, ">", new Vector2(0.5f, 0.95f), new Vector2(145f, 0f), new Vector2(84f, 46f), next); // 페이지 오른쪽 다음 버튼 생성
+        ApplyPageButtonArt(layout.previousPage); // 제작한 이전 버튼 이미지 적용
+        ApplyPageButtonArt(layout.nextPage); // 제작한 다음 버튼 이미지 적용
         RectTransform preview = PreparationUi.CreatePanel("Preview", panel, new Vector2(0.01f, 0.20f), new Vector2(0.48f, 0.83f)); // 왼쪽 예시 이미지 영역 생성
         Image previewImage = preview.GetComponent<Image>(); // 예시 영역 배경 조회
         previewImage.color = new Color(0.015f, 0.025f, 0.03f, 0.98f); // 어두운 예시 영역 배경 설정
@@ -38,10 +48,38 @@ public sealed class TutorialPanelLayout // 예시 이미지와 설명을 나란�
         PreparationUi.Stretch(layout.Description.rectTransform, new Vector2(0.53f, 0.29f), new Vector2(0.98f, 0.72f)); // 오른쪽 설명 영역 설정
         layout.Description.alignment = TextAlignmentOptions.TopLeft; // 설명 왼쪽 위 정렬
         layout.Description.textWrappingMode = TextWrappingModes.Normal; // 긴 설명 줄바꿈 설정
-        PreparationUi.CreateButton("SkipButton", panel, "건너뛰기", new Vector2(0.91f, 0.98f), Vector2.zero, new Vector2(150f, 55f), skip); // 오른쪽 위 건너뛰기 버튼 생성
-        layout.NextButton = PreparationUi.CreateButton("NextButton", panel, "확인", new Vector2(0.91f, 0.12f), Vector2.zero, new Vector2(150f, 55f), next); // 오른쪽 아래 확인 버튼 생성
+        layout.NextButton = PreparationUi.CreateButton("NextButton", panel, "확인", new Vector2(0.79f, 0.12f), Vector2.zero, new Vector2(150f, 55f), next); // 오른쪽 아래 확인 버튼 생성
+        PreparationUi.CreateButton("SkipButton", panel, "건너뛰기", new Vector2(0.91f, 0.12f), Vector2.zero, new Vector2(150f, 55f), skip); // 확인 오른쪽에 건너뛰기 버튼 생성
         return layout; // 완성한 안내 배치 반환
     } // 공통 안내 화면 생성 종료
+    public void SetPage(int current, int total, bool canGoBack, bool canAdvance) // 현재 안내 페이지와 버튼 상태 표시
+    { // 페이지 표시 갱신 시작
+        pageLabel.text = "페이지 " + current + " / " + total; // 현재 페이지와 전체 페이지 표시
+        previousPage.interactable = canGoBack; // 이전 페이지 이동 가능 여부 설정
+        nextPage.interactable = canAdvance && current < total; // 마지막 페이지와 진행 조건 확인
+        previousPage.image.raycastTarget = previousPage.interactable; // 비활성 이전 버튼의 게임 입력 통과
+        nextPage.image.raycastTarget = nextPage.interactable; // 비활성 다음 버튼의 게임 입력 통과
+    } // 페이지 표시 갱신 종료
+    private static void ApplyPageButtonArt(Button button) // 제작한 페이지 이동 버튼 이미지 적용
+    { // 페이지 버튼 이미지 적용 시작
+        if (pageButtonSprite == null) // 기존 페이지 이미지 준비 여부 확인
+        { // 페이지 이미지 생성 시작
+            Texture2D texture = Resources.Load<Texture2D>("UI/Tutorial/PageButton"); // 제작한 페이지 버튼 텍스처 조회
+            if (texture != null) // 제작 이미지 존재 확인
+            { // 페이지 이미지 준비 시작
+                Rect area = new Rect(texture.width * 0.034f, texture.height * 0.165f, texture.width * 0.932f, texture.height * 0.67f); // 바깥 투명 여백 제외 영역
+                pageButtonSprite = Sprite.Create(texture, area, new Vector2(0.5f, 0.5f), 100f); // 재사용할 버튼 스프라이트 생성
+                pageButtonSprite.hideFlags = HideFlags.HideAndDontSave; // 런타임 공용 이미지 유지 설정
+            } // 페이지 이미지 준비 종료
+        } // 페이지 이미지 생성 종료
+        if (pageButtonSprite != null) // 제작 이미지 존재 확인
+        { // 페이지 버튼 이미지 연결 시작
+            button.image.sprite = pageButtonSprite; // 제작한 버튼 이미지 연결
+            button.image.type = Image.Type.Simple; // 버튼 이미지 전체 표시
+            button.image.color = Color.white; // 제작 이미지 원본 색상 유지
+        } // 페이지 버튼 이미지 연결 종료
+        button.GetComponentInChildren<TMP_Text>().richText = false; // 화살표 문자의 태그 해석 방지
+    } // 페이지 버튼 이미지 적용 종료
     public void SetExample(string name) // 단계에 맞는 실제 게임 화면 예시 설정
     { // 예시 이미지 설정 시작
         Texture2D image = Resources.Load<Texture2D>("UI/Tutorial/" + name); // 현재 단계의 실제 화면 이미지 조회

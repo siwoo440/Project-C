@@ -15,6 +15,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
     private readonly List<TMP_Text> profileNumbers = new List<TMP_Text>(); // 프로필별 편성 번호 문구
     private readonly Image[] slotImages = new Image[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이미지
     private readonly TMP_Text[] slotNames = new TMP_Text[PartyData.MaxPartySize]; // 편성 칸 캐릭터 이름
+    private readonly Outline[] slotHighlights = new Outline[PartyData.MaxPartySize]; // 선택된 편성 칸 강조 테두리
     private readonly Button[] presetButtons = new Button[PartyPresetStore.PresetCount]; // 네 개의 편성 선택 버튼
     private TMP_Text detailName; // 선택 캐릭터 상세 이름
     private TMP_Text detailStats; // 선택 캐릭터 상세 능력치
@@ -204,6 +205,11 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         { // 개별 편성 칸 생성 시작
             RectTransform slot = PreparationUi.CreatePanel("Slot_" + index, group.transform, new Vector2(index / 4f, 0f), new Vector2((index + 1) / 4f, 1f)); // 개별 편성 칸 생성
             LobbyUiArt.Apply(slot.GetComponent<Image>(), "FormationCard"); // 제작한 편성 칸 이미지 적용
+            Outline highlight = slot.gameObject.AddComponent<Outline>(); // 선택된 편성 칸 강조 테두리 생성
+            highlight.effectColor = new Color(1f, 0.82f, 0.38f, 1f); // 밝은 금색 선택 테두리 설정
+            highlight.effectDistance = new Vector2(4f, -4f); // 선택 테두리 두께 설정
+            highlight.enabled = false; // 선택 전 강조 테두리 숨김
+            slotHighlights[index] = highlight; // 칸별 강조 테두리 저장
             slot.offsetMin = new Vector2(5f, 0f); // 편성 칸 왼쪽 간격 설정
             slot.offsetMax = new Vector2(-5f, 0f); // 편성 칸 오른쪽 간격 설정
             slot.gameObject.AddComponent<PartyFormationSlot>().Bind(this, index); // 드래그 대상 편성 칸 연결
@@ -311,6 +317,15 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
         PartyPresetStore.SetSlots(PartyPresetStore.Selected, selection.Slots); // 빈칸과 위치를 포함한 편성 저장
         Refresh(); // 편성 칸과 프로필 번호 갱신
     } // 드롭 처리 종료
+    public void SelectSlot(int index) // 편성된 캐릭터의 상세 정보 선택
+    { // 편성 칸 선택 시작
+        if (selection == null || index < 0 || index >= selection.Slots.Count || selection.Slots[index] == null) // 유효한 편성 캐릭터 확인
+        { // 빈 칸과 잘못된 선택 처리 시작
+            return; // 상세 정보 변경 중단
+        } // 빈 칸과 잘못된 선택 처리 종료
+        focused = selection.Slots[index]; // 클릭한 캐릭터 상세 정보 선택
+        Refresh(); // 선택 테두리와 상세 정보 갱신
+    } // 편성 칸 선택 종료
     private void Refresh() // 캐릭터 목록과 편성 칸 갱신
     { // 편성 상태 갱신 시작
         if (selection == null || startButton == null) // 화면 초기화 상태 확인
@@ -336,6 +351,7 @@ public sealed class PartyFormationView : MonoBehaviour // 탐사 전 새 파티 
             slotNames[index].text = character != null ? character.DisplayName : "빈 슬롯"; // 캐릭터 이름 또는 빈 칸 표시
             slotImages[index].sprite = character != null ? character.BattleIllustration != null ? character.BattleIllustration : character.Portrait : null; // 실제 캐릭터 일러스트 표시
             slotImages[index].enabled = character != null && slotImages[index].sprite != null; // 캐릭터 그림 존재 시 표시
+            slotHighlights[index].enabled = character != null && character == focused; // 상세 선택 캐릭터의 편성 칸 강조
         } // 편성 칸 표시 종료
         bool canDeploy = selection.Validate().CanDeploy; // 현재 편성의 출전 가능 여부 확인
         startButton.interactable = canDeploy; // 출전 가능 파티에만 탐사 허용

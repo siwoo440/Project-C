@@ -20,7 +20,10 @@ public sealed class BattleTutorialProgress // 실제 행동에 따른 전투 안
     private bool enemyFinished; // 적 턴 종료 기록
     public BattleTutorialStep Step { get; private set; } = BattleTutorialStep.Inactive; // 현재 안내 단계 조회
     public bool IsActive => Step != BattleTutorialStep.Inactive && Step != BattleTutorialStep.Complete; // 안내 표시 여부 조회
-    public bool CanAdvance => Step == BattleTutorialStep.Overview || Step == BattleTutorialStep.ActionPoints || Step == BattleTutorialStep.Mental || Step == BattleTutorialStep.EnemyIntent || Step == BattleTutorialStep.ObserveEnemy && enemyFinished; // 다음 안내 버튼 사용 가능 여부
+    public int PageCount => 7; // 전투 안내 전체 페이지 수
+    public int PageNumber => IsActive ? (int)Step : 0; // 현재 전투 안내 페이지 번호
+    public bool CanGoBack => IsActive && Step > BattleTutorialStep.Overview; // 이전 안내 페이지 이동 가능 여부
+    public bool CanAdvance => Step == BattleTutorialStep.Overview || Step == BattleTutorialStep.PlayCard && cardUsed || Step == BattleTutorialStep.ActionPoints || Step == BattleTutorialStep.Mental || Step == BattleTutorialStep.EnemyIntent || Step == BattleTutorialStep.EndTurn && enemyStarted || Step == BattleTutorialStep.ObserveEnemy && enemyFinished; // 실제 행동 기록을 반영한 다음 안내 가능 여부
     public event Action Changed; // 안내 단계 변경 알림
     public BattleTutorialProgress(ISettingsStore settingsStore) // 안내 진행 상태 생성
     { // 진행 상태 생성 시작
@@ -49,6 +52,13 @@ public sealed class BattleTutorialProgress // 실제 행동에 따른 전투 안
             case BattleTutorialStep.Overview: // 첫 전투 화면 안내
                 SetStep(cardUsed ? BattleTutorialStep.ActionPoints : BattleTutorialStep.PlayCard); // 카드 사용 기록에 따른 다음 단계
                 return true; // 단계 이동 성공 반환
+            case BattleTutorialStep.PlayCard: // 카드 사용 대기 안내
+                if (cardUsed) // 이전에 카드 사용 여부 확인
+                { // 카드 사용 완료 처리 시작
+                    SetStep(BattleTutorialStep.ActionPoints); // 행동력 안내 이동
+                    return true; // 단계 이동 성공 반환
+                } // 카드 사용 완료 처리 종료
+                return false; // 실제 카드 사용 대기
             case BattleTutorialStep.ActionPoints: // 행동력 안내
                 SetStep(BattleTutorialStep.Mental); // 정신력 안내 이동
                 return true; // 단계 이동 성공 반환
@@ -58,6 +68,13 @@ public sealed class BattleTutorialProgress // 실제 행동에 따른 전투 안
             case BattleTutorialStep.EnemyIntent: // 적 예고 안내
                 SetStep(enemyStarted ? BattleTutorialStep.ObserveEnemy : BattleTutorialStep.EndTurn); // 기존 적 턴 기록 반영
                 return true; // 단계 이동 성공 반환
+            case BattleTutorialStep.EndTurn: // 턴 종료 대기 안내
+                if (enemyStarted) // 이전에 적 턴 시작 여부 확인
+                { // 적 턴 시작 처리 시작
+                    SetStep(BattleTutorialStep.ObserveEnemy); // 적 행동 관찰 안내 이동
+                    return true; // 단계 이동 성공 반환
+                } // 적 턴 시작 처리 종료
+                return false; // 실제 턴 종료 대기
             case BattleTutorialStep.ObserveEnemy: // 적 행동 관찰 안내
                 if (enemyFinished) // 실제 적 턴 종료 확인
                 { // 관찰 완료 처리 시작
@@ -69,6 +86,15 @@ public sealed class BattleTutorialProgress // 실제 행동에 따른 전투 안
                 return false; // 수동 단계 이동 거부
         } // 단계 분기 종료
     } // 다음 단계 이동 종료
+    public bool GoBack() // 이전 안내 페이지 이동
+    { // 이전 안내 이동 시작
+        if (!CanGoBack) // 이전 페이지 존재 확인
+        { // 이전 페이지 없음 처리 시작
+            return false; // 이전 안내 이동 거부
+        } // 이전 페이지 없음 처리 종료
+        SetStep((BattleTutorialStep)((int)Step - 1)); // 실제 행동 기록을 유지한 이전 페이지 선택
+        return true; // 이전 안내 이동 성공 반환
+    } // 이전 안내 이동 종료
     public void OnCardUsed() // 실제 카드 사용 감지
     { // 카드 사용 감지 시작
         if (!IsActive) // 진행 중인 안내 확인

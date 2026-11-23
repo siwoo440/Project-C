@@ -16,6 +16,7 @@ public sealed class WorldTutorialProgress // 거점과 탐사 안내 진행 상�
     public int StepCount => Kind == WorldTutorialKind.Lobby ? 5 : 3; // 안내 종류별 단계 수
     public bool IsActive { get; private set; } // 안내 표시 여부
     public bool CanAdvance => IsActive && (Kind != WorldTutorialKind.Exploration || StepIndex != 0 || movementObserved); // 실제 이동을 반영한 다음 단계 허용 여부
+    public bool CanGoBack => IsActive && StepIndex > 0; // 이전 안내 페이지 이동 가능 여부
     public event Action Changed; // 안내 화면 갱신 알림
     public WorldTutorialProgress(WorldTutorialKind kind, ISettingsStore settingsStore) // 안내별 진행 상태 생성
     { // 안내 상태 생성 시작
@@ -76,6 +77,16 @@ public sealed class WorldTutorialProgress // 거점과 탐사 안내 진행 상�
         } // 다음 안내 표시 종료
         return true; // 안내 진행 성공 반환
     } // 다음 안내 진행 종료
+    public bool GoBack() // 이전 안내 페이지 이동
+    { // 이전 안내 이동 시작
+        if (!CanGoBack) // 이전 페이지 존재 확인
+        { // 이전 페이지 없음 처리 시작
+            return false; // 이전 안내 이동 거부
+        } // 이전 페이지 없음 처리 종료
+        StepIndex--; // 이전 안내 페이지 선택
+        Changed?.Invoke(); // 변경된 안내 화면 갱신
+        return true; // 이전 안내 이동 성공 반환
+    } // 이전 안내 이동 종료
     public void Skip() // 현재 안내 건너뛰기
     { // 안내 건너뛰기 시작
         if (IsActive) // 진행 중인 안내 확인

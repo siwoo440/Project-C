@@ -43,6 +43,31 @@ public sealed class BattleTutorialProgressTests // 전투 안내 진행 규칙 �
         Assert.IsTrue(tutorial.Advance()); // 관찰 확인 후 완료 가능 확인
     } // 미리 수행한 행동 검사 종료
     [Test] // 건너뛰기와 다시 보기 검사 지정
+    public void Tutorial_BackPreservesCompletedActionsAndPageLimits() // 이전 페이지에서 실제 행동 기록 유지 확인
+    { // 이전 페이지 이동 검사 시작
+        BattleTutorialProgress tutorial = new BattleTutorialProgress(new MemoryTutorialStore()); // 독립 안내 상태 생성
+        tutorial.StartIfNeeded(true); // 전투 안내 시작
+        Assert.AreEqual(1, tutorial.PageNumber); // 첫 페이지 번호 확인
+        Assert.AreEqual(7, tutorial.PageCount); // 전체 페이지 수 확인
+        Assert.IsFalse(tutorial.GoBack()); // 첫 페이지 이전 이동 차단 확인
+        tutorial.Advance(); // 실제 카드 사용 안내 이동
+        Assert.IsFalse(tutorial.CanAdvance); // 카드 사용 전 다음 페이지 차단 확인
+        tutorial.OnCardUsed(); // 실제 카드 사용 기록
+        Assert.IsTrue(tutorial.GoBack()); // 카드 안내 페이지로 돌아가기
+        Assert.AreEqual(BattleTutorialStep.PlayCard, tutorial.Step); // 이전 카드 안내 확인
+        Assert.IsTrue(tutorial.CanAdvance); // 이미 사용한 카드 기록 유지 확인
+        Assert.IsTrue(tutorial.Advance()); // 완료한 카드 안내에서 다음 페이지 이동
+        Assert.AreEqual(BattleTutorialStep.ActionPoints, tutorial.Step); // 행동력 안내 복귀 확인
+        tutorial.Advance(); // 정신력 안내 이동
+        tutorial.Advance(); // 적 예고 안내 이동
+        tutorial.Advance(); // 턴 종료 안내 이동
+        tutorial.OnPhaseStarted(BattleTurnPhase.EnemyTurn); // 실제 적 턴 시작 기록
+        Assert.IsTrue(tutorial.GoBack()); // 턴 종료 안내로 돌아가기
+        Assert.IsTrue(tutorial.CanAdvance); // 이미 끝낸 턴 종료 기록 유지 확인
+        Assert.IsTrue(tutorial.Advance()); // 적 행동 관찰 페이지 복귀
+        Assert.AreEqual(BattleTutorialStep.ObserveEnemy, tutorial.Step); // 적 행동 관찰 안내 확인
+    } // 이전 페이지 이동 검사 종료
+    [Test] // 건너뛰기와 다시 보기 검사 지정
     public void Tutorial_SkipPersistsAndReplayIsAlwaysAvailable() // 자동 안내 설정과 수동 다시 보기 검사
     { // 건너뛰기 검사 시작
         MemoryTutorialStore store = new MemoryTutorialStore(); // 독립 안내 저장소 생성
