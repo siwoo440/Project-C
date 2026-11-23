@@ -451,6 +451,7 @@ GameObject:
   - component: {fileID: 1917448887}
   - component: {fileID: 1917448889}
   - component: {fileID: 1917448890}
+  - component: {fileID: 1917448891}
   m_Layer: 0
   m_Name: BattleSystems
   m_TagString: Untagged
@@ -536,6 +537,28 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 45f2df39a8eb4ba1950ca04e30ca71cc, type: 2}
   - {fileID: 11400000, guid: 2516d23cf829422d92957bc7f2aabdd9, type: 2}
   - {fileID: 11400000, guid: c0384ec08d434caa9a332a19dcd744db, type: 2}
+--- !u!114 &1917448891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917448886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc120d78ff984a56a4ca5c7192000c4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleMinorCardBootstrap
+  battleSceneSetup: {fileID: 0}
+  targetCanvas: {fileID: 0}
+  levelConfig: {fileID: 0}
+  minorCardPool:
+  - {fileID: 11400000, guid: 9f49ea7005f04bd0a78d9681d2082e39, type: 2}
+  - {fileID: 11400000, guid: aae4e94e6d7844d2b79e158ea20adc12, type: 2}
+  - {fileID: 11400000, guid: 78a69321f21b4718ad57c0747ac6c730, type: 2}
+  - {fileID: 11400000, guid: 7cb78b7d12ef4b0ebadd2ee5ffba7a1d, type: 2}
+  - {fileID: 11400000, guid: fe7a1d38f0844574a8b3b469ffacdff8, type: 2}
+  - {fileID: 11400000, guid: 4496f1f31fcc47ae81f74bb942a1139d, type: 2}
 --- !u!1 &2051001000
 GameObject:
   m_ObjectHideFlags: 0

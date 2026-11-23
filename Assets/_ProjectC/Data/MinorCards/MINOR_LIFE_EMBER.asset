@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fbc7e0a4a8642278d00a4ec1ed6505e, type: 3}
+  m_Name: MINOR_LIFE_EMBER
+  m_EditorClassIdentifier: Assembly-CSharp::MinorCardData
+  minorCardId: MINOR_LIFE_EMBER
+  displayName: "생명의 불씨"
+  description: "모든 아군의 최대 체력을 올린다."
+  icon: {fileID: 0}
+  targetType: 1
+  effectType: 1
+  effectValue: 10
