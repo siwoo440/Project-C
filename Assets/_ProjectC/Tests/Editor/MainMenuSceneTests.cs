@@ -10,6 +10,33 @@ using UnityEngine.UI; // 메뉴 이미지와 버튼 조회 기능 사용
 public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
 { // 테스트 클래스 시작
     [UnityTest] // 코루틴 테스트 지정
+    public IEnumerator NewGameWarning_CancelKeepsCurrentProgress() // 새 게임 취소 상태 유지 확인
+    { // 테스트 시작
+        yield return new EnterPlayMode(); // 플레이 모드 시작
+        SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
+        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "10_MainMenu"; frame++) // 메뉴 진입 대기
+        { // 메뉴 대기 시작
+            yield return null; // 다음 프레임 대기
+        } // 메뉴 대기 종료
+        yield return null; // 메뉴 연결 대기
+        MainMenuView view = Object.FindFirstObjectByType<MainMenuView>(); // 메뉴 화면 조회
+        PlayerResourceManager resources = PlayerResourceManager.EnsureInstance(); // 자원 관리자 준비
+        resources.AddResources(73, 0, 0, 0); // 유지할 현재 자원 설정
+        int originalGold = resources.Gold; // 현재 골드 보관
+        view.NewGameButton.onClick.Invoke(); // 새로하기 선택
+        Transform panel = view.transform.Find("NewGameConfirmation"); // 경고 패널 조회
+        Assert.IsNotNull(panel); // 경고 패널 존재 확인
+        Assert.IsTrue(panel.gameObject.activeSelf); // 경고 패널 표시 확인
+        string warning = panel.Find("WarningMessage").GetComponent<TMP_Text>().text; // 경고 문구 조회
+        StringAssert.Contains("저장", warning); // 저장 데이터 경고 확인
+        StringAssert.Contains("처음", warning); // 처음부터 시작 경고 확인
+        panel.Find("CancelNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 취소
+        Assert.IsFalse(panel.gameObject.activeSelf); // 경고 패널 닫힘 확인
+        Assert.AreEqual("10_MainMenu", SceneManager.GetActiveScene().name); // 메인 메뉴 유지 확인
+        Assert.AreEqual(originalGold, resources.Gold); // 기존 진행 상태 유지 확인
+        yield return new ExitPlayMode(); // 플레이 모드 종료
+    } // 테스트 종료
+    [UnityTest] // 코루틴 테스트 지정
     public IEnumerator ContinueButton_ValidSaveRestoresLobby() // 이어하기 정상 저장 복원 확인
     { // 테스트 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
@@ -252,6 +279,10 @@ public sealed class MainMenuSceneTests // 메인 메뉴 씬 검증
         Assert.IsTrue(ShopRunManager.EnsureInstance().Prepare(catalog, PartyLoadoutRuntime.Active.Deck)); // 이전 상점 준비
         Assert.IsTrue(RestRoomRunManager.EnsureInstance().Prepare(PartyLoadoutRuntime.Active.Deck)); // 이전 휴식 준비
         view.NewGameButton.onClick.Invoke(); // 새로하기 버튼 실행
+        Transform warningPanel = view.transform.Find("NewGameConfirmation"); // 새 게임 경고 패널 조회
+        Assert.IsNotNull(warningPanel); // 경고 패널 존재 확인
+        Assert.IsTrue(warningPanel.gameObject.activeSelf); // 경고 패널 표시 확인
+        warningPanel.Find("ConfirmNewGame").GetComponent<Button>().onClick.Invoke(); // 새 게임 시작 확인
         yield return null; // 거점 씬 전환 대기
         yield return null; // 거점 초기화 대기
         Assert.AreEqual("20_Lobby", SceneManager.GetActiveScene().name); // 거점 진입 확인
