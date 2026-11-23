@@ -17,6 +17,8 @@ public static class BattleHitChance // 공격 명중 여부 계산
             int bonus = BattleSupplyRelics.Find(RelicEffectType.StealthEvasionBonus)?.EffectValue ?? 0; // 현재 보유한 심지의 추가 회피 수치
             evasion = (int)Math.Min(100, (long)evasion + bonus); // 기존 회피와 퍼센트포인트 합산 및 백 상한
         } // 꺼진 등불 심지의 은신 회피 종료
+        int evasionLoss = target?.GetStatusEffect(BattleStatusEffectType.EvasionDown)?.EffectiveValue ?? 0; // 대상 회피 감소 값 조회
+        evasion = Math.Max(0, evasion - evasionLoss); // 회피 감소를 실명 보정과 분리해 영점까지 적용
         int disorientation = Math.Min(100, attacker.GetStatusEffect(BattleStatusEffectType.Disorientation)?.EffectiveValue ?? 0); // 실명과 별개인 방랑자 명중 감소
         return Math.Max(0, 100 - penalty - evasion - disorientation); // 모든 원인의 퍼센트포인트를 합산한 명중률
     } // 명중률 조회 종료

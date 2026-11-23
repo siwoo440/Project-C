@@ -1,0 +1,127 @@
+using System.Collections; // 플레이 모드 전환 대기
+using System.Collections.Generic; // 획득 카드와 소유자 기록
+using System.IO; // 검사 저장 파일 경로
+using System.Linq; // 지급 카드와 복원 카드 조회
+using System.Reflection; // 보물 방 시드 함수 조회
+using NUnit.Framework; // 검사 결과 비교
+using UnityEngine; // 실제 탐사와 카드 객체 사용
+using UnityEngine.TestTools; // 플레이 모드 획득 검사 등록
+using UnityEngine.UI; // 실제 보물 소유자 버튼 사용
+using static WinterfallCommonCardExpansionTests; // 공용 카드 원화 검사 재사용
+
+public sealed class WinterfallCurseAndLightningAcquisitionTests // 신규 지팡이 카드의 원화와 획득 검사
+{ // 지팡이 카드 검사 시작
+    [TestCase(169, "CURSE_MARK", "저주 표식", "CurseMark", "D65F16D0C0ED9AAE7B2DB365E3E1A3DFE569034C1390462E80FCF302C4399513")] // 저주 표식 원본과 그림 해시 대조
+    [TestCase(170, "WIND_BLADE", "바람 칼날", "WindBlade", "ECE925202A36760F61FEE2EE1C8D03C05153DF3D3B7D543567AC4A1F14992F04")] // 바람 칼날 원본과 그림 해시 대조
+    [TestCase(171, "MANA_RETRIEVAL", "마나 회수", "ManaRetrieval", "C34648ACBD082B1413038D0AC65AA25A9F0D5CCE320EA1C2E4FB2AA6D4FF71C2")] // 마나 회수 원본과 그림 해시 대조
+    [TestCase(172, "FLAME_SURGE", "화염 쇄도", "FlameSurge", "44D1574A4CF3C6BFB1DFCA8C2014377B104FC8FA69E4DBD28DAD45893FF1B760")] // 화염 쇄도 원본과 그림 해시 대조
+    [TestCase(173, "FROST_PRISON", "서리 감옥", "FrostPrison", "21CDBCF934E81230261A83CAC69D84469F05FD13C34A8EE9723E5B0BD9B49C66")] // 서리 감옥 원본과 그림 해시 대조
+    [TestCase(174, "CHAIN_LIGHTNING", "연쇄 번개", "ChainLightning", "15D88523B3A316366A989A42FFB718E9911C5FBF1ED155764C65B71C39E61B94")] // 연쇄 번개 원본과 그림 해시 대조
+    [TestCase(175, "GRAVITY_PRESSURE", "중력 압박", "GravityPressure", "FFD65CBDB202F0DFF6E3FA8C136BC1AE21B5AE8952D32F299751A0EECCB85974")] // 중력 압박 원본과 그림 해시 대조
+    [TestCase(176, "MANA_DISCHARGE", "마력 방출", "ManaDischarge", "6306158E70A832FB909082FA3514CA1564BBC515411C952FE21DE8BAD4D6CC5B")] // 마력 방출 원본과 그림 해시 대조
+    public void MatchesOriginalAndRestorableTreasure(int row, string id, string title, string assetName, string digest) // 카드 원화와 지급 설정 대조
+    { // 원화 대조 시작
+        VerifyTreasureArtwork(row, id, title, assetName, CardType.Wand, digest); // 시트 비용과 연결된 PNG 해시 확인
+    } // 원화 대조 종료
+
+    [UnityTest] // 실제 보물 버튼과 저장 복원 검사 등록
+    public IEnumerator TreasuresRestoreTheirChosenWandOwners() // 신규 지팡이 카드의 두 가지 소유자 대조
+    { // 실제 보물 검사 시작
+        yield return new EnterPlayMode(); // 실제 탐사 관리자 사용 가능 상태 진입
+        VerifyChosenOwners(); // 여덟 카드를 실제 보물로 획득하고 복원
+        yield return new ExitPlayMode(); // 탐사 검사 상태 종료
+    } // 실제 보물 검사 종료
+
+    private static void VerifyChosenOwners() // 보물과 저장의 소유자 일치 확인
+    { // 탐사 흐름 확인 시작
+        var roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 출전 캐릭터 명단 조회
+        var recovery = new CharacterRecoveryDeploymentStatusProvider(CharacterRecoveryManager.EnsureInstance()); // 출전 상태 검사기 생성
+        var selection = new PartySelection(recovery); // 새 출전 파티 편성
+        Assert.IsTrue(selection.TryAdd(roster.Characters[0])); // 첫 소유자 후보 편성
+        Assert.IsTrue(selection.TryAdd(roster.Characters[1])); // 둘째 소유자 후보 편성
+        Assert.IsTrue(PartyLoadoutRuntime.Prepare(selection)); // 출전 파티와 시작 덱 생성
+        var party = PartyLoadoutRuntime.Active.Party.Members; // 실제 출전 소유자 후보 조회
+        var session = ExplorationSessionManager.EnsureInstance(); // 진행 중 탐사 상태 조회
+        session.ResetExploration(); // 독립된 신규 탐사 상태 초기화
+        session.SetCurrentFloorSeed(261); // 저장 복원용 층 시드 설정
+        var deck = RunDeckManager.EnsureInstance(); // 실제 획득용 회차 덱 조회
+        deck.ResetToSource(PartyLoadoutRuntime.Active.Deck); // 출전 덱을 적용한 상태 준비
+        var pending = new HashSet<string> // 획득해야 할 신규 카드 식별자 목록
+        { // 신규 카드 목록 시작
+            "CRD_SHEET_CURSE_MARK", // 저주 표식 카드 식별자
+            "CRD_SHEET_WIND_BLADE", // 바람 칼날 카드 식별자
+            "CRD_SHEET_MANA_RETRIEVAL", // 마나 회수 카드 식별자
+            "CRD_SHEET_FLAME_SURGE", // 화염 쇄도 카드 식별자
+            "CRD_SHEET_FROST_PRISON", // 서리 감옥 카드 식별자
+            "CRD_SHEET_CHAIN_LIGHTNING", // 연쇄 번개 카드 식별자
+            "CRD_SHEET_GRAVITY_PRESSURE", // 중력 압박 카드 식별자
+            "CRD_SHEET_MANA_DISCHARGE" // 마력 방출 카드 식별자
+        }; // 신규 카드 목록 종료
+        var owners = new Dictionary<string, string>(); // 보상별 선택 소유자 정리
+        var openedRooms = new List<string>(); // 처리한 실제 보물 방 기록
+        var hash = typeof(ExplorationTreasureRewardService).GetMethod("BuildStableHash", BindingFlags.Static | BindingFlags.NonPublic); // 실제 보물 추첨 시드 함수 조회
+        Assert.IsNotNull(hash); // 보물 시드 함수 확인
+        var hashParameters = new object[1]; // 방 식별자 전달용 인수 배열
+        string path = Path.Combine(Application.temporaryCachePath, "curse-lightning-wand-" + System.Guid.NewGuid().ToString("N") + ".json"); // 독립 탐사 저장 경로
+        try // 검사 파일 정리 보장
+        { // 보물 획득 순회 시작
+            for (int index = 0; index < 12000 && pending.Count > 0; index++) // 한도 안에서 서로 다른 보물 방 조회
+            { // 방별 추첨 시작
+                string id = "winterfall-wand-261-" + index; // 보물 방의 고정 식별자
+                hashParameters[0] = id; // 현재 보물 방 식별자 전달
+                int seed = (int)hash.Invoke(null, hashParameters); // 실제 보물 추첨 시드 계산
+                if (ExplorationTreasureRewardService.RollRewardType(new System.Random(seed).Next(100)) != ExplorationTreasureRewardType.Card) // 카드 이외 첫 보상 확인
+                { // 다른 종류 보물 제외 시작
+                    continue; // 일반 재화와 유물 획득 방지
+                } // 다른 종류 보물 제외 종료
+                Assert.IsTrue(ExplorationTreasureRewardService.TryGrantReward(id, out _, out var offer)); // 이번 방의 실제 지급 후보 조회
+                if (offer == null || !pending.Remove(offer.Card.CardId)) // 이미 확인한 카드나 이전 카드 제외
+                { // 다른 카드 제외 시작
+                    continue; // 다음 보물 방으로 진행
+                } // 다른 카드 제외 종료
+                var owner = party[owners.Count % 2]; // 두 출전 아군 중 교대로 선택
+                int count = deck.CardCount; // 지급 전 카드 수 보관
+                ChooseTreasureOwner(id, owner); // 실제 보물에서 소유자 선택
+                Assert.AreEqual(count + 1, deck.CardCount); // 회차 덱에 카드 한 장 추가 확인
+                var card = deck.Cards.Last(); // 실제 들어간 회차 덱 카드 조회
+                Assert.AreSame(offer.Card, card.Card); // 보물 후보와 같은 카드 지급 확인
+                Assert.AreSame(owner, card.Owner); // 선택한 파티원 소유 확인
+                owners.Add(card.Card.CardId, owner.CharacterId); // 복원 뒤 대조할 소유자 기록
+                openedRooms.Add(id); // 실제 지급이 끝난 보물 방 기록
+            } // 방별 추첨 종료
+            CollectionAssert.IsEmpty(pending); // 신규 여덟 장의 보물 획득 확인
+            Assert.IsTrue(ExplorationSaveService.Save(path, Vector3.zero)); // 실제 탐사 저장 파일 생성
+            deck.ResetToSource(null); // 회차 덱 카드 메모리 제거
+            session.ResetExploration(); // 사용 완료 보물 메모리 제거
+            Assert.IsTrue(ExplorationSaveService.Load(path)); // 실제 탐사 저장 파일 복원
+            foreach (var pair in owners) // 획득 카드와 복원 소유자 대조
+            { // 개별 소유자 확인 시작
+                var restored = RunDeckManager.Instance.Cards.Single(entry => entry.Card.CardId == pair.Key); // 복원한 실제 덱 항목 조회
+                Assert.AreEqual(pair.Value, restored.Owner.CharacterId); // 저장 전후 카드 소유자 일치 확인
+            } // 개별 소유자 확인 종료
+            Assert.IsTrue(openedRooms.All(ExplorationSessionManager.Instance.IsEventResolved)); // 복원된 완료 방의 재수령 방지 확인
+        } // 보물 획득 순회 종료
+        finally // 임시 파일 정리
+        { // 저장 파일 정리 시작
+            ExplorationSaveService.Remove(path); // 검사용 저장과 백업 제거
+        } // 저장 파일 정리 종료
+    } // 탐사 흐름 확인 종료
+
+    private static void ChooseTreasureOwner(string id, CharacterData owner) // 실제 보물 방의 소유자 버튼 입력
+    { // 보물 버튼 확인 시작
+        var room = new GameObject(id); // 독립 보물 방 객체 생성
+        try // 시험 보물 방 정리 보장
+        { // 소유자 지급 시작
+            room.AddComponent<ExplorationSpecialRoomView>().Initialize(null, Vector2Int.zero, ExplorationRoomType.Treasure, id); // 실제 보물 열기 동작 연결
+            room.SendMessage("OpenTreasure"); // 열린 보물의 소유자 선택 표시
+            Transform button = room.transform.Find("TreasureOwnerCanvas/Panel/Owner_" + owner.CharacterId); // 실제 선택 후보 버튼 조회
+            Assert.IsNotNull(button, id); // 선택 가능한 아군 버튼 확인
+            button.GetComponent<Button>().onClick.Invoke(); // 선택 소유자에게 보물 카드 지급
+            Assert.IsTrue(ExplorationSessionManager.Instance.IsEventResolved(id), id); // 지급을 마친 방의 처리 기록 확인
+        } // 소유자 지급 종료
+        finally // 독립 검사용 방 정리
+        { // 시험실 정리 시작
+            Object.Destroy(room); // 보물 오브젝트 제거
+        } // 시험실 정리 종료
+    } // 보물 버튼 확인 종료
+} // 지팡이 카드 검사 종료

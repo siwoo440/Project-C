@@ -434,6 +434,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 체력 비용 부족 처리 시작
             return false; // 체력 비용 카드 사용 차단
         } // 체력 비용 부족 처리 종료
+        if (cardInstance.EffectType == CardEffectType.DiscardWandForActionPoint && !BattleCardActionController.HasManaRetrievalCandidate(cardInstance, runtimeDeck)) // 원본을 제외한 다른 지팡이가 없는 실제 손패 확인
+        { // 마력 회수 손패 선택 제외 시작
+            return false; // 후보 없이 선택 화면을 열 수 없는 카드 비활성화
+        } // 마력 회수 손패 선택 제외 종료
         if (runtimeDeck != null && !BattleCardActionController.CanUseDrawInspection(cardInstance, runtimeDeck)) // 유물을 반영한 확인 카드의 공통 사용 조건
         { // 선택 후보 없음 처리 시작
             return false; // 유효 후보가 없는 확인 카드 사용 차단

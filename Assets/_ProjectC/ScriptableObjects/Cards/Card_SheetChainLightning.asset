@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_SheetChainLightning
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_SHEET_CHAIN_LIGHTNING
+  displayName: "연쇄 번개"
+  description: "타격마다 현재 생존 적을 무작위로 골라 마법 피해 6을 준다. 한 카드에서 최대 세 번 타격하며 적 하나가 반복 대상이 될 수 있다."
+  artwork: {fileID: 21300000, guid: 5d38e1658c33520d97bad2973832325b, type: 3}
+  cardType: 1
+  targetType: 0
+  apCost: 2
+  effectType: 0
+  damageType: 2
+  effectValue: 6
+  mentalChangeValue: 0
+  wandRule: 4
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

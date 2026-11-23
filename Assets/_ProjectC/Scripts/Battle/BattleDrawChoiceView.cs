@@ -11,7 +11,7 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
     private Button nextButton; // 다음 페이지 버튼
     private TMP_Text pageLabel; // 현재 페이지 안내
     private int currentPage; // 현재 페이지 번호
-    public static BattleDrawChoiceView Show(Transform parent, IReadOnlyList<CardInstance> cards, Action<CardInstance> selected, string titleText = "가져올 카드 한 장 선택") // 선택 화면 생성
+    public static BattleDrawChoiceView Show(Transform parent, IReadOnlyList<CardInstance> cards, Action<CardInstance> selected, string titleText = "가져올 카드 한 장 선택", Action cancelled = null) // 닫고 되돌아갈 수 있는 선택 화면 생성
     { // 화면 생성 시작
         GameObject root = new GameObject("DrawChoicePanel", typeof(RectTransform), typeof(Image)); // 화면 가림막 생성
         RectTransform rootRect = root.GetComponent<RectTransform>(); // 가림막 영역 조회
@@ -61,6 +61,12 @@ public sealed class BattleDrawChoiceView : MonoBehaviour // 카드 선택 드로
             view.previousButton.onClick.AddListener(() => view.SetPage(view.currentPage - 1)); // 이전 페이지 이동 연결
             view.nextButton.onClick.AddListener(() => view.SetPage(view.currentPage + 1)); // 다음 페이지 이동 연결
         } // 페이지 이동 화면 생성 종료
+        if (cancelled != null) // 확인 없이 손패로 돌아갈 수 있는 선택 요청 확인
+        { // 명시적인 취소 입력 추가 시작
+            var cancelButton = CreatePageButton("CancelChoice", rootRect, "취소", 0f); // 기존 버튼 스타일의 취소 동작 생성
+            cancelButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -240f); // 카드 후보와 페이지 표시 아래 위치
+            cancelButton.onClick.AddListener(() => view.Select(null, _ => cancelled())); // 선택 카드 없이 창을 닫은 뒤 취소 결과 전달
+        } // 명시적인 취소 입력 추가 종료
         view.SetPage(0); // 첫 페이지 표시
         return view; // 생성 화면 반환
     } // 화면 생성 종료

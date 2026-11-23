@@ -224,6 +224,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마력 보호막"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마력 증폭"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인
+                return "마법 취약"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
+                return "회피율 감소"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return "마력 집중"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인
@@ -270,7 +274,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
+        return effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -388,6 +392,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법저항+"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마법피해+"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인
+                return "마법피해+"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
+                return "회피−"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return "집중"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인
@@ -552,6 +560,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴까지 마법 저항력 수치 {effectiveValue} 증가"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return $"마법 카드 공격력 {effectiveValue} 증가"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.IncomingMagicDamageUp: // 새 지팡이 약화 상태 확인
+                return $"받는 마법 피해 {effectiveValue}% 증가"; // 전투와 도감에 표시할 상태 문구
+            case BattleStatusEffectType.EvasionDown: // 새 지팡이 약화 상태 확인
+                return $"현재 회피율 {effectiveValue}%p 감소"; // 전투와 도감에 표시할 상태 문구
             case BattleStatusEffectType.ManaConcentration: // 마력 집중 상태 확인
                 return $"다음으로 사용하는 지팡이 피해 카드의 각 명중 피해 {effectiveValue} 증가"; // 마력 집중의 실제 전투 화면 문구
             case BattleStatusEffectType.StealthBreakDamageUp: // 팔찌의 실제 다음 명중 강화 확인

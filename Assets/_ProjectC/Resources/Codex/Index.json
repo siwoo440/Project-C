@@ -2483,6 +2483,54 @@
       "name": "마력 흡수",
       "description": "지정 적에게 마법 피해 4를 주고 생존 적에게 명중하면 30% 확률로 현재 행동력을 1 회복한다.",
       "artworkKey": "65c50561f28e536e91cd0da8fb33563a"
+    },
+    {
+      "category": 7,
+      "name": "저주 표식",
+      "description": "지정 적이 받는 마법 피해를 두 적 턴 동안 15% 높인다.",
+      "artworkKey": "4e570d2a813055778d6b9a041946f478"
+    },
+    {
+      "category": 7,
+      "name": "바람 칼날",
+      "description": "지정 적에게 마법 피해 6을 준다. 명중한 생존 적의 회피율을 두 적 턴 동안 10%p 낮춘다.",
+      "artworkKey": "dee8d59861b359dea35cd1c921e2768a"
+    },
+    {
+      "category": 7,
+      "name": "마나 회수",
+      "description": "손패에서 다른 지팡이 카드 한 장을 골라 버리고 현재 행동력을 1 회복한다.",
+      "artworkKey": "c194340acb1a5b9b9c8c508be8222e84"
+    },
+    {
+      "category": 7,
+      "name": "화염 쇄도",
+      "description": "서로 다른 생존 적 둘에게 각 마법 피해 9를 준다. 생존 적이 한 명이면 한 번 공격한다. 명중한 생존 적에게 각각 35% 확률로 2턴 동안 화상 2를 부여한다.",
+      "artworkKey": "ac1c9fecf3ac58448663b738c3864ded"
+    },
+    {
+      "category": 7,
+      "name": "서리 감옥",
+      "description": "지정 적에게 마법 피해 8을 준다. 명중한 생존 적은 40% 확률로 다음 행동을 한 번 잃는다.",
+      "artworkKey": "e8a64d524f9b528884285e0153678380"
+    },
+    {
+      "category": 7,
+      "name": "연쇄 번개",
+      "description": "타격마다 현재 생존 적을 무작위로 골라 마법 피해 6을 준다. 한 카드에서 최대 세 번 타격하며 적 하나가 반복 대상이 될 수 있다.",
+      "artworkKey": "5d38e1658c33520d97bad2973832325b"
+    },
+    {
+      "category": 7,
+      "name": "중력 압박",
+      "description": "생존 적 전체의 회피율을 두 적 턴 동안 15%p 낮춘다.",
+      "artworkKey": "2d5e1f32898b54238f66198b1cb28053"
+    },
+    {
+      "category": 7,
+      "name": "마력 방출",
+      "description": "생존 적 전체에 각각 마법 피해 9를 준다.",
+      "artworkKey": "845d406cb0465c0288f8153959721008"
     }
   ]
 }
