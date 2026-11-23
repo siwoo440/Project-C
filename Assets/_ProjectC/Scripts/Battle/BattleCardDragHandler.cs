@@ -85,6 +85,7 @@ public sealed class BattleCardDragHandler :
         }
 
         dragging = true; // 드래그 상태 활성화
+        cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, true); // 드래그 중 주변 카드 간격 확장
         cancelRequested = false; // 취소 상태 초기화
         currentPointerPosition = eventData.position; // 시작 포인터 위치 저장
 
@@ -116,6 +117,7 @@ public sealed class BattleCardDragHandler :
             keyboard.escapeKey.wasPressedThisFrame)
         {
             cancelRequested = true; // ESC 취소 상태 저장
+            cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, false); // 취소 시 주변 카드 간격 복원
             currentTargetView = null; // 현재 대상 제거
             DestroyDragGhost(); // 드래그 복제 숨김
             ClearTargetHighlights(); // 대상 후보 강조 해제
@@ -160,6 +162,7 @@ public sealed class BattleCardDragHandler :
                 dropTarget.RuntimeUnit); // 드롭 대상 유효성 확인
 
         dragging = false; // 드래그 상태 해제
+        cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, false); // 드래그 종료 시 주변 카드 간격 복원
         cancelRequested = false; // 취소 상태 초기화
         currentTargetView = null; // 현재 대상 초기화
 
@@ -748,6 +751,10 @@ public sealed class BattleCardDragHandler :
 
     private void OnDisable() // 드래그 처리기 비활성화 정리
     {
+        if (cardView != null) // 연결 카드 존재 확인
+        { // 드래그 간격 정리 시작
+            cardView.GetComponentInParent<BattleHandView>()?.SetCardDragging(cardView, false); // 비활성화 시 주변 카드 간격 복원
+        } // 드래그 간격 정리 종료
         dragging = false; // 드래그 상태 해제
         cancelRequested = false; // 취소 상태 해제
         currentTargetView = null; // 현재 대상 초기화

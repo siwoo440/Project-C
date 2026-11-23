@@ -25,6 +25,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
     private bool visualStructureCreated; // 화면 구조 생성 여부
     private Vector2 layoutPosition; // 손패 안의 기본 카드 위치
     private float layoutScale = 1f; // 화면 크기에 맞춘 기본 배율
+    private float layoutAngle; // 부채꼴 배치 회전 각도
     private int originalSiblingIndex = -1; // 강조 전 카드 순서
     public CardInstance RuntimeCard { get; private set; } // 연결된 카드 인스턴스
     public event Action<BattleCardView> Clicked; // 카드 클릭 이벤트
@@ -69,10 +70,11 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         } // 확대 해제 처리 종료
         RefreshVisualState(); // 카드 상태 화면 갱신
     } // 사용 가능 표시 종료
-    public void SetHandLayout(Vector2 position, float scale) // 손패 기준 위치와 배율 설정
+    public void SetHandLayout(Vector2 position, float scale, float angle = 0f) // 손패 기준 위치와 배율 및 회전 설정
     { // 손패 위치 설정 시작
         layoutPosition = position; // 기본 카드 위치 저장
         layoutScale = Mathf.Clamp01(scale); // 화면 범위 내 기본 배율 저장
+        layoutAngle = angle; // 부채꼴 기준 회전 저장
         ApplyHandLayout(); // 현재 강조 상태 포함 위치 적용
     } // 손패 위치 설정 종료
     public void OnPointerClick(PointerEventData eventData) // 카드 포인터 클릭 처리
@@ -124,6 +126,7 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
             rootRect.anchoredPosition = layoutPosition + (hovered ? Vector2.up * HoverLift * layoutScale : Vector2.zero); // 강조 시 카드 위쪽 이동
         } // 카드 위치 적용 종료
         transform.localScale = Vector3.one * layoutScale * (hovered ? HoverScale : 1f); // 화면 크기와 강조 배율 적용
+        transform.localRotation = Quaternion.Euler(0f, 0f, hovered ? 0f : layoutAngle); // 강조 카드는 세우고 나머지는 부채꼴 회전
     } // 카드 배치 적용 종료
     private void EnsureVisualStructure() // 카드 내부 UI 준비
     { // 화면 구조 준비 시작
@@ -141,6 +144,12 @@ public sealed class BattleCardView : MonoBehaviour, IPointerClickHandler, IPoint
         backgroundImage.color = DefaultBackgroundColor; // 카드 배경 색상 설정
         BattleUiArt.Apply(backgroundImage, "CardFrame"); // 새로 제작한 전투 카드 프레임 적용
         backgroundImage.raycastTarget = false; // 겹친 카드의 독립 입력 영역 사용
+        Image cardFace = CreateImage("CardFace", transform, new Color(0.025f, 0.04f, 0.055f, 0.98f)); // 뒤 카드 내용이 비치지 않는 카드 바탕 생성
+        SetStretchRect(cardFace.rectTransform, 6f, 6f, 6f, 6f); // 금속 테두리 안쪽에 카드 바탕 배치
+        CanvasGroup faceGroup = cardFace.gameObject.AddComponent<CanvasGroup>(); // 카드 바탕의 독립 투명도 설정 생성
+        faceGroup.ignoreParentGroups = true; // 사용 불가 카드도 뒤 카드 내용을 가리도록 설정
+        faceGroup.blocksRaycasts = false; // 카드 바탕의 포인터 차단 해제
+        faceGroup.interactable = false; // 카드 바탕의 별도 상호작용 해제
         canvasGroup = GetComponent<CanvasGroup>(); // 카드 투명도 컴포넌트 조회
         if (canvasGroup == null) // 카드 투명도 컴포넌트 누락 확인
         { // 투명도 컴포넌트 추가 시작

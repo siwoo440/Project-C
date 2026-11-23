@@ -25,6 +25,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
     private CardInstance selectedCard; // 현재 선택 카드
     private BattleCardView hoveredCardView; // 현재 마우스 진입 카드 화면
+    private BattleCardView draggedCardView; // 현재 꺼내는 카드 화면
     private bool visualStructureCreated; // 손패 화면 구조 생성 여부
     private bool interactionLocked; // 행동 연출 중 입력 잠금 여부
     public BattleDeckRuntime RuntimeDeck => runtimeDeck; // 연결된 런타임 덱 조회
@@ -170,6 +171,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         tooltipRect.sizeDelta = new Vector2(420f, 145f); // 카드 툴팁 크기 설정
         tooltipView = tooltipObject.GetComponent<BattleCardTooltipView>(); // 카드 툴팁 화면 조회
         tooltipView.Hide(); // 카드 툴팁 시작 숨김
+        escapeButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 도주 버튼 우선 배치
+        endTurnButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 턴 종료 버튼 우선 배치
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
     } // 화면 구조 준비 종료
     private void Refresh() // 손패 화면 갱신
@@ -227,21 +230,32 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 배치 불가 처리 종료
         lastLayoutWidth = handLayoutRoot.rect.width; // 현재 손패 너비 저장
         int count = spawnedCardViews.Count; // 현재 손패 카드 수 조회
-        if (count == 0 || lastLayoutWidth <= 0f) // 카드와 화면 너비 확인
+        if (count == 0 || cardHitRegions.Count != count || lastLayoutWidth <= 0f) // 카드와 입력 영역 및 화면 너비 확인
         { // 배치 불가 처리 시작
             return; // 손패 배치 중단
         } // 배치 불가 처리 종료
         float availableWidth = Mathf.Max(1f, lastLayoutWidth - 16f); // 양쪽 여백 제외 너비 계산
-        float scale = Mathf.Min(1f, availableWidth / (BattleCardView.CardWidth * BattleCardView.HoverScale)); // 좁은 화면의 카드 배율 계산
+        const float fanAngle = 7f; // 손패 양쪽 최대 회전 각도
+        float radians = fanAngle * Mathf.Deg2Rad; // 회전 범위의 라디안 계산
+        float projectedWidth = BattleCardView.CardWidth * Mathf.Cos(radians) + BattleCardView.CardHeight * Mathf.Sin(radians); // 회전한 카드의 최대 가로 너비
+        float minimumSpace = count > 1 ? 32f + (count - 1) * 4f : 0f; // 선택 간격과 최소 입력 너비 확보
+        float scale = Mathf.Min(1f, availableWidth / (projectedWidth * BattleCardView.HoverScale + minimumSpace)); // 좁은 화면과 다수 카드의 배율 계산
         float width = BattleCardView.CardWidth * scale; // 기본 카드 표시 너비 계산
-        float step = count == 1 ? 0f : Mathf.Min(width + 12f * scale, Mathf.Max(0f, (availableWidth - width * BattleCardView.HoverScale) / (count - 1))); // 카드 수에 따른 간격 계산
+        float visualWidth = projectedWidth * scale * BattleCardView.HoverScale; // 강조 카드까지 포함한 안전 너비
+        float spreadLimit = count > 1 ? 16f * scale : 0f; // 선택 시 양쪽으로 벌릴 최대 간격
+        float step = count == 1 ? 0f : Mathf.Min(width * 0.7f, Mathf.Max(0f, (availableWidth - visualWidth - spreadLimit * 2f) / (count - 1))); // 겹친 카드와 벌어짐 여백 계산
         float start = -step * (count - 1) * 0.5f; // 전체 카드 중앙 정렬 시작 위치
-        float bottom = -BattleCardView.CardHeight * scale * 0.5f; // 기본 카드 아래쪽 위치
+        int focusedIndex = spawnedCardViews.IndexOf(draggedCardView != null ? draggedCardView : hoveredCardView); // 꺼내거나 가리키는 카드 순서 조회
+        float spread = focusedIndex < 0 ? 0f : Mathf.Min(spreadLimit, Mathf.Max(0f, (availableWidth - visualWidth - step * (count - 1)) * 0.5f)); // 선택 카드 양옆의 안전한 벌어짐 계산
+        float bottom = -BattleCardView.CardHeight * scale * 0.5f - 12f * scale; // 부채꼴 아래쪽 입력 위치
         float top = BattleCardView.CardHeight * scale * BattleCardView.HoverScale * 0.5f + BattleCardView.HoverLift * scale; // 강조 카드 위쪽 위치
         for (int index = 0; index < count; index++) // 카드 순서대로 배치
         { // 개별 카드 배치 시작
             float x = start + step * index; // 현재 카드 중앙 위치 계산
-            spawnedCardViews[index].SetHandLayout(new Vector2(x, 0f), scale); // 카드 기본 위치와 배율 적용
+            float normalized = count == 1 ? 0f : 2f * index / (count - 1f) - 1f; // 손패 가운데 기준 상대 위치 계산
+            float spreadOffset = focusedIndex < 0 || index == focusedIndex ? 0f : index < focusedIndex ? -spread : spread; // 선택 카드 양옆의 바깥 이동량 계산
+            float fanHeight = -12f * scale * normalized * normalized; // 양끝 카드가 살짝 낮은 부채꼴 높이
+            spawnedCardViews[index].SetHandLayout(new Vector2(x + spreadOffset, fanHeight), scale, -normalized * fanAngle); // 카드 겹침과 부채꼴 회전 적용
             float left = index == 0 ? x - width * 0.5f : x - step * 0.5f; // 카드 입력 영역 왼쪽 경계
             float right = index == count - 1 ? x + width * 0.5f : x + step * 0.5f; // 카드 입력 영역 오른쪽 경계
             RectTransform hitRect = cardHitRegions[index]; // 대응 카드 입력 영역 조회
@@ -249,6 +263,18 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             hitRect.sizeDelta = new Vector2(Mathf.Max(0.01f, right - left), top - bottom); // 겹치지 않는 입력 영역 크기
         } // 개별 카드 배치 종료
     } // 손패 배치 종료
+    public void SetCardDragging(BattleCardView cardView, bool dragging) // 꺼내는 카드의 주변 간격 설정
+    { // 카드 드래그 간격 설정 시작
+        if (dragging && cardView != null && spawnedCardViews.Contains(cardView)) // 현재 손패 카드의 드래그 시작 확인
+        { // 드래그 카드 저장 시작
+            draggedCardView = cardView; // 꺼내는 카드 저장
+        } // 드래그 카드 저장 종료
+        else if (!dragging && draggedCardView == cardView) // 현재 카드의 드래그 종료 확인
+        { // 드래그 카드 해제 시작
+            draggedCardView = null; // 꺼낸 카드 참조 제거
+        } // 드래그 카드 해제 종료
+        LayoutHand(); // 드래그 상태에 맞춘 손패 배치 갱신
+    } // 카드 드래그 간격 설정 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
     { // 선택 카드 설정 시작
         selectedCard = cardInstance; // 선택 카드 저장
@@ -339,6 +365,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     } // 카드 사용 가능 검사 종료
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
+        draggedCardView = null; // 기존 드래그 카드 참조 제거
         foreach (RectTransform hitRegion in cardHitRegions) // 기존 카드 입력 영역 순회
         { // 개별 입력 영역 제거 시작
             if (hitRegion != null) // 입력 영역 존재 확인
@@ -378,6 +405,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             return; // 마우스 진입 처리 중단
         } // 마우스 진입 불가 처리 종료
         hoveredCardView = cardView; // 현재 마우스 진입 카드 저장
+        LayoutHand(); // 가리킨 카드 주변 간격 확장
         tooltipView.Hide(); // 이전 카드의 상세 툴팁 숨김
         RefreshHoveredTooltip(); // 현재 카드의 상세 표시 조건 적용
     } // 마우스 진입 처리 종료
@@ -404,6 +432,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             return; // 마우스 이탈 처리 중단
         } // 다른 카드 처리 종료
         HideTooltip(); // 카드 상세 툴팁 숨김
+        LayoutHand(); // 손패의 기본 겹침 간격 복원
     } // 마우스 이탈 처리 종료
     private void HideTooltip() // 카드 툴팁 숨김
     { // 툴팁 숨김 시작

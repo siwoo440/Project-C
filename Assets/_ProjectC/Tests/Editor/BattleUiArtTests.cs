@@ -37,6 +37,8 @@ public sealed class BattleUiArtTests // 전투 화면 이미지 적용 검사
         BattleCardView card = cardObject.GetComponent<BattleCardView>(); // 실제 카드 화면 조회
         Image cardImage = cardObject.GetComponent<Image>(); // 실제 카드 배경 조회
         Assert.AreEqual("CardFrame", cardImage.sprite.texture.name); // 실제 카드에 생성 프레임 적용 확인
+        Assert.GreaterOrEqual(cardObject.transform.Find("CardFace").GetComponent<Image>().color.a, 0.95f); // 겹친 카드 내용이 비치지 않는 바탕 확인
+        Assert.IsTrue(cardObject.transform.Find("CardFace").GetComponent<CanvasGroup>().ignoreParentGroups); // 비활성 카드도 뒤쪽 내용을 가리는지 확인
         Color normalColor = cardImage.color; // 기본 카드 색상 기록
         card.SetSelected(true); // 실제 카드 선택 상태 적용
         Assert.AreNotEqual(normalColor, cardImage.color); // 카드 선택 상태 시각 구분 확인
