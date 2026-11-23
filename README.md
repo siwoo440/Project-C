@@ -111,6 +111,8 @@
 <details>
 <summary><strong>전투 · 카드 선택, 파티 상태와 결과</strong></summary>
 
+전장의 외침부터 빠른 계산까지 공용 카드 여덟 장을 보물에서 얻어 파티원의 덱에 넣을 수 있다. [전투 손패 화면](Devlogs/Day207/CommonCards.png) · [카드별 효과와 원화](Devlogs/Day207/README.md)
+
 | 카드 확대 · 176일차 | 각성·붕괴 상태 · 173일차 |
 | --- | --- |
 | ![손패에서 가리킨 카드를 확대하고 효과를 확인하는 화면](Devlogs/Day176/CardPreview.png) | ![아르카나의 정신 상태를 표시한 전투 화면](Devlogs/Day173/MentalStatusBattle.png) |

@@ -30,6 +30,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
 
     [Header("상태 이상 규칙")]
     [SerializeField] private BattleStatusEffectType statusEffectType; // 적용 상태 이상 종류
+    [SerializeField] private BattleStatusEffectType statusRemovedByHealing; // 체력 회복 전에 제거할 상태
     [Min(1)]
     [SerializeField] private int statusDuration = 2; // 상태 이상 지속 횟수
     [Min(1)]
@@ -50,6 +51,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
+    public BattleStatusEffectType StatusRemovedByHealing => statusRemovedByHealing; // 회복과 함께 제거할 상태 조회
     public int StatusDuration => statusDuration; // 상태 이상 지속 횟수 조회
     public int StatusMaximumStacks => statusMaximumStacks; // 상태 이상 최대 중첩 조회
 
