@@ -860,6 +860,78 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_DETOX_RITUAL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 72ca716e58835d1888946981c809c91a, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GUARDIAN_HYMN
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 2128b30826cf5ac98b43022d0a66b3cf, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SANCTUARY
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: e944d5a87a915aa3b0b6b051ba34d8d6, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_PUNISHMENT_OF_LIGHT
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 0dd9a71bc0fd55d2ad10fb70af34dd88, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_SACRIFICIAL_HEALING
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 3a2ba11ed68a5220adba08bd8395994f, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_QUIET_HYMN
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 4c0969d101f7502f9bd8d8f79b3c4f6e, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_BLESSING_TRANSFER
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 8d68c131b5bf5078b0821d327886b16c, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_WATER_OF_LIFE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: f56039445e9a5c2d9a0e97bb77a83376, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

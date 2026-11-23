@@ -1359,7 +1359,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 중독 제거, 체력 4 회복",
+      "description": "생존 아군 전체의 중독을 제거하고 각각 체력 4를 회복시킨다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "해독 의식.png"
@@ -1370,7 +1370,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 방어도 +8",
+      "description": "생존 아군 각자에게 방어도 8을 부여한다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "수호 성가.png"
@@ -1381,7 +1381,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 받는 피해 -10% (2턴)",
+      "description": "생존 아군 각자가 받는 피해를 적 턴 2회 동안 10% 낮춘다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "성역.png"
@@ -1392,7 +1392,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "적 전체에게 8 피해, 불사형 추가 4 피해",
+      "description": "생존 적 전체에게 마법 피해 8을 준다. 명중한 불사형 적에게 피해 4를 더한다.",
       "area": "전체",
       "targets": "적",
       "imageFileName": "빛의 징벌.png"
@@ -1414,7 +1414,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "자신 HP -6, 아군 1명 체력 20 회복",
+      "description": "시전자가 자신의 체력 6을 지불하고 선택한 생존 아군의 체력 20을 회복한다. 체력 7 이상에서 사용할 수 있다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "희생 치유.png"
@@ -1425,7 +1425,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 전체 공포 저항 +30% (2턴)",
+      "description": "생존 아군 전체가 받는 공포를 적 턴 2회 동안 30% 확률로 막는다.",
       "area": "전체",
       "targets": "아군",
       "imageFileName": "고요한 찬가.png"
@@ -1436,7 +1436,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명의 버프 1개를 다른 아군에게 복사",
+      "description": "옮길 수 있는 강화가 걸린 아군과 받을 다른 아군을 차례로 지정해 유효한 강화 하나를 복사한다.",
       "area": "단일/단일",
       "targets": "아군",
       "imageFileName": "축복 전이.png"
@@ -1447,7 +1447,7 @@
       "attribute": "성배",
       "rarity": "희귀",
       "cost": "2",
-      "description": "아군 1명 체력 10 회복, 다음 턴 시작 시 6 회복",
+      "description": "지정한 아군이 즉시 체력 10을 회복하고, 다음 아군 턴 시작에 체력 6을 더 회복한다.",
       "area": "단일",
       "targets": "아군",
       "imageFileName": "생명수.png"

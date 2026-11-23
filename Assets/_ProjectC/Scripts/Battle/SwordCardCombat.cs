@@ -71,9 +71,12 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 최후 방벽 체력 조건 불충족 처리 시작
             return false; // 카드 사용과 행동력 지불 차단
         } // 최후 방벽 체력 조건 불충족 처리 종료
-        bool healthCost = card.SourceData.SwordRule == SwordCardRule.DoomBlade || card.SourceData.SwordRule == SwordCardRule.BloodOath; // 생존 체력을 지불할 검 확인
-        return points.CanSpend(card.ApCost) && (!healthCost || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 소유자 체력 비용 확인
+        return points.CanSpend(card.ApCost) && (!HasUpfrontHealthCost(card) || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 생존에 필요한 소유자 체력 비용 확인
     } // 사용 가능 검사 종료
+    internal static bool HasUpfrontHealthCost(CardInstance card) // 효과 적용 전에 소유자 체력을 지불하는 카드 확인
+    { // 체력 대가 카드 확인 시작
+        return card.SourceData.SwordRule is SwordCardRule.DoomBlade or SwordCardRule.BloodOath || card.SourceData.CupRule == CupCardRule.SacrificialHealing; // 기존 검과 희생 치유의 공통 체력 지불 경로
+    } // 체력 대가 카드 확인 종료
 
     internal static List<BattleUnitRuntime> GetDanceArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 바로 옆 한 칸의 고정 범위
     { // 두 칸 범위 계산 시작

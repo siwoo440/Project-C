@@ -92,6 +92,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 적 대상 없음 처리 시작
             return; // 두 대상 선택 시작 차단
         } // 적 대상 없음 처리 종료
+        if (cardInstance.TargetType == CardTargetType.BlessingSourceAndAlly && (!BattleBlessingTransfer.IsTransferCard(cardInstance) || !BattleBlessingTransfer.HasTargets(turnRuntime))) // 유효한 강화 보유자와 수령자 조합 확인
+        { // 축복 후보 없음 처리 시작
+            return; // 실제 복사 대상이 없는 카드 선택 차단
+        } // 축복 후보 없음 처리 종료
         if (cardInstance.OwnerUnit.IsDead) // 카드 소유자 사망 확인
         { // 사망 소유자 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 사망한 소유자의 카드는 사용할 수 없습니다: {cardInstance.OwnerUnit.DisplayName}"); // 사용 불가 출력
@@ -165,7 +169,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 유닛 클릭 처리 중단
         } // 잘못된 대상 처리 종료
         bool selectsEnemyAndAlly = selectedCard.TargetType == CardTargetType.EnemyAndAlly; // 적과 아군을 차례로 선택하는 카드 확인
-        if (selectsEnemyAndAlly || selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 두 유닛 순차 선택 카드 확인
+        bool selectsBlessingSource = selectedCard.TargetType == CardTargetType.BlessingSourceAndAlly; // 강화를 복사할 두 아군 선택 확인
+        if (selectsEnemyAndAlly || selectsBlessingSource || selectedCard.SourceData.ShieldRule == ShieldCardRule.SplitBarrier) // 두 유닛 순차 선택 카드 확인
         { // 순차 대상 선택 시작
             if (runtimeUnit == firstSequentialTarget) // 먼저 선택한 유닛의 반복 입력 확인
             { // 같은 대상 처리 시작
@@ -178,6 +183,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 { // 두 번째 대상 안내 시작
                     handView.SetMixedTargetStage(BattleTeam.Ally); // 피해 대상 확정 뒤 회복 대상 선택 안내
                 } // 두 번째 대상 안내 종료
+                if (selectsBlessingSource) // 첫 번째 강화 보유자를 선택했는지 확인
+                { // 강화 수령 대상 안내 시작
+                    handView.SetBlessingTransferSource(runtimeUnit); // 드롭과 클릭에 같은 수령 대상 단계 표시
+                } // 강화 수령 대상 안내 종료
                 UpdateTargetHighlights(); // 두 번째 단계의 유효 대상 강조 갱신
                 return; // 두 번째 입력까지 카드 사용 보류
             } // 첫 번째 대상 보관 종료
@@ -233,6 +242,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 미확정 대상과 카드 선택 초기화
             return; // 대상 강조 재적용 생략
         } // 카드 선택 취소 종료
+        if (selectedCard.TargetType == CardTargetType.BlessingSourceAndAlly) // 축복 이전의 남은 후보 확인
+        { // 사망 후 축복 대상 갱신 시작
+            RefreshBlessingTransferTargets(); // 생존한 실제 복사 조합에 맞게 단계 갱신
+            return; // 다른 카드의 대상 단계 검사 생략
+        } // 사망 후 축복 대상 갱신 종료
         if (selectingEnemyAndAlly || selectingSplitBarrier && runtimeUnit.Team == BattleTeam.Ally) // 두 번째 대상 후보의 생존 변화 확인
         { // 남은 선택 대상 처리 시작
             UpdateTargetHighlights(); // 생존 후보 강조 갱신
@@ -248,8 +262,22 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 대상 범위 갱신 시작
             UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
         } // 대상 범위 갱신 종료
+        if (selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly) // 축복 이전의 강화 변경이나 생존 변화 확인
+        { // 활성 축복 대상 갱신 시작
+            RefreshBlessingTransferTargets(); // 원본 강화의 만료와 수령 중첩 변화 적용
+        } // 활성 축복 대상 갱신 종료
         handView.RefreshCardAvailability(); // 변경된 체력 기준 손패 사용 가능 상태 갱신
     } // 아군 체력 변경 처리 종료
+    private void RefreshBlessingTransferTargets() // 두 단계의 현재 복사 가능 대상 갱신
+    { // 축복 이전 후보 갱신 시작
+        bool hasTargets = firstSequentialTarget == null ? BattleBlessingTransfer.HasTargets(turnRuntime) : BattleBlessingTransfer.CanChooseSource(turnRuntime, firstSequentialTarget); // 첫 단계와 확정한 원본의 유효한 조합 확인
+        if (!hasTargets) // 복사 가능한 관계가 사라진 경우 확인
+        { // 미확정 축복 이전 취소 시작
+            CancelSelection(); // 사용 비용 없이 잘못된 대상 선택 해제
+            return; // 무효 후보 강조 갱신 생략
+        } // 미확정 축복 이전 취소 종료
+        UpdateTargetHighlights(); // 남아 있는 실제 복사 후보만 강조
+    } // 축복 이전 후보 갱신 종료
     private void ExecuteCard(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 효과 실행
     { // 카드 실행 시작
         if (!turnRuntime.IsPlayerTurn || actionPending || actionSequenceRunner.IsBusy) // 플레이어 턴과 연출 상태 확인
@@ -274,6 +302,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 비용 지불 전에 미확정 입력 제거
             return; // 잘못된 복합 카드 실행 중단
         } // 적과 아군의 대상 변경 처리 종료
+        if ((cardInstance.TargetType == CardTargetType.BlessingSourceAndAlly || cardInstance.EffectType == CardEffectType.CopyAllyBlessing) && // 구성 요소 하나만 설정한 원본도 검사
+            (!BattleBlessingTransfer.IsTransferCard(cardInstance) || cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || BattleBlessingTransfer.FindBlessing(turnRuntime, targetUnits[0], targetUnits[1]) == null)) // 결제 전에 생존자와 실제 복사 가능 상태 재확인
+        { // 복사 대상 검증 실패 시작
+            CancelSelection(); // 지불 전에 잘못된 두 대상 입력 정리
+            return; // 유효한 강화가 없는 카드 실행 중단
+        } // 복사 대상 검증 실패 종료
         if (cardInstance.SourceData.ShieldRule == ShieldCardRule.SplitBarrier && // 분할 방벽의 비용 지불 직전 검사
             (cardInstance.OwnerUnit.IsDead || targetUnits.Count != 2 || targetUnits[0] == targetUnits[1] || // 소유자 생존과 서로 다른 대상 수 확인
             !IsValidTarget(cardInstance, targetUnits[0]) || !IsValidTarget(cardInstance, targetUnits[1]))) // 두 대상의 진영과 생존 상태 확인
@@ -303,6 +337,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             CancelSelection(); // 선택 상태 초기화
             return; // 카드 실행 중단
         } // 비용 차감 실패 처리 종료
+        if (SwordCardCombat.HasUpfrontHealthCost(cardInstance)) // 소유자 체력을 먼저 지불하는 카드 확인
+        { // 실제 체력 대가 지불 시작
+            int healthCost = cardInstance.SourceData.SecondaryEffectValue; // 원본 카드의 고정 체력 대가 조회
+            if (!cardInstance.OwnerUnit.TrySpendHealth(healthCost)) // 방어도를 우회한 생존 체력 비용의 실제 지불 확인
+            { // 체력 비용 지불 실패 시작
+                sharedActionPoints.Gain(cost); // 지불 상태 변경으로 취소된 사용의 행동력 복원
+                CancelSelection(); // 지불할 수 없는 카드와 대상 선택 정리
+                return; // 효과나 카드 이동 시작 방지
+            } // 체력 비용 지불 실패 종료
+            actorView.ShowStatusFeedback($"체력 -{healthCost}", true); // 카드 소유자의 실제 체력 소모 표시
+        } // 실제 체력 대가 지불 종료
         preparedSwordDamage = 0; // 이전 카드의 칼날 정비 보너스 정리
         if (cardInstance.CardType == CardType.Sword && cardInstance.EffectType == CardEffectType.Damage) // 실제 비용을 지불한 검 피해 카드 확인
         { // 칼날 정비 소모 시작
@@ -314,11 +359,6 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 추가 피해 보관 종료
         } // 칼날 정비 소모 종료
         paidActionPoints = cost; // 충돌 시점에 사용할 실제 지불 비용 보관
-        if (cardInstance.SourceData.SwordRule == SwordCardRule.DoomBlade || cardInstance.SourceData.SwordRule == SwordCardRule.BloodOath) // 생존 체력을 지불하는 검 카드 확인
-        { // 체력 대가 지불 시작
-            cardInstance.OwnerUnit.TrySpendHealth(cardInstance.SourceData.SecondaryEffectValue); // 방어도를 건너뛰고 생존 가능한 체력 대가 지불
-            actorView.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 소유자에게 체력 소모 표시
-        } // 체력 대가 지불 종료
         List<BattleUnitRuntime> targetSnapshot = new List<BattleUnitRuntime>(targetUnits); // 연출 중 유지할 대상 목록 복사
         actionPending = true; // 카드 행동 진행 상태 저장
         CancelSelection(); // 카드 선택과 대상 강조 해제
@@ -388,6 +428,17 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             int healing = GetDirectCardHealing(cardInstance, cardInstance.SourceData.SecondaryEffectValue); // 기존 회복 보정을 포함한 원본 보조 회복량 계산
             totalAppliedAmount += RestoreDirectCardHealth(cardInstance, targetUnits[1], healing); // 명중 여부와 별개로 선택한 아군 한 명의 회복 처리
         } // 두 대상 충돌 처리 종료
+        else if (cardInstance.EffectType == CardEffectType.CopyAllyBlessing) // 선택한 두 아군 사이의 축복 이전 확인
+        { // 실제 강화 복사 처리 시작
+            var recipient = targetUnits[1]; // 두 번째로 고른 강화 수령자 조회
+            var blessing = BattleBlessingTransfer.FindBlessing(turnRuntime, targetUnits[0], recipient); // 실제 효과 시점의 첫 복사 가능 강화 재확인
+            if (blessing != null && !cardInstance.OwnerUnit.IsDead) // 연출 사이 사망이나 만료가 없는 강화 확인
+            { // 일반 상태 경로의 복사 시작
+                var result = recipient.ApplyBlessingCopy(blessing, cardInstance.OwnerUnit); // 원본을 보존한 독립 강화 적용
+                FindUnitView(recipient)?.ShowStatusApplyFeedback(blessing.EffectType, result); // 복사한 강화의 실제 적용 결과 표시
+                totalAppliedAmount = result is BattleStatusEffectApplyResult.Applied or BattleStatusEffectApplyResult.Stacked ? 1 : 0; // 실제로 복사한 상태 한 종류 기록
+            } // 일반 상태 경로의 복사 종료
+        } // 실제 강화 복사 처리 종료
         else if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
@@ -699,6 +750,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 일반 카드 전투불능 대상 차단 시작
             return false; // 일반 카드 대상으로 선택 불가
         } // 일반 카드 전투불능 대상 차단 종료
+        if (cardInstance.TargetType == CardTargetType.BlessingSourceAndAlly) // 두 아군의 축복 이전 선택 확인
+        { // 축복 이전 단계별 대상 검사 시작
+            return firstSequentialTarget == null ? BattleBlessingTransfer.CanChooseSource(turnRuntime, targetUnit) : // 강화 보유자 선택 검사
+                BattleBlessingTransfer.FindBlessing(turnRuntime, firstSequentialTarget, targetUnit) != null; // 두 번째로 고른 아군의 실제 강화 수령 가능 여부
+        } // 축복 이전 단계별 대상 검사 종료
         if (cardInstance.TargetType == CardTargetType.EnemyAndAlly) // 순서가 정해진 적과 아군의 선택 검사
         { // 현재 선택 단계 검사 시작
             BattleTeam team = firstSequentialTarget == null ? BattleTeam.Enemy : BattleTeam.Ally; // 첫 적 지정 전후의 대상 진영 구분
@@ -865,7 +921,8 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 확인 한도 계산 종료
     private static bool IsSupportedEffect(CardEffectType effectType) // 지원 효과 여부 확인
     { // 지원 효과 검사 시작
-        return effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ReviveAlly || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 지원 카드 효과 결과 반환
+        return effectType == CardEffectType.CopyAllyBlessing || // 두 아군 사이의 독립 강화 복사 지원
+            effectType == CardEffectType.Damage || effectType == CardEffectType.Heal || effectType == CardEffectType.ReviveAlly || effectType == CardEffectType.ApplyStatusEffect || effectType == CardEffectType.RemoveDebuffs || effectType == CardEffectType.RemoveOneDebuff || effectType == CardEffectType.ChangeMental || effectType == CardEffectType.RedirectAttackAndDefend || effectType == CardEffectType.ProtectAttackTarget || effectType == CardEffectType.ChooseDraw || effectType == CardEffectType.RecoverDiscard || effectType == CardEffectType.GainBlock || effectType == CardEffectType.SelectPartner || effectType == CardEffectType.GuardAllyAttack || effectType == CardEffectType.ArrangeDrawTop || effectType == CardEffectType.RerollRandomAttack || effectType == CardEffectType.ShareAllyAttack || effectType == CardEffectType.TransferAllyDebuff || effectType == CardEffectType.DrawThenDiscard; // 기존 지원 카드 효과 결과 반환
     } // 지원 효과 검사 종료
     private BattleUnitView FindUnitView(BattleUnitRuntime runtimeUnit) // 런타임 유닛 화면 조회
     { // 유닛 화면 조회 시작
@@ -1061,6 +1118,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 var result = targetUnit.ApplyCurrentAllyTurnAttackPower(cardInstance.SourceData.SecondaryEffectValue, cardInstance.OwnerUnit); // 장기 공격력과 독립인 실제 이번 턴 강화
                 FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.AttackPowerUp, result); // 적용된 공격력 강화 표시
             } // 이번 턴 아군 공격력 처리 종료
+            if (cardInstance.SourceData.CupRule == CupCardRule.WaterOfLife) // 생명수의 직접 회복과 별개인 다음 턴 효과 확인
+            { // 생명수 예약 회복 처리 시작
+                var result = targetUnit.ApplyStatusEffect(BattleStatusEffectType.DelayedHealing, cardInstance.SourceData.SecondaryEffectValue, 1, int.MaxValue, cardInstance.OwnerUnit); // 다음 아군 턴 시작에 한 번 지급할 회복량 예약
+                FindUnitView(targetUnit)?.ShowStatusApplyFeedback(BattleStatusEffectType.DelayedHealing, result); // 직접 회복량과 구별되는 예약 상태 표시
+            } // 생명수 예약 회복 처리 종료
             return restored; // 카드의 실제 체력 회복량 반환
         } // 회복 효과 처리 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodstainedDuel) // 시전자와 적 한 명의 결투 확인
@@ -1256,9 +1318,9 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             baseOverride = BattleSupplyRelics.RollDamage(cardInstance); // 흑철 구슬과 강화가 반영된 정수 피해 선택
         } // 무작위 피해 굴림 종료
         long printedDamage = baseOverride.HasValue ? (long)baseOverride.Value + cardInstance.OwnerUnit.AttackPowerBonus : SwordCardCombat.BaseDamage(cardInstance, paidActionPoints, targetUnit); // 가변 또는 고정 카드의 공격력 합산
-        if (cardInstance.SourceData.CupRule == CupCardRule.HolyWater && targetUnit.EnemySource?.IsUndead == true) // 성수가 실제 명중한 언데드 적 확인
+        if (cardInstance.SourceData.CupRule == CupCardRule.HolyWater && targetUnit.EnemySource?.IsUndead == true) // 불사형 추가 피해 카드가 실제 명중한 대상 확인
         { // 언데드 대상 추가 피해 시작
-            printedDamage += cardInstance.SourceData.SecondaryEffectValue; // 방어와 저항을 계산하기 전 성수의 원본 피해 가산
+            printedDamage += cardInstance.SourceData.SecondaryEffectValue; // 방어와 저항 적용 전 같은 불사형 추가 피해 가산
         } // 언데드 대상 추가 피해 종료
         int baseDamage = (int)Math.Min(int.MaxValue, printedDamage + preparedSwordDamage); // 이번 타격의 원본 피해에 정비한 검 피해 가산
         if (cardInstance.SourceData.CardId == "CRD_ARC_13_FINISH" && targetUnit.HasDebuff) // 죽음 전용 카드와 약화된 적 확인
@@ -1494,6 +1556,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 복합 효과 이름 시작
             return "피해 및 회복"; // 실제 피해와 회복의 합계 로그 문구 반환
         } // 복합 효과 이름 종료
+        if (cardInstance.EffectType == CardEffectType.CopyAllyBlessing) // 두 아군의 축복 이전 효과 확인
+        { // 축복 이전 문구 시작
+            return "강화 복사"; // 전투 로그의 실제 복사 단위 표시
+        } // 축복 이전 문구 종료
         if (cardInstance.EffectType == CardEffectType.ReviveAlly) // 전투불능 아군의 부활 효과 확인
         { // 부활 문구 처리 시작
             return "부활"; // 실제 효과 로그 이름 반환
@@ -1647,6 +1713,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 손패 이벤트 해제 시작
             handView.CardClicked -= HandleCardClicked; // 카드 클릭 이벤트 해제
             handView.SetMixedTargetStage(null); // 연결 해제 때 남은 복합 대상 안내 제거
+            if (selectedCard?.TargetType == CardTargetType.BlessingSourceAndAlly) // 연결 해제 때 축복 이전의 미완료 선택 확인
+            { // 축복 이전 입력 해제 시작
+                handView.SetSelectedCard(null); // 남은 첫 대상과 단계 안내 및 카드 선택 제거
+            } // 축복 이전 입력 해제 종료
         } // 손패 이벤트 해제 종료
         runtimeDeck.StateChanged -= HandleDeckStateChanged; // 덱 상태 변경 이벤트 해제
         turnRuntime.StateChanged -= HandleTurnStateChanged; // 턴 상태 변경 이벤트 해제

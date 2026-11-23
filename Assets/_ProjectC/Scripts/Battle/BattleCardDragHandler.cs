@@ -84,7 +84,7 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
-        if (cardView.IsSelected && cardView.RuntimeCard.TargetType != CardTargetType.EnemyAndAlly) // 기존 카드만 드래그 전 단일 선택 해제
+        if (cardView.IsSelected && !KeepsSequentialSelection(cardView.RuntimeCard)) // 두 단계 카드의 첫 대상 선택을 드래그 전 보존
         { // 드래그 입력 시작 상태 정리
             cardView.OnPointerClick(eventData); // 기존 클릭 선택 해제 후 새 드롭 대상으로 결정
         } // 기존 선택 정리 종료
@@ -175,7 +175,7 @@ public sealed class BattleCardDragHandler :
 
         if (!validDrop)
         {
-            if (draggedCard?.TargetType == CardTargetType.EnemyAndAlly && cardView.IsSelected) // 잘못된 두 번째 드롭이나 드래그 취소 확인
+            if (KeepsSequentialSelection(draggedCard) && cardView.IsSelected) // 잘못된 두 번째 드롭이나 드래그 취소 확인
             { // 복합 카드의 미확정 선택 정리 시작
                 cardView.OnPointerClick(eventData); // 비용을 지불하지 않은 두 대상 선택 취소
             } // 복합 카드의 미확정 선택 정리 종료
@@ -306,6 +306,17 @@ public sealed class BattleCardDragHandler :
         { // 전투불능 대상 차단 시작
             return false; // 일반 카드 드롭 거절
         } // 전투불능 대상 차단 종료
+        if (card.TargetType == CardTargetType.BlessingSourceAndAlly) // 축복 이전의 첫 단계와 두 번째 드롭 확인
+        { // 축복 이전 드롭 대상 검사 시작
+            BattleHandView hand = cardView.GetComponentInParent<BattleHandView>(); // 실제 손패의 선택 단계와 참가 명단 조회
+            if (hand?.TurnRuntime == null || !BattleBlessingTransfer.IsTransferCard(card)) // 연결되지 않았거나 잘못 정의된 카드 확인
+            { // 복사 드롭 거부 시작
+                return false; // 유효한 손패나 카드 조합이 없는 드롭 거절
+            } // 복사 드롭 거부 종료
+            var source = cardView.IsSelected ? hand.BlessingTransferSource : null; // 현재 카드가 고른 강화 보유자만 조회
+            return source == null ? BattleBlessingTransfer.CanChooseSource(hand.TurnRuntime, targetUnit) : // 강화 보유자 선택 가능 여부
+                BattleBlessingTransfer.FindBlessing(hand.TurnRuntime, source, targetUnit) != null; // 받는 아군의 실제 호환 강화 확인
+        } // 축복 이전 드롭 대상 검사 종료
         if (card.TargetType == CardTargetType.EnemyAndAlly) // 두 단계 카드의 현재 드롭 진영 확인
         { // 복합 대상 드롭 검사 시작
             BattleHandView hand = cardView.GetComponentInParent<BattleHandView>(); // 선택 단계를 보여 주는 현재 손패 확인
@@ -361,12 +372,12 @@ public sealed class BattleCardDragHandler :
             return;
         }
 
-        if (card.TargetType != CardTargetType.EnemyAndAlly || !cardView.IsSelected) // 두 번째 혼합 드롭에서 기존 카드 선택 유지
+        if (!KeepsSequentialSelection(card) || !cardView.IsSelected) // 두 번째 드롭에서 기존 순차 카드 선택 유지
         { // 카드 선택 연결 시작
             cardView.OnPointerClick(eventData); // 기존 카드 선택과 비용 검사 흐름 호출
         } // 카드 선택 연결 종료
 
-        if (card.TargetType == CardTargetType.EnemyAndAlly || // 단계마다 적 또는 아군 드롭을 클릭 입력으로 연결
+        if (KeepsSequentialSelection(card) || // 각 순차 드롭 대상을 클릭 입력으로 연결
             card.TargetType == CardTargetType.FallenAlly || // 전투불능 아군의 드롭을 실제 클릭으로 연결
             card.TargetType == CardTargetType.SingleAlly || // 단일 생존 아군 확인
             card.TargetType == CardTargetType.SingleEnemy)
@@ -379,6 +390,10 @@ public sealed class BattleCardDragHandler :
             $"[Battle][Day47] 카드 드래그 사용 - " +
             $"{card.DisplayName} → {targetView.RuntimeUnit.DisplayName}"); // 드래그 카드 사용 로그
     }
+    private static bool KeepsSequentialSelection(CardInstance card) // 드래그 사이에 첫 대상을 계속 보관하는 카드 확인
+    { // 순차 대상 카드 확인 시작
+        return card?.TargetType is CardTargetType.EnemyAndAlly or CardTargetType.BlessingSourceAndAlly; // 적과 아군 또는 강화 복사 선택 확인
+    } // 순차 대상 카드 확인 종료
 
     private void CreateDragGhost() // 마우스를 따라가는 카드 복제 생성
     {

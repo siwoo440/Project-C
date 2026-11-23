@@ -14,7 +14,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     public string IconLabel => GetIconLabel(EffectType); // 상태 아이콘 문구
     public string Description => GetDescription(EffectType, EffectiveValue); // 상태 상세 설명
     public bool IsDebuff => IsDebuffType(EffectType); // 디버프 여부
-    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard; // 정해진 행동이나 실제 피해 한 번을 기다리는 상태
+    public bool WaitsForAction => EffectType == BattleStatusEffectType.Stagger || EffectType == BattleStatusEffectType.NextAttackDown || EffectType == BattleStatusEffectType.ShieldBalance || EffectType == BattleStatusEffectType.DangerInterception || EffectType == BattleStatusEffectType.DamageNullification || EffectType == BattleStatusEffectType.GuardianHeart || EffectType == BattleStatusEffectType.DefeatWard || EffectType == BattleStatusEffectType.DelayedHealing; // 정해진 행동과 실제 피해 또는 다음 아군 턴을 기다리는 상태
     public bool IsProtectedMentalState => EffectType == BattleStatusEffectType.Awakening || EffectType == BattleStatusEffectType.Collapse; // 강제 해제 불가 정신 상태 여부
     public BattleStatusEffectInstance(BattleStatusEffectType effectType, int value, int duration, int maximumStacks) // 상태 이상 생성
     { // 생성자 시작
@@ -43,6 +43,23 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
             damageDecay = (int)Math.Min(damageDecay, Math.Max(0L, Math.Min(int.MaxValue, (long)Value * StackCount) - Math.Max(1, value))); // 새 효과 수치 이상이 되도록 감소량 보정
         } // 지속 피해 갱신 처리 종료
     } // 재적용 종료
+    internal BattleStatusEffectInstance CopyBlessingState() // 실제 수치와 지속을 가진 독립 강화 복제
+    { // 상태 복제 시작
+        return (BattleStatusEffectInstance)MemberwiseClone(); // 원본 상태 개체와 분리된 중첩 및 지속 예약 복사
+    } // 상태 복제 종료
+    internal void MergeBlessingCopy(BattleStatusEffectInstance blessing) // 활성 강화의 복사본과 수령자의 기존 상태 병합
+    { // 같은 강화 병합 시작
+        Value = Math.Max(Value, blessing.Value); // 기존 상태 규칙의 더 강한 한 중첩 수치 선택
+        MaximumStacks = Math.Max(MaximumStacks, blessing.MaximumStacks); // 원본과 수령자 중 높은 중첩 상한 보존
+        StackCount = (int)Math.Min(MaximumStacks, (long)StackCount + blessing.StackCount); // 원본의 실제 전체 중첩 가산
+        long existingLifetime = (long)RemainingTurns + (skipNextDurationDecrease ? 1 : 0); // 수령자의 다음 감소 생략을 반영한 수명
+        long blessingLifetime = (long)blessing.RemainingTurns + (blessing.skipNextDurationDecrease ? 1 : 0); // 복사할 강화의 다음 감소 생략을 반영한 수명
+        if (blessingLifetime > existingLifetime) // 두 활성 강화 중 더 긴 기존 수명 확인
+        { // 복사한 강화의 수명 적용 시작
+            RemainingTurns = blessing.RemainingTurns; // 복사한 강화의 실제 남은 턴 사용
+            skipNextDurationDecrease = blessing.skipNextDurationDecrease; // 원본의 다음 감소 예약 시간 사용
+        } // 복사한 강화의 수명 적용 종료
+    } // 같은 강화 병합 종료
     public void AdvanceDuration() // 지속 횟수 감소
     { // 지속 감소 시작
         if (IsProtectedMentalState) // 정신 상태의 외부 턴 감소 확인
@@ -191,6 +208,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호자의 심장"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "전투불능 방지"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.SanctuaryWard: // 성역 종류 확인
+                return "성역"; // 게임에 표시되는 성역 문구
+            case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
+                return "공포 저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
+                return "다음 턴 회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
                 return "받는 회복량 증가"; // 게임에 표시되는 받는 회복량 증가 설명
             case BattleStatusEffectType.Renewal: // 재생 종류 확인
@@ -323,6 +346,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "수호"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "생존"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.SanctuaryWard: // 성역 종류 확인
+                return "성역"; // 게임에 표시되는 성역 문구
+            case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
+                return "공포저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
+                return "예약회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
                 return "회복+"; // 게임에 표시되는 받는 회복량 증가 설명
             case BattleStatusEffectType.Renewal: // 재생 종류 확인
@@ -455,6 +484,12 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "이 아군이 적의 직접 피해로 쓰러지려 하면 사용자가 한 번 대신 맞고 체력 1 이상으로 생존"; // 수호자의 심장 표시 문구 반환
             case BattleStatusEffectType.DefeatWard: // 전투불능 방지 상태 확인
                 return "치명 피해를 한 번 막아 체력 1로 생존"; // 해당 화면의 전투불능 방지 문구
+            case BattleStatusEffectType.SanctuaryWard: // 성역 종류 확인
+                return $"받는 피해 {effectiveValue}% 감소"; // 게임에 표시되는 성역 문구
+            case BattleStatusEffectType.FearResistance: // 공포 저항 종류 확인
+                return $"공포 적용을 {effectiveValue}% 확률로 저항"; // 게임에 표시되는 공포 저항 문구
+            case BattleStatusEffectType.DelayedHealing: // 다음 턴 회복 종류 확인
+                return $"다음 아군 턴 시작에 체력 {effectiveValue} 회복"; // 게임에 표시되는 다음 턴 회복 문구
             case BattleStatusEffectType.HealingReceivedUp: // 받는 회복량 증가 종류 확인
                 return $"받는 체력 회복량 {effectiveValue}% 증가"; // 게임에 표시되는 받는 회복량 증가 설명
             case BattleStatusEffectType.Renewal: // 재생 종류 확인

@@ -2009,6 +2009,54 @@
       "name": "상처 봉합",
       "description": "지정 아군의 모든 출혈을 해제하고 체력을 14 회복한다.",
       "artworkKey": "f7b70bbf326a56e2bf1f7c62f4b702fa"
+    },
+    {
+      "category": 7,
+      "name": "해독 의식",
+      "description": "생존 아군 전체의 중독을 제거하고 각각 체력 4를 회복시킨다.",
+      "artworkKey": "f9397a668e8f57c8bb2c297d37fc966c"
+    },
+    {
+      "category": 7,
+      "name": "수호 성가",
+      "description": "생존 아군 각자에게 방어도 8을 부여한다.",
+      "artworkKey": "987e8bd224d3543da429a57cbd566c22"
+    },
+    {
+      "category": 7,
+      "name": "성역",
+      "description": "생존 아군 각자가 받는 피해를 적 턴 2회 동안 10% 낮춘다.",
+      "artworkKey": "124c0788284d5070a825de08b9dd9137"
+    },
+    {
+      "category": 7,
+      "name": "빛의 징벌",
+      "description": "생존 적 전체에게 마법 피해 8을 준다. 명중한 불사형 적에게 피해 4를 더한다.",
+      "artworkKey": "50d87de45157524ba16473e3c18c4b06"
+    },
+    {
+      "category": 7,
+      "name": "희생 치유",
+      "description": "시전자가 자신의 체력 6을 지불하고 선택한 생존 아군의 체력 20을 회복한다. 체력 7 이상에서 사용할 수 있다.",
+      "artworkKey": "02841ea646a7547d98ac285acbc6d3bc"
+    },
+    {
+      "category": 7,
+      "name": "고요한 찬가",
+      "description": "생존 아군 전체가 받는 공포를 적 턴 2회 동안 30% 확률로 막는다.",
+      "artworkKey": "458a3a03160053ebba57582b7a21e224"
+    },
+    {
+      "category": 7,
+      "name": "축복 전이",
+      "description": "옮길 수 있는 강화가 걸린 아군과 받을 다른 아군을 차례로 지정해 유효한 강화 하나를 복사한다.",
+      "artworkKey": "4498ffea44ae59dd99a9120b124cf198"
+    },
+    {
+      "category": 7,
+      "name": "생명수",
+      "description": "지정한 아군이 즉시 체력 10을 회복하고, 다음 아군 턴 시작에 체력 6을 더 회복한다.",
+      "artworkKey": "cec49e282ad558f0801c79d7a286616b"
     }
   ]
 }

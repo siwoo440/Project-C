@@ -20,6 +20,16 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 제거 상태 제외 시작
                 continue; // 다음 상태 이동
             } // 제거 상태 제외 종료
+            if (statusEffect.EffectType == BattleStatusEffectType.DelayedHealing) // 진영 시작 때 소모되는 생명수의 예약 회복 확인
+            { // 예약 효과 소모 및 회복 시작
+                if (runtimeUnit.Team == BattleTeam.Ally && runtimeUnit.RemoveStatusEffectInstance(statusEffect)) // 실제 아군 턴의 생존 대상과 예약 제거 확인
+                { // 소모한 예약의 지급 시작
+                    int applied = runtimeUnit.RestoreHealth(statusEffect.EffectiveValue); // 직접 카드 보정과 구분한 예약 체력 회복
+                    processResults.Add(CreateResult(statusEffect, round, applied, statusEffect.RemainingTurns, 0, true, BattleStatusEffectRemovalReason.DurationExpired)); // 상태 소모와 실제 회복 결과 기록
+                    statusStateChanged = true; // 예약 상태 아이콘 제거 알림
+                } // 소모한 예약의 지급 종료
+                continue; // 같은 턴의 일반 상태 처리에서 재발동 차단
+            } // 예약 효과 소모 및 회복 종료
             if (statusEffect.EffectType == BattleStatusEffectType.PublicMark || statusEffect.EffectType == BattleStatusEffectType.Burn || statusEffect.EffectType == BattleStatusEffectType.Blind || statusEffect.EffectType == BattleStatusEffectType.AttackPowerDown) // 턴 종료에 처리하는 상태 확인
             { // 턴 종료 상태 유지 시작
                 continue; // 턴 시작 지속 감소 생략
@@ -96,7 +106,8 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             { // 사망 처리 시작
                 break; // 나머지 효과 처리 중단
             } // 사망 처리 종료
-            if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance) // 적 턴 종료에만 차감할 영원의 방패 상태 확인
+            if (effect.EffectType == BattleStatusEffectType.EternalShield || effect.EffectType == BattleStatusEffectType.EternalShieldResistance || // 적 턴 종료에만 차감하는 기존 영원의 방패
+                effect.EffectType == BattleStatusEffectType.SanctuaryWard || effect.EffectType == BattleStatusEffectType.FearResistance) // 성역과 찬가도 실제 적 턴 종료에서만 차감
             { // 개별 유닛 턴의 지속 시간 처리 제외 시작
                 continue; // 다음 상태 확인
             } // 개별 유닛 턴의 지속 시간 처리 제외 종료
