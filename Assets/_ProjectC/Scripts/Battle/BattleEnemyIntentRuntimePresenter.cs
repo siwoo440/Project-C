@@ -19,6 +19,8 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
     private readonly Dictionary<BattleUnitRuntime, BattleEnemyIntentIconView> iconViews =
         new Dictionary<BattleUnitRuntime, BattleEnemyIntentIconView>(); // 적별 행동 아이콘 화면
+    private readonly Dictionary<BattleUnitRuntime, BattleEnemyActionOrderView> orderViews = new Dictionary<BattleUnitRuntime, BattleEnemyActionOrderView>(); // 적별 행동 순번 화면
+    private BattleEnemyArrowsView arrowsView; // 전투 화면 대상 화살표
 
     private BattleSceneSetup battleSceneSetup; // 현재 전투 설정
     private Button arrowModeButton; // 화살표 표시 옵션 버튼
@@ -60,6 +62,8 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
         if (SceneManager.GetActiveScene().name != BattleSceneName)
         {
             iconViews.Clear(); // Scene 변경 시 이전 적 캐시 제거
+            orderViews.Clear(); // 씬 변경 시 이전 행동 순번 캐시 제거
+            arrowsView = null; // 이전 전투 화살표 화면 참조 제거
             battleSceneSetup = null; // 이전 전투 설정 제거
             arrowModeButton = null; // 이전 화살표 버튼 참조 제거
             arrowModeButtonText = null; // 이전 화살표 문구 참조 제거
@@ -83,6 +87,15 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
         Canvas battleCanvas =
             FindBattleCanvas(); // 현재 전투 Canvas 조회
+        if (battleCanvas == null) // 전투 화면 캔버스 확인
+        { // 캔버스 누락 처리 시작
+            return; // 행동 화면 갱신 중단
+        } // 캔버스 누락 처리 종료
+        if (arrowsView == null) // 현재 전투 화살표 화면 확인
+        { // 화살표 화면 준비 시작
+            arrowsView = BattleEnemyArrowsView.Create(battleCanvas); // 전투 화면 위 화살표 생성
+        } // 화살표 화면 준비 종료
+        arrowsView.BeginFrame(); // 현재 예정 행동 화살표 계산 시작
 
         EnsureArrowModeButton(
             battleCanvas); // 화살표 전체·하나씩 옵션 버튼 준비
@@ -99,6 +112,7 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
 
         IReadOnlyList<BattleEnemyAction> plannedActions =
             battleSceneSetup.EnemyActionRuntime.PlannedActions; // 현재 적 예정 행동 조회
+        BattleEnemyAction selectedAction = arrowDisplayMode == ArrowDisplayMode.Single ? SelectSingleArrowAction(plannedActions) : null; // 하나씩 모드의 실제 표시 행동 조회
 
         HashSet<BattleUnitRuntime> activeActors =
             new HashSet<BattleUnitRuntime>(); // 현재 행동이 있는 적 목록
@@ -143,7 +157,21 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                 action,
                 actorView,
                 specialPattern); // 행동 아이콘 데이터 갱신
+            if (!orderViews.TryGetValue(action.Actor, out BattleEnemyActionOrderView orderView) || orderView == null) // 현재 적의 순번 화면 확인
+            { // 행동 순번 화면 준비 시작
+                orderView = BattleEnemyActionOrderView.Create(actorView.transform); // 적 머리 위 행동 순번 화면 생성
+                orderViews[action.Actor] = orderView; // 생성한 적별 행동 순번 화면 저장
+            } // 행동 순번 화면 준비 종료
+            orderView.Bind(plannedActions, action.Actor); // 현재 적의 실제 남은 행동 순번 표시
+            if (action.Target != null && !action.Target.IsDead && (arrowDisplayMode != ArrowDisplayMode.Single || action == selectedAction)) // 살아 있는 대상과 화살표 표시 방식 확인
+            { // 행동 대상 화살표 연결 시작
+                BattleUnitView targetView = FindUnitView(unitViews, action.Target); // 실제 행동 대상 화면 조회
+                RectTransform targetPortrait = targetView != null ? targetView.transform.Find("Portrait") as RectTransform : null; // 대상 캐릭터 그림 영역 조회
+                bool focused = BattleEnemyIntentDetailView.Instance != null && BattleEnemyIntentDetailView.Instance.IsFocused(action); // 현재 행동 상세 선택 여부 확인
+                arrowsView.AddArrow(iconView.transform as RectTransform, targetPortrait, specialPattern, focused); // 적 행동 아이콘에서 대상까지 화살표 추가
+            } // 행동 대상 화살표 연결 종료
         }
+        arrowsView.EndFrame(); // 현재 예정 행동 화살표 화면 반영
 
         foreach (KeyValuePair<BattleUnitRuntime, BattleEnemyIntentIconView> pair in iconViews)
         {
@@ -157,6 +185,13 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
                 activeActors.Contains(
                     pair.Key)); // 행동 없는 적 아이콘 숨김
         }
+        foreach (KeyValuePair<BattleUnitRuntime, BattleEnemyActionOrderView> pair in orderViews) // 기존 적별 순번 화면 순회
+        { // 행동 없는 적 순번 정리 시작
+            if (pair.Value != null && (pair.Key == null || !activeActors.Contains(pair.Key))) // 현재 행동이 없는 적 확인
+            { // 순번 숨김 시작
+                pair.Value.gameObject.SetActive(false); // 사망 또는 행동 완료 적의 순번 숨김
+            } // 순번 숨김 종료
+        } // 행동 없는 적 순번 정리 종료
 
         if (BattleEnemyIntentDetailView.Instance != null)
         {
@@ -167,84 +202,6 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
         if (BattleEnemyAnalysisView.Instance != null)
         {
             BattleEnemyAnalysisView.Instance.ValidateSelectedUnit(); // 클릭 적 정보 실시간 갱신
-        }
-    }
-
-    private void OnGUI() // 적 행동 대상 화살표 출력
-    {
-        if (SceneManager.GetActiveScene().name != BattleSceneName ||
-            battleSceneSetup == null ||
-            !battleSceneSetup.IsInitialized ||
-            battleSceneSetup.EnemyActionRuntime == null)
-        {
-            return;
-        }
-
-        IReadOnlyList<BattleEnemyAction> plannedActions =
-            battleSceneSetup.EnemyActionRuntime.PlannedActions; // 현재 예정 행동 조회
-
-        BattleEnemyAction singleAction =
-            arrowDisplayMode == ArrowDisplayMode.Single
-                ? SelectSingleArrowAction(
-                    plannedActions)
-                : null; // 하나씩 모드에서 표시할 행동 선택
-
-        BattleUnitView[] unitViews =
-            FindObjectsByType<BattleUnitView>(
-                FindObjectsSortMode.None); // 현재 전투 유닛 화면 조회
-
-        for (int index = 0;
-             index < plannedActions.Count;
-             index += 1)
-        {
-            BattleEnemyAction action =
-                plannedActions[index]; // 현재 행동 조회
-
-            if (action == null ||
-                action.Actor == null ||
-                action.Target == null ||
-                action.Actor.IsDead ||
-                action.Target.IsDead)
-            {
-                continue;
-            }
-
-            if (arrowDisplayMode == ArrowDisplayMode.Single &&
-                action != singleAction)
-            {
-                continue; // 하나씩 모드의 비선택 행동 화살표 숨김
-            }
-
-            BattleUnitView actorView =
-                FindUnitView(
-                    unitViews,
-                    action.Actor); // 행동 적 화면 조회
-
-            BattleUnitView targetView =
-                FindUnitView(
-                    unitViews,
-                    action.Target); // 행동 대상 화면 조회
-
-            if (actorView == null ||
-                targetView == null)
-            {
-                continue;
-            }
-
-            bool specialPattern =
-                IsBossSpecialPattern(
-                    action); // 특수 패턴 여부 확인
-
-            bool focused =
-                BattleEnemyIntentDetailView.Instance != null &&
-                BattleEnemyIntentDetailView.Instance.IsFocused(
-                    action); // 현재 행동 설명 선택 여부 확인
-
-            DrawTargetArrow(
-                actorView,
-                targetView,
-                specialPattern,
-                focused); // 행동 적에서 대상까지 화살표 출력
         }
     }
 
@@ -681,201 +638,6 @@ public sealed class BattleEnemyIntentRuntimePresenter : MonoBehaviour // 적 행
         }
 
         return null; // 일치 유닛 화면 없음 반환
-    }
-
-    private static void DrawTargetArrow(
-        BattleUnitView actorView,
-        BattleUnitView targetView,
-        bool specialPattern,
-        bool focused) // 적 행동 대상 화살표 출력
-    {
-        RectTransform actorRect =
-            actorView.transform as RectTransform; // 행동 적 RectTransform 조회
-
-        RectTransform targetRect =
-            targetView.transform as RectTransform; // 대상 RectTransform 조회
-
-        if (actorRect == null ||
-            targetRect == null)
-        {
-            return;
-        }
-
-        Canvas canvas =
-            actorView.GetComponentInParent<Canvas>(); // 전투 Canvas 조회
-
-        Camera canvasCamera =
-            canvas != null &&
-            canvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? canvas.worldCamera
-                : null; // Canvas 렌더 카메라 조회
-
-        Vector3 actorWorld =
-            actorRect.TransformPoint(
-                new Vector3(
-                    0f,
-                    actorRect.rect.yMax + 42f,
-                    0f)); // 행동 아이콘 근처 시작 위치 계산
-
-        Vector3 targetWorld =
-            targetRect.TransformPoint(
-                new Vector3(
-                    0f,
-                    targetRect.rect.yMax + 18f,
-                    0f)); // 대상 머리 위 종료 위치 계산
-
-        Vector2 actorScreen =
-            RectTransformUtility.WorldToScreenPoint(
-                canvasCamera,
-                actorWorld); // 행동 적 화면 좌표 계산
-
-        Vector2 targetScreen =
-            RectTransformUtility.WorldToScreenPoint(
-                canvasCamera,
-                targetWorld); // 대상 화면 좌표 계산
-
-        Vector2 start =
-            new Vector2(
-                actorScreen.x,
-                Screen.height - actorScreen.y); // 행동 적 IMGUI 좌표 변환
-
-        Vector2 end =
-            new Vector2(
-                targetScreen.x,
-                Screen.height - targetScreen.y); // 대상 IMGUI 좌표 변환
-
-        Color arrowColor =
-            specialPattern
-                ? new Color(
-                    1f,
-                    0.55f,
-                    0.12f,
-                    focused ? 1f : 0.85f)
-                : new Color(
-                    1f,
-                    0.2f,
-                    0.2f,
-                    focused ? 1f : 0.65f); // 일반·특수 행동별 화살표 색상
-
-        DrawArrow(
-            start,
-            end,
-            focused ? 5f : 3f,
-            focused ? 20f : 16f,
-            arrowColor); // 대상 화살표 출력
-    }
-
-    private static void DrawArrow(
-        Vector2 start,
-        Vector2 end,
-        float thickness,
-        float headSize,
-        Color color) // IMGUI 화살표 출력
-    {
-        Vector2 direction =
-            end - start; // 화살표 방향 계산
-
-        float length =
-            direction.magnitude; // 화살표 길이 계산
-
-        if (length < 1f)
-        {
-            return;
-        }
-
-        direction /=
-            length; // 방향 정규화
-
-        DrawLine(
-            start,
-            end,
-            thickness,
-            color); // 화살표 본선 출력
-
-        Vector2 leftDirection =
-            Rotate(
-                -direction,
-                28f); // 왼쪽 화살촉 방향 계산
-
-        Vector2 rightDirection =
-            Rotate(
-                -direction,
-                -28f); // 오른쪽 화살촉 방향 계산
-
-        DrawLine(
-            end,
-            end + leftDirection * headSize,
-            thickness,
-            color); // 왼쪽 화살촉 출력
-
-        DrawLine(
-            end,
-            end + rightDirection * headSize,
-            thickness,
-            color); // 오른쪽 화살촉 출력
-    }
-
-    private static void DrawLine(
-        Vector2 start,
-        Vector2 end,
-        float thickness,
-        Color color) // IMGUI 선 출력
-    {
-        Matrix4x4 previousMatrix =
-            GUI.matrix; // 기존 GUI 행렬 저장
-
-        Color previousColor =
-            GUI.color; // 기존 GUI 색상 저장
-
-        Vector2 delta =
-            end - start; // 선 방향 계산
-
-        float angle =
-            Mathf.Atan2(
-                delta.y,
-                delta.x) *
-            Mathf.Rad2Deg; // 선 회전 각도 계산
-
-        GUI.color = color; // 선 색상 적용
-
-        GUIUtility.RotateAroundPivot(
-            angle,
-            start); // 시작점 기준 선 회전
-
-        GUI.DrawTexture(
-            new Rect(
-                start.x,
-                start.y - thickness * 0.5f,
-                delta.magnitude,
-                thickness),
-            Texture2D.whiteTexture); // 선 출력
-
-        GUI.matrix =
-            previousMatrix; // GUI 행렬 복원
-
-        GUI.color =
-            previousColor; // GUI 색상 복원
-    }
-
-    private static Vector2 Rotate(
-        Vector2 vector,
-        float degrees) // 2D 벡터 회전
-    {
-        float radians =
-            degrees *
-            Mathf.Deg2Rad; // 라디안 변환
-
-        float cosine =
-            Mathf.Cos(
-                radians); // 코사인 계산
-
-        float sine =
-            Mathf.Sin(
-                radians); // 사인 계산
-
-        return new Vector2(
-            vector.x * cosine - vector.y * sine,
-            vector.x * sine + vector.y * cosine); // 회전 벡터 반환
     }
 
     private void OnDestroy() // 행동 표시 관리자 제거 처리

@@ -1,8 +1,10 @@
 using System.Collections; // 플레이 모드 대기 사용
 using NUnit.Framework; // 전투 배치 검증 사용
+using TMPro; // 적 행동 순번 글자 검사 사용
 using UnityEngine; // 화면 좌표와 전투 객체 사용
 using UnityEngine.SceneManagement; // 실제 게임 씬 이동 사용
 using UnityEngine.TestTools; // 플레이 모드 검사 사용
+using UnityEngine.UI; // 화살표 표시 버튼 검사 사용
 public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 배치 검사
 { // 전투 배치 검사 시작
     [UnityTest] // 실제 전투 화면 검사 지정
@@ -110,6 +112,90 @@ public sealed class BattlefieldPlacementTests // 배경에 맞춘 전투 유닛 
         Assert.LessOrEqual(canvas.InverseTransformPoint(corners[1]).y, battlefieldTop + 1f); // 소환 적의 배경 상단 영역 포함 확인
         Assert.GreaterOrEqual(canvas.InverseTransformPoint(corners[0]).x, canvas.rect.xMin - 1f); // 소환 적의 화면 왼쪽 경계 확인
         Assert.LessOrEqual(canvas.InverseTransformPoint(corners[2]).x, canvas.rect.xMax + 1f); // 소환 적의 화면 오른쪽 경계 확인
+        Assert.GreaterOrEqual(battle.EnemyActionRuntime.PrepareActions(), 2); // 실제 보스와 소환 적의 행동 준비 확인
+        yield return new WaitForSecondsRealtime(0.1f); // 실제 게임 프레임의 적 행동 화면 갱신 대기
+        Canvas.ForceUpdateCanvases(); // 적 행동 화면 배치 갱신
+        BattleEnemyArrowsView arrows = Object.FindFirstObjectByType<BattleEnemyArrowsView>(); // 실제 대상 화살표 화면 조회
+        Assert.IsNotNull(arrows); // 대상 화살표 화면 존재 확인
+        Assert.IsFalse(arrows.raycastTarget); // 화살표의 카드와 유닛 입력 차단 방지 확인
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 실제 예정 행동마다 화살표 표시 확인
+        for (int index = 0; index < battle.EnemyActionRuntime.PlannedActions.Count; index++) // 실제 예정 적 행동 순회
+        { // 적 행동과 화살표 검사 시작
+            BattleEnemyAction action = battle.EnemyActionRuntime.PlannedActions[index]; // 현재 예정 행동 조회
+            BattleUnitView actor = null; // 실제 행동 적 화면 초기화
+            foreach (BattleUnitView unit in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 실제 전투 유닛 화면 순회
+            { // 행동 적 화면 탐색 시작
+                if (unit.RuntimeUnit == action.Actor) // 현재 행동 적 확인
+                { // 행동 적 저장 시작
+                    actor = unit; // 실제 행동 적 화면 저장
+                    break; // 행동 적 화면 탐색 종료
+                } // 행동 적 저장 종료
+            } // 행동 적 화면 탐색 종료
+            Assert.IsNotNull(actor); // 행동 적 화면 존재 확인
+            Transform order = actor.transform.Find("EnemyActionOrder"); // 적 머리 위 행동 순번 표시 조회
+            Assert.IsNotNull(order); // 적 행동 순번 화면 존재 확인
+            Assert.IsTrue(order.gameObject.activeSelf); // 실제 행동 적의 순번 표시 확인
+            Assert.AreEqual(action.ActionOrder.ToString(), order.GetComponentInChildren<TMP_Text>().text); // 실제 행동 순서와 표시 숫자 일치 확인
+            Canvas orderLayer = order.GetComponent<Canvas>(); // 행동 순번의 독립 표시 순서 조회
+            Assert.IsTrue(orderLayer.overrideSorting); // 행동 순번 독립 표시 순서 확인
+            Assert.Greater(orderLayer.sortingOrder, arrows.GetComponent<Canvas>().sortingOrder); // 화살표가 행동 순번을 가리지 않는지 확인
+            (order as RectTransform).GetWorldCorners(corners); // 적 행동 순번 화면 꼭짓점 조회
+            float orderBottom = canvas.InverseTransformPoint(corners[0]).y; // 행동 순번 아래쪽 높이 계산
+            RectTransform actorPortrait = actor.transform.Find("Portrait") as RectTransform; // 적 캐릭터 그림 영역 조회
+            actorPortrait.GetWorldCorners(corners); // 적 그림 화면 꼭짓점 조회
+            Assert.Greater(orderBottom, canvas.InverseTransformPoint(corners[1]).y); // 행동 순번이 적 머리 위에 표시되는지 확인
+            Assert.IsTrue(arrows.TryGetArrow(index, out Vector2 start, out Vector2 end)); // 실제 행동 대상 화살표 좌표 조회 확인
+            Rect bounds = arrows.rectTransform.rect; // 전투 화면 화살표 영역 조회
+            Assert.IsTrue(bounds.Contains(start)); // 화살표 시작점 화면 내부 확인
+            Assert.IsTrue(bounds.Contains(end)); // 화살표 종료점 화면 내부 확인
+            Assert.Greater(Vector2.Distance(start, end), 1f); // 실제 적과 대상 사이 화살표 길이 확인
+            Assert.IsTrue(arrows.TryGetCurvePoint(index, 0.5f, out Vector2 middle)); // 실제 곡선 화살표 중간점 조회
+            Assert.Greater(middle.y, (start.y + end.y) * 0.5f + 1f); // 직선보다 위로 휘어진 포물선 확인
+            for (int sample = 0; sample <= 10; sample++) // 곡선 화살표 전체 위치 검사
+            { // 곡선 높이 제한 검사 시작
+                Assert.IsTrue(arrows.TryGetCurvePoint(index, sample / 10f, out Vector2 point)); // 실제 곡선 위치 조회
+                Assert.LessOrEqual(point.y, bounds.yMax - Mathf.Max(48f, bounds.height * 0.1f) + 1f); // 곡선 전체의 화면 위쪽 높이 제한 확인
+            } // 곡선 높이 제한 검사 종료
+        } // 적 행동과 화살표 검사 종료
+        Button arrowButton = null; // 실제 화살표 표시 방식 버튼 초기화
+        foreach (Button button in Object.FindObjectsByType<Button>(FindObjectsSortMode.None)) // 전투 화면 버튼 순회
+        { // 화살표 버튼 탐색 시작
+            if (button.name == "Day47ArrowModeButton") // 기존 화살표 표시 방식 버튼 확인
+            { // 화살표 버튼 저장 시작
+                arrowButton = button; // 실제 화살표 표시 방식 버튼 저장
+                break; // 화살표 버튼 탐색 종료
+            } // 화살표 버튼 저장 종료
+        } // 화살표 버튼 탐색 종료
+        Assert.IsNotNull(arrowButton); // 실제 화살표 표시 방식 버튼 존재 확인
+        arrowButton.onClick.Invoke(); // 하나씩 표시 방식 선택
+        yield return new WaitForSecondsRealtime(0.1f); // 실제 표시 방식 화면 갱신 대기
+        Assert.AreEqual(1, arrows.ArrowCount); // 하나씩 표시 시 화살표 하나만 표시 확인
+        arrowButton.onClick.Invoke(); // 전체 화살표 표시 방식 복원
+        yield return new WaitForSecondsRealtime(0.1f); // 전체 화살표 화면 갱신 대기
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 전체 표시 시 모든 행동 화살표 복원 확인
+        BattleEnemyAction redirected = battle.EnemyActionRuntime.PlannedActions[0]; // 첫 번째 예정 행동 조회
+        BattleUnitRuntime replacement = redirected.Target == battle.AllyUnits[0] ? battle.AllyUnits[1] : battle.AllyUnits[0]; // 기존 대상과 다른 아군 선택
+        Assert.IsTrue(redirected.ChangeTarget(replacement)); // 실제 예정 행동의 대상 변경 확인
+        yield return new WaitForSecondsRealtime(0.1f); // 변경된 대상 화살표 갱신 대기
+        BattleUnitView replacementView = null; // 변경된 대상 화면 초기화
+        foreach (BattleUnitView unit in Object.FindObjectsByType<BattleUnitView>(FindObjectsSortMode.None)) // 실제 전투 유닛 화면 순회
+        { // 변경된 대상 화면 탐색 시작
+            if (unit.RuntimeUnit == replacement) // 변경된 대상 아군 확인
+            { // 변경된 대상 화면 저장 시작
+                replacementView = unit; // 실제 변경 대상 화면 저장
+                break; // 변경 대상 화면 탐색 종료
+            } // 변경된 대상 화면 저장 종료
+        } // 변경된 대상 화면 탐색 종료
+        Assert.IsNotNull(replacementView); // 변경된 대상 화면 존재 확인
+        RectTransform replacementPortrait = replacementView.transform.Find("Portrait") as RectTransform; // 변경된 대상 그림 영역 조회
+        Vector3 expectedWorld = replacementPortrait.TransformPoint(new Vector3(0f, replacementPortrait.rect.yMax - replacementPortrait.rect.height * 0.12f, 0f)); // 변경된 대상 머리 위치 계산
+        Vector2 expectedEnd = arrows.rectTransform.InverseTransformPoint(expectedWorld); // 화살표 화면 기준 대상 위치 계산
+        Assert.IsTrue(arrows.TryGetArrow(0, out Vector2 ignoredStart, out Vector2 changedEnd)); // 변경된 첫 행동 화살표 조회
+        Assert.Less(Vector2.Distance(expectedEnd, changedEnd), 1f); // 변경된 실제 대상에 화살표 연결 확인
+        Assert.IsTrue(battle.EnemyActionRuntime.UnregisterEnemy(summoned)); // 소환 적 예정 행동 제거 확인
+        yield return new WaitForSecondsRealtime(0.1f); // 실제 게임 프레임의 행동 제거 화면 갱신 대기
+        Assert.IsFalse(summonedView.transform.Find("EnemyActionOrder").gameObject.activeSelf); // 행동이 없는 적의 순번 숨김 확인
+        Assert.AreEqual(battle.EnemyActionRuntime.PlannedActions.Count, arrows.ArrowCount); // 남은 행동에 맞춘 화살표 갱신 확인
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 실제 전투 배치 검사 종료
 } // 전투 배치 검사 종료
