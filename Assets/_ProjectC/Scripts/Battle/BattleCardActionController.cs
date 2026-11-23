@@ -130,6 +130,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             Debug.LogWarning($"[BattleCardActionController] {runtimeUnit.DisplayName}은 {selectedCard.DisplayName}의 대상이 아닙니다."); // 잘못된 대상 출력
             return; // 유닛 클릭 처리 중단
         } // 잘못된 대상 처리 종료
+        if (selectedCard.SourceData.SwordRule == SwordCardRule.BladeWhirlwind) // 소용돌이의 고정 세 칸 확인
+        { // 세 칸 공격 시작
+            ExecuteCard(selectedCard, SwordCardCombat.GetWhirlwindArea(runtimeUnit, enemyActions.EnemyUnits)); // 선택한 적과 바로 옆 생존 적에게 실제 카드 사용
+            return; // 다른 범위의 중복 공격 차단
+        } // 세 칸 공격 종료
         var targets = selectedCard.SourceData.SwordRule == SwordCardRule.SwordDance || selectedCard.SourceData.SwordRule == SwordCardRule.HorizontalSlash ? SwordCardCombat.GetDanceArea(runtimeUnit, enemyActions.EnemyUnits) : CreateSingleTargetList(runtimeUnit); // 범위 공격은 선택 위치의 두 칸으로 고정
         ExecuteCard(selectedCard, targets); // 선택 대상에게 카드 사용
     } // 유닛 클릭 처리 종료
@@ -173,7 +178,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 취소 처리 시작
             CancelSelection(); // 체력 부족 카드 선택 해제
         } // 선택 취소 처리 종료
-        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash) // 처형 카드 선택 중 체력 변화 확인
+        if (selectedCard?.SourceData.SwordRule == SwordCardRule.Finisher || selectedCard?.SourceData.SwordRule == SwordCardRule.ExecutionSlash || selectedCard?.SourceData.SwordRule == SwordCardRule.BloodTrail) // 조건부 카드의 체력과 출혈 변화 확인
         { // 대상 범위 갱신 시작
             UpdateTargetHighlights(); // 현재 체력에 맞춰 선택 가능한 적 표시
         } // 대상 범위 갱신 종료
@@ -223,7 +228,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 추가 피해 보관 종료
         } // 칼날 정비 소모 종료
         paidActionPoints = cost; // 충돌 시점에 사용할 실제 지불 비용 보관
-        if (cardInstance.SourceData.SwordRule == SwordCardRule.DoomBlade) // 파멸의 검 체력 대가 확인
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.DoomBlade || cardInstance.SourceData.SwordRule == SwordCardRule.BloodOath) // 생존 체력을 지불하는 검 카드 확인
         { // 체력 대가 지불 시작
             cardInstance.OwnerUnit.TrySpendHealth(cardInstance.SourceData.SecondaryEffectValue); // 방어도를 건너뛰고 생존 가능한 체력 대가 지불
             actorView.ShowStatusFeedback($"체력 -{cardInstance.SourceData.SecondaryEffectValue}", true); // 소유자에게 체력 소모 표시
@@ -486,6 +491,10 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 선택 불가 처리 시작
             return false; // 잘못된 대상 반환
         } // 선택 불가 처리 종료
+        if (cardInstance.SourceData.SwordRule == SwordCardRule.BloodTrail && targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed) == null) // 대상의 현재 출혈 여부 확인
+        { // 추적 대상 제한 시작
+            return false; // 출혈 없는 적의 선택 차단
+        } // 추적 대상 제한 종료
         if (cardInstance.SourceData.SwordRule == SwordCardRule.Finisher && !SwordCardCombat.IsFinisherTarget(targetUnit)) // 선택한 적의 현재 체력 재검사
         { // 처형 대상 제한 시작
             return false; // 체력 오분의 일을 넘는 적 선택 차단
@@ -816,7 +825,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 무작위 연타 종료
     private int ApplyDamageHit(CardInstance cardInstance, BattleUnitRuntime targetUnit) // 카드 공격 한 타격 적용
     { // 타격 판정 시작
-        if (!BattleHitChance.Roll(cardInstance.OwnerUnit)) // 실명 상태의 공격 명중 확인
+        if (!BattleHitChance.Roll(cardInstance.OwnerUnit, targetUnit)) // 실명 상태의 공격 명중 확인
         { // 카드 공격 빗나감 처리 시작
             BattleCardDamageContext.TryConsume(out _, out _); // 빗나간 대상의 카드 피해 문맥 소비
             FindUnitView(targetUnit)?.ShowStatusFeedback("빗나감", false); // 선택 대상의 빗나감 표시
@@ -831,6 +840,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 약화 대상 추가 피해 시작
             baseDamage = (int)Math.Min(int.MaxValue, (long)baseDamage * 3 / 2); // 임시 추가 피해 오십 퍼센트 적용
         } // 약화 대상 추가 피해 종료
+        baseDamage = SwordCardCombat.ApplyAttackStances(cardInstance, targetUnit, baseDamage); // 타격 순간의 검 강화와 마무리 체력 조건 적용
         int modifiedDamage = cardInstance.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 정신 상태 포함 최종 원본 피해 계산
         modifiedDamage = SwordCardCombat.RollCritical(cardInstance, modifiedDamage, out bool critical); // 명중한 카드 타격에 치명타 확률 적용
         if (critical) // 치명타 발동 확인
@@ -1019,6 +1029,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 등록 시작
                     unitView.RuntimeUnit.Died += HandleUnitDied; // 유닛 사망 이벤트 등록
+                    unitView.RuntimeUnit.StatusEffectsChanged += HandleUnitHealthChanged; // 피의 추적 대상의 출혈 변경 감시 등록
                     unitView.RuntimeUnit.HealthChanged += HandleUnitHealthChanged; // 체력 비용과 처형 대상 갱신 이벤트 등록
                 } // 런타임 이벤트 등록 종료
             } // 유닛 화면 연결 종료
@@ -1034,6 +1045,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
                 if (unitView.RuntimeUnit != null) // 런타임 유닛 연결 확인
                 { // 런타임 이벤트 해제 시작
                     unitView.RuntimeUnit.Died -= HandleUnitDied; // 유닛 사망 이벤트 해제
+                    unitView.RuntimeUnit.StatusEffectsChanged -= HandleUnitHealthChanged; // 피의 추적 대상의 출혈 변경 감시 해제
                     unitView.RuntimeUnit.HealthChanged -= HandleUnitHealthChanged; // 체력 비용과 처형 대상 갱신 이벤트 해제
                 } // 런타임 이벤트 해제 종료
             } // 유닛 화면 연결 해제 종료

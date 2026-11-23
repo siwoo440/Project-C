@@ -22,7 +22,12 @@ public enum SwordCardRule // 검 카드 공격별 추가 규칙
     CheckSlash, // 소유자의 한 턴 회피
     ExecutionSlash, // 체력 절반 이하의 적에게만 사용하는 검
     PiercingLunge, // 대상의 임시 방어도 일부를 건너뛰는 검
-    TwinBladeFlurry // 모든 생존 적에서 네 번 재추첨하는 검
+    TwinBladeFlurry, // 모든 생존 적에서 네 번 재추첨하는 검
+    BloodOath, // 생존 체력을 지불하는 검 피해 강화
+    IntimidatingCharge, // 명중 후 확률로 공포를 주는 공격
+    BladeWhirlwind, // 선택한 적과 좌우 한 칸 공격
+    BloodTrail, // 출혈이 있는 적에게만 쓰는 공격
+    SeveringStrike // 대상이 받는 회복량 감소
 } // 규칙 목록 종료
 
 internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 타격 계산
@@ -42,7 +47,12 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         { // 처형 베기 사용 검사 시작
             return points.CanSpend(card.ApCost) && turn.HasFinisherTarget(2); // 행동력과 체력 절반 이하 적 확인
         } // 처형 베기 사용 검사 종료
-        return points.CanSpend(card.ApCost) && (card.SourceData.SwordRule != SwordCardRule.DoomBlade || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 일반 비용과 파멸의 검 생존 비용 확인
+        if (card.SourceData.SwordRule == SwordCardRule.BloodTrail && !turn.HasBleedingTarget()) // 추적할 출혈 적 존재 여부 확인
+        { // 추적 대상 없음 시작
+            return false; // 카드 사용과 행동력 지불 차단
+        } // 추적 대상 없음 종료
+        bool healthCost = card.SourceData.SwordRule == SwordCardRule.DoomBlade || card.SourceData.SwordRule == SwordCardRule.BloodOath; // 생존 체력을 지불할 검 확인
+        return points.CanSpend(card.ApCost) && (!healthCost || card.OwnerUnit.CanSpendHealth(card.SourceData.SecondaryEffectValue)); // 행동력과 소유자 체력 비용 확인
     } // 사용 가능 검사 종료
 
     internal static List<BattleUnitRuntime> GetDanceArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 바로 옆 한 칸의 고정 범위
@@ -64,6 +74,42 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         } // 선택 위치 확인 종료
         return area; // 이번 카드가 공격할 수 있는 고정 범위 반환
     } // 두 칸 범위 계산 종료
+
+    internal static List<BattleUnitRuntime> GetWhirlwindArea(BattleUnitRuntime anchor, IReadOnlyList<BattleUnitRuntime> order) // 선택한 적과 좌우의 실제 칸 조회
+    { // 소용돌이 범위 시작
+        var area = new List<BattleUnitRuntime>(3); // 세 칸의 생존 적 목록
+        for (int index = 0; index < order.Count; index++) // 전체 전투 배치에서 선택 위치 검색
+        { // 선택 위치 검사 시작
+            if (order[index] != anchor) // 다른 전투 위치 확인
+            { // 다른 칸 처리 시작
+                continue; // 선택 위치까지 이동
+            } // 다른 칸 처리 종료
+            for (int slot = Math.Max(0, index - 1); slot <= Math.Min(order.Count - 1, index + 1); slot++) // 양끝을 넘지 않는 바로 이웃한 세 칸 확인
+            { // 실제 범위 수집 시작
+                if (order[slot] != null && !order[slot].IsDead) // 선택한 세 칸의 생존자 확인
+                { // 대상 등록 시작
+                    area.Add(order[slot]); // 사망 칸을 넘어가지 않는 대상 추가
+                } // 대상 등록 종료
+            } // 실제 범위 수집 종료
+            break; // 선택 범위 한 번만 사용
+        } // 선택 위치 검사 종료
+        return area; // 실제 타격할 생존 적 반환
+    } // 소용돌이 범위 종료
+
+    internal static int ApplyAttackStances(CardInstance card, BattleUnitRuntime target, int damage) // 타격 직전 공격자의 검 강화와 대상 체력 비율 적용
+    { // 공격 자세 계산 시작
+        long amount = damage; // 원래 카드의 타격 수치 보관
+        if (card.CardType == CardType.Sword) // 검 카드 타격 확인
+        { // 피의 맹세 계산 시작
+            amount += card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.BloodOath)?.EffectiveValue ?? 0; // 보유한 검 강화 수치 가산
+        } // 피의 맹세 계산 종료
+        var stance = card.OwnerUnit.GetStatusEffect(BattleStatusEffectType.FinishingStance); // 해당 카드 소유자의 마무리 자세 조회
+        if (stance != null && IsFinisherTarget(target, 2)) // 현재 타격 직전 적 체력이 절반 이하인지 확인
+        { // 마무리 보정 시작
+            amount = Math.Min(int.MaxValue, amount) * (100L + stance.EffectiveValue) / 100; // 체력 조건을 만족한 카드 타격의 비율 가산과 내림
+        } // 마무리 보정 종료
+        return (int)Math.Min(int.MaxValue, amount); // 정수 범위의 원본 카드 피해 반환
+    } // 공격 자세 계산 종료
 
     internal static BattleUnitRuntime PickDanceTarget(IReadOnlyList<BattleUnitRuntime> area) // 매 타격 직전 생존 대상 추첨
     { // 실제 타격 대상 결정 시작
@@ -116,6 +162,17 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
                 type = card.SourceData.SwordRule == SwordCardRule.Thrust ? BattleStatusEffectType.Bleed : card.SourceData.SwordRule == SwordCardRule.KneeSlash ? BattleStatusEffectType.Stagger : BattleStatusEffectType.Stun; // 확률에 당첨된 상태 선택
                 value = type == BattleStatusEffectType.Bleed ? 2 : 1; // 고정 출혈 피해 또는 한 번의 행동 제한
                 break; // 확률 상태 선택 완료
+            case SwordCardRule.IntimidatingCharge: // 위협 돌진의 공포 확률
+                if (target.IsDead || UnityEngine.Random.Range(0, 100) >= value) // 사망과 공포 미발동 확인
+                { // 공포 미적용 시작
+                    return BattleStatusEffectType.None; // 공포 없는 일반 명중 처리
+                } // 공포 미적용 종료
+                type = BattleStatusEffectType.Fear; // 대상 회피를 차단하는 공포 선택
+                value = 1; // 한 개의 공포 상태 지정
+                break; // 공포 선택 종료
+            case SwordCardRule.SeveringStrike: // 절단 일격의 받는 회복량 감소
+                type = BattleStatusEffectType.HealingReceivedDown; // 다음 두 턴의 회복 감소 선택
+                break; // 회복 감소 선택 종료
             case SwordCardRule.ShieldSplitter: // 두 턴 물리 방어 감소
                 type = BattleStatusEffectType.PhysicalDefenseDown; // 기존 물리 방어 약화 사용
                 break; // 물리 약화 선택 완료

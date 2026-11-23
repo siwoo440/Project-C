@@ -7,6 +7,16 @@ using UnityEngine.UI; // 도감 버튼과 목록 사용
 public sealed class CodexView : MonoBehaviour // 로비 도감 화면
 { // 도감 화면 시작
     private static readonly string[] CategoryNames = { "상호작용", "포션", "적", "유물", "상태 이상", "찢겨진 기록", "상호작용 오브젝트" }; // 도감 분류 이름
+    private const int Columns = 6; // 기존 도감의 가로 항목 수
+    private const float Width = 195f; // 원래 항목 너비
+    private const float Height = 235f; // 원래 항목 높이
+    private const float Gap = 18f; // 항목 사이 여백
+    private const float Margin = 20f; // 목록 가장자리 여백
+    private const float RowHeight = Height + Gap; // 한 줄 이동 거리
+    private readonly List<Cell> pool = new List<Cell>(); // 현재 도감에서 재사용할 항목 셀
+    private ScrollRect scroll; // 실제 위치와 속도를 가진 스크롤
+    private int firstRow = -1; // 마지막으로 연결한 첫 행
+    private float viewportHeight = -1f; // 화면 크기 변경 감지용 높이
     private RectTransform categories; // 분류 선택 화면
     private RectTransform list; // 항목 목록 화면
     private RectTransform grid; // 항목 카드 격자
@@ -49,27 +59,21 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
     { // 항목 목록 구성 시작
         list = PreparationUi.CreatePanel("ListPanel", transform, new Vector2(0.035f, 0.055f), new Vector2(0.965f, 0.86f)); // 항목 목록 패널 생성
         LobbyUiArt.Apply(list.GetComponent<Image>(), "FormationPanel"); // 기존 도감 패널 디자인 적용
-        ScrollRect scroll = list.gameObject.AddComponent<ScrollRect>(); // 도감 항목 스크롤 추가
+        scroll = list.gameObject.AddComponent<ScrollRect>(); // 도감 항목 스크롤 추가
         RectTransform viewport = PreparationUi.CreatePanel("Viewport", list, new Vector2(0.025f, 0.025f), new Vector2(0.85f, 0.975f)); // 목록 표시 영역 생성
         viewport.GetComponent<Image>().color = new Color(0.02f, 0.045f, 0.05f, 0.88f); // 목록 안쪽 배경 설정
         viewport.gameObject.AddComponent<RectMask2D>(); // 목록 영역 밖 항목 가리기
-        GameObject gridObject = new GameObject("Grid", typeof(RectTransform), typeof(GridLayoutGroup)); // 항목 격자 객체 생성
+        GameObject gridObject = new GameObject("Grid", typeof(RectTransform)); // 실제 위치에 셀을 배치할 목록 생성
         gridObject.transform.SetParent(viewport, false); // 표시 영역에 격자 연결
         grid = gridObject.GetComponent<RectTransform>(); // 항목 격자 영역 조회
         grid.anchorMin = new Vector2(0f, 1f); // 격자 시작 앵커 설정
         grid.anchorMax = Vector2.one; // 격자 끝 앵커 설정
         grid.pivot = new Vector2(0.5f, 1f); // 격자 위쪽 기준 설정
         grid.anchoredPosition = Vector2.zero; // 격자 시작 위치 설정
-        GridLayoutGroup layout = gridObject.GetComponent<GridLayoutGroup>(); // 항목 격자 배치 조회
-        layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount; // 고정 열 수 설정
-        layout.constraintCount = 6; // 도감 항목 여섯 열 배치
-        layout.cellSize = new Vector2(195f, 235f); // 도감 카드 크기 설정
-        layout.spacing = new Vector2(18f, 18f); // 도감 카드 간격 설정
-        layout.padding = new RectOffset(20, 20, 20, 20); // 도감 목록 여백 설정
-        layout.childAlignment = TextAnchor.UpperLeft; // 항목 격자 왼쪽 정렬
         scroll.viewport = viewport; // 스크롤 표시 영역 연결
         scroll.content = grid; // 스크롤 내용 영역 연결
         scroll.horizontal = false; // 가로 스크롤 차단
+        scroll.onValueChanged.AddListener(position => RefreshVisible()); // 위치가 바뀐 경우 보이는 행 갱신
         scroll.vertical = true; // 세로 스크롤 허용
         scroll.movementType = ScrollRect.MovementType.Clamped; // 목록 범위 밖 이동 차단
         scroll.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(36f); // 선택한 스크롤 속도 적용
@@ -94,44 +98,110 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
     } // 정렬 전환 종료
     private void RebuildEntries() // 현재 분류의 항목 카드 갱신
     { // 항목 카드 갱신 시작
-        for (int index = grid.childCount - 1; index >= 0; index--) // 이전 항목 카드 순회
-        { // 이전 카드 정리 시작
-            GameObject old = grid.GetChild(index).gameObject; // 이전 항목 카드 조회
-            old.SetActive(false); // 이전 카드 즉시 숨김
-            old.transform.SetParent(null, false); // 격자에서 이전 카드 분리
-            Destroy(old); // 이전 카드 제거
-        } // 이전 카드 정리 종료
         entries.Sort((left, right) => reverse ? string.Compare(right.Name, left.Name, StringComparison.Ordinal) : string.Compare(left.Name, right.Name, StringComparison.Ordinal)); // 실제 이름 기준 정렬
         sortLabel.text = reverse ? "이름 역순" : "이름순"; // 현재 이름 정렬 방향 표시
         empty.gameObject.SetActive(entries.Count == 0); // 항목이 없을 때 안내 표시
-        int rows = (entries.Count + 5) / 6; // 여섯 열 기준 행 수 계산
-        grid.sizeDelta = new Vector2(0f, Mathf.Max(40f, 40f + rows * 235f + Mathf.Max(0, rows - 1) * 18f)); // 전체 항목 격자 높이 설정
-        grid.anchoredPosition = Vector2.zero; // 목록 상단으로 이동
-        for (int index = 0; index < entries.Count; index++) // 현재 분류의 항목 순회
-        { // 도감 카드 생성 시작
-            CreateEntry(entries[index], index); // 실제 항목 카드 생성
-        } // 도감 카드 생성 종료
+        int rows = (entries.Count + Columns - 1) / Columns; // 여섯 열 기준 전체 행 수
+        grid.sizeDelta = new Vector2(0f, Margin * 2f + rows * Height + Mathf.Max(0, rows - 1) * Gap); // 스크롤할 전체 높이 보존
+        scroll.StopMovement(); // 정렬 전 관성이 새 첫 행을 밀지 않도록 정지
+        grid.anchoredPosition = Vector2.zero; // 분류와 정렬 변경 시 맨 위로 복귀
+        firstRow = -1; // 새 항목 순서를 다시 연결할 표시
+        RefreshVisible(); // 현재 화면과 인접한 행 즉시 표시
     } // 항목 카드 갱신 종료
-    private void CreateEntry(CodexEntry entry, int index) // 실제 도감 항목 카드 생성
-    { // 도감 카드 생성 시작
-        RectTransform card = PreparationUi.CreatePanel("Entry_" + index, grid, Vector2.zero, Vector2.one); // 항목 카드 배경 생성
-        Image background = card.GetComponent<Image>(); // 카드 배경 이미지 조회
-        LobbyUiArt.Apply(background, "FormationCard"); // 기존 카드 디자인 적용
-        Button button = card.gameObject.AddComponent<Button>(); // 항목 상세 버튼 추가
-        button.targetGraphic = background; // 카드 버튼 이미지 연결
-        button.onClick.AddListener(() => ShowDetail(entry)); // 실제 항목 상세 연결
-        if (entry.Image != null) // 실제 이미지 존재 여부 확인
-        { // 항목 이미지 표시 시작
-            RectTransform icon = PreparationUi.CreatePanel("Image", card, new Vector2(0.08f, 0.25f), new Vector2(0.92f, 0.92f)); // 항목 그림 영역 생성
-            Image image = icon.GetComponent<Image>(); // 항목 이미지 조회
-            image.sprite = entry.Image; // 실제 항목 이미지 적용
-            image.color = Color.white; // 원본 이미지 색상 적용
-            image.preserveAspect = true; // 원본 이미지 비율 유지
-            image.raycastTarget = false; // 항목 버튼 입력 허용
-        } // 항목 이미지 표시 종료
-        TMP_Text name = PreparationUi.CreateText("Name", card, entry.Name, 23f); // 실제 항목 이름 생성
-        PreparationUi.Stretch(name.rectTransform, entry.Image != null ? new Vector2(0.06f, 0.05f) : new Vector2(0.06f, 0.3f), entry.Image != null ? new Vector2(0.94f, 0.23f) : new Vector2(0.94f, 0.7f)); // 이미지 유무별 이름 영역 설정
-    } // 도감 카드 생성 종료
+    private void LateUpdate() // 창 크기나 캔버스 배율에 따른 표시 범위 조정
+    { // 표시 크기 확인 시작
+        if (entries != null && list.gameObject.activeInHierarchy && !Mathf.Approximately(viewportHeight, scroll.viewport.rect.height)) // 실제 보이는 영역의 세로 변화 확인
+        { // 변경된 화면 갱신 시작
+            RefreshVisible(); // 새 화면에 들어오는 행만 추가
+        } // 변경된 화면 갱신 종료
+    } // 표시 크기 확인 종료
+    private void RefreshVisible() // 현재 화면의 셀만 실제 항목에 연결
+    { // 화면 행 연결 시작
+        if (entries == null || !list.gameObject.activeInHierarchy) // 닫힌 도감과 초기 화면 확인
+        { // 불필요한 갱신 제외 시작
+            return; // 비활성 목록 재배치 생략
+        } // 불필요한 갱신 제외 종료
+        float height = scroll.viewport.rect.height; // 현재 화면에서 사용할 세로 길이
+        int rows = (entries.Count + Columns - 1) / Columns; // 데이터 전체의 행 수
+        int visibleRows = Mathf.Min(rows, Mathf.CeilToInt(Mathf.Max(0f, height) / RowHeight) + 2); // 일부만 보이는 행과 위아래 여유분 확보
+        int start = Mathf.Clamp(Mathf.FloorToInt((grid.anchoredPosition.y - Margin) / RowHeight) - 1, 0, rows - visibleRows); // 목록 범위 안에서 첫 표시 행 결정
+        if (start == firstRow && Mathf.Approximately(height, viewportHeight)) // 같은 행 안의 스크롤 확인
+        { // 기존 연결 유지 시작
+            return; // 같은 항목과 그림의 중복 연결 생략
+        } // 기존 연결 유지 종료
+        firstRow = start; // 갱신한 첫 행 보관
+        viewportHeight = height; // 이번 크기 보관
+        int capacity = Mathf.Min(entries.Count, visibleRows * Columns); // 현재 목록에 필요한 최대 셀 수
+        while (pool.Count < capacity) // 더 큰 화면이나 분류의 첫 표시 확인
+        { // 재사용 셀 추가 시작
+            pool.Add(new Cell(grid, ShowDetail)); // 새로 필요한 셀만 한 번 생성
+        } // 재사용 셀 추가 종료
+        for (int offset = 0; offset < pool.Count; offset++) // 현재 도감이 소유한 셀 순회
+        { // 개별 셀 연결 시작
+            int index = start * Columns + offset; // 표시할 실제 항목 순번
+            if (offset < capacity) // 현재 화면 범위의 셀 확인
+            { // 보이는 행 처리 시작
+                var cell = pool[index % capacity]; // 겹치는 항목은 같은 셀에 남는 순환 위치
+                cell.Bind(index, index < entries.Count ? entries[index] : null); // 마지막 줄의 빈 칸은 숨김
+            } // 보이는 행 처리 종료
+            else // 이전 분류 또는 큰 창에서 남은 셀 확인
+            { // 여유 셀 정리 시작
+                pool[offset].Bind(-1, null); // 다음 사용을 위해 숨긴 채 유지
+            } // 여유 셀 정리 종료
+        } // 개별 셀 연결 종료
+    } // 화면 행 연결 종료
+    private sealed class Cell // 이름과 그림과 버튼을 한 번 생성하는 도감 셀
+    { // 재사용 셀 시작
+        private readonly RectTransform area; // 셀 위치와 크기
+        private readonly Image icon; // 현재 항목의 그림
+        private readonly TMP_Text label; // 현재 항목의 이름
+        private CodexEntry entry; // 버튼이 열 현재 항목
+        private int index = -1; // 현재 셀이 표시하는 논리적 순번
+        public Cell(RectTransform parent, Action<CodexEntry> showDetail) // 공통 셀 화면과 단일 클릭 연결 생성
+        { // 셀 생성 시작
+            area = PreparationUi.CreatePanel("Entry", parent, Vector2.up, Vector2.up); // 상단 왼쪽 좌표를 사용하는 카드 영역
+            area.pivot = Vector2.up; // 카드의 왼쪽 위 기준점
+            area.sizeDelta = new Vector2(Width, Height); // 기존 도감의 카드 크기
+            var background = area.GetComponent<Image>(); // 카드 바탕 이미지
+            LobbyUiArt.Apply(background, "FormationCard"); // 기존 카드 바탕 적용
+            var button = area.gameObject.AddComponent<Button>(); // 상세 열기 버튼
+            button.targetGraphic = background; // 기존 버튼 강조 대상 유지
+            button.onClick.AddListener(() => showDetail(entry)); // 교체된 현재 항목을 여는 단일 연결
+            var imageArea = PreparationUi.CreatePanel("Image", area, new Vector2(0.08f, 0.25f), new Vector2(0.92f, 0.92f)); // 기존 원화 위치
+            icon = imageArea.GetComponent<Image>(); // 재사용할 그림 표시
+            icon.color = Color.white; // 원화 색상 유지
+            icon.preserveAspect = true; // 원화 비율 유지
+            icon.raycastTarget = false; // 상세 버튼 입력 허용
+            label = PreparationUi.CreateText("Name", area, string.Empty, 23f); // 재사용할 이름 표시
+        } // 셀 생성 종료
+        public void Bind(int nextIndex, CodexEntry nextEntry) // 보이는 자료가 바뀐 셀만 다시 연결
+        { // 셀 내용 변경 시작
+            if (nextEntry == null) // 빈 분류 또는 마지막 행의 빈 칸 확인
+            { // 비사용 셀 처리 시작
+                if (area.gameObject.activeSelf) // 실제 표시 중인 셀 확인
+                { // 비사용 화면 숨김 시작
+                    entry = null; // 이전 상세 대상 해제
+                    icon.sprite = null; // 이전 항목 그림 연결 해제
+                    area.gameObject.SetActive(false); // 표시와 클릭 차단
+                } // 비사용 화면 숨김 종료
+                return; // 빈 항목 배치 생략
+            } // 비사용 셀 처리 종료
+            if (index == nextIndex && entry == nextEntry) // 스크롤 전부터 보이던 같은 항목 확인
+            { // 같은 셀 유지 시작
+                return; // 이름과 이미지 재배치 생략
+            } // 같은 셀 유지 종료
+            index = nextIndex; // 실제 항목 순번 저장
+            entry = nextEntry; // 현재 클릭 시 열 항목 저장
+            area.name = "Entry_" + index; // 기존 도감의 실제 항목 식별 이름
+            area.anchoredPosition = new Vector2(Margin + index % Columns * (Width + Gap), -Margin - index / Columns * RowHeight); // 전체 목록 안의 원래 위치
+            icon.sprite = entry.Image; // 새 항목의 실제 그림 연결
+            bool hasImage = entry.Image != null; // 원화가 있는 항목 확인
+            icon.gameObject.SetActive(hasImage); // 원화가 없는 항목의 이전 이미지 숨김
+            label.text = entry.Name; // 현재 실제 항목 이름
+            PreparationUi.Stretch(label.rectTransform, hasImage ? new Vector2(0.06f, 0.05f) : new Vector2(0.06f, 0.3f), hasImage ? new Vector2(0.94f, 0.23f) : new Vector2(0.94f, 0.7f)); // 이미지 유무에 맞춘 기존 이름 위치
+            area.gameObject.SetActive(true); // 새 항목의 표시와 클릭 허용
+        } // 셀 내용 변경 종료
+    } // 재사용 셀 종료
     private void ShowDetail(CodexEntry entry) // 실제 항목 상세 정보 표시
     { // 상세 화면 표시 시작
         if (transform.Find("Detail") != null) // 기존 상세 화면 존재 확인

@@ -80,10 +80,15 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 상태 수치 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 2); // 턴 종료 출혈 또는 다음 공격 약화 설명
                     } // 상태 수치 설명 종료
-                    else if (effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun) // 적 행동을 제한하는 상태
+                    else if (effect == BattleStatusEffectType.Stagger || effect == BattleStatusEffectType.Stun || effect == BattleStatusEffectType.Fear) // 적 행동이나 회피에 제약을 주는 상태
                     { // 행동 제한 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 다음 행동 취소 또는 기절 설명
                     } // 행동 제한 설명 종료
+                    else if (effect == BattleStatusEffectType.BloodOath || effect == BattleStatusEffectType.FinishingStance || effect == BattleStatusEffectType.HealingReceivedDown) // 원본 수치가 있는 맹세와 자세 및 약화 확인
+                    { // 카드 상태 설명 시작
+                        int value = effect == BattleStatusEffectType.BloodOath ? 5 : effect == BattleStatusEffectType.FinishingStance ? 30 : 50; // 시트의 검 피해와 마무리 및 회복 변화 수치
+                        description = BattleStatusEffectInstance.GetDescription(effect, value); // 도감의 상태 수치와 전투 안내 일치
+                    } // 카드 상태 설명 종료
                     else if (effect == BattleStatusEffectType.BladeMaintenance || effect == BattleStatusEffectType.PhysicalRiposte) // 검 정비와 반사 상태의 원본 수치 확인
                     { // 검 상태 설명 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, effect == BattleStatusEffectType.BladeMaintenance ? 3 : 50); // 첫 검 공격과 물리 반사의 상태 설명
