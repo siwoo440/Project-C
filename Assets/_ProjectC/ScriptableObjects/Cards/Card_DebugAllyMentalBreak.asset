@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: Card_DebugAllyMentalBreak
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_DEBUG_ALLY_MENTAL_BREAK
+  displayName: "[DEBUG] 아군 정신 붕괴"
+  description: "Day51 상태 연동 검사용 카드. 선택한 아군의 정신력을 50 감소시킨다."
+  artwork: {fileID: 0}
+  cardType: 1
+  cardTags: 0
+  targetType: 1
+  apCost: 0
+  effectType: 4
+  damageType: 0
+  effectValue: 0
+  mentalChangeValue: -50
+  statusEffectType: 0
+  statusDuration: 1
+  statusMaximumStacks: 1

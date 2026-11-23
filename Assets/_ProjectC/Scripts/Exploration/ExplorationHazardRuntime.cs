@@ -119,9 +119,24 @@ public sealed class ExplorationHazardRuntime : MonoBehaviour // 탐사 퇴색 �
             GetMentalDamage(
                 hazardLevel); // 위험도별 정신력 피해 계산
 
-        sessionManager.AddPendingHazardPenalty(
-            healthDamage,
-            mentalDamage); // 다음 전투에 반영할 환경 피해 누적
+        BattleResultManager resultManager =
+            BattleResultManager.EnsureInstance(); // 탐사 파티 영구 상태 관리자 준비
+
+        int livingAllyCount =
+            resultManager.ApplyExplorationHazardToActiveParty(
+                healthDamage,
+                mentalDamage); // 퇴색 피해를 현재 파티 HP·정신력에 즉시 반영
+
+        if (livingAllyCount == 0)
+        {
+            sessionManager.CompleteExplorationFailure(
+                "퇴색 환경 피해로 출전 파티가 전멸했습니다."); // 환경 피해 전멸 탐사 실패 처리
+        }
+        else if (livingAllyCount < 0)
+        {
+            Debug.LogWarning(
+                "[Exploration][Day51] 탐사 출전 파티가 등록되지 않아 퇴색 피해를 적용하지 못했습니다."); // 파티 미등록 경고
+        }
 
         lastHealthDamage =
             healthDamage; // 마지막 체력 피해 저장

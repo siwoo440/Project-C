@@ -45,6 +45,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     private ExplorationHazardRuntime hazardRuntime; // 퇴색 노출과 환경 피해 처리기
     private ExplorationHazardOverlayView hazardOverlayView; // 퇴색 방 시각 표시기
     private ExplorationHazardView hazardView; // 퇴색 위험 HUD 표시기
+    private ExplorationPartyStatusView partyStatusView; // 좌하단 출전 파티 상태 HUD
     private GameObject stairsObject; // 현재 계단 오브젝트
     private float nextFloorChangeAllowedTime; // 다음 층 이동 허용 시각
     private bool initialPlayerPlacementHandled; // 첫 플레이어 위치 처리 여부
@@ -60,6 +61,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
     {
         sessionManager =
             ExplorationSessionManager.EnsureInstance(); // 탐사 세션 관리자 준비
+
+        EnsurePartyStateAndView(); // 출전 파티 영구 상태와 좌하단 HUD 준비
 
         EnsureRuntimeSquareSprite(); // 런타임 사각형 스프라이트 준비
         EnsureTilemapView(); // 실제 Tilemap 표시기 준비
@@ -1193,6 +1196,25 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             stairsObject.GetComponent<ExplorationFloorStairs>(); // 계단 동작 컴포넌트 조회
 
         stairs.Initialize(this); // 현재 맵 런타임 연결
+    }
+
+    private void EnsurePartyStateAndView() // 출전 파티 HUD 준비
+    {
+        BattleResultManager resultManager =
+            BattleResultManager.EnsureInstance(); // 전투·탐사 공용 파티 상태 관리자 준비
+
+        partyStatusView =
+            GetComponent<ExplorationPartyStatusView>(); // 기존 파티 HUD 조회
+
+        if (partyStatusView == null)
+        {
+            partyStatusView =
+                gameObject.AddComponent<ExplorationPartyStatusView>(); // 좌하단 파티 HUD 런타임 추가
+        }
+
+        partyStatusView.Configure(
+            resultManager,
+            sessionManager); // 파티 상태와 탐사 상태 HUD 연결
     }
 
     private void EnsureHazardComponents() // 퇴색 환경 위험 구성 요소 준비
