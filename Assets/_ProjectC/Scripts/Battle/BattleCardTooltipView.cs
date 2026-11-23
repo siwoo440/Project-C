@@ -39,7 +39,7 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
             targetLabel = "화상 상태인 모든 적"; // 남은 화상이 있는 생존 적 전체 안내
         } // 화상 연장의 실제 대상 문구 종료
         string effectDetail = GetEffectDetail(cardInstance) + GetFollowUpDetail(cardInstance.SourceData); // 기본 효과와 후속 효과의 대상 및 수치 표시
-        if (cardInstance.SourceData.WandRule == WandCardRule.ManaRelease && availableActionPoints.HasValue) // 현재 행동력 미리보기를 쓰는 실제 마력 해방 확인
+        if (availableActionPoints.HasValue && cardInstance.CardType == CardType.Wand && cardInstance.SourceData.SpendsAllActionPoints && cardInstance.EffectType == CardEffectType.Damage) // 실제 가용 행동력으로 피해가 달라지는 지팡이 카드 확인
         { // 현재 기본 피해 미리보기 시작
             effectDetail += $" · 현재 기본 피해 {SwordCardCombat.BaseDamage(cardInstance, availableActionPoints.Value)}"; // 타격과 같은 계산식의 다음 행동 기본 수치 표시
         } // 현재 기본 피해 미리보기 종료

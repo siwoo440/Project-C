@@ -15,7 +15,7 @@ MonoBehaviour:
   minorCardId: MINOR_BATTLE_FERVOR
   displayName: "전투의 열기"
   description: "모든 아군의 피해 카드 공격력을 올린다."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 95db9c3306d95defb2a9b345d0c6a03a, type: 3}
   targetType: 1
   effectType: 2
   effectValue: 2

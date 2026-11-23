@@ -649,7 +649,8 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         RefreshActionPointStatus(); // 행동력 수량 표시 갱신
         RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
         var hoveredCard = hoveredCardView?.RuntimeCard; // 가변 기본 피해를 갱신할 현재 손패 카드
-        if (tooltipView != null && tooltipView.gameObject.activeSelf && hoveredCard?.SourceData.WandRule == WandCardRule.ManaRelease) // 기존에 열려 있는 마력 해방 상세 확인
+        if (tooltipView != null && tooltipView.gameObject.activeSelf && hoveredCard is { CardType: CardType.Wand, EffectType: CardEffectType.Damage } && // 현재 열어 둔 지팡이 피해 카드의 상세 확인
+            hoveredCard.SourceData.SpendsAllActionPoints) // 가용 행동력 변화에 기본 피해 표시가 달라지는 가변 비용 확인
         { // 현재 행동력 미리보기 갱신 시작
             tooltipView.Show(hoveredCard, sharedActionPoints?.CurrentActionPoints); // 정산 전 실제 가용 행동력으로 표시 수치 갱신
         } // 현재 행동력 미리보기 갱신 종료

@@ -1427,6 +1427,69 @@ MonoBehaviour:
     rewardOnly: 1
     relic: {fileID: 0}
     potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ABYSS_SPELL
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 3fe6efefe6845d1fb489cfe070405958, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_GREAT_EXPLOSION
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 62dab7bcede25b95a40c6bd4149ffe24, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ABSOLUTE_ZERO
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c47b60675ecb51b5b20233d45d63caa6, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_EYE_OF_STORM
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 39bfb601d7e95acfb209073356cc15f8, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_ARCANE_LIBERATION_RITE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 050542fe68c85cd990252dad6c642a16, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_TIME_STOP
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: 1b4d071d83715ecca67dc8a77b0380b3, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
+  - offerId: REWARD_SHEET_VOID_COLLAPSE
+    offerType: 0
+    price: 0
+    card: {fileID: 11400000, guid: c708a8e67d035b45a89a6b6baa450dc7, type: 2}
+    cardOwner: {fileID: 0}
+    chooseCardOwner: 1
+    rewardOnly: 1
+    relic: {fileID: 0}
+    potion: {fileID: 0}
   - offerId: REWARD_SHEET_VITAL_AIM
     offerType: 0
     price: 0

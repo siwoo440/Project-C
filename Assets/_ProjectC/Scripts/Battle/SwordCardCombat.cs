@@ -156,10 +156,16 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
         return living[selected]; // 이번 타격을 받을 생존 적 반환
     } // 실제 타격 대상 결정 종료
 
-    internal static int GetRuneBurstDamageBonus(CardInstance card, BattleUnitRuntime target) // 실제 룬 폭발의 기존 활성 대상 표식 검사
-    { // 표식 추가 피해 계산 시작
-        return card.SourceData.WandRule == WandCardRule.RuneBurst && target?.HasActiveCardDamageMark == true ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 적의 기존 표식 한 개 이상에 원본 피해를 한 번만 가산
-    } // 표식 추가 피해 계산 종료
+    internal static int GetConditionalWandDamageBonus(CardInstance card, BattleUnitRuntime target) // 실제 지팡이의 대상별 원본 추가 피해 계산
+    { // 표식 또는 감전 가산 확인 시작
+        bool matches = card.SourceData.WandRule switch // 카드마다 사용할 활성 조건 선택
+        { // 대상 약화 조건 선택 시작
+            WandCardRule.RuneBurst => target?.HasActiveCardDamageMark == true, // 기존 룬 폭발의 활성 표식 한 개 이상
+            WandCardRule.EyeOfStorm => target?.GetStatusEffect(BattleStatusEffectType.Shock) is { IsExpired: false }, // 각 타격 직전 현재 활성 감전
+            _ => false // 조건부 추가 피해가 없는 일반 지팡이
+        }; // 대상 약화 조건 선택 종료
+        return matches ? Math.Max(0, card.SourceData.SecondaryEffectValue) : 0; // 조건별 음수 없는 피해 가산량 반환
+    } // 표식 또는 감전 가산 확인 종료
 
     internal static int BaseDamage(CardInstance card, int paid, BattleUnitRuntime target = null) // 카드 공격의 방어 전 기본 피해 계산
     { // 원본 피해 계산 시작
@@ -175,7 +181,7 @@ internal static class SwordCardCombat // 검 카드 비용과 대상 및 직접 
             case SwordCardRule.Counterattack: // 직전 적 턴 이후 체력 손실 반격
                 return card.OwnerUnit.HealthLostSinceEnemyTurn / Math.Max(1, card.SourceData.SecondaryEffectValue); // 실제 잃은 체력의 절반 내림
             default: // 표기 피해의 일반 공격
-                return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + GetRuneBurstDamageBonus(card, target)); // 같은 타격 및 대상 예고의 원본과 룬 표식 가산 합계
+                return (int)Math.Min(int.MaxValue, (long)card.EffectValue + card.OwnerUnit.AttackPowerBonus + GetConditionalWandDamageBonus(card, target)); // 타격과 미리보기의 원본 및 대상별 상태 가산 합계
         } // 피해 종류 선택 종료
     } // 원본 피해 계산 종료
 

@@ -1,6 +1,7 @@
 using System; // 기본 인터페이스 기능 사용
 using TMPro; // 텍스트 메시 기능 사용
 using UnityEngine; // 유니티 UI 기본 기능 사용
+using UnityEngine.Events; // 카드 선택 버튼 동작 연결
 using UnityEngine.UI; // 유니티 UI 기능 사용
 
 public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마이너 카드 레벨업 선택 화면
@@ -10,6 +11,7 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
     private GameObject overlayObject; // 전체 화면 입력 차단과 선택 화면
     private RectTransform cardsRoot; // 선택 카드 배치 부모
     private TMP_Text titleText; // 선택 상태 제목
+    private TMP_Text pendingText; // 남은 카드 선택 횟수 표시
     private bool disposed; // 화면 종료 여부
 
     public static MinorCardSelectionView Create(Canvas parentCanvas, BattleMinorCardController battleController, PlayerLevelRunManager playerLevelManager) // 선택 화면 코드 생성
@@ -50,21 +52,30 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
         Stretch(blockerImage.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero); // 화면 전체 배치
         blockerImage.raycastTarget = true; // 뒤 전투 UI 클릭 차단
 
-        Image panelImage = CreateImage("Panel", overlayObject.transform, new Color(0.055f, 0.06f, 0.085f, 0.98f)); // 중앙 선택 패널 생성
+        Image panelImage = CreateImage("Panel", overlayObject.transform, new Color(0.035f, 0.10f, 0.12f, 0.98f)); // 중앙 선택 패널 생성
+        LobbyUiArt.Apply(panelImage, "FormationPanel"); // 기존 청록색 금속 테두리 패널 적용
+        panelImage.pixelsPerUnitMultiplier = 2f; // 선택창 크기에 맞춘 금속 테두리 두께
+        panelImage.raycastTarget = false; // 입력 차단을 전체 화면 오버레이에 일임
         RectTransform panelRect = panelImage.rectTransform; // 패널 사각형 조회
         panelRect.anchorMin = new Vector2(0.5f, 0.5f); // 중앙 앵커 설정
         panelRect.anchorMax = new Vector2(0.5f, 0.5f); // 중앙 앵커 설정
         panelRect.pivot = new Vector2(0.5f, 0.5f); // 중앙 피벗 설정
-        panelRect.sizeDelta = new Vector2(1050f, 520f); // 패널 크기 설정
+        panelRect.sizeDelta = new Vector2(1080f, 600f); // 세 선택지와 레벨 정보를 담을 중앙 패널 크기
         panelRect.anchoredPosition = Vector2.zero; // 화면 중앙 배치
 
-        titleText = CreateText("Title", panelImage.transform, 30f, Color.white, TextAlignmentOptions.Center); // 선택 제목 생성
-        SetRect(titleText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(900f, 60f), new Vector2(0f, -24f), new Vector2(0.5f, 1f)); // 제목 상단 배치
+        titleText = CreateText("Title", panelRect, 34f, new Color(1f, 0.92f, 0.76f), TextAlignmentOptions.MidlineLeft); // 레벨과 선택 제목 생성
+        titleText.fontStyle = FontStyles.Bold; // 화면 제목의 굵은 글자 적용
+        Stretch(titleText.rectTransform, Vector2.up, Vector2.one, new Vector2(42f, -88f), new Vector2(-278f, -28f)); // 왼쪽 제목과 오른쪽 횟수 영역 분리
+        pendingText = CreateText("PendingCount", panelRect, 22f, new Color(0.77f, 0.87f, 0.86f), TextAlignmentOptions.MidlineRight); // 남은 선택 횟수 생성
+        SetRect(pendingText.rectTransform, Vector2.one, Vector2.one, new Vector2(210f, 60f), new Vector2(-42f, -28f), Vector2.one); // 상단 오른쪽 횟수 표시 배치
+        Image divider = CreateImage("HeaderDivider", panelRect, new Color(0.63f, 0.48f, 0.26f, 0.88f)); // 제목과 카드 행을 구분하는 금속선 생성
+        divider.raycastTarget = false; // 구분선의 전투 입력 영향 제거
+        Stretch(divider.rectTransform, Vector2.up, Vector2.one, new Vector2(42f, -98f), new Vector2(-42f, -96f)); // 카드 행 위의 얇은 구분선 배치
 
         GameObject cardsObject = new GameObject("Cards", typeof(RectTransform), typeof(HorizontalLayoutGroup)); // 카드 가로 배치 부모 생성
         cardsObject.transform.SetParent(panelImage.transform, false); // 패널 아래 배치
         cardsRoot = cardsObject.GetComponent<RectTransform>(); // 카드 부모 저장
-        Stretch(cardsRoot, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(36f, 36f), new Vector2(-36f, -105f)); // 카드 영역 패널 내부 배치
+        Stretch(cardsRoot, Vector2.zero, Vector2.one, new Vector2(40f, 32f), new Vector2(-40f, -114f)); // 제목 아래 세 선택지 영역 배치
 
         HorizontalLayoutGroup layout = cardsObject.GetComponent<HorizontalLayoutGroup>(); // 카드 가로 레이아웃 조회
         layout.spacing = 24f; // 카드 사이 간격
@@ -88,46 +99,82 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
             return;
         }
 
-        titleText.text = $"LEVEL {levelManager.Level} · 마이너 카드 선택  |  남은 선택 {levelManager.PendingMinorCardChoices}"; // 현재 레벨과 선택권 표시
+        titleText.text = $"LEVEL {levelManager.Level} · 마이너 카드 선택"; // 현재 레벨과 카드 선택 제목 표시
+        pendingText.text = $"남은 선택 {levelManager.PendingMinorCardChoices}회"; // 실제 남은 선택 횟수 표시
         ClearCards(); // 이전 선택 카드 UI 제거
 
         for (int index = 0; index < controller.CurrentChoices.Count; index++) // 현재 선택지 순회
         {
-            CreateCardButton(controller.CurrentChoices[index]); // 선택 카드 버튼 생성
+            MinorCardData card = controller.CurrentChoices[index]; // 현재 선택 가능한 카드 조회
+            CreateCardButton(cardsRoot, card, () => controller.TrySelectCard(card)); // 기존 전투 선택 동작을 카드 버튼에 연결
         }
     }
 
-    private void CreateCardButton(MinorCardData cardData) // 마이너 카드 선택 버튼 생성
-    {
-        Button cardButton = CreateButton($"Minor_{cardData.MinorCardId}", cardsRoot, new Color(0.13f, 0.14f, 0.19f, 1f)); // 카드 버튼 생성
+    internal static Button CreateCardButton(RectTransform parent, MinorCardData cardData, UnityAction select) // 원본 데이터와 선택 동작으로 카드 선택지 생성
+    { // 카드 선택지 구성 시작
+        Button cardButton = CreateButton($"Minor_{cardData.MinorCardId}", parent, new Color(0.040f, 0.11f, 0.13f, 1f)); // 실제 선택 버튼 생성
+        Sprite frame = Resources.Load<Sprite>("UI/Battle/MinorCards/Frame"); // 마이너 카드 전용 금속 프레임 조회
+        if (frame != null) // 전용 프레임의 정상 로드 확인
+        { // 전용 카드 프레임 적용 시작
+            cardButton.image.sprite = frame; // 청록색 황동 테두리의 전용 원화 연결
+            cardButton.image.color = Color.white; // 생성 원화 고유 색상 유지
+        } // 전용 카드 프레임 적용 종료
+        else // 전용 프레임 리소스 누락 확인
+        { // 기존 공용 프레임 대체 시작
+            BattleUiArt.Apply(cardButton.image, "CardFrame"); // 전용 리소스 부재 시 기존 전투 프레임 사용
+        } // 기존 공용 프레임 대체 종료
+        ColorBlock buttonColors = cardButton.colors; // 상호작용별 프레임 색상 조회
+        buttonColors.highlightedColor = new Color(1.16f, 1.13f, 1.06f, 1f); // 마우스가 가리킨 카드의 프레임 밝기 강조
+        buttonColors.selectedColor = buttonColors.highlightedColor; // 키보드가 선택한 카드에 동일 강조 적용
+        buttonColors.pressedColor = new Color(0.70f, 0.77f, 0.76f, 1f); // 눌린 카드의 명도 변화 적용
+        cardButton.colors = buttonColors; // 상태별 선택 피드백 연결
         RectTransform cardRect = cardButton.GetComponent<RectTransform>(); // 카드 사각형 조회
-        cardRect.sizeDelta = new Vector2(290f, 330f); // 카드 크기 설정
-        cardButton.onClick.AddListener(() => controller.TrySelectCard(cardData)); // 카드 선택 처리 연결
+        cardRect.sizeDelta = new Vector2(304f, 442f); // 제목·그림·설명·효과의 독립 카드 영역
+        cardButton.onClick.AddListener(select); // 실제 카드 선택 처리 연결
 
-        TMP_Text nameText = CreateText("Name", cardButton.transform, 24f, new Color(1f, 0.84f, 0.38f, 1f), TextAlignmentOptions.Center); // 카드 이름 생성
-        Stretch(nameText.rectTransform, new Vector2(0f, 0.76f), new Vector2(1f, 1f), new Vector2(12f, 0f), new Vector2(-12f, -12f)); // 이름 상단 배치
+        TMP_Text nameText = CreateText("Name", cardRect, 28f, new Color(1f, 0.86f, 0.59f, 1f), TextAlignmentOptions.Center); // 카드 상단의 금빛 이름 생성
+        nameText.fontStyle = FontStyles.Bold; // 제목과 본문을 구분하는 굵은 글자
+        Stretch(nameText.rectTransform, new Vector2(0f, 0.865f), new Vector2(1f, 0.950f), new Vector2(34f, 0f), new Vector2(-34f, 0f)); // 전용 프레임 안쪽의 제목 영역
         nameText.text = cardData.DisplayName; // 카드 이름 적용
 
-        Image iconImage = CreateImage("Icon", cardButton.transform, new Color(0.09f, 0.1f, 0.14f, 1f)); // 카드 아이콘 영역 생성
-        RectTransform iconRect = iconImage.rectTransform; // 아이콘 사각형 조회
-        iconRect.anchorMin = new Vector2(0.5f, 0.72f); // 아이콘 상단 중앙 앵커
-        iconRect.anchorMax = new Vector2(0.5f, 0.72f); // 아이콘 상단 중앙 앵커
-        iconRect.pivot = new Vector2(0.5f, 1f); // 아이콘 상단 피벗
-        iconRect.sizeDelta = new Vector2(110f, 110f); // 아이콘 크기
-        iconRect.anchoredPosition = Vector2.zero; // 아이콘 기준 위치
-        iconImage.sprite = cardData.Icon; // 카드 아이콘 적용
-        iconImage.preserveAspect = true; // 아이콘 비율 유지
-        iconImage.raycastTarget = false; // 버튼 클릭 방해 방지
+        Image iconImage = CreateImage("Icon", cardRect, Color.white); // 배경 없는 카드 원화 영역 생성
+        Vector2 artAnchor = new Vector2(0.5f, 0.635f); // 제목과 본문 사이의 그림 중앙 위치
+        float artSize = cardData.Icon != null ? 184f : 136f; // 전용 삽화의 확대 및 기존 대체 그림 크기 유지
+        SetRect(iconImage.rectTransform, artAnchor, artAnchor, Vector2.one * artSize, Vector2.zero, new Vector2(0.5f, 0.5f)); // 위아래 글자와 분리된 삽화 영역
+        iconImage.sprite = cardData.Icon; // 카드에 지정된 원화 우선 적용
+        iconImage.enabled = iconImage.sprite != null || BattleUiArt.Apply(iconImage, GetFallbackIcon(cardData.EffectType)); // 원화가 없을 때 효과 종류에 대응하는 기존 그림 적용
+        iconImage.preserveAspect = true; // 카드 원화와 대체 그림의 원본 비율 유지
+        iconImage.raycastTarget = false; // 그림 위에서도 카드 버튼 클릭 허용
 
-        TMP_Text descriptionText = CreateText("Description", cardButton.transform, 18f, Color.white, TextAlignmentOptions.Top); // 카드 설명 생성
-        Stretch(descriptionText.rectTransform, new Vector2(0f, 0.14f), new Vector2(1f, 0.46f), new Vector2(16f, 0f), new Vector2(-16f, 0f)); // 설명 중앙 배치
-        descriptionText.text = cardData.Description; // 카드 설명 적용
-        descriptionText.textWrappingMode = TextWrappingModes.Normal; // 설명 줄바꿈 허용
+        TMP_Text descriptionText = CreateText("Description", cardRect, 23f, new Color(0.91f, 0.94f, 0.92f), TextAlignmentOptions.Center); // 카드의 독립 상세 설명 생성
+        Stretch(descriptionText.rectTransform, new Vector2(0f, 0.194f), new Vector2(1f, 0.401f), new Vector2(28f, 0f), new Vector2(-28f, 0f)); // 큰 삽화 아래와 효과 위의 고정 설명 영역
+        descriptionText.text = cardData.Description; // 원본 카드 설명 문구 적용
+        descriptionText.fontSizeMin = 16f; // 다국어의 긴 설명을 위한 최소 가독 크기
+        descriptionText.textWrappingMode = TextWrappingModes.Normal; // 설명 너비에 따른 한국어 줄바꿈
 
-        TMP_Text effectText = CreateText("Effect", cardButton.transform, 16f, new Color(0.65f, 0.82f, 1f, 1f), TextAlignmentOptions.Center); // 효과 요약 생성
-        Stretch(effectText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.15f), new Vector2(10f, 5f), new Vector2(-10f, -5f)); // 효과 하단 배치
+        bool targetsAllies = cardData.TargetType == MinorCardTargetType.AllAllies; // 대상에 따른 효과 영역의 색상 선택
+        Image effectBand = CreateImage("EffectBand", cardRect, targetsAllies ? new Color(0.065f, 0.23f, 0.20f, 1f) : new Color(0.25f, 0.10f, 0.13f, 1f)); // 아군 강화 또는 적 약화 요약 바탕
+        Stretch(effectBand.rectTransform, new Vector2(0f, 0.075f), new Vector2(1f, 0.174f), new Vector2(35f, 0f), new Vector2(-35f, 0f)); // 하단 장식 안쪽 효과 바탕 배치
+        effectBand.raycastTarget = false; // 효과 영역 위 카드 선택 클릭 허용
+        Color effectColor = targetsAllies ? new Color(0.76f, 0.95f, 0.85f) : new Color(1f, 0.80f, 0.79f); // 배경 위에서 읽기 쉬운 대상별 효과 글자색
+        TMP_Text effectText = CreateText("Effect", cardRect, 18f, effectColor, TextAlignmentOptions.Center); // 수치와 대상을 표시하는 효과 요약 생성
+        effectText.fontStyle = FontStyles.Bold; // 독립 효과 수치 강조
+        Stretch(effectText.rectTransform, new Vector2(0f, 0.075f), new Vector2(1f, 0.174f), new Vector2(42f, 3f), new Vector2(-42f, -3f)); // 효과 바탕 안쪽의 수치 영역
         effectText.text = GetEffectLabel(cardData); // 효과 요약 적용
-    }
+        return cardButton; // 생성된 실제 카드 선택 버튼 반환
+    } // 카드 선택지 구성 종료
+
+    private static string GetFallbackIcon(MinorCardEffectType effect) // 지정 원화가 없을 때 의미가 맞는 기존 전투 이미지 선택
+    { // 대체 원화 선택 시작
+        return effect switch // 적용되는 효과의 종류 확인
+        { // 효과별 원화 분기 시작
+            MinorCardEffectType.IncreaseMaxHealth => "HealthGaugeIcon", // 최대 체력 효과의 하트 원화
+            MinorCardEffectType.AttackPowerUp => "CardTypeSword", // 공격 강화 효과의 검 원화
+            MinorCardEffectType.PhysicalDefenseUp or MinorCardEffectType.PhysicalDefenseDown => "CardTypeShield", // 물리 방어 변화의 방패 원화
+            MinorCardEffectType.MagicalResistanceUp or MinorCardEffectType.MagicalResistanceDown => "CardTypeWand", // 마법 저항 변화의 완드 원화
+            _ => "CardTypePentacle" // 추가 효과 종류에 사용할 공용 펜타클 원화
+        }; // 효과별 원화 분기 종료
+    } // 대체 원화 선택 종료
 
     private static string GetEffectLabel(MinorCardData cardData) // 카드 효과 표시 문구 생성
     {
@@ -202,7 +249,13 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
         GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI)); // TMP 텍스트 오브젝트 생성
         textObject.transform.SetParent(parent, false); // 부모 연결
         TMP_Text text = textObject.GetComponent<TMP_Text>(); // TMP 텍스트 조회
+        text.font = ProjectCFontProvider.KoreanFontAsset; // 프로젝트 한글 글꼴 연결
         text.fontSize = fontSize; // 글자 크기 적용
+        text.enableAutoSizing = true; // 짧은 화면 영역에서도 기존 문구 크기 조정
+        text.fontSizeMin = fontSize * 0.76f; // 지나친 축소를 막는 최소 글자 크기
+        text.fontSizeMax = fontSize; // 원래 디자인의 최대 글자 크기
+        text.textWrappingMode = TextWrappingModes.NoWrap; // 제목·수치의 한 줄 정렬
+        text.overflowMode = TextOverflowModes.Ellipsis; // 폭이나 높이를 넘는 문구가 이웃 영역을 침범하지 않도록 제한
         text.color = color; // 글자 색 적용
         text.alignment = alignment; // 글자 정렬 적용
         text.raycastTarget = false; // 텍스트 클릭 차단 해제
@@ -221,9 +274,9 @@ public sealed class MinorCardSelectionView : MonoBehaviour, IDisposable // 마�
     {
         rectTransform.anchorMin = anchorMin; // 최소 앵커 적용
         rectTransform.anchorMax = anchorMax; // 최대 앵커 적용
+        rectTransform.pivot = pivot; // 크기와 위치를 적용할 기준점 설정
         rectTransform.sizeDelta = sizeDelta; // 크기 적용
         rectTransform.anchoredPosition = anchoredPosition; // 위치 적용
-        rectTransform.pivot = pivot; // 피벗 적용
     }
 
     public void Dispose() // 선택 화면 연결 해제

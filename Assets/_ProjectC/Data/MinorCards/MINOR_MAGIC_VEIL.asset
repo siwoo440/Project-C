@@ -15,7 +15,7 @@ MonoBehaviour:
   minorCardId: MINOR_MAGIC_VEIL
   displayName: "마력 장막"
   description: "모든 아군의 마법 저항력을 올린다."
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2f1adce5037554abb7a9258291be8203, type: 3}
   targetType: 1
   effectType: 5
   effectValue: 3
