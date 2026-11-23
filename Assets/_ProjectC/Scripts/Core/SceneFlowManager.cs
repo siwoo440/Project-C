@@ -1,3 +1,4 @@
+using System.Collections; // 씬 전환 코루틴 사용
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,6 +10,7 @@ public sealed class SceneFlowManager : MonoBehaviour
     public int CurrentSceneBuildIndex => SceneManager.GetActiveScene().buildIndex;
     public string PreviousSceneName { get; private set; }
     public bool IsLoadingScene { get; private set; }
+    private LoadingScreenView loadingScreen; // 현재 로딩 화면
 
     private void Awake()
     {
@@ -52,7 +54,8 @@ public sealed class SceneFlowManager : MonoBehaviour
 
         PreviousSceneName = CurrentSceneName; // 이전 씬 이름 저장
         IsLoadingScene = true; // 씬 전환 상태 시작
-        SceneManager.LoadScene(sceneName); // 이름 기준 씬 로드
+        loadingScreen = LoadingScreenView.Show(transform); // 로딩 화면 즉시 표시
+        StartCoroutine(LoadAsync(sceneName, -1, loadingScreen)); // 이름 기준 비동기 씬 로드
     }
 
     public void LoadScene(int buildIndex)
@@ -70,8 +73,40 @@ public sealed class SceneFlowManager : MonoBehaviour
 
         PreviousSceneName = CurrentSceneName; // 이전 씬 이름 저장
         IsLoadingScene = true; // 씬 전환 상태 시작
-        SceneManager.LoadScene(buildIndex); // 인덱스 기준 씬 로드
+        loadingScreen = LoadingScreenView.Show(transform); // 로딩 화면 즉시 표시
+        StartCoroutine(LoadAsync(null, buildIndex, loadingScreen)); // 인덱스 기준 비동기 씬 로드
     }
+
+    private IEnumerator LoadAsync(string sceneName, int buildIndex, LoadingScreenView screen) // 로딩 화면과 비동기 씬 전환
+    { // 비동기 씬 전환 시작
+        yield return null; // 로딩 화면 첫 프레임 표시 대기
+        AsyncOperation operation = null; // 비동기 로딩 작업 준비
+        try // 씬 로드 실패 감지
+        { // 씬 로드 요청 시작
+            operation = sceneName != null ? SceneManager.LoadSceneAsync(sceneName) : SceneManager.LoadSceneAsync(buildIndex); // 대상 씬 비동기 요청
+        } // 씬 로드 요청 종료
+        catch (System.Exception exception) // 로드 시작 오류 확인
+        { // 로드 실패 처리 시작
+            Debug.LogException(exception); // 로드 오류 출력
+        } // 로드 실패 처리 종료
+        if (operation == null) // 로드 작업 생성 여부 확인
+        { // 로드 실패 복구 시작
+            IsLoadingScene = false; // 씬 전환 상태 해제
+            if (screen != null) // 로딩 화면 존재 확인
+            { // 로딩 화면 제거 시작
+                Destroy(screen.gameObject); // 실패한 로딩 화면 제거
+            } // 로딩 화면 제거 종료
+            yield break; // 실패한 씬 전환 종료
+        } // 로드 실패 복구 종료
+        while (!operation.isDone) // 씬 로드 완료 여부 확인
+        { // 로딩 진행 표시 시작
+            if (screen != null) // 현재 로딩 화면 존재 확인
+            { // 진행률 갱신 시작
+                screen.SetProgress(Mathf.Clamp01(operation.progress / 0.9f)); // 실제 씬 로드 진행률 반영
+            } // 진행률 갱신 종료
+            yield return null; // 다음 프레임 대기
+        } // 로딩 진행 표시 종료
+    } // 비동기 씬 전환 종료
 
     public void LoadPreviousScene()
     {
@@ -88,6 +123,12 @@ public sealed class SceneFlowManager : MonoBehaviour
     private void HandleSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
         IsLoadingScene = false; // 씬 전환 상태 종료
+        if (loadingScreen != null) // 로딩 화면 존재 여부 확인
+        { // 로딩 화면 정리 시작
+            loadingScreen.gameObject.SetActive(false); // 새 씬의 캔버스 검색에서 로딩 화면 제외
+            Destroy(loadingScreen.gameObject); // 전환 완료 로딩 화면 제거
+            loadingScreen = null; // 로딩 화면 참조 해제
+        } // 로딩 화면 정리 종료
         Debug.Log($"[SceneFlowManager] 씬 로드 완료: {scene.name}"); // 현재 씬 확인 로그
     }
 

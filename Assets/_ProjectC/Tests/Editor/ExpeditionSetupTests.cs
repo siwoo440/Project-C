@@ -13,12 +13,12 @@ public sealed class ExpeditionSetupTests // 맵 선택과 새 편성 흐름 검�
     { // 탐사 준비 흐름 검증 시작
         yield return new EnterPlayMode(); // 플레이 모드 시작
         SceneManager.LoadScene("00_Boot"); // 부트 씬 시작
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<MainMenuController>() == null; frame++) // 메인 메뉴 준비 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && Object.FindFirstObjectByType<MainMenuController>() == null;) // 메인 메뉴 준비 대기
         { // 메뉴 대기 시작
             yield return null; // 다음 프레임 대기
         } // 메뉴 대기 종료
         Object.FindFirstObjectByType<MainMenuController>().StartGame(); // 새 로비 진입
-        for (int frame = 0; frame < 180 && Object.FindFirstObjectByType<LobbyLayoutView>() == null; frame++) // 로비 준비 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && Object.FindFirstObjectByType<LobbyLayoutView>() == null;) // 로비 준비 대기
         { // 로비 대기 시작
             yield return null; // 다음 프레임 대기
         } // 로비 대기 종료
@@ -81,7 +81,7 @@ public sealed class ExpeditionSetupTests // 맵 선택과 새 편성 흐름 검�
         StringAssert.Contains("4/4", formation.transform.Find("Message").GetComponent<TMP_Text>().text); // 현재 편성 인원 표시 확인
         StringAssert.DoesNotContain("임시 능력치", detail.Find("Description").GetComponent<TMP_Text>().text); // 개발용 설명 문구 미표시 확인
         start.onClick.Invoke(); // 선택 파티로 탐사 출발
-        for (int frame = 0; frame < 180 && SceneManager.GetActiveScene().name != "30_Exploration"; frame++) // 탐사 씬 진입 대기
+        for (float deadline = Time.realtimeSinceStartup + 30f; Time.realtimeSinceStartup < deadline && SceneManager.GetActiveScene().name != "30_Exploration";) // 탐사 씬 진입 대기
         { // 탐사 씬 대기 시작
             yield return null; // 다음 프레임 대기
         } // 탐사 씬 대기 종료
