@@ -35,6 +35,16 @@ public sealed class BattleActionPointRuntime // 전투 공용 행동력 관리
         StateChanged?.Invoke(); // 행동력 상태 변경 알림
         return true; // 행동력 지불 성공 반환
     } // 행동력 지불 종료
+    public int Gain(int amount) // 최대값을 넘지 않는 공용 행동력 회복
+    { // 행동력 회복 시작
+        int gained = Math.Min(Math.Max(0, amount), MaxActionPoints - CurrentActionPoints); // 실제 회복 가능한 양 계산
+        if (gained > 0) // 회복 여유 확인
+        { // 행동력 갱신 시작
+            CurrentActionPoints += gained; // 실제 회복량 반영
+            StateChanged?.Invoke(); // 행동력 표시 갱신
+        } // 행동력 갱신 종료
+        return gained; // 실제 회복량 반환
+    } // 행동력 회복 종료
     public bool Restore() // 공용 행동력 최대 회복
     { // 행동력 회복 시작
         if (CurrentActionPoints == MaxActionPoints) // 최대 행동력 상태 확인

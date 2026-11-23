@@ -25,7 +25,44 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
     private void LateUpdate() // F9 재생성과 층 이동 후 역할 갱신
     {
         ApplyIfNeeded(); // 현재 Seed·층 변경 여부 확인
+        TryVisitCurrentRoom(); // 실제로 들어선 첫 일반 방의 나침반 판정
     }
+
+    internal void TryVisitCurrentRoom() // 실제 플레이어가 들어선 일반 방 확인
+    { // 첫 방문 확인 시작
+        ExplorationSessionManager session = ExplorationSessionManager.Instance; // 현재 탐사 회차 조회
+        if (session == null || !session.Compass.Pending || mapRuntime?.CurrentMap == null || !mapRuntime.TryGetPlayerRoomCoordinate(out Vector2Int coordinate) || !mapRuntime.CurrentMap.TryGetCell(coordinate, out ExplorationMapCell cell)) // 기회와 실제 방 좌표 확인
+        { // 방문 대상 없는 경우 시작
+            return; // 기본 방 배치 유지
+        } // 방문 대상 없는 경우 종료
+        ApplyIfNeeded(); // 물리 접촉이 앞선 프레임의 원래 방 역할 배치 보장
+        if (session.Compass.Visit(mapRuntime.CurrentFloor, mapRuntime.CurrentMap.Seed, cell, session.EventPoolVersion, RelicRunManager.Instance?.Inventory)) // 첫 일반 방의 보유 여부와 확률 판정
+        { // 첫 방문 결과 반영 시작
+            RestoreCompassEvent(session); // 성공한 방의 전투를 실제 사건으로 교체
+            if (!ExplorationAutoSave.SaveCurrentExploration()) // 첫 방문 결과 자동 저장 확인
+            { // 자동 저장 실패 안내 시작
+                Debug.LogWarning("[ExplorationAutoSave] 나침반 판정을 저장하지 못했습니다."); // 같은 시드의 결과 유지 안내
+            } // 자동 저장 실패 안내 종료
+        } // 첫 방문 결과 반영 종료
+    } // 첫 방문 확인 종료
+
+    private void RestoreCompassEvent(ExplorationSessionManager session) // 같은 지도에 보관한 발견 사건 배치
+    { // 나침반 사건 배치 시작
+        CrackedCompassRunState compass = session.Compass; // 이번 탐사에서 보관한 사건 조회
+        if (!compass.MatchesMap(mapRuntime.CurrentFloor, mapRuntime.CurrentMap.Seed) || !mapRuntime.CurrentMap.TryGetCell(compass.FoundRoom, out ExplorationMapCell room) || room.RoomType != ExplorationRoomType.Normal) // 원래 일반 방과 중복 배치 확인
+        { // 복원 대상 없는 경우 시작
+            return; // 원래 배치 유지
+        } // 복원 대상 없는 경우 종료
+        foreach (ExplorationEventData data in ExplorationEventCatalog.LoadEvents(session.EventPoolVersion)) // 저장된 버전의 사건 후보 순회
+        { // 저장 원본 확인 시작
+            if (data != null && data.EventId == compass.EventId) // 최초 추첨과 같은 사건 확인
+            { // 발견 방 복원 시작
+                room.SetRoomType(ExplorationRoomType.Event); // 일반 방의 역할을 사건으로 변경
+                mapRuntime.CreateEventObject(room, data); // 미완료 사건만 플레이어 앞에 배치
+                return; // 동일 위치 중복 생성 방지
+            } // 발견 방 복원 종료
+        } // 저장 원본 확인 종료
+    } // 나침반 사건 배치 종료
 
     public static bool CanDescendCurrentFloor(ExplorationMapRuntime runtime) // 현재 층 진행 관문 클리어 여부 확인
     {
@@ -118,6 +155,7 @@ public sealed class ExplorationRoomRoleRuntime : MonoBehaviour // 57일차 방 �
             }
         }
 
+        RestoreCompassEvent(ExplorationSessionManager.EnsureInstance()); // 원래 방의 추첨 순서를 유지한 뒤 발견 사건 복원
         appliedSeed = currentSeed; // 현재 층 Seed 적용 완료 기록
         appliedFloor = currentFloor; // 현재 층 번호 적용 완료 기록
 

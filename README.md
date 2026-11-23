@@ -172,4 +172,6 @@
 
 개발 과정과 검증 기록은 [일차별 개발일지](Devlogs/)에서 볼 수 있다. [탐사 자원 UI](Devlogs/Day192/README.md) · [카드·유물 획득과 저장 복원](Devlogs/Day193/README.md) · [거점과 탐사 왕복 검사](Devlogs/Day194/README.md)
 
+금이 간 나침반으로 발견한 사건과 네 유물의 실제 화면은 [223일차 유물 개발일지](Devlogs/Day223/README.md)에 정리했다.
+
 [윈터폴 시제품 점검표](Devlogs/Day205/README.md)에서 실제로 획득할 수 있는 카드와 유물 수, 구현한 원문 이벤트, 아직 측정할 플레이 시간과 난이도를 확인할 수 있다.

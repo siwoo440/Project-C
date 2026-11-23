@@ -10,5 +10,8 @@ public enum RelicEffectType // 유물 효과 종류
     GainBlock, // 개별 대상의 방어도 획득
     ChangeMental, // 개별 대상의 정신력 증가
     DrawCards, // 전투 덱 카드 드로우
-    ShopDiscount // 상점 구매와 서비스 할인
+    ShopDiscount, // 상점 구매와 서비스 할인
+    DiscoverFirstRoomEvent, // 첫 일반 방의 이벤트 발견 확률 증가
+    RerollCardTarget, // 카드 무작위 대상 한 번 재추첨
+    GainActionPoints // 공용 행동력 회복
 }

@@ -3,7 +3,7 @@
     {
       "sourceRow": 2,
       "name": "금이 간 나침반",
-      "description": "탐사 시작 시 첫 노드에서 이벤트 등장 확률 증가",
+      "description": "탐사 출발 시 보유하면 출발 방을 제외한 1층 첫 일반 방에서 이벤트 등장 확률 +15%p (임시). 탐사당 1회 판정.",
       "buyMin": 183,
       "buyMax": 226,
       "buyVariance": 43,
@@ -25,7 +25,7 @@
     {
       "sourceRow": 4,
       "name": "피 묻은 주사기",
-      "description": "전투 승리 시 체력 3 회복",
+      "description": "전투 승리 시 현재 체력이 가장 낮은 생존 아군 1명의 체력 3 회복. 동률이면 편성 순서가 앞선 아군에게 적용.",
       "buyMin": 208,
       "buyMax": 248,
       "buyVariance": 40,
@@ -47,7 +47,7 @@
     {
       "sourceRow": 6,
       "name": "낡은 주사위",
-      "description": "랜덤 키워드 카드 효과 1회당 추가 보정",
+      "description": "카드 효과가 무작위 대상을 고를 때 같은 후보에서 한 번 다시 추첨해 두 번째 결과를 사용. 같은 대상이 다시 나올 수 있다.",
       "buyMin": 243,
       "buyMax": 279,
       "buyVariance": 36,
@@ -58,7 +58,7 @@
     {
       "sourceRow": 7,
       "name": "봉인된 단도",
-      "description": "처치 시 행동력 +1(턴당 1회)",
+      "description": "아군 턴에 아군이 직접 적을 처치하면 행동력 +1. 턴당 1회이며 최대 행동력을 넘지 않는다.",
       "buyMin": 261,
       "buyMax": 307,
       "buyVariance": 46,

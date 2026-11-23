@@ -20,6 +20,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
     public WandererCryRunState WandererCry { get; private set; } = new WandererCryRunState(); // 추적과 귀 막기의 다음 교전 상태
+    public CrackedCompassRunState Compass { get; private set; } = new CrackedCompassRunState(); // 첫 일반 방과 발견된 사건 기록
     public CharredWellRunState Well { get; private set; } = new CharredWellRunState(); // 회차의 우물 물과 봉인 상태
     public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
 
@@ -128,7 +129,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
     public bool IsEncounterRemoved(string runtimeEncounterId) // 현재 층에서 제거할 조우 여부 확인
     { // 제거 여부 조회 시작
-        return IsEncounterCleared(runtimeEncounterId) || avoidedEncounterIds.Contains(runtimeEncounterId); // 승리와 지도 회피 모두 재생성 방지
+        return IsEncounterCleared(runtimeEncounterId) || avoidedEncounterIds.Contains(runtimeEncounterId) || (!string.IsNullOrEmpty(runtimeEncounterId) && runtimeEncounterId == Compass.EncounterId); // 승리와 회피 및 발견 사건의 전투 재생성 방지
     } // 제거 여부 조회 종료
 
     internal bool TryKeepMapFragment(string runtimeId) // 다음 일반 전투에 사용할 지도 조각 한 장 보관
@@ -525,6 +526,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         currentFloor += 1; // 현재 층 증가
+        Compass = new CrackedCompassRunState(); // 첫 층을 떠날 때 미사용 기회와 이전 발견 기록 만료
         Well.AdvanceFloor(); // 이전 층 봉인 만료와 새 층 봉인 적용
         Cart.LeaveFloor(); // 미구매 할인을 다음 층 첫 상점으로 이월
         activeEncounter = null; // 진행 중 조우 초기화
@@ -556,6 +558,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         Cart = snapshot.cart ?? new BurntCartRunState(); // 이전 저장 또는 수레 이벤트 상태 복원
         PendingGlassFieldEffects = snapshot.glassFieldEffects; // 사용 전 들판 효과 복원
         WandererCry = snapshot.wandererCry ?? new WandererCryRunState(); // 이전 저장은 방랑자 효과 없이 복원
+        Compass = snapshot.compass ?? new CrackedCompassRunState(); // 구버전 저장의 기존 방 배치 보존
         Well = snapshot.well ?? new CharredWellRunState(); // 이전 저장의 빈 기본값 또는 우물 상태 복원
         if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
         { // 회피 목록 복원 시작
@@ -587,6 +590,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         Cart = new BurntCartRunState(); // 새 탐사의 매복과 할인 초기화
         PendingGlassFieldEffects = GlassFieldEffect.None; // 새 탐사의 들판 효과 초기화
         WandererCry = new WandererCryRunState(); // 새 탐사의 추적과 카드 후보 초기화
+        Compass = CrackedCompassRunState.ForDeparture(RelicRunManager.Instance?.Inventory); // 출발 시 보유한 나침반의 기회 기록
         Well = new CharredWellRunState(); // 새 탐사의 우물 회복과 봉인 초기화
         avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화

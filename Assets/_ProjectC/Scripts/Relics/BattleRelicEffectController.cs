@@ -10,6 +10,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private readonly IReadOnlyList<BattleUnitRuntime> allyUnits; // 현재 아군 목록
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 현재 적 목록
     private readonly BattleDeckRuntime battleDeck; // 유물 효과 연결 전투 덱
+    private readonly BattleActionPointRuntime actionPoints; // 처치 유물이 회복할 공용 행동력
     private readonly List<IDisposable> subscriptions = new List<IDisposable>(); // 전투 이벤트 구독 목록
     private readonly Dictionary<string, int> turnTriggerCounts = new Dictionary<string, int>(); // 현재 턴 유물 발동 횟수
     private readonly Dictionary<string, int> battleTriggerCounts = new Dictionary<string, int>(); // 현재 전투 유물 발동 횟수
@@ -17,7 +18,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     private bool processingTriggers; // 현재 유물 순차 처리 여부
     private bool disposed; // 관리자 종료 여부
 
-    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleDeckRuntime deck = null) // 전투 유물 관리자 생성
+    public BattleRelicEffectController(BattleEventDispatcher eventDispatcher, RelicInventoryRuntime relicInventory, RelicGoldRuntime wallet, IReadOnlyList<BattleUnitRuntime> allies, IReadOnlyList<BattleUnitRuntime> enemies, BattleDeckRuntime deck = null, BattleActionPointRuntime points = null) // 전투 유물 관리자 생성
     {
         dispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher)); // 전투 이벤트 발행기 저장
         inventory = relicInventory ?? throw new ArgumentNullException(nameof(relicInventory)); // 유물 보관함 저장
@@ -25,6 +26,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         allyUnits = allies ?? throw new ArgumentNullException(nameof(allies)); // 아군 목록 저장
         enemyUnits = enemies ?? throw new ArgumentNullException(nameof(enemies)); // 적 목록 저장
         battleDeck = deck; // 실제 전투 덱 저장
+        actionPoints = points; // 실제 공용 행동력 연결
         inventory.RelicAcquired += HandleRelicAcquired; // 전투 중 신규 유물 획득 연결
         RegisterBattleEvents(); // 전투 공용 이벤트 구독
     }
@@ -116,10 +118,15 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
         List<RelicData> orderedSnapshot = new List<RelicData>(inventory.OwnedRelics); // 현재 획득 순서 안전 복사
         foreach (RelicData relicData in orderedSnapshot) // 앞에서부터 유물 순회
         {
-            if (relicData == null || relicData.TriggerType != triggerType) // 발동 시점 일치 여부 확인
+            bool victory = triggerType == RelicTriggerType.BattleEnded && eventContext?.Result == BattleResult.Victory; // 도주와 패배를 제외한 승리 확인
+            if (relicData == null || relicData.TriggerType != triggerType && !(victory && relicData.TriggerType == RelicTriggerType.BattleVictory)) // 같은 시점 또는 승리 전용 유물 선택
             {
                 continue; // 다음 유물 확인
             }
+            if (relicData.EffectType == RelicEffectType.GainActionPoints && (eventContext?.Phase != BattleTurnPhase.PlayerTurn || eventContext.SourceUnit?.Team != BattleTeam.Ally || eventContext.TargetUnit?.Team != BattleTeam.Enemy)) // 아군 턴의 아군 직접 처치 확인
+            { // 무관한 처치 제외 시작
+                continue; // 턴당 발동 횟수 보존
+            } // 무관한 처치 제외 종료
             int interval = relicData.PlayerTurnInterval; // 유물이 요구하는 아군 턴 간격 조회
             if (interval > 0 && (eventContext == null || eventContext.Phase != BattleTurnPhase.PlayerTurn || eventContext.Round <= 0 || eventContext.Round % interval != 0)) // 지정 라운드의 아군 턴 여부 확인
             { // 발동 주기 확인 시작
@@ -192,6 +199,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
 
     private void ApplyEffect(RelicData relicData, BattleEventContext eventContext) // 유물 효과 적용
     {
+        if (relicData.EffectType == RelicEffectType.GainActionPoints) // 처치에 따른 공용 행동력 회복
+        { // 공용 행동력 처리 시작
+            actionPoints?.Gain(relicData.EffectValue); // 최대 행동력 이내로 한 번 회복
+            return; // 공용 효과 적용 완료
+        } // 공용 행동력 처리 종료
         if (relicData.EffectType == RelicEffectType.DrawCards) // 전투 덱 드로우 효과 확인
         { // 드로우 효과 처리 시작
             battleDeck?.DrawCards(relicData.EffectValue); // 실제 전투 덱에서 카드 드로우
