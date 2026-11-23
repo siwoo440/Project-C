@@ -105,7 +105,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
         productScrollRect.horizontal = false; // 가로 스크롤 비활성화
         productScrollRect.vertical = true; // 세로 스크롤 활성화
         productScrollRect.movementType = ScrollRect.MovementType.Clamped; // 목록 범위 밖 이동 차단
-        productScrollRect.scrollSensitivity = 30f; // 마우스 휠 감도 지정
+        productScrollRect.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(30f); // 선택한 상점 스크롤 속도 적용
     }
 
     private void OpenShop() // 상점 열기

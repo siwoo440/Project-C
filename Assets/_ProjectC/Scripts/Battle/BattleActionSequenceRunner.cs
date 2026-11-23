@@ -165,9 +165,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
 
                 impactAction.Invoke();
 
-                yield return
-                    new WaitForSecondsRealtime(
-                        ReactionWait);
+                yield return new WaitForSecondsRealtime(GameplaySpeedSettings.BattleDuration(ReactionWait)); // 선택한 속도로 지원 반응 대기
             }
             else
             {
@@ -179,9 +177,7 @@ public sealed class BattleActionSequenceRunner : MonoBehaviour
                 yield return
                     actorView.PlayAttackReturn();
 
-                yield return
-                    new WaitForSecondsRealtime(
-                        ReactionWait);
+                yield return new WaitForSecondsRealtime(GameplaySpeedSettings.BattleDuration(ReactionWait)); // 선택한 속도로 공격 반응 대기
             }
         }
         finally

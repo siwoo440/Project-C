@@ -72,7 +72,7 @@ public sealed class CodexView : MonoBehaviour // 로비 도감 화면
         scroll.horizontal = false; // 가로 스크롤 차단
         scroll.vertical = true; // 세로 스크롤 허용
         scroll.movementType = ScrollRect.MovementType.Clamped; // 목록 범위 밖 이동 차단
-        scroll.scrollSensitivity = 36f; // 마우스 휠 이동 폭 설정
+        scroll.scrollSensitivity = GameplaySpeedSettings.ScrollSensitivity(36f); // 선택한 스크롤 속도 적용
         Button sort = PreparationUi.CreateButton("SortButton", list, "이름순", new Vector2(0.92f, 0.89f), Vector2.zero, new Vector2(190f, 70f), ToggleSort); // 항목 이름 정렬 버튼 생성
         sortLabel = sort.GetComponentInChildren<TMP_Text>(); // 정렬 버튼 문구 조회
         empty = PreparationUi.CreateText("Empty", list, "표시할 항목이 없습니다.", 30f); // 빈 목록 안내 생성
