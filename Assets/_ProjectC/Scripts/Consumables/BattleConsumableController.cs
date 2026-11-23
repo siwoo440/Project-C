@@ -202,7 +202,12 @@ public sealed class BattleConsumableController : IDisposable // 전투 소모품
         switch (potionData.EffectType) // 포션 효과 종류 분기
         {
             case PotionEffectType.RestoreHealth: // 체력 회복 효과
-                return targetUnit.RestoreHealth(potionData.EffectValue) > 0; // 실제 체력 회복 여부 반환
+                if (potionData.EffectValue <= 0) // 유효 회복 수치 확인
+                { // 빈 회복 효과 처리
+                    return false; // 잘못된 효과 소비 방지
+                } // 효과 검사 종료
+                targetUnit.RestoreHealth(potionData.EffectValue); // 부족한 체력만 실제 회복
+                return true; // 최대 체력에서도 정상 소비
             case PotionEffectType.ChangeMental: // 정신력 변경 효과
                 if (!targetUnit.CanChangeMental(potionData.EffectValue)) // 정신력 변경 가능 여부 확인
                 {

@@ -43,7 +43,15 @@ public sealed class CupTreasureCardTests // 성배 보물 카드 검사
         yield return new ExitPlayMode(); // 플레이 모드 종료
     } // 전투 검사 종료
 
-    private static IEnumerator UseCupCards() // 다섯 카드의 실전 입력 검증
+    [UnityTest] // 최대 체력에서 사용과 비용 처리 검사
+    public IEnumerator FullHealthPartyCanUseHealingCards() // 단일 회복과 전체 회복에 대한 상한 확인
+    { // 가득 찬 파티 검사 시작
+        yield return new EnterPlayMode(); // 실제 전투 모드 진입
+        yield return UseCupCards(true); // 최대 체력으로 단일 및 전체 회복 사용
+        yield return new ExitPlayMode(); // 편집 모드 복귀
+    } // 가득 찬 파티 검사 종료
+
+    private static IEnumerator UseCupCards(bool fullHealth = false) // 다섯 카드의 실전 입력 검증
     { // 손패 검사 시작
         CharacterRosterData roster = Resources.Load<CharacterRosterData>("Characters/ArcanaRoster"); // 실제 캐릭터 명단 조회
         Assert.IsNotNull(roster); // 실제 명단 로드 확인
@@ -72,17 +80,21 @@ public sealed class CupTreasureCardTests // 성배 보물 카드 검사
             Assert.IsTrue(hand.Bind(deck, points, turns)); // 손패 입력과 실제 덱 연결
             using (var controller = new BattleCardActionController(deck, points, turns, hand, runner, new BattleStatusEffectProcessor(), allyViews, new[] { enemyView }, actions)) // 실제 카드 행동 처리 연결
             { // 카드 사용 검사 시작
-                caster.ApplyPersistentHealth(20); // 시전자 회복 여유 확보
-                ally.ApplyPersistentHealth(10); // 대상 회복 여유 확보
+                caster.ApplyPersistentHealth(fullHealth ? caster.MaxHealth : 20); // 시전자 회복 여유 확보
+                ally.ApplyPersistentHealth(fullHealth ? ally.MaxHealth : 10); // 대상 회복 여유 확보
                 yield return Play(cards[0], hand, allyViews[1], runner, points); // 치유를 동료에게 사용
-                Assert.AreEqual(18, ally.CurrentHealth); // 동료 체력 여덟 회복 확인
-                Assert.AreEqual(20, caster.CurrentHealth); // 시전자 체력 유지 확인
+                Assert.AreEqual(fullHealth ? ally.MaxHealth : 18, ally.CurrentHealth); // 동료 체력 여덟 회복 확인
+                Assert.AreEqual(fullHealth ? caster.MaxHealth : 20, caster.CurrentHealth); // 시전자 체력 유지 확인
+                if (fullHealth) // 상한 직전의 실제 회복량 확인
+                { // 체력 한 점 부족 상태 설정
+                    ally.ApplyPersistentHealth(ally.MaxHealth - 1); // 회복량이 빈 체력보다 큰 상황 준비
+                } // 상한 검사 준비 종료
                 yield return Play(cards[1], hand, allyViews[1], runner, points); // 소생을 동료에게 사용
-                Assert.AreEqual(33, ally.CurrentHealth); // 동료 체력 열다섯 회복 확인
-                Assert.AreEqual(20, caster.CurrentHealth); // 단일 대상 범위 확인
+                Assert.AreEqual(fullHealth ? ally.MaxHealth : 33, ally.CurrentHealth); // 동료 체력 열다섯 회복 확인
+                Assert.AreEqual(fullHealth ? caster.MaxHealth : 20, caster.CurrentHealth); // 단일 대상 범위 확인
                 yield return Play(cards[2], hand, null, runner, points); // 대상 클릭 없이 전체 회복 사용
-                Assert.AreEqual(43, ally.CurrentHealth); // 동료 체력 열 회복 확인
-                Assert.AreEqual(30, caster.CurrentHealth); // 시전자 체력 열 회복 확인
+                Assert.AreEqual(fullHealth ? ally.MaxHealth : 43, ally.CurrentHealth); // 동료 체력 열 회복 확인
+                Assert.AreEqual(fullHealth ? caster.MaxHealth : 30, caster.CurrentHealth); // 시전자 체력 열 회복 확인
                 int mental = ally.CurrentMental; // 동료 정신력 보관
                 int casterMental = caster.CurrentMental; // 시전자 정신력 보관
                 yield return Play(cards[3], hand, allyViews[1], runner, points); // 기도를 동료에게 사용
