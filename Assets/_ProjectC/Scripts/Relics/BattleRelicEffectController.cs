@@ -182,6 +182,9 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 조건부 효과 시작
         switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
         { // 효과 선택 시작
+            case RelicEffectType.HealthDamageBlock: // 파열된 방울의 실제 체력 피해 반응
+                var injured = context?.TargetUnit; // 방어도를 받을 실제 피격 아군
+                return injured != null && injured.Team == BattleTeam.Ally && !injured.IsDead && context.AppliedAmount > 0 && injured.GainBlock(relic.EffectValue) > 0; // 생존자에게 방어도를 지급한 경우만 전투 횟수 소모
             case RelicEffectType.DecisionActionPoint: // 확인으로 고른 카드의 별도 결정 효과 성공
                 var decisionOwner = context?.Card?.OwnerUnit; // 결정 효과가 발동한 카드 소유자
                 return context?.Phase == BattleTurnPhase.PlayerTurn && decisionOwner != null && decisionOwner == context.SourceUnit && !decisionOwner.IsDead && decisionOwner.Team == BattleTeam.Ally && actionPoints != null && actionPoints.Gain(relic.EffectValue) > 0; // 실제 회복했을 때만 턴당 횟수 소모

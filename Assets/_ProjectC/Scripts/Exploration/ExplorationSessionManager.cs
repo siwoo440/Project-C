@@ -21,6 +21,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public BurntCartRunState Cart { get; private set; } = new BurntCartRunState(); // 회차별 수레 매복과 할인 상태
     public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
     public GlassFieldEffect PendingGlassFieldEffects { get; internal set; } // 다음 실제 전투에 적용할 유리 들판 효과
+    internal int PendingSpecimenDraw { get; private set; } // 괴생체 승리로 예약한 다음 전투 드로우
+    internal int PendingSpecimenActionPoints { get; private set; } // 괴생체 승리로 예약한 다음 전투 행동력
     public WandererCryRunState WandererCry { get; private set; } = new WandererCryRunState(); // 추적과 귀 막기의 다음 교전 상태
     public CrackedCompassRunState Compass { get; private set; } = new CrackedCompassRunState(); // 첫 일반 방과 발견된 사건 기록
     public CharredWellRunState Well { get; private set; } = new CharredWellRunState(); // 회차의 우물 물과 봉인 상태
@@ -264,6 +266,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
         string runtimeEncounterId =
             activeRuntimeEncounterId; // 현재 런타임 조우 ID 보관
+        string coreRewardRoom = null; // 첫 침식핵 승리의 별도 보상 대상
         Cart.FinishAmbush(runtimeEncounterId); // 해결한 매복의 저장 재진입 해제
 
         string encounterName =
@@ -277,10 +280,21 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
             escapeGoldClaims.TryGetValue(runtimeEncounterId, out int previousEscapeGold); // 같은 조우에서 먼저 보관한 도주 골드 조회
             escapeGoldClaims.Remove(runtimeEncounterId); // 승리한 조우의 도주 골드 정산 기록 제거
             GrantVictoryRewards(activeEncounter, previousEscapeGold); // 차액과 나머지 승리 보상 지급
+            if (activeEncounter.EncounterId == "ENC_WF_ASHMAGGOT") // 실제 괴생체 원본 조우의 승리 확인
+            { // 표본병 보상 예약 시작
+                var relics = RelicRunManager.Instance?.Inventory; // 승리 시 보유한 실제 유물 조회
+                int draw = relics?.FindEffect(RelicEffectType.AberrationVictoryDraw)?.EffectValue ?? 0; // 오염 표본병의 시작 드로우 수
+                int points = relics?.FindEffect(RelicEffectType.AberrationVictoryActionPoint)?.EffectValue ?? 0; // 균열 표본병의 시작 행동력
+                PendingSpecimenDraw = (int)System.Math.Min(int.MaxValue, (long)PendingSpecimenDraw + draw); // 다음 교전의 미사용 드로우 누적
+                PendingSpecimenActionPoints = (int)System.Math.Min(int.MaxValue, (long)PendingSpecimenActionPoints + points); // 다음 교전의 미사용 행동력 누적
+            } // 표본병 보상 예약 종료
 
             if (!string.IsNullOrWhiteSpace(runtimeEncounterId))
             {
-                clearedEncounterIds.Add(runtimeEncounterId); // 해당 배치 조우 클리어 기록
+                if (clearedEncounterIds.Add(runtimeEncounterId) && activeEncounter.EncounterId == "ENC_WF_ASHSTORM_CORE") // 기존 클리어 기록과 첫 침식핵 파괴 확인
+                { // 침식핵의 추가 보상 준비 시작
+                    coreRewardRoom = runtimeEncounterId; // 같은 배치에서 한 번만 추첨할 방 기록
+                } // 침식핵의 추가 보상 준비 종료
             }
 
             Debug.Log(
@@ -330,7 +344,23 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         activeEncounter = null; // 현재 전투 데이터 초기화
         activeRuntimeEncounterId = null; // 현재 런타임 조우 ID 초기화
         ActiveEncounterInFade = false; // 완료된 교전의 퇴색 정보 해제
+        if (coreRewardRoom != null && LastClearReward != null) // 정리된 침식핵 조우의 별도 보상 확인
+        { // 침식핵 유물 지급 시작
+            LastClearReward.CoreRelic = ExplorationTreasureRewardService.TryGrantCoreRelic(coreRewardRoom); // 유물 획득과 귀환 보상 표시 연결
+        } // 침식핵 유물 지급 종료
     } // 전투 결과 처리 종료
+    internal void ApplyOpeningSpecimenRewards(BattleTurnRuntime turns) // 유효한 다음 탐사 전투의 시작 보상 전달
+    { // 표본병 시작 보상 전달 시작
+        if (activeEncounter == null || turns == null || (PendingSpecimenDraw == 0 && PendingSpecimenActionPoints == 0)) // 실제 탐사 조우와 미사용 보상 확인
+        { // 보상 전달 생략 시작
+            return; // 보상 없음 또는 전투 미성립 상태 보존
+        } // 보상 전달 생략 종료
+        int draw = PendingSpecimenDraw; // 이번 전투에 전달할 드로우 양
+        int actionPoints = PendingSpecimenActionPoints; // 이번 전투에 전달할 행동력 양
+        PendingSpecimenDraw = 0; // 이전 괴생체 승리의 드로우 중복 전달 방지
+        PendingSpecimenActionPoints = 0; // 이전 괴생체 승리의 행동력 중복 전달 방지
+        turns.QueueSpecimenOpeningRewards(draw, actionPoints); // 첫 아군 턴에 적용할 두 보상 전달
+    } // 표본병 시작 보상 전달 종료
 
     internal int GetEscapeGoldReward(BattleResultData resultData) // 결과 화면과 정산에 사용할 도주 골드 계산
     { // 도주 골드 계산 시작
@@ -633,6 +663,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         restoredHazardExposure = snapshot.hazardExposure; // 위험 노출도 복원 예약
         hasRestoredHazardExposure = true; // 위험 노출도 복원 대기 표시
         runExperienceGained = snapshot.runExperience; // 탐사 경험치 합계 복원
+        PendingSpecimenDraw = snapshot.pendingSpecimenDraw; // 이전 저장의 기본값 또는 미사용 드로우 복원
+        PendingSpecimenActionPoints = snapshot.pendingSpecimenActionPoints; // 이전 저장의 기본값 또는 미사용 행동력 복원
         runGoldGained = snapshot.runGold; // 탐사 골드 합계 복원
         runScrewGained = snapshot.runScrew; // 탐사 나사 합계 복원
         runIronPlateGained = snapshot.runIronPlate; // 탐사 철판 합계 복원
@@ -680,6 +712,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         runScrewGained = 0; // 런 나사 합계 초기화
         runIronPlateGained = 0; // 런 철판 합계 초기화
         runWireGained = 0; // 런 전선 합계 초기화
+        PendingSpecimenDraw = 0; // 새 탐사에 이전 표본병 드로우 이전 방지
+        PendingSpecimenActionPoints = 0; // 새 탐사에 이전 표본병 행동력 이전 방지
         ClearPendingHazardPenalty(); // 탐사 환경 피해 대기 상태 초기화
         ClearCurrentFloorSeed(); // 현재 층 Seed 초기화
 

@@ -221,6 +221,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     { // 전투 시작 효과 처리 시작
         GlassFieldEvent.ApplyBattleStart(exploration, allyUnits); // 들판의 회피와 고유 실명 적용
         exploration?.WandererCry.BeginBattle(exploration.ActiveRuntimeEncounterId, allyUnits); // 방랑자 명중 감소와 승리 보상 대상 연결
+        exploration?.ApplyOpeningSpecimenRewards(battleTurn); // 다음 실제 탐사 교전으로 표본병 보상 전달
     } // 전투 시작 효과 처리 종료
 
     private void InitializeBattleTutorial(Canvas battleCanvas) // 전투 안내 화면 초기화

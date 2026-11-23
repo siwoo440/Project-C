@@ -124,7 +124,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
                 return TryGrantCard(random, allowOwnerChoice, out message, out pendingOffer); // 카드 보상 지급 또는 선택 준비
 
             case ExplorationTreasureRewardType.Relic:
-                return TryGrantRelic(random, out message); // 유물 보상 지급 시도
+                return TryGrantRelic(random, out message, out _); // 보물 방의 기존 유물 보상 지급
 
             case ExplorationTreasureRewardType.Potion:
                 return TryGrantPotion(random, out message); // 포션 보상 지급 시도
@@ -171,8 +171,20 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
         return added; // 카드 지급 결과 반환
     }
 
-    private static bool TryGrantRelic(System.Random random, out string message) // 상점 카탈로그 유물 기반 보상 지급
-    {
+    internal static RelicData TryGrantCoreRelic(string runtimeId) // 침식핵 조우에 한한 별도 유물 추첨
+    { // 침식핵 유물 추첨 시작
+        int chance = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ErosionCoreRelicChance)?.EffectValue ?? 0; // 보유한 코어 조각의 추가 유물 확률
+        if (chance <= 0) // 코어 조각 보유와 발동 확률 확인
+        { // 추가 확률 없음 처리 시작
+            return null; // 기존 클리어 보상만 유지
+        } // 추가 확률 없음 처리 종료
+        var random = new System.Random(BuildStableHash(runtimeId + ":core-relic")); // 배치 조우의 독립 고정 보상 난수
+        return random.Next(100) < Mathf.Min(chance, 100) && TryGrantRelic(random, out _, out var relic) ? relic : null; // 당첨 시 미보유 유물 한 종 지급
+    } // 침식핵 유물 추첨 종료
+
+    private static bool TryGrantRelic(System.Random random, out string message, out RelicData awardedRelic) // 상점 카탈로그 유물 기반 보상 지급
+    { // 미보유 유물 지급 시작
+        awardedRelic = null; // 신규 유물 지급 전 기본 결과
         List<ShopOfferData> offers = GetValidOffers(ShopOfferType.Relic); // 유물 상품 후보 조회
         RelicRunManager relics = RelicRunManager.EnsureInstance(); // 현재 유물 보관함 조회
 
@@ -190,6 +202,7 @@ public static class ExplorationTreasureRewardService // 57일차 보물 방 랜�
             RelicAcquireResult result = relics.TryAcquire(offer.Relic); // 신규 유물 획득 시도
             if (result == RelicAcquireResult.Acquired) // 신규 유물 획득 확인
             {
+                awardedRelic = offer.Relic; // 이번에 실제 획득한 유물 원본 기록
                 message = $"보물 획득: 유물 [{offer.DisplayName}]"; // 유물 결과 안내
                 return true; // 유물 지급 성공
             }

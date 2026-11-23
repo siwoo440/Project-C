@@ -16,6 +16,7 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
     public const int BreakGlass = 0; // 유리 속 카드 꺼내기
     public const int CrossCarefully = 1; // 조심히 지나가기
     public const int RunBlind = 2; // 눈을 감고 달리기
+    internal static int BreakGlassHealthDamage => BattleResultManager.GetEventTrapHealthDamage(6); // 깨진 유리 함정의 실제 체력 피해
     private static bool resolving; // 지급 중 재입력 방지
 
     internal static ExplorationEventData Create() // 기획 원문과 선택지 생성
@@ -57,8 +58,9 @@ public static class GlassFieldEvent // 윈터폴 유리화된 들판의 선택�
                     summary = "생존 파티원에게 카드를 지급할 수 없습니다."; // 다른 선택 안내
                     return false; // 비용과 방 유지
                 } // 카드 미지급 처리 종료
-                allies.ApplyEventChange(actor, 6, 0); // 행동자 한 명의 체력 여섯 소모
-                summary = $"{actor.DisplayName} 체력 {health} → {Mathf.Max(0, health - 6)} · [{reward.DisplayName}] 획득"; // 행동자와 자기 카드 안내
+                allies.ApplyEventChange(actor, BreakGlassHealthDamage, 0); // 유리 파편의 보정된 체력 피해 적용
+                allies.TryGetSavedAllyState(actor, out int afterHealth, out _, out _); // 실제 유리 피해 뒤 남은 체력 조회
+                summary = $"{actor.DisplayName} 체력 {health} → {afterHealth} · [{reward.DisplayName}] 획득"; // 실제 남은 체력과 획득 카드 표시
             } // 유리 깨기 종료
             else // 다음 전투 효과 선택
             { // 효과 보관 시작

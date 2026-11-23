@@ -191,7 +191,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             string label = choiceData.ChoiceText; // 행동 이름 조회
             if (currentEventData.EventId == AshstormEyeEvent.Id) // 재폭풍의 눈 비용 안내 여부 확인
             { // 행동 효과 표시 시작
-                string[] effects = { "정신력 -8 · 희귀 카드 1장", "체력 -7 · 철판 +1 · 나사 +1", "정신력 +1" }; // 선택 전 확인할 비용과 보상
+                string[] effects = // 재폭풍의 눈 선택별 비용과 보상
+                { // 효과 표시 목록 시작
+                    "정신력 -8 · 희귀 카드 1장", // 응시 비용과 보상
+                    $"체력 -{AshstormEyeEvent.ShatterHealthDamage} · 철판 +1 · 나사 +1", // 파편 피해와 기존 재료 보상
+                    "정신력 +1" // 시선 회피 보상
+                }; // 효과 표시 목록 종료
                 label += "   " + effects[index]; // 선택지 옆에 효과 표시
             } // 행동 효과 표시 종료
             else if (currentEventData.EventId == AshPileEvent.Id) // 잿더미 조사 비용 안내 여부 확인
@@ -211,7 +216,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             } // 방랑자 선택 안내 종료
             else if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 비용과 다음 전투 효과 안내
             { // 들판 선택 안내 시작
-                string[] effects = { "체력 -6 · 희귀 또는 저주 각 50%", "아군 회피 +10%p · 2턴", "아군 명중 -15%p · 1턴" }; // 행동별 비용과 적용 기간
+                string[] effects = // 유리화된 들판 선택별 비용과 보상
+                { // 효과 표시 목록 시작
+                    $"체력 -{GlassFieldEvent.BreakGlassHealthDamage} · 희귀 또는 저주 각 50%", // 유리 파편 피해와 카드 확률
+                    "아군 회피 +10%p · 2턴", // 안전 통과의 다음 전투 회피
+                    "아군 명중 -15%p · 1턴" // 달리기의 다음 전투 명중 감소
+                }; // 효과 표시 목록 종료
                 label += "   " + effects[index]; // 행동 확정 전에 결과 안내
             } // 들판 선택 안내 종료
             else if (currentEventData.EventId == BurntScarecrowEvent.Id) // 허수아비 조사와 소각 비용 안내
@@ -261,7 +271,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         } // 방랑자 선택 종료
         if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 원문 선택 확인
         { // 들판 선택 시작
-            string hint = choiceIndex == GlassFieldEvent.BreakGlass ? "체력 6을 잃고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 깨기 행동자 안내
+            string hint = choiceIndex == GlassFieldEvent.BreakGlass ? $"유리 파편으로 체력 피해를 {GlassFieldEvent.BreakGlassHealthDamage} 받고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 파편의 실제 피해 안내
             SelectActorEventChoice(choiceIndex, hint, GlassFieldEvent.TryResolve); // 대상 또는 다음 전투 효과 확정
             return; // 일반 자원 선택 처리 제외
         } // 들판 선택 종료
@@ -343,7 +353,7 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, "정신력 8을 잃고 눈을 들여다볼 생존자를 선택하세요.", "선택 취소", allies.IsLivingPartyMember, allies.IsLivingPartyMember, actor => SelectAshstormOwner(runtimeId, actor)); // 응시자 선택 후 소유자 화면으로 이동
             return; // 카드 소유자 확정 전 결과 보류
         } // 응시자 선택 종료
-        string hint = choice == AshstormEyeEvent.Shatter ? "체력 7을 잃고 돌을 던질 생존자를 선택하세요." : "시선을 피하고 정신력 1을 회복할 생존자를 선택하세요."; // 행동별 대상 안내
+        string hint = choice == AshstormEyeEvent.Shatter ? $"돌을 던져 파편으로 체력 피해를 {AshstormEyeEvent.ShatterHealthDamage} 받을 생존자를 선택하세요." : "시선을 피하고 정신력 1을 회복할 생존자를 선택하세요."; // 눈 파편의 실제 피해 안내
         ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, heading, hint, "선택 취소", allies.IsLivingPartyMember, actor => CommitAshstormChoice(runtimeId, choice, actor, null)); // 생존자 선택 후 비용과 결과 반영
     } // 행동자 선택 종료
 

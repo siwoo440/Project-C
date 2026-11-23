@@ -6,6 +6,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     private const int FallbackUpgradeEffectPercent = 25; // 기존 테스트 호환 강화 효과 증가율
     internal int RelicApDiscount { get; set; } // 첫 턴 유물 비용 감소량
     internal int FirstDrawRelicApDiscount { get; set; } // 첫 드로우 카드의 턴 한정 유물 할인
+    internal int OpeningRandomRelicApDiscount { get; set; } // 퇴색한 왕관이 선택한 카드의 독립 할인
     internal int NextCardRelicApDiscount { get; set; } // 다음 유료 카드에 적용할 유물 할인
     private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
 
@@ -30,7 +31,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
         get // 현재 카드 비용 조회
         { // 지속 할인 계산 시작
             int upgradedCost = CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel); // 강화 단계 반영 기본 비용
-            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + SwordSaintDiscount; // 함께 적용되는 지속 할인 합계
+            long discount = (long)temporaryApDiscount + RelicApDiscount + FirstDrawRelicApDiscount + OpeningRandomRelicApDiscount + SwordSaintDiscount; // 서로 독립인 지속 할인 합계
             return (int)Math.Clamp(upgradedCost - discount, 0L, int.MaxValue); // 정수 범위의 할인 적용 비용 반환
         } // 지속 할인 계산 종료
     } // 고정 비용 계산 종료

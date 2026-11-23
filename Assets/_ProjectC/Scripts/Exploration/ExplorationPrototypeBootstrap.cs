@@ -310,6 +310,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             reward.LeveledUp
                 ? $" · LEVEL UP! Lv.{reward.CurrentCharacterLevel}"
                 : string.Empty; // 레벨업 문구 생성
+        string relicText = reward.CoreRelic != null ? $" · 유물 [{reward.CoreRelic.DisplayName}]" : string.Empty; // 실제 침식핵 유물 획득 문구
 
         rewardText.text =
             $"{reward.EncounterName} 클리어 보상\n" +
@@ -318,7 +319,7 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 44일차 �
             $"Gold +{reward.Gold} · " +
             $"나사 +{reward.Screw} · " +
             $"철판 +{reward.IronPlate} · " +
-            $"전선 +{reward.Wire}"; // 마지막 보상 문구 지정
+            $"전선 +{reward.Wire}{relicText}"; // 기존 재료와 추가 유물 보상 표시
     }
 
     private static TMP_Text CreateText(

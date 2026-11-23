@@ -225,6 +225,12 @@ public sealed class BattleResultManager : MonoBehaviour // Scene 간 전투 결�
         PartyStateChanged?.Invoke(); // 변경된 파티 상태 표시
     } // 이벤트 상태 변경 종료
 
+    internal static int GetEventTrapHealthDamage(int baseDamage) // 탐사 사건 함정에서 받을 체력 피해 조회
+    { // 함정 피해 계산 시작
+        int reduction = RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.EventTrapDamageReduction)?.EffectValue ?? 0; // 현재 보유한 잔광 등불의 피해 감소량
+        return Mathf.Max(0, Mathf.Max(0, baseDamage) - reduction); // 피해 경감과 체력 피해의 영점 하한
+    } // 함정 피해 계산 종료
+
     public bool TryGetSavedAllyState(
         CharacterData characterData,
         out int currentHealth,
