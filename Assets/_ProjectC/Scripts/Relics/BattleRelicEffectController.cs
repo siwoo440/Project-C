@@ -172,6 +172,32 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
     { // 조건부 효과 시작
         switch (relic.EffectType) // 획득한 유물의 실제 효과 선택
         { // 효과 선택 시작
+            case RelicEffectType.EnemyTurnAttackLoss: // 적 턴 시작 무작위 적 한 명의 공격 약화
+                if (context?.Phase != BattleTurnPhase.EnemyTurn) // 적 턴 확인
+                { // 아군 턴 제외 시작
+                    return false; // 무작위 추첨과 발동 횟수 보존
+                } // 아군 턴 제외 종료
+                var enemies = ResolveTargets(relic.TargetType, context); // 실제 생존 적 중 하나만 추첨
+                return enemies.Count > 0 && enemies[0].ApplyStatusEffect(relic.StatusEffectType, relic.EffectValue, relic.StatusDuration, relic.StatusMaximumStacks) != BattleStatusEffectApplyResult.Invalid; // 면역과 지속 규칙을 따르는 약화
+            case RelicEffectType.HealingCardBlock: // 회복 카드를 사용한 아군의 방어도 획득
+            case RelicEffectType.ChaliceCardHealing: // 성배 카드를 사용한 아군의 체력 회복
+                var card = context?.Card; // 실제 사용이 확정된 카드 원본
+                var owner = card?.OwnerUnit; // 피해를 받은 대상과 구별한 실제 사용자
+                if (context?.Phase != BattleTurnPhase.PlayerTurn || owner == null || owner.IsDead || owner.Team != BattleTeam.Ally) // 생존한 아군 사용자 확인
+                { // 무효 사용 제외 시작
+                    return false; // 발동 횟수 보존
+                } // 무효 사용 제외 종료
+                if (relic.EffectType == RelicEffectType.HealingCardBlock && (card.EffectType == CardEffectType.Heal || card.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 직접 또는 명시적 후속 체력 회복 확인
+                { // 봉합사 발동 시작
+                    owner.GainBlock(relic.EffectValue); // 회복 대상의 최대 체력과 무관하게 사용자 방어도 지급
+                    return true; // 이번 턴 사용 횟수 기록
+                } // 봉합사 발동 종료
+                if (relic.EffectType == RelicEffectType.ChaliceCardHealing && card.CardType == CardType.Cup) // 실제 성배 계열 확인
+                { // 성배 조각 발동 시작
+                    owner.RestoreHealth(relic.EffectValue); // 사용자의 최대 체력까지만 회복
+                    return true; // 이번 턴 사용 횟수 기록
+                } // 성배 조각 발동 종료
+                return false; // 무관한 카드의 발동 횟수 보존
             case RelicEffectType.CopyPlayedCard: // 첫 사용 카드 복사
                 return context?.Phase == BattleTurnPhase.PlayerTurn && battleDeck != null && battleDeck.TryAddBattleCopy(context.Card); // 손패가 가득 차면 복사 기회 보존
             case RelicEffectType.QueueNextTurnDraw: // 종료 전 손패에 따른 다음 턴 드로우

@@ -28,7 +28,8 @@ public sealed class BattleEnemyAction // 적 예정 행동 정보
     public int ActionOrder { get; private set; } // 최종 행동 순번 조회
 
     public BattleStatusEffectType BlockingStatus => Actor.GetStatusEffect(BattleStatusEffectType.Stun) != null ? BattleStatusEffectType.Stun : Actor.GetStatusEffect(BattleStatusEffectType.Stagger) != null ? BattleStatusEffectType.Stagger : BattleStatusEffectType.None; // 이번 행동을 막는 실제 상태
-    public int AttackAmount => Math.Max(0, Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0)); // 정신 상태와 다음 공격 약화를 반영한 원본 피해
+    private int TurnAttackPenalty => DamageType == BattleDamageType.Physical || DamageType == BattleDamageType.Magical ? Actor.GetStatusEffect(BattleStatusEffectType.AttackPowerDown)?.EffectiveValue ?? 0 : 0; // 물리·마법 공격에만 적용할 경보 약화
+    public int AttackAmount => Math.Max(0, Actor.ModifyOutgoingDamage(Amount) - (Actor.GetStatusEffect(BattleStatusEffectType.NextAttackDown)?.EffectiveValue ?? 0) - TurnAttackPenalty); // 정신 상태와 다음 공격 약화를 반영한 원본 피해
 
     public bool IsExecutable =>
         Actor != null &&

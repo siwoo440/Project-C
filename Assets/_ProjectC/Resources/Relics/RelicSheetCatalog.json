@@ -168,7 +168,7 @@
     {
       "sourceRow": 17,
       "name": "실험용 포션보관대",
-      "description": "포션 슬롯 +1",
+      "description": "포션 전용 슬롯 +1. 판매 시 추가 슬롯의 포션을 빈 기본 슬롯으로 옮긴다. 기본 슬롯에 빈칸이 없으면 판매할 수 없다.",
       "buyMin": 291,
       "buyMax": 339,
       "buyVariance": 48,
@@ -179,7 +179,7 @@
     {
       "sourceRow": 18,
       "name": "기름 묻은 렌치",
-      "description": "포션 사용 시 추가 회복 +2",
+      "description": "체력 회복 포션을 사용하면 원래 회복 대상마다 체력 회복량 +2. 최대 체력까지만 회복한다.",
       "buyMin": 212,
       "buyMax": 258,
       "buyVariance": 46,
@@ -190,7 +190,7 @@
     {
       "sourceRow": 19,
       "name": "청동 경보장치",
-      "description": "적 턴 시작 시 무작위 적 1명 공격력 -1(1턴)",
+      "description": "적 턴 시작 시 생존 적 한 명을 무작위로 선택한다. 해당 적은 이번 턴에 직접 공격으로 주는 물리·마법 피해가 1 감소한다.",
       "buyMin": 244,
       "buyMax": 287,
       "buyVariance": 43,
@@ -201,7 +201,7 @@
     {
       "sourceRow": 20,
       "name": "푸른 봉합사",
-      "description": "회복 카드 사용 시 보호막 +3(턴당 1회)",
+      "description": "체력 회복 카드를 사용하면 카드 사용자에게 방어도 +3. 턴당 1회. 대상이 최대 체력이어도 발동한다.",
       "buyMin": 265,
       "buyMax": 313,
       "buyVariance": 48,
@@ -212,7 +212,7 @@
     {
       "sourceRow": 21,
       "name": "고장난 시계",
-      "description": "매 3턴마다 드로우 +1(그 턴만)",
+      "description": "전투 중 아군의 3·6·9번째 턴처럼 세 번째 아군 턴마다 카드 1장을 추가로 뽑는다.",
       "buyMin": 253,
       "buyMax": 301,
       "buyVariance": 48,
@@ -223,7 +223,7 @@
     {
       "sourceRow": 22,
       "name": "희미한 성배 조각",
-      "description": "성배 카드 사용 시 체력 1 회복(턴당 2회)",
+      "description": "성배 카드를 사용하면 카드 사용자의 체력 1 회복. 턴당 2회, 최대 체력까지만 회복한다.",
       "buyMin": 231,
       "buyMax": 277,
       "buyVariance": 46,
@@ -234,7 +234,7 @@
     {
       "sourceRow": 23,
       "name": "녹슨 검집",
-      "description": "검 카드 첫 사용 시 피해 +2(매 턴)",
+      "description": "매 아군 턴에 처음 사용한 검 피해 카드의 첫 직접 적중 한 번에 피해 +2. 다단·광역 공격도 한 번만 적용한다.",
       "buyMin": 274,
       "buyMax": 321,
       "buyVariance": 47,
@@ -245,7 +245,7 @@
     {
       "sourceRow": 24,
       "name": "유리 지팡이 심",
-      "description": "지팡이 카드 첫 사용 시 마법 피해 +2(매 턴)",
+      "description": "매 아군 턴에 처음 사용한 지팡이 마법 피해 카드의 첫 직접 적중 한 번에 마법 피해 +2. 다단·광역 공격도 한 번만 적용한다.",
       "buyMin": 272,
       "buyMax": 319,
       "buyVariance": 47,

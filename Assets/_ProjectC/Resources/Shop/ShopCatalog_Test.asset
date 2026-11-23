@@ -606,6 +606,62 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 9ee7d764a43b42f58c7d8d676039e465, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_EXPERIMENTAL_POTION_RACK
+    offerType: 1
+    price: 315
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: d67ad515a18c46889bcda22773777bf1, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_GREASY_WRENCH
+    offerType: 1
+    price: 235
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 47a07b1c00804f3f8f67ec248f758205, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BRONZE_ALARM
+    offerType: 1
+    price: 265
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 61e0033007fa4246aecac769dfa2255f, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLUE_SUTURE
+    offerType: 1
+    price: 289
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: e553fd0535e44f78b0433b8751a74016, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_CLOCK
+    offerType: 1
+    price: 277
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: f1215c8042bb4113908da7855aff9c46, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_FAINT_CHALICE_SHARD
+    offerType: 1
+    price: 254
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: acdb9b886b914f2d997fd194dcbf6ddd, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RUSTY_SCABBARD
+    offerType: 1
+    price: 297
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 4fc442be2a464f0aaa2cd8c756197b38, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_GLASS_WAND_CORE
+    offerType: 1
+    price: 295
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    relic: {fileID: 11400000, guid: 25e96250cc4845dc875c5b301a2634a4, type: 2}
+    potion: {fileID: 0}
   - offerId: SHOP_RLC_FRAGMENTED_MIRROR
     offerType: 1
     price: 308

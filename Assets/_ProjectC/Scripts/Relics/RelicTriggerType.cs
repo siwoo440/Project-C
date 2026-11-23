@@ -18,5 +18,8 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     BeforeHandDiscard, // 손패 한 장이 버린 더미로 이동하기 직전
     CampRecovery, // 캠프 회복 선택 시점
     ShopCardRemoval, // 상점 카드 제거 확정 시점
-    BeforeHealthDamage // 방어도 처리 후 체력 피해 직전
+    BeforeHealthDamage, // 방어도 처리 후 체력 피해 직전
+    WhileOwned, // 회차 동안 보유할 때
+    PotionUsed, // 포션을 마시는 시점
+    CardAttackHit // 카드 직접 공격이 명중한 시점
 }

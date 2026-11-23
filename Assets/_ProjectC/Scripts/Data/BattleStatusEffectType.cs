@@ -25,5 +25,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Bleed, // 턴 종료 고정 체력 손실
     Stagger, // 다음 예고 행동 한 번 취소
     Stun, // 자기 턴 동안 행동 금지
-    NextAttackDown // 다음 공격의 원본 피해 감소
+    NextAttackDown, // 다음 공격의 원본 피해 감소
+    AttackPowerDown // 해당 적 턴의 직접 공격 피해 감소
 } // 열거형 종료

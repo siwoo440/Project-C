@@ -136,7 +136,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                     relics.Add(relic.RelicId); // 유물 식별자 보관
                 } // 유물 기록 종료
             } // 유물 수집 종료
-            string[] consumables = new string[ConsumableInventoryRuntime.SlotCount]; // 고정 소모품 슬롯 목록 생성
+            string[] consumables = new string[ConsumableRunManager.Instance?.Inventory.Capacity ?? ConsumableInventoryRuntime.SlotCount]; // 실제 보관칸 수를 포함한 저장 목록
             if (ConsumableRunManager.Instance != null) // 소모품 관리자 존재 확인
             { // 소모품 수집 시작
                 for (int index = 0; index < consumables.Length; index++) // 전체 소모품 슬롯 순회
@@ -272,6 +272,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         PartyLoadoutRuntime.Restore(loadout); // 저장 탐사 편성 연결
         deck.RestoreCards(sourceDeck, run.cards); // 저장 회차 덱 연결
         BattleResultManager.EnsureInstance().RegisterParty(party); // 저장 파티 상태 등록
+        ConsumableInventoryRuntime inventory = ConsumableRunManager.EnsureInstance().Inventory; // 복원할 회차의 보관함 준비
+        inventory.Clear(); // 이전 포션을 지운 뒤 이전 보관대 반납
         RelicRunManager relicManager = RelicRunManager.EnsureInstance(); // 유물 관리자 준비
         while (relicManager.Inventory.Count > 0) // 이전 유물 존재 확인
         { // 이전 유물 제거 시작
@@ -281,8 +283,6 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 유물 복원 시작
             relicManager.TryAcquire(relic); // 저장 순서 유물 복원
         } // 유물 복원 종료
-        ConsumableInventoryRuntime inventory = ConsumableRunManager.EnsureInstance().Inventory; // 소모품 보관함 준비
-        inventory.Clear(); // 이전 소모품 제거
         for (int index = 0; index < run.consumables.Length; index++) // 저장 소모품 슬롯 순회
         { // 소모품 슬롯 복원 시작
             if (run.consumables[index] != null) // 저장 소모품 존재 확인
@@ -363,7 +363,7 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 잘못된 탐사 재화 처리 시작
             return false; // 전체 잔액을 초과하는 획득분 복원 차단
         } // 잘못된 탐사 재화 처리 종료
-        if (snapshot.party == null || snapshot.party.Length < 1 || snapshot.party.Length > PartyData.MaxPartySize || snapshot.sourceCards == null || snapshot.sourceCards.Length < 1 || snapshot.cards == null || snapshot.relics == null || snapshot.consumables == null || snapshot.consumables.Length != ConsumableInventoryRuntime.SlotCount || !ValidIds(snapshot.cleared) || !ValidIds(snapshot.events) || !ValidIds(snapshot.purchasedOffers)) // 필수 목록과 식별자 검사
+        if (snapshot.party == null || snapshot.party.Length < 1 || snapshot.party.Length > PartyData.MaxPartySize || snapshot.sourceCards == null || snapshot.sourceCards.Length < 1 || snapshot.cards == null || snapshot.relics == null || snapshot.consumables == null || (snapshot.consumables.Length < ConsumableInventoryRuntime.SlotCount || snapshot.consumables.Length > ConsumableInventoryRuntime.MaximumSlotCount) || !ValidIds(snapshot.cleared) || !ValidIds(snapshot.events) || !ValidIds(snapshot.purchasedOffers)) // 필수 목록과 식별자 검사
         { // 목록 오류 시작
             return false; // 복원 불가 반환
         } // 목록 오류 종료
@@ -434,7 +434,12 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             } // 잘못된 유물 처리 종료
             relics.Add(relic); // 획득 순서 유물 추가
         } // 유물 검사 종료
-        ConsumableItemData[] consumables = new ConsumableItemData[ConsumableInventoryRuntime.SlotCount]; // 복원 소모품 슬롯 생성
+        bool hasRack = relics.Exists(relic => relic.EffectType == RelicEffectType.ExtraPotionSlot); // 저장된 유물 원본의 보관대 확인
+        if (snapshot.consumables.Length > ConsumableInventoryRuntime.SlotCount && !hasRack) // 보관대 없이 추가칸을 기록한 저장 검사
+        { // 무효 저장 처리 시작
+            return false; // 현재 회차를 바꾸기 전에 중단
+        } // 무효 저장 처리 종료
+        ConsumableItemData[] consumables = new ConsumableItemData[snapshot.consumables.Length]; // 기존 열 칸과 추가칸 복원
         for (int index = 0; index < snapshot.consumables.Length; index++) // 저장 소모품 슬롯 순회
         { // 소모품 검사 시작
             string id = snapshot.consumables[index]; // 저장 소모품 식별자 조회
@@ -447,6 +452,10 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             { // 잘못된 소모품 처리 시작
                 return false; // 복원 불가 반환
             } // 잘못된 소모품 처리 종료
+            if (index == ConsumableInventoryRuntime.SlotCount && !(item is PotionData)) // 추가칸에 저장된 비포션 검사
+            { // 무효 소모품 처리 시작
+                return false; // 전체 저장 복원 중단
+            } // 무효 소모품 처리 종료
             consumables[index] = item; // 저장 슬롯 소모품 보관
         } // 소모품 검사 종료
         run = new ResolvedRun // 검증된 복원 자료 생성
