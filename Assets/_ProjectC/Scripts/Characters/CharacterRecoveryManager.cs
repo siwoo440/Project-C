@@ -18,7 +18,7 @@ public sealed class CharacterRecoveryManager : MonoBehaviour // 사망 캐릭터
         new Dictionary<string, RecoveryState>(); // 캐릭터별 회복 상태 목록
 
     private ExplorationSessionManager observedSession; // 현재 감시 중인 탐사 세션
-    private bool completionProcessed; // 현재 탐사 종료 처리 완료 여부
+    private int processedCompletionVersion; // 마지막으로 반영한 탐사 종료 순번
 
     public static CharacterRecoveryManager Instance
     {
@@ -74,47 +74,35 @@ public sealed class CharacterRecoveryManager : MonoBehaviour // 사망 캐릭터
     }
 
     private void Update() // 탐사 종료 상태 감시
-    {
-        ExplorationSessionManager currentSession =
-            ExplorationSessionManager.Instance; // 현재 탐사 세션 조회
+    { // 회복 자동 처리 시작
+        EnsureCompletedExplorationProcessed(); // 종료된 탐사의 회복 상태 반영
+    } // 회복 자동 처리 종료
 
-        if (currentSession == null)
-        {
-            observedSession = null; // 감시 세션 초기화
-            completionProcessed = false; // 종료 처리 상태 초기화
-            return;
-        }
-
-        if (observedSession != currentSession)
-        {
-            observedSession = currentSession; // 새 탐사 세션 추적
-            completionProcessed = false; // 새 세션 종료 처리 허용
-        }
-
-        if (!currentSession.IsExplorationCompleted)
-        {
-            completionProcessed = false; // 새 탐사 진행 중 종료 처리 대기
-            return;
-        }
-
-        if (completionProcessed)
-        {
-            return; // 같은 탐사 종료 중복 처리 차단
-        }
-
-        BattleResultManager resultManager =
-            BattleResultManager.Instance; // 저장 파티 상태 관리자 조회
-
-        if (resultManager == null)
-        {
-            return; // 파티 상태 관리자 준비 전 다음 프레임 재시도
-        }
-
-        completionProcessed = true; // 현재 탐사 종료 처리 예약
-
-        ProcessCompletedExploration(
-            resultManager); // 회복 진행과 신규 사망자 등록
-    }
+    public bool EnsureCompletedExplorationProcessed() // 현재 탐사 종료를 한 번만 반영
+    { // 탐사 종료 회복 처리 시작
+        ExplorationSessionManager currentSession = ExplorationSessionManager.Instance; // 현재 탐사 세션 조회
+        if (currentSession == null || !currentSession.IsExplorationCompleted) // 종료된 탐사 존재 확인
+        { // 종료 대기 처리 시작
+            return false; // 반영할 종료 없음 반환
+        } // 종료 대기 처리 종료
+        if (observedSession != currentSession) // 새로운 탐사 관리자 확인
+        { // 새 관리자 처리 시작
+            observedSession = currentSession; // 현재 탐사 관리자 보관
+            processedCompletionVersion = 0; // 새 관리자의 처리 순번 초기화
+        } // 새 관리자 처리 종료
+        if (processedCompletionVersion == currentSession.CompletionVersion) // 이미 반영한 탐사 종료 확인
+        { // 중복 처리 방지 시작
+            return true; // 기존 처리 완료 반환
+        } // 중복 처리 방지 종료
+        BattleResultManager resultManager = BattleResultManager.Instance; // 저장 파티 상태 관리자 조회
+        if (resultManager == null) // 파티 관리자 준비 여부 확인
+        { // 파티 관리자 대기 시작
+            return false; // 회복 처리 대기 반환
+        } // 파티 관리자 대기 종료
+        processedCompletionVersion = currentSession.CompletionVersion; // 현재 종료 처리 순번 보관
+        ProcessCompletedExploration(resultManager); // 회복 진행과 신규 사망자 등록
+        return true; // 회복 처리 완료 반환
+    } // 탐사 종료 회복 처리 종료
 
     public int ProcessCompletedExploration(
         BattleResultManager resultManager) // 탐사 한 번 종료에 따른 회복 처리

@@ -133,8 +133,13 @@ public sealed class ExplorationHazardRuntime : MonoBehaviour // 탐사 퇴색 �
 
         if (livingAllyCount == 0)
         {
-            sessionManager.CompleteExplorationFailure(
-                "퇴색 환경 피해로 출전 파티가 전멸했습니다."); // 환경 피해 전멸 탐사 실패 처리
+            if (sessionManager.CompleteExplorationFailure("퇴색 환경 피해로 출전 파티가 전멸했습니다.")) // 환경 피해 전멸 탐사 실패 처리
+            { // 전멸 후 저장 시작
+                if (!ExplorationAutoSave.SaveAfterBattle(Vector3.zero)) // 사망과 회복 상태의 거점 자동 저장 확인
+                { // 자동 저장 실패 시작
+                    Debug.LogWarning("[ExplorationAutoSave] 환경 피해 종료 상태를 저장하지 못했습니다."); // 저장 실패 안내
+                } // 자동 저장 실패 종료
+            } // 전멸 후 저장 종료
         }
         else if (livingAllyCount < 0)
         {

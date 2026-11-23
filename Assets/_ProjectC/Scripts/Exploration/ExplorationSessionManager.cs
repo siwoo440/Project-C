@@ -22,6 +22,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     private int currentFloorSeed; // 현재 층 절차 생성 Seed
     private bool hasCurrentFloorSeed; // 현재 층 Seed 존재 여부
     private bool isExplorationCompleted; // 탐사 완료 여부
+    private int completionVersion; // 탐사 종료별 고유 처리 순번
     private bool isExplorationSuccess; // 탐사 성공 여부
     private int completedFloor; // 탐사 완료 층
     private int completedEncounterCount; // 완료 시점 클리어 조우 수
@@ -46,6 +47,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
     public int CurrentFloorSeed => currentFloorSeed; // 현재 층 Seed 조회
     public bool HasCurrentFloorSeed => hasCurrentFloorSeed; // 현재 층 Seed 존재 여부 조회
     public bool IsExplorationCompleted => isExplorationCompleted; // 탐사 완료 여부 조회
+    public int CompletionVersion => completionVersion; // 탐사 종료 처리 순번 조회
     public bool IsExplorationSuccess => isExplorationSuccess; // 탐사 성공 여부 조회
     public int CompletedFloor => completedFloor; // 탐사 완료 층 조회
     public int CompletedEncounterCount => completedEncounterCount; // 완료 시점 클리어 조우 수 조회
@@ -244,6 +246,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         isExplorationCompleted = true; // 탐사 완료 상태 기록
+        completionVersion++; // 새 탐사 종료 처리 순번 증가
         isExplorationSuccess = true; // 탐사 성공 상태 기록
         completedFloor = currentFloor; // 성공 층 기록
         completedEncounterCount = clearedEncounterIds.Count; // 성공 시점 클리어 조우 수 기록
@@ -278,6 +281,7 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         }
 
         isExplorationCompleted = true; // 탐사 완료 상태 기록
+        completionVersion++; // 새 탐사 종료 처리 순번 증가
         isExplorationSuccess = false; // 탐사 실패 상태 기록
         completedFloor = currentFloor; // 실패 층 기록
         completedEncounterCount = clearedEncounterIds.Count; // 실패 시점 클리어 조우 수 기록
