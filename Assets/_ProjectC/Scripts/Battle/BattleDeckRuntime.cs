@@ -6,6 +6,10 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     private readonly List<CardInstance> drawPile = new List<CardInstance>(); // 뽑을 카드 더미
     private readonly List<CardInstance> hand = new List<CardInstance>(); // 현재 손패
     private readonly List<CardInstance> discardPile = new List<CardInstance>(); // 버린 카드 더미
+    private readonly List<CardInstance> excludedPile = new List<CardInstance>(); // 이번 전투에서만 제외된 카드 목록
+    private int relicApDiscount; // 현재 턴의 모든 카드에 적용하는 비용 감소량
+    internal event Action<CardInstance, bool> CardExcluded; // 실제 제외 카드와 휘발 여부 전달
+    public IReadOnlyList<CardInstance> ExcludedPile => excludedPile; // 전투 한정 제외 목록 조회
     private readonly Random random; // 셔플 무작위 생성기
     private CardInstance battleCopy; // 전투 종료 시 모든 더미에서 지울 복사본
     private CardInstance pendingHandDiscard; // 현재 한 번의 버림 판정을 기다리는 손패
@@ -112,7 +116,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         } // 드로우 처리 종료
         finally // 사용한 카드 이동 보장
         { // 사용 카드 이동 시작
-            discardPile.Add(playedCard); // 드로우 완료 후 사용 카드를 버린 더미에 추가
+            PlacePlayedCard(playedCard); // 드로우 완료 후 사용 카드의 버림 또는 제외 처리
         } // 사용 카드 이동 종료
         EnsureValidState(); // 전체 카드 위치와 손패 제한 검증
         StateChanged?.Invoke(); // 사용과 드로우 결과 알림
@@ -299,6 +303,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             return false; // 원래 손패와 미사용 기회 유지
         } // 복사 불가 종료
         battleCopy = CardInstance.Create(source.SourceData, source.OwnerUnit, cards.Count, source.UpgradeLevel); // 원래 비용과 소유자 및 강화 단계 복사
+        battleCopy.RelicApDiscount = relicApDiscount; // 현재 첫 턴의 유물 할인 물려주기
         cards.Add(battleCopy); // 전투 전용 카드 등록
         hand.Add(battleCopy); // 복사본을 실제 손패에 추가
         StateChanged?.Invoke(); // 변경된 손패 표시
@@ -312,6 +317,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
             hand.Remove(battleCopy); // 손패 복사본 제거
             drawPile.Remove(battleCopy); // 뽑을 더미 복사본 제거
             discardPile.Remove(battleCopy); // 버린 더미 복사본 제거
+            excludedPile.Remove(battleCopy); // 제외된 전투 복사본도 정리
             battleCopy = null; // 제거한 전투 카드 참조 해제
             StateChanged?.Invoke(); // 실제 더미 변화 알림
         } // 복사본 제거 종료
@@ -355,7 +361,14 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 유효 대상 없음 시작
             return false; // 잘못된 버리기 거부
         } // 유효 대상 없음 종료
-        return IsHandDiscardPrevented(cardInstance) || DiscardPlayedCard(cardInstance); // 이번 버림 취소 또는 실제 버림으로 선택 완료
+        if (!IsHandDiscardPrevented(cardInstance)) // 실제 효과 버림 확인
+        { // 손패 이동 시작
+            hand.Remove(cardInstance); // 원래 손패에서 제거
+            discardPile.Add(cardInstance); // 사용과 구분해 버림 더미에 추가
+            EnsureValidState(); // 이동 뒤 카드 영역 확인
+            StateChanged?.Invoke(); // 손패 변경 알림
+        } // 손패 이동 종료
+        return true; // 실제 버림 또는 유지 완료
     } // 효과 버림 종료
     internal bool DiscardPlayedCard(CardInstance cardInstance) // 사용을 끝낸 카드의 일반 버림 이동
     { // 카드 버리기 시작
@@ -367,11 +380,34 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 손패에 없음 처리 시작
             return false; // 버리기 실패 반환
         } // 손패에 없음 처리 종료
-        discardPile.Add(cardInstance); // 버린 카드 더미에 추가
+        PlacePlayedCard(cardInstance); // 사용 카드의 버림 또는 제외 처리
         EnsureValidState(); // 버리기 후 덱 상태 검증
         StateChanged?.Invoke(); // 덱 상태 변경 알림
         return true; // 버리기 성공 반환
     } // 카드 버리기 종료
+    private void PlacePlayedCard(CardInstance card) // 손패에서 빠진 사용 카드 정산
+    { // 사용 위치 처리 시작
+        if (card.SourceData.ExcludeOnUse) // 사용 후 제외 규칙 확인
+        { // 전투 제외 시작
+            excludedPile.Add(card); // 제외 더미에 사용 카드 보관
+            CardExcluded?.Invoke(card, false); // 실제 제외 알림
+            return; // 일반 버림 생략
+        } // 전투 제외 종료
+        discardPile.Add(card); // 일반 사용은 버림 더미에 보관
+    } // 사용 위치 처리 종료
+    internal void SetRelicApDiscount(int amount) // 현재 턴의 모든 카드 비용 갱신
+    { // 유물 할인 시작
+        if (amount == relicApDiscount) // 현재 표시와 같은 할인 확인
+        { // 중복 갱신 방지 시작
+            return; // 불필요한 비용 갱신 생략
+        } // 중복 갱신 방지 종료
+        relicApDiscount = amount; // 복사본에도 전달할 할인 기록
+        foreach (CardInstance card in cards) // 현재 전투 카드 전체 조회
+        { // 개별 비용 갱신 시작
+            card.RelicApDiscount = amount; // 카드별 유물 할인 저장
+        } // 개별 비용 갱신 종료
+        StateChanged?.Invoke(); // 손패 비용 표시 갱신
+    } // 유물 할인 종료
     public int DiscardHand() // 일반 손패 전체 버리기
     { // 손패 정리 시작
         int count = hand.Count; // 정리할 손패 수 기록
@@ -380,17 +416,30 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 정리 불필요 시작
             return 0; // 이동 카드 없음 반환
         } // 정리 불필요 종료
+        List<CardInstance> volatileCards = new List<CardInstance>(); // 정리 뒤 효과를 처리할 휘발 카드 목록
         foreach (CardInstance card in hand.ToArray()) // 현재 손패 순서대로 실제 버림 판정
         { // 카드별 정리 시작
+            if (card.SourceData.VolatileInHand) // 손패에 남은 휘발 카드 확인
+            { // 휘발 카드 소멸 시작
+                hand.Remove(card); // 손패에서 휘발 카드 제거
+                excludedPile.Add(card); // 전투 동안 제외된 위치에 보관
+                volatileCards.Add(card); // 손패 정리 뒤 발동 예약
+                continue; // 일반 버림 검사 생략
+            } // 휘발 카드 소멸 종료
             if (!IsHandDiscardPrevented(card)) // 이번 턴 종료 버림이 실제로 취소됐는지 확인
             { // 실제 버림 시작
                 hand.Remove(card); // 원래 손패에서 제거
                 discardPile.Add(card); // 버린 더미 끝에 추가
             } // 실제 버림 종료
         } // 카드별 정리 종료
+        int moved = count - hand.Count; // 보너스 드로우 전 이동 수 보관
         EnsureValidState(); // 카드 위치 유효성 확인
+        foreach (CardInstance card in volatileCards) // 소멸한 카드만 알림
+        { // 휘발 알림 시작
+            CardExcluded?.Invoke(card, true); // 제외와 손패 소멸 신호 전달
+        } // 휘발 알림 종료
         StateChanged?.Invoke(); // 변경된 손패 화면 알림
-        return count - hand.Count; // 실제로 버린 카드 수 반환
+        return moved; // 실제로 버린 카드 수 반환
     } // 손패 정리 종료
     public void ShuffleDrawPile() // 뽑을 카드 더미 셔플
     { // 카드 더미 셔플 시작
@@ -400,7 +449,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
     } // 카드 더미 셔플 종료
     public bool IsStateValid() // 현재 덱 상태 유효성 확인
     { // 상태 검사 시작
-        int locatedCardCount = drawPile.Count + hand.Count + discardPile.Count; // 영역별 카드 총수 계산
+        int locatedCardCount = drawPile.Count + hand.Count + discardPile.Count + excludedPile.Count; // 영역별 카드 총수 계산
         if (locatedCardCount != cards.Count) // 전체 카드 수 일치 확인
         { // 카드 수 불일치 처리 시작
             return false; // 잘못된 상태 반환
@@ -414,7 +463,7 @@ public sealed class BattleDeckRuntime // 전투용 런타임 덱
         { // 손패 카드 오류 처리 시작
             return false; // 잘못된 상태 반환
         } // 손패 카드 오류 처리 종료
-        if (!AddZoneCards(discardPile, locatedCards)) // 버린 카드 중복 확인
+        if (!AddZoneCards(discardPile, locatedCards) || !AddZoneCards(excludedPile, locatedCards)) // 버린 카드 중복 확인
         { // 버린 카드 오류 처리 시작
             return false; // 잘못된 상태 반환
         } // 버린 카드 오류 처리 종료

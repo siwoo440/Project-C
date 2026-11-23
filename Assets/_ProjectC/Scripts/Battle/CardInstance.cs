@@ -4,6 +4,7 @@ using UnityEngine; // 스프라이트와 수치 계산 사용
 public sealed class CardInstance // 전투용 카드 인스턴스
 {
     private const int FallbackUpgradeEffectPercent = 25; // 기존 테스트 호환 강화 효과 증가율
+    internal int RelicApDiscount { get; set; } // 첫 턴 유물 비용 감소량
     private int temporaryApDiscount; // 이번 턴 임시 행동력 할인
 
     public string InstanceId { get; }
@@ -21,7 +22,7 @@ public sealed class CardInstance // 전투용 카드 인스턴스
     public CardTargetType TargetType => SourceData.TargetType; // 카드 대상 종류 조회
 
     public string CostLabel => SourceData.SwordRule == SwordCardRule.Finisher ? "X" : ApCost.ToString(); // 가변 비용 또는 실제 행동력 비용 표시
-    public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount); // 강화와 임시 할인 포함 행동력 비용
+    public int ApCost => Mathf.Max(0, CardUpgradeProfileCatalog.CalculateApCost(SourceData, SourceData.ApCost, UpgradeLevel) - temporaryApDiscount - RelicApDiscount); // 강화와 카드별 할인 및 유물 할인 포함 비용
     public void ApplyTemporaryApDiscount(int amount) // 이번 턴 행동력 할인 적용
     { // 할인 적용 시작
         temporaryApDiscount = Mathf.Max(temporaryApDiscount, Mathf.Max(0, amount)); // 높은 할인값 유지

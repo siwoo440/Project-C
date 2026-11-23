@@ -10,7 +10,7 @@ public static class RelicShopPricing // 시트 기반 유물 상점 가격 계�
         return CalculateRange(entry.SellMin, entry.SellMax, roomId, "SALE_" + relicId); // 시트 판매 범위 가격 반환
     } // 판매 가격 계산 종료
 
-    private static int CalculateRange(int minimum, int maximum, string roomId, string offerId) // 상점별 범위 가격 계산
+    internal static int CalculateRange(int minimum, int maximum, string roomId, string offerId) // 상점별 범위 가격 계산
     { // 범위 가격 계산 시작
         uint hash = 2166136261u; // 안정적인 해시 초기값
         unchecked // 정수 순환 연산 허용

@@ -1046,4 +1046,68 @@ MonoBehaviour:
     cardOwner: {fileID: 0}
     relic: {fileID: 11400000, guid: 267a938d44de4aa28499f892e4c73990, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_BROKEN_ANTENNA
+    offerType: 1
+    price: 265
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 8f67f20e6e4d5f729d818a018fc30875, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SAFETY_PIN_BUNDLE
+    offerType: 1
+    price: 257
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1ab3ecb8c34f508da6fcba710eb001fb, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_RIFT_SEALING_WAX
+    offerType: 1
+    price: 285
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: c3341ced6fc6522cb235daeb74bedc0d, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_DEBRIS_POUCH
+    offerType: 1
+    price: 267
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 1e2a171aae645f1d94390badb91bd9ce, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SMALL_SAFE_KEY
+    offerType: 1
+    price: 287
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 0127670890da5ec1bc55c1c2f71a64e5, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_HOURGLASS_SHARD
+    offerType: 1
+    price: 295
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 8bf97158237c5d418463b0e1541b351e, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_CRUMPLED_LETTER
+    offerType: 1
+    price: 307
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: afe28f9c5ddd54e7bda5d5e0cbcf85e6, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_TORN_ENVELOPE
+    offerType: 1
+    price: 336
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: c7613db014d55fe08d427cfcaa13e54e, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150

@@ -432,7 +432,7 @@
     {
       "sourceRow": 41,
       "name": "파손된 안테나",
-      "description": "전투 시작 시 무작위 적 1명 속도 -1(2턴)",
+      "description": "전투 시작 시 무작위 생존 적 한 명의 행동 속도를 2번의 적 턴 동안 1 낮춘다. 최저 속도는 1이다.",
       "buyMin": 241,
       "buyMax": 288,
       "buyVariance": 47,
@@ -443,7 +443,7 @@
     {
       "sourceRow": 42,
       "name": "안전핀 묶음",
-      "description": "휘발 카드가 손에서 소멸될 때 드로우 +1(턴당 1회)",
+      "description": "턴 종료에 휘발 카드가 손패에서 소멸하면 카드를 한 장 뽑아 다음 턴에 쓴다. 아군 턴당 한 번 발동한다.",
       "buyMin": 233,
       "buyMax": 281,
       "buyVariance": 48,
@@ -454,7 +454,7 @@
     {
       "sourceRow": 43,
       "name": "틈새 봉인왁스",
-      "description": "제외되는 카드가 있을 때 보호막 +3(턴당 1회)",
+      "description": "카드가 전투 덱에서 제외되면 해당 카드의 생존 소유자에게 방어도 3을 준다. 아군 턴당 한 번 발동한다.",
       "buyMin": 261,
       "buyMax": 309,
       "buyVariance": 48,
@@ -465,7 +465,7 @@
     {
       "sourceRow": 44,
       "name": "잔해 주머니",
-      "description": "버림 더미가 10장 이상이면 드로우 +1",
+      "description": "아군 턴에 카드를 뽑기 직전 버린 더미가 10장 이상이면 한 장을 더 뽑는다.",
       "buyMin": 244,
       "buyMax": 289,
       "buyVariance": 45,
@@ -476,7 +476,7 @@
     {
       "sourceRow": 45,
       "name": "작은 금고 열쇠",
-      "description": "상점에 유물 1개 추가 진열(확률)",
+      "description": "상점의 첫 방문 시 30% 확률로 미보유 유물 한 종을 추가 진열한다. 같은 방에서 다시 판정하지 않는다.",
       "buyMin": 262,
       "buyMax": 311,
       "buyVariance": 49,
@@ -487,7 +487,7 @@
     {
       "sourceRow": 46,
       "name": "모래시계 파편",
-      "description": "전투 1턴 동안 카드 코스트 -1(전투당 1회, 소모성)",
+      "description": "첫 아군 턴에 소모된다. 그 턴 동안 고정 비용 카드의 행동력 비용을 1 낮춘다. 최소 비용은 0이다.",
       "buyMin": 271,
       "buyMax": 319,
       "buyVariance": 48,
@@ -509,7 +509,7 @@
     {
       "sourceRow": 48,
       "name": "구겨진 편지",
-      "description": "전투 시작 시 손패에 펜타클 카드가 있으면 드로우 +1",
+      "description": "전투의 첫 아군 손패에 펜타클 카드가 있으면 한 장을 더 뽑는다. 손패 상한을 따른다.",
       "buyMin": 282,
       "buyMax": 331,
       "buyVariance": 49,
@@ -520,7 +520,7 @@
     {
       "sourceRow": 49,
       "name": "찢긴 우편봉투",
-      "description": "전투 시작 시 손패에 검 카드가 있으면 행동력 +1(첫 턴)",
+      "description": "전투의 첫 아군 손패에 검 카드가 있으면 그 턴의 현재 및 최대 공용 행동력이 1 증가한다.",
       "buyMin": 312,
       "buyMax": 360,
       "buyVariance": 48,

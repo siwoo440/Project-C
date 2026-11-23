@@ -28,5 +28,11 @@ public enum RelicTriggerType // 유물 발동 시점 종류
     DirectCardHealing, // 직접 카드가 체력을 회복하는 시점
     ExplorationRouteChoice, // 플레이어가 탐사 경로를 다시 고르는 시점
     ReceiveDefenseLoss, // 물리 방어 감소를 받을 때
-    AreaGoldReward // 지역 보상 골드 확정 전
+    AreaGoldReward, // 지역 보상 골드 확정 전
+    VolatileCardLost, // 손패에서 휘발 카드 소멸 직후
+    CardExcluded, // 카드가 전투에서 제외된 직후
+    BeforePlayerTurnDraw, // 아군의 턴 드로우 직전
+    OpeningHandReady, // 첫 아군 손패 지급 직후
+    ShopFirstStock, // 상점의 첫 진열 준비
+    BeforeBattleActions // 전투의 첫 적 예고 생성 전
 }

@@ -27,6 +27,11 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
     [SerializeField] private bool grantsBlockToEachAlly; // 아군 전원에게 표시된 방어도를 각각 지급할지 선택
 
+    [SerializeField] private bool volatileInHand; // 턴 종료 손패에서 소멸하는 휘발 카드
+    [SerializeField] private bool excludeOnUse; // 사용 후 전투 덱에서 제외하는 카드
+    public bool VolatileInHand => volatileInHand; // 손패 휘발 규칙 조회
+    public bool ExcludeOnUse => excludeOnUse; // 사용 후 제외 규칙 조회
+
     [Header("정신력 규칙")]
     [Range(-100, 100)]
     [SerializeField] private int mentalChangeValue; // 정신력 직접 변화값
