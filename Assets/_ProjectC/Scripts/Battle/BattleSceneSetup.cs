@@ -7,6 +7,8 @@ using UnityEngine.UI; // 전투 배경 이미지 사용
 public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
 { // 클래스 시작
     private const int MaximumEnemyCount = 4; // 최대 동시 적 수
+    private const float BattlefieldUnitScale = 0.85f; // 배경 영역에 맞춘 전투 유닛 배율
+    private const float BattlefieldVerticalOffset = -55f; // 배경 영역에 맞춘 전투 유닛 세로 이동
     [Header("전투 데이터")] // 전투 데이터 구역
     [SerializeField] private BattleLoadoutData battleLoadout; // 출전 파티와 덱 데이터
     [SerializeField] private List<EnemyData> enemies = new List<EnemyData>(); // 출전 적 목록
@@ -114,6 +116,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             return; // 초기화 중단
         } // 설정 오류 처리 종료
         EnsureEventSystem(); // UI 클릭 이벤트 시스템 준비
+        ConfigureBattlefieldRoot(allyUnitRoot); // 아군 영역을 배경 전투 위치에 배치
+        ConfigureBattlefieldRoot(enemyUnitRoot); // 적 영역을 배경 전투 위치에 배치
         resultManager = BattleResultManager.EnsureInstance(); // Scene 간 결과 관리자 준비
         resultManager.DiscardPendingResult(); // 이전 미소비 전투 결과 제거
         CreateAllyUnits(); // 아군 유닛 생성
@@ -333,6 +337,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             ExplorationSessionManager.Instance?.ApplyPendingHazardPenalty(runtimeUnit,
             battleLoadout.Party.MemberCount); // 탐사 중 누적된 환경 피해 적용
             BattleUnitView unitView = Instantiate(unitViewPrefab, allyUnitRoot); // 아군 화면 오브젝트 생성
+            unitView.transform.localScale = Vector3.one * BattlefieldUnitScale; // 캐릭터와 수치 화면을 함께 축소
             unitView.name = $"Ally_{runtimeUnit.UnitId}"; // 아군 오브젝트 이름 적용
             unitView.Bind(runtimeUnit); // 아군 화면 연결
             allyUnits.Add(runtimeUnit); // 아군 목록 등록
@@ -351,12 +356,22 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
         runtimeUnit.Died += HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 등록
         BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
+        unitView.transform.localScale = Vector3.one * BattlefieldUnitScale; // 소환 적을 포함한 적 화면 배율 적용
         unitView.name = $"Enemy_{runtimeUnit.UnitId}_{enemyUnits.Count + 1}"; // 적 오브젝트 고유 이름 적용
         unitView.Bind(runtimeUnit); // 적 화면 연결
         enemyUnits.Add(runtimeUnit); // 적 목록 등록
         enemyUnitViews.Add(unitView); // 적 화면 목록 등록
         return runtimeUnit; // 생성 적 런타임 반환
     } // 적 유닛 생성 종료
+    private static void ConfigureBattlefieldRoot(Transform unitRoot) // 전투 진영 영역의 배경 위치 설정
+    { // 진영 영역 위치 설정 시작
+        RectTransform rect = unitRoot as RectTransform; // 진영 영역 사각형 조회
+        if (rect == null) // 진영 영역 존재 확인
+        { // 진영 영역 누락 처리 시작
+            return; // 배경 위치 설정 중단
+        } // 진영 영역 누락 처리 종료
+        rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, BattlefieldVerticalOffset); // 캐릭터와 수치 UI를 배경 아래쪽으로 이동
+    } // 진영 영역 위치 설정 종료
     public bool TrySummonEnemy(EnemyData enemyData) // 전투 중 적 소환
     { // 적 소환 시작
         if (!IsInitialized || battleTurn == null || battleTurn.IsBattleEnded || enemyActionRuntime == null || enemyData == null) // 소환 기본 조건 확인

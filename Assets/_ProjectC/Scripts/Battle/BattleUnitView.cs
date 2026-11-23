@@ -517,8 +517,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
         RectTransform portraitRect = portraitImage.rectTransform; // 캐릭터 초상화 영역 조회
         lightRect.anchorMin = portraitRect.anchorMin; // 초상화 기준 최소 앵커 설정
         lightRect.anchorMax = portraitRect.anchorMax; // 초상화 기준 최대 앵커 설정
-        lightRect.anchoredPosition = portraitRect.anchoredPosition + new Vector2(0f, portraitRect.rect.height * 0.33f); // 캐릭터 머리 뒤 위치 설정
-        lightRect.sizeDelta = new Vector2(250f, 180f); // 머리 주위 역광 크기 설정
+        lightRect.anchoredPosition = portraitRect.anchoredPosition + new Vector2(0f, portraitRect.rect.height * 0.22f); // 전투 영역 안의 캐릭터 머리 뒤 위치 설정
+        lightRect.sizeDelta = new Vector2(210f, 120f); // 머리 주위의 작은 역광 크기 설정
         mentalStateBacklight = lightObject.GetComponent<Image>(); // 역광 이미지 조회
         mentalStateBacklight.enabled = BattleUiArt.Apply(mentalStateBacklight, "MentalStateBacklight"); // 투명 역광 이미지 적용과 누락 처리
         mentalStateBacklight.raycastTarget = false; // 캐릭터 선택 입력 차단 해제

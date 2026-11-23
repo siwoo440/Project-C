@@ -130,10 +130,7 @@ public sealed class BattleEnemyIntentIconView :
                 0.5f,
                 0.5f); // 아이콘 중앙 피벗 설정
 
-        rootRect.anchoredPosition =
-            new Vector2(
-                0f,
-                52f); // 적 초상화 위 아이콘 위치 설정
+        rootRect.anchoredPosition = new Vector2(105f, -150f); // 적 머리 오른쪽의 전투 영역 안에 배치
 
         rootRect.sizeDelta =
             new Vector2(
