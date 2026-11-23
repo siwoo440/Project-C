@@ -1,0 +1,34 @@
+diff --git a/Assets/_ProjectC/Scripts/Exploration/ExplorationSessionManager.cs b/Assets/_ProjectC/Scripts/Exploration/ExplorationSessionManager.cs
+--- a/Assets/_ProjectC/Scripts/Exploration/ExplorationSessionManager.cs
++++ b/Assets/_ProjectC/Scripts/Exploration/ExplorationSessionManager.cs
+@@ -3,6 +3,7 @@
+ 
+ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사 런 상태 관리자
+ {
++    private const int ExplorationBossCompletionInterval = 5; // 56일차 탐사 완료 보스 층 간격
+     private const int ExplorationSuccessAffinityReward = 1; // 탐사 성공 기본 호감도 보상
+ 
+     private static ExplorationSessionManager instance; // 탐사 관리자 인스턴스
+@@ -219,10 +220,21 @@
+                 $"[Exploration][Day49] 조우 클리어 - " +
+                 $"{runtimeEncounterId} / {encounterName} / {clearedBattleType}"); // 조우 클리어 로그
+ 
+-            if (clearedBattleType == BattleType.Boss)
++            bool isCompletionBoss =
++                clearedBattleType == BattleType.Boss &&
++                currentFloor > 0 &&
++                currentFloor % ExplorationBossCompletionInterval == 0; // 5층 간격 보스만 탐사 완료 판정
++
++            if (isCompletionBoss)
+             {
+                 CompleteExplorationSuccess(); // 보스 승리를 탐사 성공으로 확정
+             }
++            else if (clearedBattleType == BattleType.Boss)
++            {
++                Debug.Log(
++                    $"[Exploration][Day56] 층 보스 클리어 - " +
++                    $"{currentFloor}F / 다음 층 계단 사용 가능"); // 중간 층 보스 승리 진행 로그
++            }
+         }
+         else
+         {

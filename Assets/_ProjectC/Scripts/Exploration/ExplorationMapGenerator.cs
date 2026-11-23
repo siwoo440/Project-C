@@ -4,6 +4,13 @@ using UnityEngine; // 격자 좌표와 수학 기능 사용
 
 public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성기
 {
+    private const int NormalWeightEnd = 45; // 일반 방 누적 가중치
+    private const int EliteWeightEnd = 60; // 엘리트 방 누적 가중치
+    private const int EventWeightEnd = 80; // 이벤트 방 누적 가중치
+    private const int TreasureWeightEnd = 90; // 보물 방 누적 가중치
+    private const int RestWeightEnd = 95; // 휴식 방 누적 가중치
+    private const int RoomTypeSeedSalt = 1489236017; // 방 역할 난수 분리값
+
     private static readonly Vector2Int[] Directions = // 상하좌우 확장 방향
     {
         Vector2Int.up, // 위쪽 방향
@@ -40,8 +47,48 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         Vector2Int stairsCoordinate = FindStairsCoordinate(creationOrder, random); // 시작점에서 먼 계단 좌표 선정
         List<ExplorationMapCell> cells = CreateCells(creationOrder, startCoordinate, stairsCoordinate); // 논리 셀 데이터 생성
         ApplyConnections(cells, coordinates); // 상하좌우 연결 정보 계산
+        ApplyRoomTypes(cells, startCoordinate, stairsCoordinate, seed); // 56일차 방 콘텐츠 역할 배정
 
         return new ExplorationMapData(seed, cells, startCoordinate, stairsCoordinate); // 완성된 탐사 맵 반환
+    }
+
+    public static ExplorationRoomType ResolveRoomTypeForRoll(
+        int roll,
+        bool canCreateRest,
+        bool canCreateShop) // 0~99 가중치 값 기반 방 역할 결정
+    {
+        int safeRoll = Mathf.Clamp(roll, 0, 99); // 가중치 입력 범위 보정
+
+        if (safeRoll < NormalWeightEnd) // 일반 방 범위 확인
+        {
+            return ExplorationRoomType.Normal; // 일반 전투 방 반환
+        }
+
+        if (safeRoll < EliteWeightEnd) // 엘리트 방 범위 확인
+        {
+            return ExplorationRoomType.Elite; // 엘리트 전투 방 반환
+        }
+
+        if (safeRoll < EventWeightEnd) // 이벤트 방 범위 확인
+        {
+            return ExplorationRoomType.Event; // 이벤트 방 반환
+        }
+
+        if (safeRoll < TreasureWeightEnd) // 보물 방 범위 확인
+        {
+            return ExplorationRoomType.Treasure; // 보물 방 반환
+        }
+
+        if (safeRoll < RestWeightEnd) // 휴식 방 범위 확인
+        {
+            return canCreateRest
+                ? ExplorationRoomType.Rest
+                : ExplorationRoomType.Normal; // 휴식 최대 수 초과 시 일반 방 대체
+        }
+
+        return canCreateShop
+            ? ExplorationRoomType.Shop
+            : ExplorationRoomType.Normal; // 상점 최대 수 초과 시 일반 방 대체
     }
 
     private static Vector2Int FindStairsCoordinate(List<Vector2Int> coordinates, System.Random random) // 계단 위치 선정
@@ -99,6 +146,49 @@ public static class ExplorationMapGenerator // 탐사 논리 맵 절차 생성�
         }
 
         return cells; // 전체 셀 목록 반환
+    }
+
+    private static void ApplyRoomTypes(
+        List<ExplorationMapCell> cells,
+        Vector2Int startCoordinate,
+        Vector2Int stairsCoordinate,
+        int seed) // Seed 기반 방 콘텐츠 역할 배정
+    {
+        System.Random random = new System.Random(seed ^ RoomTypeSeedSalt); // 방 역할 전용 난수 생성기 준비
+        bool restCreated = false; // 휴식 방 생성 여부 초기화
+        bool shopCreated = false; // 상점 방 생성 여부 초기화
+
+        foreach (ExplorationMapCell cell in cells) // 전체 셀 순회
+        {
+            if (cell.Coordinate == startCoordinate) // 시작 방 확인
+            {
+                cell.SetRoomType(ExplorationRoomType.Normal); // 시작 방 특수 콘텐츠 제외
+                continue; // 다음 방 처리
+            }
+
+            if (cell.Coordinate == stairsCoordinate) // 최장 거리 계단 방 확인
+            {
+                cell.SetRoomType(ExplorationRoomType.Boss); // 최장 거리 방 보스 역할 고정
+                continue; // 다음 방 처리
+            }
+
+            int roll = random.Next(100); // 방 역할 가중치 난수 생성
+            ExplorationRoomType roomType = ResolveRoomTypeForRoll(
+                roll,
+                !restCreated,
+                !shopCreated); // 상점·휴식 최대 한 개 제한 포함 역할 결정
+
+            cell.SetRoomType(roomType); // 현재 방 역할 저장
+
+            if (roomType == ExplorationRoomType.Rest) // 휴식 방 생성 확인
+            {
+                restCreated = true; // 추가 휴식 방 생성 차단
+            }
+            else if (roomType == ExplorationRoomType.Shop) // 상점 방 생성 확인
+            {
+                shopCreated = true; // 추가 상점 방 생성 차단
+            }
+        }
     }
 
     private static void ApplyConnections(
