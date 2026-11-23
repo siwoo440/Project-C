@@ -10,6 +10,14 @@ public sealed class BattleLoadoutData : ScriptableObject
     public PartyData Party => party; // 출전 파티 조회
     public DeckData Deck => deck; // 출전 덱 조회
 
+    public static BattleLoadoutData CreateRuntime(PartyData partyData, DeckData deckData) // 선택 파티와 덱 편성 생성
+    { // 편성 생성 시작
+        BattleLoadoutData runtimeLoadout = CreateInstance<BattleLoadoutData>(); // 새 편성 데이터 생성
+        runtimeLoadout.party = partyData; // 런타임 파티 연결
+        runtimeLoadout.deck = deckData; // 런타임 덱 연결
+        return runtimeLoadout; // 런타임 편성 반환
+    } // 편성 생성 종료
+
     public bool IsValidLoadout()
     {
         if (party == null || deck == null) // 파티와 덱 존재 여부 확인
