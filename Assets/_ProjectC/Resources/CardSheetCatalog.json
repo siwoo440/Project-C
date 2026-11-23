@@ -610,10 +610,10 @@
       "name": "막기",
       "attribute": "방패",
       "rarity": "일반",
-      "cost": "",
-      "description": "",
-      "area": "",
-      "targets": "",
+      "cost": "0",
+      "description": "자신이 방어도 4를 얻는다.",
+      "area": "자기",
+      "targets": "아군",
       "imageFileName": "막기.png"
     },
     {
@@ -621,10 +621,10 @@
       "name": "흘려내기",
       "attribute": "방패",
       "rarity": "희귀",
-      "cost": "",
-      "description": "",
-      "area": "",
-      "targets": "",
+      "cost": "2",
+      "description": "자신이 방어도 6을 얻는다. 다음 적 턴이 끝날 때까지 자신의 회피율이 35%p 증가한다.",
+      "area": "자기",
+      "targets": "아군",
       "imageFileName": "흘려내기.png"
     },
     {
@@ -632,10 +632,10 @@
       "name": "밀어 막기",
       "attribute": "방패",
       "rarity": "일반",
-      "cost": "",
-      "description": "",
-      "area": "",
-      "targets": "",
+      "cost": "1",
+      "description": "지정한 적 하나에게 물리 피해 3을 주고 자신은 방어도 4를 얻는다.",
+      "area": "단일",
+      "targets": "적",
       "imageFileName": "밀어 막기.png"
     },
     {

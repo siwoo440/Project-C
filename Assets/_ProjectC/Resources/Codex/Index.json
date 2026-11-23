@@ -3503,6 +3503,24 @@
       "name": "완성된 의식",
       "description": "공용 손패로 카드 3장을 뽑고 행동력 3을 얻는다. 모든 생존 적의 공격력을 2 적 턴 동안 1 낮춘다.",
       "artworkKey": "f070e9e689e35791b28c3ebeff55554b"
+    },
+    {
+      "category": 7,
+      "name": "막기",
+      "description": "자신이 방어도 4를 얻는다.",
+      "artworkKey": "f41225e39a335364b356d98f99ca6e03"
+    },
+    {
+      "category": 7,
+      "name": "흘려내기",
+      "description": "자신이 방어도 6을 얻는다. 다음 적 턴이 끝날 때까지 자신의 회피율이 35%p 증가한다.",
+      "artworkKey": "a354ee7a22aa58699978a442ebc140da"
+    },
+    {
+      "category": 7,
+      "name": "밀어 막기",
+      "description": "지정한 적 하나에게 물리 피해 3을 주고 자신은 방어도 4를 얻는다.",
+      "artworkKey": "1b2c95852b095bfe8d234e273dbf0209"
     }
   ]
 }
