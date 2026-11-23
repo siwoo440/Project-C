@@ -161,6 +161,7 @@ public sealed class BattleStatusEffectProcessor // 상태 발동과 제거 통�
             if (effect.EffectType == BattleStatusEffectType.Bleed) // 방어도를 우회하는 고정 체력 손실 확인
             { // 출혈 처리 시작
                 int bonus = runtimeUnit.Team == BattleTeam.Enemy && previousValue > 0 ? BattleSupplyRelics.Find(RelicEffectType.EnemyBleedDamageBonus)?.EffectValue ?? 0 : 0; // 적이 실제로 받는 양수 출혈 틱의 유물 가산량
+                bonus += previousValue > 0 && runtimeUnit.HasActiveCardDamageMark ? BattleSupplyRelics.Find(RelicEffectType.PortraitNailMarkedBleedDamage)?.EffectValue ?? 0 : 0; // 공통 표식이 남은 실제 출혈 틱의 추가 피해
                 applied = runtimeUnit.TakeUnblockedDamage((int)System.Math.Min(int.MaxValue, (long)previousValue + bonus), BattleDamageType.None, null); // 원래 출혈 지속과 방어도 우회를 유지한 체력 피해
             } // 출혈 처리 종료
             else if (effect.EffectType == BattleStatusEffectType.Burn) // 기존 화상 피해 확인

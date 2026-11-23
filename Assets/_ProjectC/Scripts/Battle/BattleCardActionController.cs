@@ -1623,7 +1623,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.UndyingGuard); // 피해 직전에 불굴의 일회 생존 보호 제거
             RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.DefeatWard); // 일반 피해 무효와 별개인 전투불능 방지 제거
         } // 명중 대상의 생존 보호 제거 종료
-        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass); // 실제로 흡수한 방어도와 체력 피해 적용
+        BattleDamageResult damageResult = targetUnit.TakeDamage(modifiedDamage, cardInstance.DamageType, cardInstance.OwnerUnit, bypassBlockPercent: bypass, alliedDirectAttack: true); // 직접 명중의 표식과 실제 방어도 및 체력 피해 적용
         if (cardInstance.SourceData.WandRule == WandCardRule.ManaSiphon && targetUnit.Team == BattleTeam.Enemy && healthBefore > 0 && UnityEngine.Random.Range(0, 100) < 30) // 피격 직전 생존한 적에게 실제 명중한 마력 흡수의 삼십 퍼센트 판정
         { // 마력 흡수 회복 시작
             int regained = sharedActionPoints.Gain(cardInstance.SourceData.SecondaryEffectValue); // 기존 최대치 안에서 실제 현재 행동력 한 점 회복
@@ -1703,7 +1703,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 적용 불가 상태 처리 시작
             return false; // 잘못된 설정으로 인한 유물 또는 난수 소모 차단
         } // 적용 불가 상태 처리 종료
-        return chance >= 100 || (target.HasStatusImmunity && BattleStatusEffectInstance.IsDebuffType(status)) || supplyRelics.RollOptionalStatus(target, chance); // 확정과 면역에는 난수 없이 기존 부여 경로 사용
+        return chance >= 100 || (target.HasStatusImmunity && BattleStatusEffectInstance.IsDebuffType(status)) || supplyRelics.RollOptionalStatus(target, chance, status, card.OwnerUnit); // 확정과 면역에는 기존 경로를 쓰고 실제 확률형 상태의 출처 전달
     } // 지팡이 상태 판정 종료
     private bool TryRollAuthoredBlind(CardInstance card, BattleUnitRuntime target, int value) // 명시된 실명과 유효한 현재 대상의 선택 확률 확인
     { // 카드 실명 확률 검사 시작
@@ -1788,7 +1788,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
     } // 직접 명중 유물 확인 종료
     private int ApplyDirectHitRelics(CardInstance card, BattleUnitRuntime target, int damage) // 명중한 한 타격의 소유 유물 보정
     { // 실제 명중 보정 시작
-        bool marked = target?.Team == BattleTeam.Enemy && (target.GetStatusEffect(BattleStatusEffectType.StethoscopeMark) != null || target.GetStatusEffect(BattleStatusEffectType.PublicMark) != null || target.GetStatusEffect(BattleStatusEffectType.ChariotMark) != null); // 실제 피격 대상의 공명 또는 전차 표식 확인
+        bool marked = target?.HasActiveCardDamageMark == true; // 실제 출혈 확인과 같은 카드 피해 표식 조건
         int chalk = marked ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.MarkedCardDamage)?.EffectValue ?? 0 : 0; // 두 표식이 겹쳐도 한 번만 가산
         int pin = marked && card.DamageType == BattleDamageType.Magical ? BattleSupplyRelics.Find(RelicEffectType.MarkedMagicalCardDamage)?.EffectValue ?? 0 : 0; // 기존 표식이 있는 적을 명중한 직접 마법 타격의 가산 피해
         int nail = marked ? BattleSupplyRelics.Find(RelicEffectType.MarkedHitDamageBonus)?.EffectValue ?? 0 : 0; // 표식 적에게 명중한 각 직접 타격의 은못 추가 피해
@@ -1922,6 +1922,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 미사용 카드와 종료된 전투의 유물 효과 제외
         } // 정산 불가 처리 종료
         bool sameTurn = pendingCardSuitRound == turnRuntime.CurrentRound && !turnRuntime.HasPendingBossPhaseTransition; // 보스 전환을 거치지 않은 원래 사용 턴 확인
+        if (sameTurn && card.CardType == CardType.Cup && card.OwnerUnit is { Team: BattleTeam.Ally, IsDead: false } cupOwner) // 필수 선택을 마친 성배의 실제 생존 사용자 확인
+        { // 검은 예배포의 성배 정산 시작
+            int block = BattleSupplyRelics.Find(RelicEffectType.ChapelClothChaliceBlock)?.EffectValue ?? 0; // 보유한 검은 예배포의 원본 방어도 조회
+            cupOwner.GainBlock(block); // 다른 대상이 아닌 방금 사용을 마친 성배 소유자에게 지급
+        } // 검은 예배포의 성배 정산 종료
         if (sameTurn && card.CardType is (CardType.Sword or CardType.Wand or CardType.Cup or CardType.Pentacle or CardType.Shield)) // 소유자와 관계없는 실제 전투 카드 속성 확인
         { // 아군 턴 속성 기록 시작
             if (resolvedSuitsRound != turnRuntime.CurrentRound) // 이전 아군 턴의 속성 기록 확인

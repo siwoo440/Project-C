@@ -1763,7 +1763,7 @@
     {
       "sourceRow": 162,
       "name": "찢어진 초대장",
-      "description": "공포 부여 시 대상 회피율 -5% (1턴)",
+      "description": "아군이 살아 있는 적에게 공포를 걸거나 갱신하면 해당 적의 회피율을 한 적 턴 동안 5%p 낮춘다.",
       "buyMin": 184,
       "buyMax": 220,
       "buyVariance": 36,
@@ -1774,7 +1774,7 @@
     {
       "sourceRow": 163,
       "name": "녹슨 포크 장식",
-      "description": "출혈 부여 확률 +5%",
+      "description": "아군이 적에게 확률로 부여하는 출혈의 발동 확률이 5%p 증가한다.",
       "buyMin": 201,
       "buyMax": 244,
       "buyVariance": 43,
@@ -1785,7 +1785,7 @@
     {
       "sourceRow": 164,
       "name": "흐린 거울못",
-      "description": "아군이 첫 디버프를 받을 때 20% 확률로 적에게도 부여",
+      "description": "전투에서 아군이 적에게 처음으로 제거 가능한 약화를 받으면 20% 확률로 그 적에게 같은 약화를 부여한다.",
       "buyMin": 218,
       "buyMax": 254,
       "buyVariance": 36,
@@ -1796,7 +1796,7 @@
     {
       "sourceRow": 165,
       "name": "낡은 하인 장갑",
-      "description": "아군을 회복하면 보호막 3 추가",
+      "description": "아군이 실제로 체력을 회복할 때마다 그 아군이 방어도 3을 얻는다.",
       "buyMin": 235,
       "buyMax": 278,
       "buyVariance": 43,
@@ -1807,7 +1807,7 @@
     {
       "sourceRow": 166,
       "name": "고해실의 못",
-      "description": "정신력 피해를 받은 적에게 다음 피해 +3",
+      "description": "실제 정신 피해를 받은 생존 적의 다음 유효한 아군 직접 카드 명중 피해를 3 높인다. 피해에 한 번 소모된다.",
       "buyMin": 252,
       "buyMax": 288,
       "buyVariance": 36,
@@ -1818,7 +1818,7 @@
     {
       "sourceRow": 167,
       "name": "검은 예배포",
-      "description": "성배 카드 사용 시 아군 1명 방어도 +4",
+      "description": "성배 카드를 사용하여 정산하면 그 카드를 사용한 생존 아군이 방어도 4를 얻는다.",
       "buyMin": 269,
       "buyMax": 312,
       "buyVariance": 43,
@@ -1829,7 +1829,7 @@
     {
       "sourceRow": 168,
       "name": "피 묻은 초상 못",
-      "description": "표식 상태 적이 받는 출혈 피해 +2",
+      "description": "표식이 걸린 생존 적이 출혈 피해를 받을 때 해당 피해가 2 증가한다.",
       "buyMin": 286,
       "buyMax": 322,
       "buyVariance": 36,
@@ -1840,7 +1840,7 @@
     {
       "sourceRow": 169,
       "name": "은제 식탁종",
-      "description": "소환된 적이 등장할 때 적 전체 회피율 -5% (2턴)",
+      "description": "적 소환이 완료되면 소환된 적을 포함한 생존 적 전체의 회피율을 두 적 턴 동안 5%p 낮춘다.",
       "buyMin": 303,
       "buyMax": 346,
       "buyVariance": 43,

@@ -37,6 +37,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public bool HasDebuff => ContainsDebuff(); // 현재 디버프 존재 여부
     public bool HasRemovableDebuff => ContainsRemovableDebuff(); // 정화 가능한 디버프 존재 여부
     internal bool HasActiveRemovableDebuff => ContainsRemovableDebuff(activeOnly: true); // 현재 만료되지 않은 정화 가능 디버프 확인
+    internal bool HasActiveCardDamageMark => Team == BattleTeam.Enemy && (GetStatusEffect(BattleStatusEffectType.StethoscopeMark) is { IsExpired: false } || // 현재 활성 청진기 표식과 아래의 기존 카드 피해 표식 확인
+        GetStatusEffect(BattleStatusEffectType.PublicMark) is { IsExpired: false } || GetStatusEffect(BattleStatusEffectType.ChariotMark) is { IsExpired: false }); // 실제 공명 및 전차 표식의 활성 여부
     public bool HasStatusImmunity => FindStatusEffect(BattleStatusEffectType.StatusImmunity) != null; // 현재 디버프 면역 여부
     public int CurrentMental => mentalRuntime.CurrentMental; // 현재 정신력
     public BattleMentalState MentalState => mentalRuntime.CurrentState; // 현재 정신 상태
@@ -222,6 +224,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 맥동핵의 성공 침식 피해 처리 종료
         return result; // 부모 효과에 기존 실제 상태 결과 그대로 반환
     } // 일반 상태 적용 종료
+    internal BattleStatusEffectApplyResult ApplyReflectedDebuff(BattleStatusEffectInstance debuff, BattleUnitRuntime source) // 흐린 거울못의 실제 원래 약화 복사
+    { // 반사 약화 적용 시작
+        return ApplyStatusEffectCore(debuff.EffectType, debuff.Value, debuff.RemainingTurns, debuff.MaximumStacks, source, null, allowOutgoingBurnExtension: false); // 다른 유물의 화상 연장 없이 현재 값과 기간을 기존 상태 및 면역 규칙에 전달
+    } // 반사 약화 적용 종료
     internal bool IsTransientTurnBuff(BattleStatusEffectInstance status) // 일반 강화와 독립인 현재 턴 전용 상태 확인
     { // 독립 강화 확인 시작
         return status == currentTurnAttackPower; // 종료 예약이 분리된 은총 상태 확인
@@ -235,7 +241,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     { // 복사한 강화 적용 시작
         return ApplyStatusEffectCore(blessing.EffectType, blessing.Value, blessing.RemainingTurns, blessing.MaximumStacks, caster, blessing); // 원래 강화의 현재 시간과 수치 전달
     } // 복사한 강화 적용 종료
-    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing) // 일반 상태와 복사한 강화의 공통 적용
+    private BattleStatusEffectApplyResult ApplyStatusEffectCore(BattleStatusEffectType effectType, int value, int duration, int maximumStacks, BattleUnitRuntime sourceUnit, BattleStatusEffectInstance blessing, bool allowOutgoingBurnExtension = true) // 일반 상태와 복사한 실제 상태의 공통 면역 및 부여
     { // 상태 이상 적용 시작
         if (IsDead || effectType == BattleStatusEffectType.None || effectType == BattleStatusEffectType.Awakening || effectType == BattleStatusEffectType.Collapse || value <= 0 || duration <= 0 || maximumStacks <= 0) // 정신력 전용 상태와 적용 조건 확인
         { // 적용 불가 처리 시작
@@ -277,7 +283,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int reduction = BattleSupplyRelics.Find(RelicEffectType.ShorterFadeDebuffs)?.EffectValue ?? 0; // 실제 보유 방독면의 지속 감소량
             duration = Mathf.Max(1, duration - reduction); // 최소 한 턴을 보장한 이번 적용 지속
         } // 방독면 지속 턴 보정 종료
-        if (effectType == BattleStatusEffectType.Burn && Team == BattleTeam.Enemy && sourceUnit?.Team == BattleTeam.Ally && duration < int.MaxValue) // 실제 아군발 적 화상과 연장 여유 확인
+        if (allowOutgoingBurnExtension && effectType == BattleStatusEffectType.Burn && Team == BattleTeam.Enemy && sourceUnit?.Team == BattleTeam.Ally && duration < int.MaxValue) // 일반 아군 화상 부여와 연장 여유 확인
         { // 젖은 성냥개비의 추가 지속 판정 시작
             var matchstick = BattleSupplyRelics.Find(RelicEffectType.ExtendAllyAppliedBurn); // 보유한 화상 유물 원본 조회
             int addedTurns = matchstick?.EffectValue ?? 0; // 성공 시 이번 원본 화상의 연장량
@@ -521,7 +527,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 정화 가능 상태 확인 종료
         return false; // 정화 가능 상태 없음 반환
     } // 정화 가능 디버프 확인 종료
-    private static bool IsRemovableActiveDebuff(BattleStatusEffectInstance status) // 일반 상태로 제거할 수 있는 활성 약화 확인
+    internal static bool IsRemovableActiveDebuff(BattleStatusEffectInstance status) // 공용 정화 및 반사 대상의 제거 가능한 활성 약화 확인
     { // 일반 약화의 제거 가능 여부 검사 시작
         return status != null && status.IsDebuff && !status.IsExpired && !status.IsProtectedMentalState && status.RemainingTurns != int.MaxValue; // 유효한 기간제 약화만 정화와 새장 조건에 포함
     } // 일반 약화의 제거 가능 여부 검사 종료
@@ -692,8 +698,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BlockChanged?.Invoke(this); // 방어도 화면 갱신 알림
         return removed; // 실제 제거량 반환
     } // 방어도 부분 제거 종료
-    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false) // 직접 적 공격과 방어도를 반영한 피해 예고
+    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false, bool alliedDirectAttack = false) // 직접 공격과 방어도를 반영한 순수 피해 예고
     { // 기본 피해 예고 시작
+        damageAmount = alliedDirectAttack ? ApplyConfessionDamageMark(damageAmount, sourceUnit, out _) : damageAmount; // 현재 표식을 소비하지 않는 직접 카드 타격 예고
         return PreviewDamage(damageAmount, damageType, sourceUnit, blockOverride, enemyDirectAttack, applyDangerInterception: true); // 현재 위험 차단을 포함한 피해 예고
     } // 기본 피해 예고 종료
     internal BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, int? blockOverride, bool enemyDirectAttack, bool applyDangerInterception, bool enemyAreaAttack = false, bool applyDamageNullification = true) // 공격 의도와 순서의 보호를 반영한 피해 예고
@@ -771,9 +778,9 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int remaining = Math.Max(0, adjusted - GetStatusEffectValue(BattleStatusEffectType.ShockAbsorption)); // 비율 계산 뒤 충격 흡수의 고정 피해 감소
         return damage - remaining; // 방어도에 반영할 총 피해 감소값 반환
     } // 방패 피해 경감 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null, bool enemyDirectAttack = false, bool enemyAreaAttack = false) // 광역 의도와 방어도 관통을 포함한 실제 피해 처리
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null, bool enemyDirectAttack = false, bool enemyAreaAttack = false, bool alliedDirectAttack = false) // 적 광역과 아군 직접 타격을 포함한 실제 피해 처리
     { // 공통 피해 진입 시작
-        return TakeDamageCore(damageAmount, damageType, sourceUnit, sharingAlly, preventHealthDamage, bypassBlockPercent, reduceHealthDamage, enemyDirectAttack, enemyAreaAttack, null, false); // 기존 호출의 공유 피해와 방어 및 보호 처리
+        return TakeDamageCore(damageAmount, damageType, sourceUnit, sharingAlly, preventHealthDamage, bypassBlockPercent, reduceHealthDamage, enemyDirectAttack, enemyAreaAttack, null, false, alliedDirectAttack: alliedDirectAttack); // 원본 직접 공격의 출처를 포함한 피해 정산
     } // 공통 피해 진입 종료
     internal BattleDamageResult TakeEnemyHit(int damageAmount, BattleDamageType damageType, BattleUnitRuntime source, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, Func<int, int> reduceHealthDamage, bool isAreaAttack, Action<BattleUnitRuntime> onRedirect, IReadOnlyList<BattleUnitRuntime> party = null) // 적 타격과 파티 분담에 실제로 연결된 피격 대상
     { // 실제 적 타격 처리 시작
@@ -787,12 +794,17 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 적격 피해 처리 끝
     } // 침식 기록 끝
 
-    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null) // 직접 피해와 대신 받기 및 실제 파티 분산의 정산
+    private BattleDamageResult TakeDamageCore(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit, BattleUnitRuntime sharingAlly, Func<bool> preventHealthDamage, int bypassBlockPercent, Func<int, int> reduceHealthDamage, bool enemyDirectAttack, bool enemyAreaAttack, Action<BattleUnitRuntime> onRedirect, bool guardianSurvival, IReadOnlyList<BattleUnitRuntime> party = null, bool alliedDirectAttack = false) // 직접 피해와 전환 및 실제 파티 분배 정산
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
             return BattleDamageResult.Empty(damageType); // 적용 피해 없음
         } // 무효 처리 종료
+        BattleStatusEffectInstance confession = null; // 명중 전에 확정할 이번 직접 피해의 표식 참조
+        if (alliedDirectAttack) // 출혈과 반사 및 고정 피해를 제외한 직접 카드 명중 확인
+        { // 고해실의 못 피해 가산 시작
+            damageAmount = ApplyConfessionDamageMark(damageAmount, sourceUnit, out confession); // 예고와 같은 고해실 표식의 방어 전 피해 가산
+        } // 고해실의 못 피해 가산 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
         bool linked = sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead; // 원래 피해 분담의 실제 생존 연결 우선
@@ -853,6 +865,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             RemoveStatusEffect(BattleStatusEffectType.GuardPreparation); // 실제 발동한 방어 준비 제거
             GainBlock(damageResult.PreparedBlock); // 피해 적용 직전 준비 방어도 획득
         } // 준비 소모 종료
+        if (confession != null && (damageResult.AppliedDamage > 0 || damageResult.AbsorbedDamage > 0) && RemoveStatusEffectInstance(confession)) // 실제 체력 또는 방어도 피해가 생긴 확정 명중 확인
+        { // 실제 표식 사용 종료 알림 시작
+            NotifyStatusEffectsChanged(); // 피해와 새 정신력 손실 신호 전에 한 번 사용한 표식의 제거 알림
+        } // 실제 표식 사용 종료 알림 완료
         LoseHealth(damageResult.AppliedDamage); // 현재 체력 감소
         CurrentBlock -= damageResult.AbsorbedDamage; // 흡수한 방어도 소모
         bool diedNow = CurrentHealth == 0; // 이번 사망 여부 계산
@@ -951,6 +967,13 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 분담자 사망 처리 종료
         return applied; // 실제로 감소한 체력 반환
     } // 직접 체력 피해 처리 종료
+    private int ApplyConfessionDamageMark(int amount, BattleUnitRuntime sourceUnit, out BattleStatusEffectInstance mark) // 살아 있는 적의 다음 아군 타격 가산과 표식 확인
+    { // 고해실 표식의 공통 계산 시작
+        mark = amount > 0 && !IsDead && Team == BattleTeam.Enemy && sourceUnit is { Team: BattleTeam.Ally, IsDead: false } && // 양수 원본 피해를 주는 실제 생존 시전자와 적 확인
+            GetStatusEffect(BattleStatusEffectType.ConfessionDamageMark) is { IsExpired: false } activeMark ? activeMark : null; // 다음 명중을 기다리는 실제 활성 표식 참조
+        return mark == null ? amount : (int)Math.Min(int.MaxValue, (long)amount + mark.EffectiveValue); // 동일한 방어 전 가산과 정수 상한 처리
+    } // 고해실 표식의 공통 계산 종료
+
     private int ApplyHeartShardDamageBonus(int amount, BattleUnitRuntime sourceUnit) // 심장파편을 반영한 실제 아군 출처 피해
     { // 저체력 아군 피해 계산 시작
         if (amount <= 0 || Team != BattleTeam.Enemy || sourceUnit?.Team != BattleTeam.Ally || sourceUnit.IsDead || (long)sourceUnit.CurrentHealth * 2 > sourceUnit.MaxHealth) // 생존 아군이 적에게 준 양수 피해와 최대 체력 절반 확인
@@ -1034,7 +1057,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 대상 처리 시작
             return; // 피격 정신력 처리 중단
         } // 사망 대상 처리 종료
-        ChangeMental(-1, BattleMentalChangeReason.ReceiveDamage); // 피격 정신력 감소
+        ChangeMental(-1, BattleMentalChangeReason.ReceiveDamage, sourceUnit); // 실피격 정신력 감소의 실제 발생자 전달
         if (appliedDamage * 10 >= MaxHealth) // 최대 체력 십 퍼센트 피해 확인
         { // 큰 피해 처리 시작
             ChangeMental(-5, BattleMentalChangeReason.HeavyDamage); // 큰 피해 추가 감소
