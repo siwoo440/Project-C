@@ -14,6 +14,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public CharacterData CharacterSource { get; } // 아군 원본 데이터
     public EnemyData EnemySource { get; } // 적 원본 데이터
     public event Action<BattleUnitRuntime> HealthChanged; // 체력 변경 이벤트
+    public event Action<BattleUnitRuntime, BattleDamageResult> DamageTaken; // 피해 적용 이벤트
+    public event Action<BattleUnitRuntime, int> HealthRestored; // 회복 적용 이벤트
     public event Action<BattleUnitRuntime> Died; // 사망 이벤트
     private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
     { // 생성자 시작
@@ -68,6 +70,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 사망 처리 시작
             IsDead = true; // 사망 상태 저장
         } // 사망 처리 종료
+        DamageTaken?.Invoke(this, damageResult); // 피해 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
         if (diedNow) // 신규 사망 확인
         { // 사망 알림 시작
@@ -84,6 +87,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int previousHealth = CurrentHealth; // 변경 전 체력 저장
         CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + healAmount); // 현재 체력 회복
         int appliedHealing = CurrentHealth - previousHealth; // 실제 회복량 계산
+        HealthRestored?.Invoke(this, appliedHealing); // 회복 적용 결과 알림
         HealthChanged?.Invoke(this); // 체력 변경 알림
         return appliedHealing; // 실제 회복량 반환
     } // 체력 회복 종료
