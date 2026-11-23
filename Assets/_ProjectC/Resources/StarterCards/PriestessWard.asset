@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f3de6bf59e59346940da02804190dc, type: 3}
+  m_Name: PriestessWard
+  m_EditorClassIdentifier: Assembly-CSharp::CardData
+  cardId: CRD_ARC_02_WARD
+  displayName: 여사제의 결계
+  description: 공격이 예고된 아군의 물리 방어와 마법 저항을 2턴간 2 증가
+  artwork: {fileID: 2551268883109075300, guid: 7352b342161944343ba3eb1c66171304, type: 3}
+  cardType: 2
+  cardTags: 0
+  targetType: 1
+  apCost: 1
+  effectType: 6
+  damageType: 0
+  effectValue: 2
+  mentalChangeValue: 0
+  statusEffectType: 0
+  statusDuration: 2
+  statusMaximumStacks: 3
