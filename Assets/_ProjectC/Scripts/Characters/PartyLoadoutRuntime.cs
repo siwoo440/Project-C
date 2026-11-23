@@ -61,6 +61,10 @@ public static class PartyLoadoutRuntime // 탐사와 전투 공용 출발 편성
                 return "StarterCards/StrengthGuard"; // 힘의 동료 보호 카드 경로 반환
             case "ARC_09": // 은둔자 캐릭터
                 return "StarterCards/HermitArrange"; // 은둔자의 덱 순서 카드 경로 반환
+            case "ARC_10": // 운명 캐릭터
+                return "StarterCards/FateReroll"; // 운명의 재굴림 카드 경로 반환
+            case "ARC_11": // 정의 캐릭터
+                return "StarterCards/JusticeShare"; // 정의의 피해 분담 카드 경로 반환
             case "ARC_17": // 별 캐릭터
                 return "StarterCards/StarHealing"; // 별 카드 경로 반환
             default: // 전용 카드 미구현 캐릭터

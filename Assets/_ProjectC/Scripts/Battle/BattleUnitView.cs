@@ -178,7 +178,8 @@ public sealed class BattleUnitView : MonoBehaviour, IPointerClickHandler, IPoint
             string damageLabel = action.DamageType == BattleDamageType.Magical ? "마법" : action.DamageType == BattleDamageType.Physical ? "물리" : "일반"; // 피해 유형 이름 계산
             int modifiedAmount = action.Actor.ModifyOutgoingDamage(action.Amount); // 정신 상태 포함 원본 피해 계산
             BattleDamageResult previewResult = action.PreviewDamage(); // 대상 방어력 포함 예상 피해 계산
-            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {modifiedAmount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}"; // 공격 행동 예고 내용 적용
+            string sharedText = action.SharedDamageRecipient != null && !action.SharedDamageRecipient.IsDead ? $"\n분담: {action.SharedDamageRecipient.DisplayName} {action.PreviewSharedDamage()}" : string.Empty; // 생존 분담자와 예상 피해 문구 계산
+            enemyIntentText.text = $"{patternHeader}\n행동 {action.ActionOrder} · 속도 {action.ActionSpeed}\n예고: {damageLabel} {modifiedAmount} → {previewResult.AppliedDamage}\n→ {action.Target.DisplayName}{sharedText}"; // 분담 피해를 포함한 공격 예고 내용 적용
         } // 공격 예고 처리 종료
         enemyIntentRoot.SetActive(true); // 행동 예고 표시
         enemyIntentRoot.transform.SetAsLastSibling(); // 행동 예고 최상단 배치
