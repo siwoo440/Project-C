@@ -214,7 +214,11 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
                 targetUnit.TakeDamage(relicData.EffectValue, relicData.DamageType); // 지정 유형 피해 적용
                 break; // 피해 효과 종료
             case RelicEffectType.ApplyStatusEffect: // 상태 이상 적용 효과
-                targetUnit.ApplyStatusEffect(relicData.StatusEffectType, relicData.EffectValue, relicData.StatusDuration, relicData.StatusMaximumStacks); // 상태 이상 효과 적용
+                BattleStatusEffectApplyResult result = targetUnit.ApplyStatusEffect(relicData.StatusEffectType, relicData.EffectValue, relicData.StatusDuration, relicData.StatusMaximumStacks); // 상태 이상 효과 적용 결과 확인
+                if (relicData.TriggerType == RelicTriggerType.BattleStarted && (result == BattleStatusEffectApplyResult.Applied || result == BattleStatusEffectApplyResult.Stacked)) // 실제 전투 시작 상태 효과 확인
+                { // 첫 턴 시작 효과 처리 시작
+                    targetUnit.GetStatusEffect(relicData.StatusEffectType)?.ConsumeDurationDecreaseSkip(); // 전투 시작 전 효과의 첫 턴 지속 감소 허용
+                } // 첫 턴 시작 효과 처리 종료
                 break; // 상태 이상 효과 종료
             case RelicEffectType.GainBlock: // 개별 방어도 획득 효과
                 targetUnit.GainBlock(relicData.EffectValue); // 지정 대상의 방어도 획득

@@ -283,8 +283,9 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         bool turnRegistered = battleTurn.RegisterSummonedEnemy(summonedEnemy); // 승패 판정에 소환 적 등록
         bool actionRegistered = enemyActionRuntime.RegisterSummonedEnemy(summonedEnemy); // 적 행동 흐름에 소환 적 등록
         bool mentalRegistered = mentalController != null && mentalController.RegisterSummonedEnemy(summonedEnemy); // 정신력 흐름에 소환 적 등록
+        bool statusRegistered = statusEffectController != null && statusEffectController.RegisterSummonedEnemy(summonedEnemy); // 상태 지속 흐름에 소환 적 등록
         bool eventRegistered = battleEventController != null && battleEventController.RegisterSummonedEnemy(summonedEnemy); // 공용 이벤트 흐름에 소환 적 등록
-        if (!turnRegistered || !actionRegistered || !mentalRegistered || !eventRegistered) // 소환 연결 결과 확인
+        if (!turnRegistered || !actionRegistered || !mentalRegistered || !statusRegistered || !eventRegistered) // 소환 연결 결과 확인
         { // 연결 실패 복구 시작
             RemoveEnemyUnit(summonedEnemy); // 불완전 소환 적 제거
             Debug.LogError("[BattleSceneSetup] 소환 적의 전투 연결에 실패했습니다.", this); // 소환 연결 오류 출력
@@ -331,6 +332,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         battleTurn?.UnregisterEnemy(enemyUnit); // 승패 판정 사망 연결 해제
         enemyActionRuntime?.UnregisterEnemy(enemyUnit); // 행동 흐름 사망 연결 해제
         mentalController?.UnregisterEnemy(enemyUnit); // 정신력 흐름 사망 연결 해제
+        statusEffectController?.UnregisterEnemy(enemyUnit); // 상태 적용 감시 연결 해제
         battleEventController?.UnregisterEnemy(enemyUnit); // 공용 이벤트 흐름 상세 신호 해제
         enemyUnit.MentalChanged -= HandleMentalIntentChanged; // 적 정신 상태 예고 갱신 해제
         enemyUnit.Died -= HandleEnemyResultDied; // 처치 적 결과 기록 이벤트 해제
