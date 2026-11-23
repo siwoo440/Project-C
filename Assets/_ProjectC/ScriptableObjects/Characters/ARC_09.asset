@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30de188696f71d741ba772a5d5331623, type: 3}
+  m_Name: ARC_09
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  characterId: ARC_09
+  displayName: 은둔자
+  description: "임시 능력치 · 기획 역할: 덱 순서 예측과 배열"
+  role: 3
+  portrait: {fileID: 0}
+  maxHealth: 90
+  physicalDefense: 2
+  magicalResistance: 4
+  initialMental: 50
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10

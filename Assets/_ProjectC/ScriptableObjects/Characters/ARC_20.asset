@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30de188696f71d741ba772a5d5331623, type: 3}
+  m_Name: ARC_20
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  characterId: ARC_20
+  displayName: 심판
+  description: "임시 능력치 · 기획 역할: 낮은 체력 아군 즉시 구제"
+  role: 2
+  portrait: {fileID: 0}
+  maxHealth: 100
+  physicalDefense: 3
+  magicalResistance: 5
+  initialMental: 50
+  awakeningDamagePercent: 10
+  awakeningHealingPercent: 10
+  collapseDamagePercent: -10
+  collapseHealingPercent: -10

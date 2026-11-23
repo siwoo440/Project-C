@@ -17,13 +17,13 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     [Header("카드 시스템")] // 카드 시스템 구역
     [SerializeField] private BattleHandView handView; // 전투 손패 화면
     [Min(1)] // 공용 행동력 최소값
-    [SerializeField] private int sharedMaximumActionPoints = 3; // 최대 공용 행동력
+    [SerializeField] private int sharedMaximumActionPoints = 6; // 최대 공용 행동력
     [Min(1)] // 최대 손패 최소값
-    [SerializeField] private int maximumHandSize = 5; // 최대 손패 수
+    [SerializeField] private int maximumHandSize = 20; // 최대 손패 수
     [Min(0)] // 시작 손패 최소값
-    [SerializeField] private int initialHandSize = 3; // 시작 손패 수
+    [SerializeField] private int initialHandSize = 8; // 시작 손패 수
     [Min(0)] // 턴 드로우 최소값
-    [SerializeField] private int cardsPerPlayerTurn = 1; // 플레이어 턴당 드로우 수
+    [SerializeField] private int cardsPerPlayerTurn = 4; // 플레이어 턴당 드로우 수
     [Min(0f)] // 적 턴 대기 최소값
     [SerializeField] private float enemyTurnDelay = 0.75f; // 적 행동 사이 대기 시간
     [SerializeField] private bool useFixedShuffleSeed; // 고정 셔플 시드 사용 여부
