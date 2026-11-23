@@ -21,6 +21,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private int lastSpringRound; // 붉은 스프링의 마지막 할인 준비 라운드
     private int lastEmptyHandDrawRound; // 패치 노끈의 마지막 예약 라운드
     private bool springReady; // 다음 유료 고정 카드에 남은 할인
+    private int pendingSwordThenShieldBlock; // 검 사용 뒤 다음 방패에 예약한 소유자 방어도
     private bool resolvingCard; // 사용 카드가 손패를 떠날 때까지의 정산 상태
     private int pendingDefeatDraw; // 카드 정산 후 지급할 회전 깃발 드로우
     private long reflectionDamageNumerator; // 이번 적 턴에 누적한 체력 피해와 반사 비율의 곱
@@ -115,6 +116,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 시작 불가 처리 종료
         CurrentRound = 1; // 첫 라운드 설정
         openingRelics = RelicRunManager.Instance?.Inventory; // 전투 진입 시 실제 탐사 유물 조회
+        runtimeDeck.SetFirstDefensiveRelicApDiscount(openingRelics?.FindEffect(RelicEffectType.FirstDefensiveCardDiscount)?.EffectValue ?? 0); // 이번 전투의 첫 유료 방어 할인 준비
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningSpeedLoss); // 안테나의 첫 적 속도 약화 적용
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningDroneWeakness); // 드론 약화를 첫 공격 예고 전에 적용
         ApplyOpeningAllySpeed(); // 전투 시작 시 생존 아군 속도 증가
@@ -576,6 +578,28 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 다음 카드 할인 준비 종료
     } // 다음 카드 할인 처리 종료
 
+    internal int ResolveDefenseCardRelics(CardInstance card, bool usedFirstDefenseDiscount) // 실제 카드 정산 뒤 방어 유물 소모와 지급 처리
+    { // 실제 사용 방어 유물 처리 시작
+        if (IsBattleEnded) // 카드가 전투를 종료했는지 확인
+        { // 전투 종료 처리 시작
+            return 0; // 종료된 전투에 새 방어도 예약 방지
+        } // 전투 종료 처리 종료
+        if (usedFirstDefenseDiscount) // 비용에 방패끈이 실제 반영된 카드 확인
+        { // 첫 방어 할인 소모 시작
+            runtimeDeck.SetFirstDefensiveRelicApDiscount(0); // 이번 전투의 남은 방어 카드 정상 비용 복원
+        } // 첫 방어 할인 소모 종료
+        if (card.CardType == CardType.Sword) // 실제 사용한 카드가 검인지 확인
+        { // 다음 방패의 방어도 예약 시작
+            pendingSwordThenShieldBlock = openingRelics?.FindEffect(RelicEffectType.SwordThenShieldBlock)?.EffectValue ?? 0; // 검을 여러 장 써도 보유 유물 수치 한 번만 예약
+        } // 다음 방패의 방어도 예약 종료
+        if (card.CardType != CardType.Shield || pendingSwordThenShieldBlock == 0) // 예약이 남은 실제 방패 카드 확인
+        { // 지급 대상 아님 처리 시작
+            return 0; // 기존 예약 유지 또는 추가 방어 없음 반환
+        } // 지급 대상 아님 처리 종료
+        int block = pendingSwordThenShieldBlock; // 다음 방패 보너스 방어도 확보
+        pendingSwordThenShieldBlock = 0; // 방어도 알림 전에 다음 방패 예약 소모
+        return card.OwnerUnit.GainBlock(block); // 방패 카드의 실제 소유자 한 명에게 추가 방어도 지급
+    } // 실제 사용 방어 유물 처리 종료
     internal void BeginCardResolution() // 카드가 손패에 남아 있는 정산 범위 시작
     { // 카드 정산 표시 시작
         resolvingCard = true; // 처치 드로우를 카드 사용 뒤로 미루기
@@ -661,6 +685,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ClearFirstPlayerTurnEnemyStatuses(); // 전투 종료 시의 첫 아군 턴 전용 약화 회수
         ClearReflectionCitadel(); // 승리와 패배 및 도주 이후의 반사 상태 초기화
         nextPlayerTurnActionPointLoss = 0; // 전투 종료 후 미사용 행동력 차감 제거
+        pendingSwordThenShieldBlock = 0; // 같은 전투에서 사용하지 않은 메달 조각 방어도 정리
         runtimeDeck.ClearBattleRelicCards(); // 결과 화면 전 전투 복사본과 미사용 예약 제거
         sharedActionPoints.ClearTurnCapacity(); // 첫 턴에 끝난 전투의 임시 상한 회수
         StateChanged?.Invoke(); // 전투 종료 알림

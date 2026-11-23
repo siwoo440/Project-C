@@ -799,6 +799,54 @@
       "artworkKey": "bcbe514dec4159c8a6e7a8ae036d8ac1"
     },
     {
+      "category": 3,
+      "name": "식은 향 주머니",
+      "description": "전투 시작 시 25% 확률로 생존 아군에게 적용된 제거 가능한 디버프 중 하나를 무작위로 해제한다.",
+      "artworkKey": "6d48a98a5a525920a3aceed1b6e82707"
+    },
+    {
+      "category": 3,
+      "name": "작은 수정못",
+      "description": "지팡이 카드로 직접 공격이 명중할 때마다 피해가 1 증가한다.",
+      "artworkKey": "11d1da59301d54ac9a8ce726f0bea1fe"
+    },
+    {
+      "category": 3,
+      "name": "금 간 방패끈",
+      "description": "전투에서 처음 사용하는 기본 비용이 남은 방어 카드 한 장의 행동력 비용이 1 감소한다.",
+      "artworkKey": "fe020aca38605123a094586c20b75e2a"
+    },
+    {
+      "category": 3,
+      "name": "바랜 훈장 조각",
+      "description": "검 카드 사용을 마치면 다음으로 사용할 방패 카드의 소유자가 추가 방어도 2를 얻는다. 여러 번 예약해도 한 번만 지급한다.",
+      "artworkKey": "02c1e5a710875c3788097bb92d85848b"
+    },
+    {
+      "category": 3,
+      "name": "젖은 성냥개비",
+      "description": "아군이 적에게 화상을 부여할 때 20% 확률로 이번 화상의 지속 시간이 1턴 늘어난다.",
+      "artworkKey": "29b25d50f7e156568ee66a1467adefb3"
+    },
+    {
+      "category": 3,
+      "name": "깨진 안경알",
+      "description": "실명 상태인 적을 카드로 직접 명중할 때마다 피해가 3 증가한다.",
+      "artworkKey": "073884e110d45969a8c78f564e802e88"
+    },
+    {
+      "category": 3,
+      "name": "누런 붕대 매듭",
+      "description": "회복 카드를 사용하면 실제 대상의 출혈 지속 시간이 1턴 줄어든다. 남은 지속 시간이 0이면 출혈이 해제된다.",
+      "artworkKey": "426d381aeec156538602e6b10d709588"
+    },
+    {
+      "category": 3,
+      "name": "묵은 전투수첩",
+      "description": "같은 적을 카드로 연속 세 번 직접 명중하면 다음 직접 카드 명중의 피해가 4 증가한다.",
+      "artworkKey": "33caa81b7fd5529da905428d3bc77f1f"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

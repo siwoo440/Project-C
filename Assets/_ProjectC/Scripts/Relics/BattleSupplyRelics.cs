@@ -2,8 +2,11 @@ using System; // 정수 범위와 비율 계산
 
 internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위 유물 처리
 { // 전투 유물 처리 시작
+    private const int RepeatHitGoal = 3; // 전투 수첩 보너스에 필요한 같은 적 명중 횟수
     private int lastBlackHeartRound; // 검은 심장핀의 마지막 아군 라운드
     private bool usedGlassMarble; // 이번 전투 유리 구슬의 사용 여부
+    private BattleUnitRuntime repeatedHitTarget; // 전투 수첩에 마지막으로 기록한 적
+    private int consecutiveTargetHits; // 같은 적에게 연속으로 명중한 횟수
 
     internal static RelicData Find(RelicEffectType effect) // 현재 회차의 보유 유물 조회
     { // 보유 유물 조회 시작
@@ -23,8 +26,29 @@ internal sealed class BattleSupplyRelics // 전투 단위의 공격과 무작위
             lastBlackHeartRound = round; // 같은 아군 턴의 중복 적용 차단
             bonus += pin.EffectValue; // 검은 심장핀 피해 가산
         } // 첫 적 명중 발동 종료
+        bonus += card.CardType == CardType.Wand && card.EffectType == CardEffectType.Damage ? Find(RelicEffectType.WandDirectHitBonus)?.EffectValue ?? 0 : 0; // 지팡이 피해 카드의 각 명중에 수정못 가산
+        bonus += target.GetStatusEffect(BattleStatusEffectType.Blind) != null ? Find(RelicEffectType.BlindTargetDirectDamage)?.EffectValue ?? 0 : 0; // 실제 실명 상태인 적에게 안경 렌즈 가산
+        bonus += GetRepeatTargetHitBonus(target); // 전투 수첩의 연속 명중 기록 및 예약 피해 가산
         return (int)Math.Min(int.MaxValue, (long)damage + bonus); // 정수 범위의 최종 유물 피해 반환
     } // 유물 피해 계산 종료
+
+    private int GetRepeatTargetHitBonus(BattleUnitRuntime target) // 실제 적 명중 한 번의 연속 기록 처리
+    { // 전투 수첩 확인 시작
+        var notebook = Find(RelicEffectType.RepeatTargetHitBonus); // 현재 전투의 수첩 보유 확인
+        if (notebook == null) // 수첩 미보유 확인
+        { // 미보유 처리 시작
+            return 0; // 명중 기록과 보너스 생략
+        } // 미보유 처리 종료
+        if (consecutiveTargetHits == RepeatHitGoal) // 이전 세 번의 명중으로 예약한 보너스 확인
+        { // 예약 보너스 지급 시작
+            repeatedHitTarget = null; // 사용한 연속 명중 대상 초기화
+            consecutiveTargetHits = 0; // 보너스 타격을 다음 연속 기록에서 제외
+            return notebook.EffectValue; // 대상에 관계없이 이번 실제 명중에 추가 피해
+        } // 예약 보너스 지급 종료
+        consecutiveTargetHits = repeatedHitTarget == target ? consecutiveTargetHits + 1 : 1; // 같은 대상은 누적하고 바뀐 대상은 첫 명중부터 기록
+        repeatedHitTarget = target; // 실제 명중한 적의 개별 전투 객체 보관
+        return 0; // 예약 전 명중의 기본 피해 유지
+    } // 전투 수첩 확인 종료
 
     private static bool IsSingleAttack(CardInstance card) // 한 대상에 한 번만 타격하는 카드 확인
     { // 단일 공격 분류 시작

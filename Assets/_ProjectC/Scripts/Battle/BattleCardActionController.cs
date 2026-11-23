@@ -265,6 +265,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             return; // 카드 실행 중단
         } // 연출 시작 불가 처리 종료
         int cost = cardInstance.SourceData.SwordRule == SwordCardRule.Finisher ? sharedActionPoints.CurrentActionPoints : cardInstance.ApCost; // 실제 사용 순간의 행동력 비용 결정
+        bool usedFirstDefenseDiscount = cardInstance.EffectiveFirstDefenseDiscount > 0; // 다른 유물 비용이 바뀌기 전에 실제 적용한 방어 할인 기록
         if (!SwordCardCombat.CanUse(cardInstance, sharedActionPoints, turnRuntime) || !sharedActionPoints.Spend(cost)) // 현재 대상 및 비용 재확인 후 한 번 지불
         { // 비용 차감 실패 처리 시작
             Debug.LogWarning($"[BattleCardActionController] 카드 비용 차감에 실패했습니다: {cardInstance.DisplayName}"); // 비용 차감 실패 출력
@@ -295,7 +296,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 사용이 확정된 방패 할인 제거 시작
             cardInstance.OwnerUnit.RemoveStatusEffect(BattleStatusEffectType.ShieldBalance); // 시전자의 예약 할인 한 번 소모
         } // 사용이 확정된 방패 할인 제거 종료
-        Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot); // 충돌 시 카드 효과 처리 생성
+        Action impactAction = () => ResolveCardImpact(cardInstance, targetSnapshot, usedFirstDefenseDiscount); // 충돌에 확정 대상과 실제 방어 할인 사용 전달
         bool started = actionSequenceRunner.TryStartPlayerAction(actorView, targetViews, cardInstance.EffectType, cardInstance.StatusEffectType, impactAction, HandleActionSequenceCompleted); // 카드 행동 연출 시작
         if (started) // 연출 시작 결과 확인
         { // 연출 시작 성공 처리 시작
@@ -306,12 +307,12 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         impactAction.Invoke(); // 카드 효과 즉시 적용
         HandleActionSequenceCompleted(); // 즉시 적용 후 선택 화면과 상태 갱신
     } // 카드 실행 종료
-    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 손패 사용이 끝날 때까지 처치 드로우 보류
+    private void ResolveCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 실제 카드 정산과 사용한 방어 할인 전달
     { // 카드 정산 범위 시작
         turnRuntime.BeginCardResolution(); // 손패에 아직 사용 카드가 남았음을 기록
         try // 카드 효과와 이동 완료까지 정산 범위 유지
         { // 카드 충돌 처리 시작
-            ApplyCardImpact(cardInstance, targetUnits); // 실제 전투 효과와 사용 카드 이동 처리
+            ApplyCardImpact(cardInstance, targetUnits, usedFirstDefenseDiscount); // 실제 전투 효과와 사용 카드 이동 및 방어 할인 처리
         } // 카드 충돌 처리 종료
         finally // 충돌 처리 종료에 예약 드로우 정리 보장
         { // 카드 정산 범위 정리 시작
@@ -319,7 +320,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 카드 정산 범위 정리 종료
     } // 카드 정산 범위 종료
 
-    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits) // 카드 충돌 시 효과 적용
+    private void ApplyCardImpact(CardInstance cardInstance, IReadOnlyList<BattleUnitRuntime> targetUnits, bool usedFirstDefenseDiscount) // 카드 충돌 시 효과와 첫 방어 사용 판정
     { // 카드 충돌 처리 시작
         bandageBonus = 0; // 직전 카드의 추가 회복 해제
         if (!usedFirstHealingCard && (cardInstance.EffectType == CardEffectType.Heal || cardInstance.SourceData.FollowUpEffect == CardFollowUpEffect.HealAllAllies)) // 첫 직접 회복 또는 명시적 후속 회복 카드 사용 확인
@@ -347,7 +348,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 적별 방어도 제거 종료
         } // 전체 적 방어도 제거 종료
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
-        bool defensiveCard = HasDefensivePrimaryEffect(cardInstance); // 방어 성격인 기본 카드 효과 확인
+        bool defensiveCard = cardInstance.HasDefensivePrimaryEffect; // 장갑과 방패끈이 공유하는 기본 방어 효과 확인
         bool appliedDefense = false; // 살아 있는 아군에게 실제 방어 효과를 주었는지 기록
         if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly && cardInstance.SourceData.ShieldRule != ShieldCardRule.FinalRampart) // 공용 방어도만 생존 아군에게 분배
         { // 효과 적용 시작
@@ -387,6 +388,11 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         } // 버릴 카드 후보 준비 종료
         if (discarded) // 사용 카드의 손패 이탈 확인
         { // 사용 후 드로우 유물 처리 시작
+            int medalBlock = turnRuntime.ResolveDefenseCardRelics(cardInstance, usedFirstDefenseDiscount); // 성공한 카드 사용의 방어 할인 소모와 메달 조각 지급
+            if (medalBlock > 0) // 실제 메달 조각 방어도 지급 확인
+            { // 메달 조각 방어 표시 시작
+                FindUnitView(cardInstance.OwnerUnit)?.ShowStatusFeedback($"방어도 +{medalBlock}", false); // 방패를 쓴 아군에게 추가 방어도 표시
+            } // 메달 조각 방어 표시 종료
             if (cardInstance.SourceData.ShieldRule == ShieldCardRule.GiantsShield) // 정산을 끝낸 거인의 방패 확인
             { // 다음 턴 행동력 감소 예약 시작
                 turnRuntime.QueueNextPlayerTurnActionPointLoss(cardInstance.SourceData.SecondaryEffectValue); // 다음 아군 턴 한 번의 공용 행동력 감소 예약
@@ -406,11 +412,6 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         string effectLabel = GetEffectLabel(cardInstance); // 카드 효과 로그 문구 생성
         Debug.Log($"[BattleCardActionController] 카드 사용 완료 - {cardInstance.DisplayName} / 대상 {targetUnits.Count}명 / {effectLabel} 적용량 {totalAppliedAmount} / 남은 공용 AP {sharedActionPoints.CurrentActionPoints}"); // 카드 사용 결과 출력
     } // 카드 충돌 처리 종료
-    private static bool HasDefensivePrimaryEffect(CardInstance card) // 실제 적용량을 방어 효과로 셀 수 있는 카드 확인
-    { // 카드 방어 성격 확인 시작
-        return card.EffectType == CardEffectType.GainBlock || card.EffectType == CardEffectType.GuardAllyAttack || // 실제 방어도 또는 동료 직접 보호 효과
-            card.EffectType == CardEffectType.ApplyStatusEffect && card.CardType == CardType.Shield && card.StatusEffectType != BattleStatusEffectType.None && !BattleStatusEffectInstance.IsDebuffType(card.StatusEffectType); // 아군에게 적용한 양의 방패 상태
-    } // 카드 방어 성격 확인 종료
     private bool ApplyFollowUpAndDiscard(CardInstance card, IReadOnlyList<BattleUnitRuntime> targets, out bool appliedDefense) // 보조 방어 처리 결과를 포함한 카드 이동
     { // 후속 효과 처리 시작
         appliedDefense = false; // 명시적 후속 방어도의 성공 여부 초기화
@@ -991,6 +992,19 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
         { // 회복 효과 처리 시작
             BattleStatusEffectType removed = cardInstance.SourceData.StatusRemovedByHealing; // 회복 전에 제거할 상태 조회
             RemoveCardTargetStatus(targetUnit, removed); // 응급 처치와 기존 카드 원본이 지정한 상태 해제
+            var bleed = targetUnit.GetStatusEffect(BattleStatusEffectType.Bleed); // 회복을 받는 생존 대상의 실제 출혈 확인
+            if (bleed != null && BattleSupplyRelics.Find(RelicEffectType.ShortenBleedOnHeal)?.EffectValue > 0) // 출혈을 가진 회복 카드 대상과 유물 보유 확인
+            { // 붕대 매듭의 대상별 출혈 감소 시작
+                bleed.AdvanceDuration(); // 실제 체력 변화와 별개인 출혈 지속 한 턴 차감
+                if (bleed.IsExpired) // 남은 출혈 기간이 소진되었는지 확인
+                { // 마지막 출혈 턴 해제 시작
+                    RemoveCardTargetStatus(targetUnit, BattleStatusEffectType.Bleed); // 기존 상태 제거와 전투 화면 알림 사용
+                } // 마지막 출혈 턴 해제 종료
+                else // 출혈이 아직 남는 대상 확인
+                { // 남은 출혈 표시 갱신 시작
+                    targetUnit.NotifyStatusEffectsChanged(); // 실제 남은 기간의 기존 상태 변경 알림
+                } // 남은 출혈 표시 갱신 종료
+            } // 붕대 매듭의 대상별 출혈 감소 종료
             int baseHealing = cardInstance.SourceData.CardId == "CRD_ARC_20_RESCUE" ? JudgementRecovery.GetHealingAmount(targetUnit, cardInstance.EffectValue, cardInstance.SourceData.SecondaryEffectValue) : cardInstance.EffectValue; // 심판의 위험 구간 추가 회복 계산
             int modifiedHealing = GetDirectCardHealing(cardInstance, baseHealing); // 정신 상태 포함 회복량 계산
             int restored = RestoreDirectCardHealth(cardInstance, targetUnit, modifiedHealing); // 기존 회복 유물과 실제 체력 상한 반영

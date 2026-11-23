@@ -215,6 +215,16 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
             int reduction = BattleSupplyRelics.Find(RelicEffectType.ShorterFadeDebuffs)?.EffectValue ?? 0; // 실제 보유 방독면의 지속 감소량
             duration = Mathf.Max(1, duration - reduction); // 최소 한 턴을 보장한 이번 적용 지속
         } // 방독면 지속 턴 보정 종료
+        if (effectType == BattleStatusEffectType.Burn && Team == BattleTeam.Enemy && sourceUnit?.Team == BattleTeam.Ally && duration < int.MaxValue) // 실제 아군발 적 화상과 연장 여유 확인
+        { // 젖은 성냥개비의 추가 지속 판정 시작
+            var matchstick = BattleSupplyRelics.Find(RelicEffectType.ExtendAllyAppliedBurn); // 보유한 화상 유물 원본 조회
+            int addedTurns = matchstick?.EffectValue ?? 0; // 성공 시 이번 원본 화상의 연장량
+            int chance = matchstick?.TriggerChancePercent ?? 0; // 유물의 실제 화상 연장 확률
+            if (addedTurns > 0 && chance > 0 && (chance == 100 || UnityEngine.Random.Range(0, 100) < chance)) // 적용 가능한 화상만 별도 확률 확인
+            { // 추가 화상 턴 적용 시작
+                duration = (int)Math.Min(int.MaxValue, (long)duration + addedTurns); // 정수 상한과 상태 적용 원본 기간 유지
+            } // 추가 화상 턴 적용 종료
+        } // 젖은 성냥개비의 추가 지속 판정 종료
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType, includeCurrentTurnAttackPower: false); // 한 턴 은총을 제외한 기존 상태 조회
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
