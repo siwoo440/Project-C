@@ -4,6 +4,17 @@ using UnityEngine; // 실제 프레임과 음량 확인
 
 public sealed class GraphicsAudioSettingsTests // 화면과 음량 설정 검증
 { // 설정 기능 테스트 시작
+    [Test] // 튜토리얼 설정 저장 검사 지정
+    public void TutorialSetting_ChangesAndRestores() // 튜토리얼 자동 표시 설정 저장과 복원 확인
+    { // 튜토리얼 설정 검사 시작
+        MemoryStore store = new MemoryStore(); // 독립 설정 저장소 생성
+        GraphicsAudioSettings settings = new GraphicsAudioSettings(store, new RecordingApplier()); // 독립 설정 관리자 생성
+        Assert.AreEqual("켜기", settings.GetLabel(2, 1)); // 안내 표시 기본값 확인
+        Assert.IsTrue(settings.Change(2, 1, 1)); // 안내 표시 설정 끄기
+        Assert.AreEqual("끄기", settings.GetLabel(2, 1)); // 변경된 안내 설정 확인
+        GraphicsAudioSettings restored = new GraphicsAudioSettings(store, new RecordingApplier()); // 저장된 설정 복원
+        Assert.AreEqual("끄기", restored.GetLabel(2, 1)); // 안내 설정 저장 확인
+    } // 튜토리얼 설정 검사 종료
     private sealed class MemoryStore : ISettingsStore // 테스트용 독립 설정 저장소
     { // 독립 저장소 시작
         public readonly Dictionary<string, int> Values = new Dictionary<string, int>(); // 저장된 설정 값 목록
