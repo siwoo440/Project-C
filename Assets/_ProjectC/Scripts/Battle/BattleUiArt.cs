@@ -6,7 +6,7 @@ public static class BattleUiArt // 이미지 생성으로 제작한 전투 UI �
     private static readonly Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>(); // 재사용할 전투 스프라이트 목록
     public static bool Apply(Image target, string name) // 지정한 전투 이미지 적용
     { // 전투 이미지 적용 시작
-        if (target == null || name != "HandPanel" && name != "CardFrame" && name != "CostBadge" && name != "GaugeFrame" && name != "VitalGaugeFrame" && name != "HealthGaugeIcon" && name != "MentalGaugeIcon" && name != "MentalStateBacklight" && name != "CardTypeSword" && name != "CardTypeWand" && name != "CardTypeCup" && name != "CardTypePentacle" && name != "CardTypeShield") // 화면과 지원 이미지 이름 확인
+        if (target == null || name != "HandPanel" && name != "CardFrame" && name != "CostBadge" && name != "GaugeFrame" && name != "VitalGaugeFrame" && name != "HealthGaugeIcon" && name != "MentalGaugeIcon" && name != "MentalStateBacklight" && name != "CardTypeSword" && name != "CardTypeWand" && name != "CardTypeCup" && name != "CardTypePentacle" && name != "CardTypeShield" && name != "DrawPile" && name != "DiscardPile") // 화면과 지원 이미지 이름 확인
         { // 이미지 적용 불가 처리 시작
             return false; // 기존 화면 유지
         } // 이미지 적용 불가 처리 종료
@@ -36,7 +36,7 @@ public static class BattleUiArt // 이미지 생성으로 제작한 전투 UI �
     } // 카드 종류 아이콘 적용 종료
     private static Rect GetArtArea(Texture2D texture, string name) // 제작 이미지의 실제 그림 영역 조회
     { // 그림 영역 조회 시작
-        if (name.StartsWith("CardType")) // 카드 종류별 투명 아이콘 확인
+        if (name.StartsWith("CardType") || name == "DrawPile" || name == "DiscardPile") // 카드 종류와 카드 더미 투명 이미지 확인
         { // 카드 종류 아이콘 영역 반환 시작
             return new Rect(0f, 0f, texture.width, texture.height); // 정사각형 투명 이미지 전체 영역 반환
         } // 카드 종류 아이콘 영역 반환 종료
