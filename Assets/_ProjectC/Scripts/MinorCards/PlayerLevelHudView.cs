@@ -17,13 +17,14 @@ public sealed class PlayerLevelHudView : MonoBehaviour, IDisposable // 전투 �
         }
 
         GameObject rootObject = new GameObject("PlayerLevelHud", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(PlayerLevelHudView)); // HUD 루트 생성
-        rootObject.transform.SetParent(parentCanvas.transform, false); // 전투 Canvas 아래 배치
+        BattleHandView hand = parentCanvas.GetComponentInChildren<BattleHandView>(); // 실제 손패 화면 조회
+        rootObject.transform.SetParent(hand != null ? hand.transform : parentCanvas.transform, false); // 손패 또는 전투 캔버스에 배치
         RectTransform rootRect = rootObject.GetComponent<RectTransform>(); // 루트 사각형 조회
-        rootRect.anchorMin = new Vector2(0.5f, 1f); // 화면 상단 중앙 앵커
-        rootRect.anchorMax = new Vector2(0.5f, 1f); // 화면 상단 중앙 앵커
+        rootRect.anchorMin = hand != null ? new Vector2(0.42f, 1f) : new Vector2(0.5f, 1f); // 손패 중앙 최소 앵커
+        rootRect.anchorMax = hand != null ? new Vector2(0.62f, 1f) : new Vector2(0.5f, 1f); // 손패 중앙 최대 앵커
         rootRect.pivot = new Vector2(0.5f, 1f); // 상단 중앙 피벗
-        rootRect.sizeDelta = new Vector2(360f, 48f); // HUD 크기
-        rootRect.anchoredPosition = new Vector2(0f, -16f); // 상단 여백
+        rootRect.sizeDelta = hand != null ? new Vector2(0f, 34f) : new Vector2(360f, 48f); // 손패 중앙 HUD 크기
+        rootRect.anchoredPosition = new Vector2(0f, -18f); // 손패 상단 여백
 
         Canvas hudCanvas = rootObject.GetComponent<Canvas>(); // HUD Canvas 조회
         hudCanvas.overrideSorting = true; // 부모 정렬과 분리

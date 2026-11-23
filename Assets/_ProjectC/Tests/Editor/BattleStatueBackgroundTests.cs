@@ -50,6 +50,11 @@ public sealed class BattleStatueBackgroundTests // 전투 석상 배경 검사
         Assert.IsNotNull(hand); // 실제 손패 존재 확인
         Canvas canvas = hand.GetComponentInParent<Canvas>(); // 실제 전투 캔버스 조회
         Assert.IsNotNull(canvas); // 실제 전투 캔버스 확인
+        Transform levelHud = hand.transform.Find("PlayerLevelHud"); // 손패 안의 레벨 표시 조회
+        Assert.IsNotNull(levelHud); // 레벨 표시의 손패 중앙 이동 확인
+        Transform turnFrame = canvas.transform.Find("TurnStatusFrame"); // 화면 위의 턴 표시 조회
+        Assert.IsNotNull(turnFrame); // 턴 표시의 화면 상단 이동 확인
+        Assert.IsNotNull(turnFrame.Find("TurnStatusText")); // 상단 프레임의 실제 턴 글자 확인
         Texture2D texture = Resources.Load<Texture2D>("UI/Battle/StatueBackground"); // 제작한 석상 배경 리소스 조회
         Assert.IsNotNull(texture); // 석상 배경 리소스 확인
         Transform background = canvas.transform.Find("BattleStatueBackground"); // 실제 전투 배경 조회
