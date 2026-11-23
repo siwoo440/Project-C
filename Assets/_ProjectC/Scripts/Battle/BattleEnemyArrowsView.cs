@@ -14,6 +14,9 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
     } // 화살표 정보 종료
     private readonly List<Arrow> arrows = new List<Arrow>(); // 현재 표시 화살표 목록
     private readonly List<Arrow> pending = new List<Arrow>(); // 다음 화면의 화살표 목록
+    private readonly Vector3[] panelCorners = new Vector3[4]; // 라운드 패널 화면 경계 계산 배열
+    private RectTransform roundFrame; // 화면 위쪽 라운드 패널 영역
+    private float curveCeiling; // 라운드 패널 아래의 곡선 높이 한계
     public int ArrowCount => arrows.Count; // 표시 중인 화살표 수
     public static BattleEnemyArrowsView Create(Canvas parent) // 전투 화면에 화살표 화면 생성
     { // 화살표 화면 생성 시작
@@ -34,6 +37,20 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
     public void BeginFrame() // 다음 화면의 화살표 준비
     { // 화살표 준비 시작
         pending.Clear(); // 이전 계산 결과 제거
+        if (roundFrame == null) // 실제 라운드 패널 연결 확인
+        { // 라운드 패널 탐색 시작
+            BattleHandView hand = FindFirstObjectByType<BattleHandView>(); // 실제 전투 손패 화면 조회
+            Canvas canvas = hand != null ? hand.GetComponentInParent<Canvas>() : null; // 라운드 패널이 속한 캔버스 조회
+            roundFrame = canvas != null ? canvas.transform.Find("TurnStatusFrame") as RectTransform : null; // 실제 상단 라운드 패널 조회
+        } // 라운드 패널 탐색 종료
+        Rect bounds = rectTransform.rect; // 현재 화살표 화면 영역 조회
+        curveCeiling = bounds.yMax - Mathf.Max(48f, bounds.height * 0.065f); // 패널 누락 시 화면 위쪽 기본 높이 한계
+        if (roundFrame != null) // 실제 라운드 패널 존재 확인
+        { // 라운드 패널 높이 계산 시작
+            roundFrame.GetWorldCorners(panelCorners); // 라운드 패널 화면 꼭짓점 조회
+            float panelBottom = rectTransform.InverseTransformPoint(panelCorners[0]).y; // 화살표 화면 기준 패널 아래쪽 높이 계산
+            curveCeiling = Mathf.Min(bounds.yMax - 24f, panelBottom - 8f); // 라운드 패널 바로 아래 높이 제한 적용
+        } // 라운드 패널 높이 계산 종료
     } // 화살표 준비 종료
     public void AddArrow(RectTransform actorIcon, RectTransform targetPortrait, bool special, bool focused) // 행동 아이콘과 대상 연결
     { // 화살표 연결 시작
@@ -41,19 +58,21 @@ public sealed class BattleEnemyArrowsView : MaskableGraphic // 적 행동 대상
         { // 연결 불가 처리 시작
             return; // 화살표 추가 중단
         } // 연결 불가 처리 종료
-        Vector3 actorWorld = actorIcon.TransformPoint(actorIcon.rect.center); // 적 행동 아이콘 가운데 위치
+        Vector3 actorWorld = actorIcon.TransformPoint(new Vector3(actorIcon.rect.xMin, actorIcon.rect.center.y, 0f)); // 적 행동 아이콘 왼쪽 가장자리 위치
         Vector3 targetWorld = targetPortrait.TransformPoint(new Vector3(0f, targetPortrait.rect.yMax - targetPortrait.rect.height * 0.12f, 0f)); // 대상 캐릭터 머리 위치
         Vector2 start = rectTransform.InverseTransformPoint(actorWorld); // 화살표 화면 기준 적 위치
         Vector2 end = rectTransform.InverseTransformPoint(targetWorld); // 화살표 화면 기준 대상 위치
         Rect bounds = rectTransform.rect; // 실제 전투 화면 경계
         const float margin = 24f; // 화살촉 보호 화면 여백
         start.x = Mathf.Clamp(start.x, bounds.xMin + margin, bounds.xMax - margin); // 시작점 가로 화면 경계 제한
-        float ceiling = Mathf.Max(bounds.yMin + margin, bounds.yMax - Mathf.Max(48f, bounds.height * 0.1f)); // 화면 위쪽 곡선 높이 제한
-        start.y = Mathf.Clamp(start.y, bounds.yMin + margin, ceiling - 8f); // 시작점 세로 화면 경계 제한
+        float ceiling = Mathf.Max(bounds.yMin + margin + 8f, curveCeiling); // 라운드 패널 아래의 유효한 곡선 높이 제한
+        start.y = Mathf.Clamp(start.y, bounds.yMin + margin, ceiling - 12f); // 시작점 세로 화면 경계 제한
         end.x = Mathf.Clamp(end.x, bounds.xMin + margin, bounds.xMax - margin); // 종료점 가로 화면 경계 제한
-        end.y = Mathf.Clamp(end.y, bounds.yMin + margin, ceiling - 8f); // 종료점 세로 화면 경계 제한
-        float rise = Mathf.Min(70f + pending.Count % 4 * 12f, bounds.height * 0.12f); // 여러 화살표를 구분하는 곡선 높이
-        Vector2 control = new Vector2((start.x + end.x) * 0.5f, Mathf.Min(ceiling, Mathf.Max(start.y, end.y) + rise)); // 제한 높이 안에서 포물선 제어점 계산
+        end.y = Mathf.Clamp(end.y, bounds.yMin + margin, ceiling - 12f); // 종료점 세로 화면 경계 제한
+        float minimumPeak = Mathf.Max(start.y, end.y) + 2f; // 양쪽 끝점보다 위쪽의 최소 곡선 높이
+        float peak = Mathf.Clamp(ceiling - 6f - pending.Count % 4 * 10f, minimumPeak, ceiling - 2f); // 라운드 패널 아래의 실제 곡선 최고점
+        float controlHeight = peak + Mathf.Sqrt((peak - start.y) * (peak - end.y)); // 최고점 높이를 지키는 이차 곡선 제어점
+        Vector2 control = new Vector2((start.x + end.x) * 0.5f, controlHeight); // 지정한 최고점의 완만한 곡선 제어점 계산
         Color arrowColor = special ? new Color(1f, 0.55f, 0.12f, focused ? 1f : 0.9f) : new Color(1f, 0.2f, 0.2f, focused ? 1f : 0.85f); // 특수 행동과 일반 행동 색상
         pending.Add(new Arrow { Start = start, End = end, Control = control, Color = arrowColor, Thickness = focused ? 5f : 3f, HeadSize = focused ? 20f : 16f }); // 실제 예정 행동 곡선 화살표 저장
     } // 화살표 연결 종료
