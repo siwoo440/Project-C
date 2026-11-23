@@ -190,6 +190,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "체력 -6 · 유물 40%", "철판 -1 · 유물 70%", "정신력 +3" }; // 원문 선택 비용과 확률 표시
                 label += "   " + effects[index]; // 행동 확정 전 효과 안내
             } // 잿더미 선택 효과 표시 종료
+            else if (currentEventData.EventId == AshMapFragmentEvent.Id) // 지도 조각 선택 안내 여부 확인
+            { // 지도 조각 효과 표시 시작
+                string[] effects = { "다음 일반 전투 40% 회피 · 1회", "정신력 +2 · 나사 +1", "변화 없음" }; // 선택 전 확인할 실제 효과
+                label += "   " + effects[index]; // 기획 행동과 결과 요약 표시
+            } // 지도 조각 효과 표시 종료
             CreateChoiceButton(label, () => HandleChoiceSelected(capturedIndex)); // 선택지 버튼 생성
         }
 
@@ -219,6 +224,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             SelectAshPileChoice(choiceIndex); // 비용과 대상 확인 후 조사 확정
             return; // 자원 전용 기본 선택 처리 제외
         } // 잿더미 선택 종료
+        if (currentEventData.EventId == AshMapFragmentEvent.Id) // 윈터폴 지도 조각 원본 확인
+        { // 지도 조각 선택 시작
+            SelectMapFragmentChoice(choiceIndex); // 행동별 대상 및 결과 처리
+            return; // 다른 이벤트 결과 처리 제외
+        } // 지도 조각 선택 종료
         choiceCommitted = true; // 선택 완료 상태 저장
 
         ExplorationEventChoiceData choiceData =
@@ -320,6 +330,37 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
         SaveStoryResult(BuildResultMessage(story, summary)); // 비용과 보상 및 방 완료 기록 함께 저장
         return true; // 대상 선택 완료
     } // 잿더미 확정 종료
+
+    private void SelectMapFragmentChoice(int choice) // 지도 조각의 대상 선택과 즉시 행동 처리
+    { // 지도 행동 선택 시작
+        string runtimeId = currentRuntimeEventId; // 현재 선택할 이벤트 방 보관
+        if (choice == AshMapFragmentEvent.Burn) // 생존 행동자 지정 여부 확인
+        { // 태울 생존자 선택 시작
+            var allies = BattleResultManager.EnsureInstance(); // 출전 파티 상태 조회
+            ExplorationRewardOwnerView.OpenPartyMember(transform, allies.ActiveParty, "지도 조각을 태운다", "정신력 2를 회복할 생존 파티원을 선택하세요.", "선택 취소", allies.IsLivingPartyMember, actor => CommitMapFragmentChoice(runtimeId, choice, actor)); // 취소할 수 있는 생존자 선택 표시
+            return; // 행동자 확정 전 나사와 정신력 지급 보류
+        } // 태울 생존자 선택 종료
+        CommitMapFragmentChoice(runtimeId, choice, null); // 대상이 없는 줍기 또는 찢기 처리
+    } // 지도 행동 선택 종료
+
+    private bool CommitMapFragmentChoice(string runtimeId, int choice, CharacterData actor) // 지도 조각 선택 확정과 결과 저장
+    { // 지도 선택 확정 시작
+        if (choiceCommitted || currentEventData == null || currentEventData.EventId != AshMapFragmentEvent.Id || currentRuntimeEventId != runtimeId) // 원래 선택 방과 입력 유효성 확인
+        { // 잘못된 선택 확인 시작
+            return false; // 이전 화면 중복 입력 차단
+        } // 잘못된 선택 확인 종료
+        if (!AshMapFragmentEvent.TryResolve(runtimeId, choice, actor, out string summary)) // 지도 보관 또는 소각 결과 확인
+        { // 미확정 처리 시작
+            if (!string.IsNullOrEmpty(summary)) // 중복 지도 보관 사유 확인
+            { // 선택 안내 시작
+                bodyText.text = summary; // 이전 효과를 보존하고 다른 선택 안내
+            } // 선택 안내 종료
+            return false; // 방을 사용하지 않은 상태 유지
+        } // 미확정 처리 종료
+        choiceCommitted = true; // 이번 이벤트 중복 입력 차단
+        SaveStoryResult(BuildResultMessage(currentEventData.Choices[choice].ResultText, summary)); // 원문과 실제 상태 변경을 함께 저장
+        return true; // 지도 조각 행동 완료
+    } // 지도 선택 확정 종료
 
     private void SaveStoryResult(string story) // 확정 결과만 저장하고 실패 시 같은 상태로 재시도
     { // 결과 저장 시작

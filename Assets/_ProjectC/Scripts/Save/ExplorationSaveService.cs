@@ -20,6 +20,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         public RunCard[] cards; // 현재 회차 덱 목록
         public string[] cleared; // 클리어 조우 목록
         public string[] events; // 처리한 이벤트와 특수 방 목록
+        public string pendingMapFragment; // 사용 대기 중인 지도 조각의 원본 이벤트
+        public string[] avoidedEncounters; // 승리 보상 없이 회피한 조우 목록
         public string[] relics; // 획득 순서 유물 목록
         public string[] consumables; // 소모품 슬롯 목록
         public string shopRoom; // 현재 상점 방 식별자
@@ -119,6 +121,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
             List<string> events = new List<string>(session.ResolvedEventIds); // 처리 이벤트 목록 복사
             cleared.Sort(StringComparer.Ordinal); // 조우 식별자 순서 정리
             events.Sort(StringComparer.Ordinal); // 이벤트 식별자 순서 정리
+            var avoided = new List<string>(session.AvoidedEncounterIds); // 지급과 별도로 관리하는 회피 조우 복사
+            avoided.Sort(StringComparer.Ordinal); // 회피 조우 저장 순서 고정
             List<string> relics = new List<string>(); // 보유 유물 목록 생성
             if (RelicRunManager.Instance != null) // 유물 관리자 존재 확인
             { // 유물 수집 시작
@@ -162,6 +166,8 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
                 cards = cards.ToArray(), // 현재 회차 덱 설정
                 cleared = cleared.ToArray(), // 클리어 조우 설정
                 events = events.ToArray(), // 처리 이벤트 설정
+                pendingMapFragment = session.PendingMapFragmentId, // 보관 중인 일회성 지도 조각 저장
+                avoidedEncounters = avoided.ToArray(), // 보상 없이 통과한 조우 저장
                 relics = relics.ToArray(), // 보유 유물 설정
                 consumables = consumables, // 소모품 슬롯 설정
                 shopRoom = shop != null ? shop.ActiveRoomRuntimeId : null, // 상점 방 식별자 설정
@@ -343,6 +349,14 @@ public static class ExplorationSaveService // 탐사 상태 저장 서비스
         { // 상점 기록 오류 시작
             return false; // 복원 불가 반환
         } // 상점 기록 오류 종료
+        if (!string.IsNullOrEmpty(snapshot.pendingMapFragment) && Array.IndexOf(snapshot.events, snapshot.pendingMapFragment) < 0) // 조각을 준 이벤트의 완료 기록 확인
+        { // 잘못된 조각 복원 차단 시작
+            return false; // 원본 방이 없는 보관 조각 차단
+        } // 잘못된 조각 복원 차단 종료
+        if (snapshot.avoidedEncounters != null && (!ValidIds(snapshot.avoidedEncounters) || Array.Exists(snapshot.avoidedEncounters, id => Array.IndexOf(snapshot.cleared, id) >= 0))) // 중복 회피와 승리 기록 충돌 확인
+        { // 잘못된 회피 기록 처리 시작
+            return false; // 회피와 승리가 겹치는 저장 차단
+        } // 잘못된 회피 기록 처리 종료
         foreach (string offerId in snapshot.purchasedOffers) // 판매 완료 상품 순회
         { // 상품 식별자 검사 시작
             if (!shopCatalog.ContainsOffer(offerId)) // 상점 상품 식별자 확인

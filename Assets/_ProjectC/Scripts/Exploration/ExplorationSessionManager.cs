@@ -14,6 +14,10 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
     private readonly HashSet<string> resolvedEventIds =
         new HashSet<string>(); // 처리 완료 이벤트 ID 목록
+    private readonly HashSet<string> avoidedEncounterIds = new HashSet<string>(); // 승리와 보상을 제외한 지도 조각 회피 기록
+    private string pendingMapFragmentId; // 다음 일반 전투에 사용할 지도 조각 원본 방
+    public string PendingMapFragmentId => pendingMapFragmentId; // 현재 보관 중인 지도 조각 조회
+    public IReadOnlyCollection<string> AvoidedEncounterIds => avoidedEncounterIds; // 저장할 회피 조우 조회
 
     private EncounterData activeEncounter; // 현재 전투 조우 데이터
     private string activeRuntimeEncounterId; // 현재 전투 런타임 조우 ID
@@ -115,8 +119,46 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
 
     public bool CanBeginEncounter(string runtimeEncounterId, EncounterData encounterData) // 전투 조우 시작 가능 여부 확인
     { // 조우 시작 가능 여부 확인 시작
-        return !string.IsNullOrWhiteSpace(runtimeEncounterId) && encounterData != null && encounterData.IsValidData() && activeEncounter == null && !isExplorationCompleted && !IsEncounterCleared(runtimeEncounterId); // 유효한 미완료 조우 여부 반환
+        return !string.IsNullOrWhiteSpace(runtimeEncounterId) && encounterData != null && encounterData.IsValidData() && activeEncounter == null && !isExplorationCompleted && !IsEncounterRemoved(runtimeEncounterId); // 승리하거나 회피한 조우의 재진입 차단
     } // 조우 시작 가능 여부 확인 종료
+
+    public bool IsEncounterRemoved(string runtimeEncounterId) // 현재 층에서 제거할 조우 여부 확인
+    { // 제거 여부 조회 시작
+        return IsEncounterCleared(runtimeEncounterId) || avoidedEncounterIds.Contains(runtimeEncounterId); // 승리와 지도 회피 모두 재생성 방지
+    } // 제거 여부 조회 종료
+
+    internal bool TryKeepMapFragment(string runtimeId) // 다음 일반 전투에 사용할 지도 조각 한 장 보관
+    { // 조각 보관 시작
+        if (!string.IsNullOrEmpty(pendingMapFragmentId)) // 사용 대기 중인 조각 확인
+        { // 기존 조각 보존 시작
+            return false; // 중첩 보관과 기존 효과 교체 차단
+        } // 기존 조각 보존 종료
+        pendingMapFragmentId = runtimeId; // 획득 방의 고정 추첨 식별자 보관
+        return true; // 보관 성공 반환
+    } // 조각 보관 종료
+
+    public MapFragmentContact ResolveMapFragmentContact(string runtimeId, EncounterData encounter, Vector3 position, string runPath = null) // 일반 조우의 일회성 회피 판정과 저장
+    { // 지도 조각 사용 시작
+        if (string.IsNullOrEmpty(pendingMapFragmentId) || !CanBeginEncounter(runtimeId, encounter) || encounter.BattleType != BattleType.Normal) // 사용 가능한 일반 전투와 조각 확인
+        { // 회피 판정 제외 시작
+            return MapFragmentContact.NoEffect; // 특수 조우와 잘못된 접촉에서 조각 보존
+        } // 회피 판정 제외 종료
+        string source = pendingMapFragmentId; // 저장 실패 복구와 고정 추첨용 원본 방
+        var random = new System.Random(ExplorationTreasureRewardService.BuildStableHash(source)); // 불러오기와 경로 변경에도 같은 조각 결과 유지
+        bool avoided = random.Next(100) < 40; // 사십 퍼센트 회피 판정
+        pendingMapFragmentId = null; // 성공과 실패 모두 일회성 조각 소모
+        if (avoided) // 조우 회피 성공 여부 확인
+        { // 조우 회피 기록 시작
+            avoidedEncounterIds.Add(runtimeId); // 클리어 횟수와 별도로 통과한 조우 기록
+        } // 조우 회피 기록 종료
+        if (ExplorationAutoSave.SaveBeforeBattle(position, runPath)) // 전투 진입 또는 표식 제거 전 일회성 결과 저장
+        { // 판정 확정 시작
+            return avoided ? MapFragmentContact.Avoided : MapFragmentContact.Battle; // 저장된 회피 또는 전투 진입 반환
+        } // 판정 확정 종료
+        pendingMapFragmentId = source; // 저장 실패 시 획득한 조각 복구
+        avoidedEncounterIds.Remove(runtimeId); // 미확정 조우 표식 보존
+        return MapFragmentContact.SaveFailed; // 복구된 상태에서 다시 접촉 허용
+    } // 지도 조각 사용 종료
 
     public bool BeginEncounter(
         string runtimeEncounterId,
@@ -503,6 +545,11 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         hasReturnPosition = true; // 저장 위치 사용 표시
         clearedEncounterIds.UnionWith(snapshot.cleared); // 클리어 조우 목록 복원
         resolvedEventIds.UnionWith(snapshot.events); // 처리 이벤트 목록 복원
+        pendingMapFragmentId = snapshot.pendingMapFragment; // 이전 저장의 빈 값 또는 보관한 조각 복원
+        if (snapshot.avoidedEncounters != null) // 지도 조각을 지원하는 저장 여부 확인
+        { // 회피 목록 복원 시작
+            avoidedEncounterIds.UnionWith(snapshot.avoidedEncounters); // 회피 조우 재등장 방지 기록 복원
+        } // 회피 목록 복원 종료
         pendingHazardHealthDamage = snapshot.hazardHealth; // 대기 체력 피해 복원
         pendingHazardMentalDamage = snapshot.hazardMental; // 대기 정신력 피해 복원
         restoredHazardExposure = snapshot.hazardExposure; // 위험 노출도 복원 예약
@@ -525,6 +572,8 @@ public sealed class ExplorationSessionManager : MonoBehaviour // 49일차 탐사
         PlayerResourceManager.Instance?.EndExplorationResourceTracking(); // 이전 탐사 재화 구분 해제
         clearedEncounterIds.Clear(); // 클리어 조우 목록 초기화
         resolvedEventIds.Clear(); // 처리 이벤트 목록 초기화
+        pendingMapFragmentId = null; // 신규 탐사에서 이전 조각 제거
+        avoidedEncounterIds.Clear(); // 신규 탐사의 회피 조우 목록 초기화
         activeEncounter = null; // 현재 조우 초기화
         activeRuntimeEncounterId = null; // 런타임 조우 초기화
         returnPosition = Vector3.zero; // 복귀 위치 초기화

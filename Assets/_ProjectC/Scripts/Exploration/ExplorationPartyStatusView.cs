@@ -27,6 +27,17 @@ public sealed class ExplorationPartyStatusView : MonoBehaviour // 탐사 좌하�
     private PartyData boundParty; // 현재 표시 중인 파티
     private float nextRefreshTime; // 다음 보조 갱신 시각
 
+    internal void ShowMapFragmentNotice(string message) // 지도 조각 접촉 결과를 탐사 화면에 잠시 표시
+    { // 조각 알림 표시 시작
+        EnsureUi(); // 탐사 상태 캔버스 확보
+        var panel = PreparationUi.CreatePanel("MapFragmentNotice", canvasObject.transform, Vector2.zero, Vector2.one); // 전투 회피 안내판 생성
+        PreparationUi.Place(panel, new Vector2(0.5f, 0.82f), Vector2.zero, new Vector2(670f, 62f)); // HUD와 겹치지 않는 상단 중앙 배치
+        panel.GetComponent<Image>().raycastTarget = false; // 알림 중 탐사 입력 허용
+        TMP_Text label = PreparationUi.CreateText("Result", panel, message, 26f); // 한글 결과 문구 표시
+        PreparationUi.Stretch(label.rectTransform, Vector2.zero, Vector2.one); // 안내판 안에 문구 배치
+        Destroy(panel.gameObject, 3f); // 세 초 뒤 탐사 안내 제거
+    } // 조각 알림 표시 종료
+
     public void Configure(
         BattleResultManager targetResultManager,
         ExplorationSessionManager targetSessionManager) // 파티 HUD 관리자 연결

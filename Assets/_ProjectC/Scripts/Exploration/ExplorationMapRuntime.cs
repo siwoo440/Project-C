@@ -713,7 +713,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
             $"Y{cell.Coordinate.y}_" +
             $"S{CurrentMap.Seed}"; // 층·셀·Seed 기반 런타임 조우 ID 생성
 
-        if (sessionManager.IsEncounterCleared(runtimeEncounterId))
+        if (sessionManager.IsEncounterRemoved(runtimeEncounterId)) // 승리 또는 지도 조각으로 회피한 위치 확인
         {
             return;
         }
@@ -976,8 +976,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 44일차 탐사 성
                 continue;
             }
 
-            if (!sessionManager.IsEncounterCleared(
-                    runtimeEncounterId))
+            if (!sessionManager.IsEncounterRemoved(runtimeEncounterId)) // 승리나 지도 회피로 제거할 조우 확인
             {
                 continue;
             }
