@@ -83,8 +83,8 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
         return true;
     }
 
-    private static int GetScaledReward(
-        int baseReward) // 현재 탐사 층 보상 계산
+    private int GetScaledReward(
+        int baseReward) // 현재 탐사 층·조우 등급 보상 계산
     {
         int currentFloor =
             ExplorationDifficultyCalculator.GetCurrentExplorationFloor(); // 현재 탐사 층 조회
@@ -93,12 +93,19 @@ public sealed class EncounterData : ScriptableObject // 탐사 조우 원본 데
             Mathf.Max(
                 0,
                 baseReward),
-            currentFloor); // 직렬화 원본을 변경하지 않고 최종 보상 반환
+            currentFloor,
+            battleType); // 층과 조우 등급을 결합한 최종 보상 반환
     }
 }
 
-public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난이도 계산
+public static class ExplorationDifficultyCalculator // 43일차 층·조우 등급 난이도 계산
 {
+    private const float EliteHealthMultiplier = 1.50f; // 엘리트 체력 배율
+    private const float EliteAttackMultiplier = 1.20f; // 엘리트 공격 배율
+    private const float EliteRewardMultiplier = 1.50f; // 엘리트 보상 배율
+    private const float BossHealthMultiplier = 2.50f; // 보스 체력 배율
+    private const float BossAttackMultiplier = 1.35f; // 보스 공격 배율
+    private const float BossRewardMultiplier = 2.50f; // 보스 보상 배율
     private const float HealthGrowthPerFloor = 0.12f; // 층당 적 체력 증가율
     private const float AttackGrowthPerFloor = 0.08f; // 층당 적 공격 증가율
     private const float RewardGrowthPerFloor = 0.05f; // 층당 보상 증가율
@@ -130,6 +137,92 @@ public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난�
 
         return NormalizeFloor(
             sessionManager.CurrentFloor); // 활성 탐사 조우의 층 반환
+    }
+
+    public static BattleType GetCurrentBattleType() // 현재 탐사 조우 등급 조회
+    {
+        ExplorationSessionManager sessionManager =
+            ExplorationSessionManager.Instance; // 현재 탐사 세션 조회
+
+        if (sessionManager == null ||
+            sessionManager.ActiveEncounter == null)
+        {
+            return BattleType.Normal;
+        }
+
+        return sessionManager.ActiveEncounter.BattleType; // 활성 조우의 전투 등급 반환
+    }
+
+    public static float GetEncounterHealthMultiplier(
+        BattleType battleType) // 조우 등급 체력 배율 조회
+    {
+        switch (battleType)
+        {
+            case BattleType.Elite:
+                return EliteHealthMultiplier;
+
+            case BattleType.Boss:
+                return BossHealthMultiplier;
+
+            default:
+                return 1f;
+        }
+    }
+
+    public static float GetEncounterAttackMultiplier(
+        BattleType battleType) // 조우 등급 공격 배율 조회
+    {
+        switch (battleType)
+        {
+            case BattleType.Elite:
+                return EliteAttackMultiplier;
+
+            case BattleType.Boss:
+                return BossAttackMultiplier;
+
+            default:
+                return 1f;
+        }
+    }
+
+    public static float GetEncounterRewardMultiplier(
+        BattleType battleType) // 조우 등급 보상 배율 조회
+    {
+        switch (battleType)
+        {
+            case BattleType.Elite:
+                return EliteRewardMultiplier;
+
+            case BattleType.Boss:
+                return BossRewardMultiplier;
+
+            default:
+                return 1f;
+        }
+    }
+
+    public static float GetCombinedHealthMultiplier(
+        int floor,
+        BattleType battleType) // 층·등급 최종 체력 배율 계산
+    {
+        return GetHealthMultiplier(floor) *
+               GetEncounterHealthMultiplier(battleType);
+    }
+
+    public static float GetCombinedAttackMultiplier(
+        int floor,
+        BattleType battleType) // 층·등급 최종 공격 배율 계산
+    {
+        return GetAttackMultiplier(floor) *
+               GetEncounterAttackMultiplier(battleType);
+    }
+
+    public static float GetCombinedRewardMultiplier(
+        int floor,
+        BattleType battleType) // 층·등급 최종 보상 배율 계산
+    {
+        return GetRewardMultiplier(floor) *
+               GetEncounterRewardMultiplier(battleType);
     }
 
     public static float GetHealthMultiplier(
@@ -167,7 +260,18 @@ public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난�
 
     public static int ScaleHealth(
         int baseHealth,
-        int floor) // 기본 체력에 층 배율 적용
+        int floor) // 기존 층 체력 계산 호환
+    {
+        return ScaleHealth(
+            baseHealth,
+            floor,
+            BattleType.Normal); // 일반 조우 기준 반환
+    }
+
+    public static int ScaleHealth(
+        int baseHealth,
+        int floor,
+        BattleType battleType) // 층·등급 최종 체력 적용
     {
         int safeBaseHealth =
             Mathf.Max(
@@ -178,12 +282,25 @@ public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난�
             1,
             Mathf.RoundToInt(
                 safeBaseHealth *
-                GetHealthMultiplier(floor))); // 보정된 최대 체력 반환
+                GetCombinedHealthMultiplier(
+                    floor,
+                    battleType))); // 층·등급 보정 최대 체력 반환
     }
 
     public static int ScaleAttack(
         int baseAttack,
-        int floor) // 기본 공격력에 층 배율 적용
+        int floor) // 기존 층 공격 계산 호환
+    {
+        return ScaleAttack(
+            baseAttack,
+            floor,
+            BattleType.Normal); // 일반 조우 기준 반환
+    }
+
+    public static int ScaleAttack(
+        int baseAttack,
+        int floor,
+        BattleType battleType) // 층·등급 최종 공격 적용
     {
         if (baseAttack <= 0)
         {
@@ -194,12 +311,25 @@ public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난�
             1,
             Mathf.RoundToInt(
                 baseAttack *
-                GetAttackMultiplier(floor))); // 보정된 공격 수치 반환
+                GetCombinedAttackMultiplier(
+                    floor,
+                    battleType))); // 층·등급 보정 공격 수치 반환
     }
 
     public static int ScaleReward(
         int baseReward,
-        int floor) // 기본 보상에 층 배율 적용
+        int floor) // 기존 층 보상 계산 호환
+    {
+        return ScaleReward(
+            baseReward,
+            floor,
+            BattleType.Normal); // 일반 조우 기준 반환
+    }
+
+    public static int ScaleReward(
+        int baseReward,
+        int floor,
+        BattleType battleType) // 층·등급 최종 보상 적용
     {
         if (baseReward <= 0)
         {
@@ -210,7 +340,9 @@ public static class ExplorationDifficultyCalculator // 42일차 탐사 층 난�
             0,
             Mathf.RoundToInt(
                 baseReward *
-                GetRewardMultiplier(floor))); // 보정된 보상 수치 반환
+                GetCombinedRewardMultiplier(
+                    floor,
+                    battleType))); // 층·등급 보정 보상 수치 반환
     }
 
     private static int NormalizeFloor(
@@ -258,8 +390,12 @@ public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사
         int floor =
             ExplorationDifficultyCalculator.GetCurrentBattleFloor(); // 현재 탐사 전투 층 조회
 
+        BattleType battleType =
+            ExplorationDifficultyCalculator.GetCurrentBattleType(); // 현재 조우 등급 조회
+
         LogDifficultyProfile(
-            floor); // 현재 전투 난이도 정보 출력
+            floor,
+            battleType); // 현재 전투 층·등급 난이도 정보 출력
 
         System.Collections.Generic.IReadOnlyList<BattleUnitRuntime> enemyUnits =
             battleSceneSetup.EnemyUnits; // 현재 전투 적 목록 조회
@@ -280,7 +416,8 @@ public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사
 
             ApplyHealthScaling(
                 enemyUnit,
-                floor); // 현재 적 최대 체력 배율 적용
+                floor,
+                battleType); // 현재 적 최대 체력에 층·등급 배율 적용
 
             scaledEnemies.Add(
                 enemyUnit); // 중복 적용 방지 등록
@@ -289,12 +426,14 @@ public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사
 
     private static void ApplyHealthScaling(
         BattleUnitRuntime enemyUnit,
-        int floor) // 적 최대·현재 체력 층 보정
+        int floor,
+        BattleType battleType) // 적 최대·현재 체력 층·등급 보정
     {
         int scaledMaximumHealth =
             ExplorationDifficultyCalculator.ScaleHealth(
                 enemyUnit.EnemySource.MaxHealth,
-                floor); // 원본 EnemyData 기준 최대 체력 계산
+                floor,
+                battleType); // 원본 EnemyData 기준 층·등급 최대 체력 계산
 
         int additionalHealth =
             scaledMaximumHealth -
@@ -316,14 +455,15 @@ public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사
         }
 
         Debug.Log(
-            $"[Exploration][Day42] 적 체력 난이도 적용 - " +
+            $"[Exploration][Day43] 적 체력 난이도 적용 - " +
             $"{enemyUnit.DisplayName} / " +
-            $"{floor}F / " +
-            $"HP {enemyUnit.MaxHealth}"); // 적별 체력 적용 결과 출력
+            $"{floor}F / {battleType} / " +
+            $"HP {enemyUnit.MaxHealth}"); // 적별 층·등급 체력 적용 결과 출력
     }
 
     private void LogDifficultyProfile(
-        int floor) // 현재 전투 난이도 배율 로그
+        int floor,
+        BattleType battleType) // 현재 전투 층·등급 난이도 배율 로그
     {
         if (profileLogged)
         {
@@ -333,11 +473,17 @@ public sealed class ExplorationBattleDifficultyRuntime : MonoBehaviour // 탐사
         profileLogged = true; // 중복 로그 방지 기록
 
         Debug.Log(
-            $"[Exploration][Day42] 층 난이도 적용 - " +
-            $"{floor}F / " +
-            $"HP x{ExplorationDifficultyCalculator.GetHealthMultiplier(floor):0.00} / " +
-            $"ATK x{ExplorationDifficultyCalculator.GetAttackMultiplier(floor):0.00} / " +
-            $"Reward x{ExplorationDifficultyCalculator.GetRewardMultiplier(floor):0.00}"); // 현재 층 배율 출력
+            $"[Exploration][Day43] 조우 등급 난이도 적용 - " +
+            $"{floor}F / {battleType} / " +
+            $"Floor HP x{ExplorationDifficultyCalculator.GetHealthMultiplier(floor):0.00} " +
+            $"ATK x{ExplorationDifficultyCalculator.GetAttackMultiplier(floor):0.00} " +
+            $"Reward x{ExplorationDifficultyCalculator.GetRewardMultiplier(floor):0.00} / " +
+            $"Grade HP x{ExplorationDifficultyCalculator.GetEncounterHealthMultiplier(battleType):0.00} " +
+            $"ATK x{ExplorationDifficultyCalculator.GetEncounterAttackMultiplier(battleType):0.00} " +
+            $"Reward x{ExplorationDifficultyCalculator.GetEncounterRewardMultiplier(battleType):0.00} / " +
+            $"Final HP x{ExplorationDifficultyCalculator.GetCombinedHealthMultiplier(floor, battleType):0.00} " +
+            $"ATK x{ExplorationDifficultyCalculator.GetCombinedAttackMultiplier(floor, battleType):0.00} " +
+            $"Reward x{ExplorationDifficultyCalculator.GetCombinedRewardMultiplier(floor, battleType):0.00}"); // 최종 층·등급 배율 출력
     }
 }
 

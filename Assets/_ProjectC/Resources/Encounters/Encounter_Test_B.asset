@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Encounter_Test_B
   m_EditorClassIdentifier: Assembly-CSharp::EncounterData
   encounterId: ENC_TEST_B
-  displayName: "테스트 조우 B"
-  battleType: 0
+  displayName: "테스트 엘리트 조우"
+  battleType: 2
   explorationPosition: {x: 0.7, y: 1.3}
   enemies:
   - {fileID: 11400000, guid: e2f80ec4bd474b88ba71359930b17d05, type: 2}

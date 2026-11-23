@@ -4,10 +4,11 @@ using UnityEngine; // 런타임 오브젝트 기능 사용
 using UnityEngine.InputSystem; // 디버그 재생성 입력 사용
 using UnityEngine.SceneManagement; // 탐사 Scene 감지 기능 사용
 
-public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Tilemap 및 미니맵 위치 런타임
+public sealed class ExplorationMapRuntime : MonoBehaviour // 43일차 조우 등급 절차 배치 런타임
 {
     private const int DefaultCellCount = 14; // 기본 생성 셀 수
     private const int DefaultEncounterCount = 3; // 층당 기본 절차 조우 수
+    private const int BossFloorInterval = 5; // 43일차 테스트용 보스층 간격
     private const float FloorChangeCooldown = 0.5f; // 연속 층 이동 방지 시간
 
     private static Sprite runtimeSquareSprite; // 런타임 표시용 사각형 스프라이트
@@ -15,8 +16,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
     private readonly List<GameObject> encounterObjects =
         new List<GameObject>(); // 현재 층 조우 오브젝트 목록
 
-    private readonly HashSet<Vector2Int> encounterCoordinates =
-        new HashSet<Vector2Int>(); // 현재 층 조우 셀 좌표 집합
+    private readonly Dictionary<Vector2Int, BattleType> encounterTypes =
+        new Dictionary<Vector2Int, BattleType>(); // 현재 층 좌표별 조우 등급
 
     private ExplorationSessionManager sessionManager; // 탐사 세션 관리자
     private ExplorationTilemapView tilemapView; // 논리 맵 Tilemap 표시기
@@ -26,7 +27,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
 
     public ExplorationMapData CurrentMap { get; private set; } // 현재 생성된 논리 맵
     public int CurrentFloor => sessionManager != null ? sessionManager.CurrentFloor : 1; // 현재 층 조회
-    public int CurrentEncounterCount => encounterCoordinates.Count; // 현재 층 조우 개수 조회
+    public int CurrentEncounterCount => encounterTypes.Count; // 현재 층 조우 개수 조회
     public bool RestoredFromSession { get; private set; } // 저장된 층 상태 복원 여부
     public int CurrentFloorTileCount => tilemapView != null ? tilemapView.FloorTileCount : 0; // 현재 Floor 타일 개수
     public int CurrentWallTileCount => tilemapView != null ? tilemapView.WallTileCount : 0; // 현재 실제 Wall 타일 개수
@@ -125,7 +126,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
                 : "신규"; // 현재 층 생성 상태 문구 결정
 
         Debug.Log(
-            $"[Exploration][Day41] 절차 층 {stateText} 완료 - " +
+            $"[Exploration][Day43] 절차 층 {stateText} 완료 - " +
             $"Floor {CurrentFloor}F / " +
             $"Seed {CurrentMap.Seed} / " +
             $"Cells {CurrentMap.Cells.Count} / " +
@@ -160,7 +161,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
         MovePlayerToStart(player); // 새 층 시작 셀로 이동
 
         Debug.Log(
-            $"[Exploration][Day41] 계단 이동 완료 - " +
+            $"[Exploration][Day43] 계단 이동 완료 - " +
             $"{CurrentFloor}F / " +
             $"조우 {CurrentEncounterCount}개"); // 계단 이동 완료 로그
 
@@ -182,7 +183,16 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
     public bool HasEncounterAt(
         Vector2Int coordinate) // 지정 셀 조우 존재 여부 확인
     {
-        return encounterCoordinates.Contains(coordinate); // 조우 셀 포함 여부 반환
+        return encounterTypes.ContainsKey(coordinate); // 조우 셀 포함 여부 반환
+    }
+
+    public bool TryGetEncounterTypeAt(
+        Vector2Int coordinate,
+        out BattleType battleType) // 지정 셀 조우 등급 조회
+    {
+        return encounterTypes.TryGetValue(
+            coordinate,
+            out battleType); // 좌표별 조우 등급 반환
     }
 
     public bool TryGetPlayerLogicalPosition(
@@ -211,7 +221,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
         return true;
     }
 
-    private void GenerateEncounters() // 현재 맵 일반 셀에 절차 조우 배치
+    private void GenerateEncounters() // 현재 맵에 일반·엘리트·보스 조우 배치
     {
         if (CurrentMap == null)
         {
@@ -222,30 +232,55 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
             Resources.LoadAll<EncounterData>("Encounters"); // 전체 조우 데이터 로드
 
         List<EncounterData> validData =
-            new List<EncounterData>(); // 유효 조우 데이터 목록 생성
+            new List<EncounterData>(); // 전체 유효 조우 목록
+
+        List<EncounterData> normalData =
+            new List<EncounterData>(); // 일반 조우 목록
+
+        List<EncounterData> eliteData =
+            new List<EncounterData>(); // 엘리트 조우 목록
+
+        List<EncounterData> bossData =
+            new List<EncounterData>(); // 보스 조우 목록
 
         foreach (EncounterData data in loadedData)
         {
-            if (data != null &&
-                data.IsValidData())
+            if (data == null ||
+                !data.IsValidData())
             {
-                validData.Add(data); // 유효 조우 데이터 등록
+                continue;
+            }
+
+            validData.Add(data); // 유효 조우 등록
+
+            switch (data.BattleType)
+            {
+                case BattleType.Elite:
+                    eliteData.Add(data); // 엘리트 목록 등록
+                    break;
+
+                case BattleType.Boss:
+                    bossData.Add(data); // 보스 목록 등록
+                    break;
+
+                default:
+                    normalData.Add(data); // 일반 목록 등록
+                    break;
             }
         }
 
         if (validData.Count == 0)
         {
             Debug.LogWarning(
-                "[Exploration][Day41] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
+                "[Exploration][Day43] Resources/Encounters에 유효한 EncounterData가 없어 절차 조우를 생성하지 않았습니다."); // 조우 데이터 없음 경고
 
             return;
         }
 
-        validData.Sort(
-            (left, right) =>
-                string.CompareOrdinal(
-                    left.EncounterId,
-                    right.EncounterId)); // 동일 Seed 재현을 위한 조우 데이터 순서 고정
+        SortEncounterData(validData); // 전체 조우 순서 고정
+        SortEncounterData(normalData); // 일반 조우 순서 고정
+        SortEncounterData(eliteData); // 엘리트 조우 순서 고정
+        SortEncounterData(bossData); // 보스 조우 순서 고정
 
         List<ExplorationMapCell> availableCells =
             new List<ExplorationMapCell>(); // 조우 배치 가능 일반 셀 목록
@@ -276,6 +311,13 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
                 DefaultEncounterCount,
                 availableCells.Count); // 실제 생성 조우 수 계산
 
+        List<BattleType> encounterTypePlan =
+            BuildEncounterTypePlan(
+                encounterCount,
+                normalData.Count > 0,
+                eliteData.Count > 0,
+                bossData.Count > 0); // 현재 층 조우 등급 계획 생성
+
         for (int index = 0;
              index < encounterCount;
              index++)
@@ -283,20 +325,124 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
             ExplorationMapCell cell =
                 availableCells[index]; // 조우 배치 셀 선택
 
+            BattleType plannedType =
+                encounterTypePlan[index]; // 현재 슬롯 조우 등급 조회
+
             EncounterData data =
-                validData[random.Next(validData.Count)]; // 조우 템플릿 무작위 선택
+                SelectEncounterData(
+                    plannedType,
+                    normalData,
+                    eliteData,
+                    bossData,
+                    validData,
+                    random); // 등급에 맞는 조우 데이터 선택
 
             CreateEncounterObject(
                 cell,
-                data,
-                index); // 절차 조우 오브젝트 생성
+                data); // 등급 기반 절차 조우 오브젝트 생성
         }
+    }
+
+    private List<BattleType> BuildEncounterTypePlan(
+        int encounterCount,
+        bool hasNormal,
+        bool hasElite,
+        bool hasBoss) // 현재 층 조우 등급 배치 계획 생성
+    {
+        List<BattleType> plan =
+            new List<BattleType>(); // 조우 등급 계획 목록
+
+        bool isBossFloor =
+            CurrentFloor > 0 &&
+            CurrentFloor % BossFloorInterval == 0; // 5층 간격 테스트용 보스층 판정
+
+        if (isBossFloor &&
+            hasBoss &&
+            plan.Count < encounterCount)
+        {
+            plan.Add(BattleType.Boss); // 보스층에 보스 조우 1개 우선 배치
+        }
+
+        if (hasElite &&
+            plan.Count < encounterCount)
+        {
+            plan.Add(BattleType.Elite); // 매 층 엘리트 조우 1개 배치
+        }
+
+        while (plan.Count < encounterCount)
+        {
+            if (hasNormal)
+            {
+                plan.Add(BattleType.Normal); // 남은 슬롯 일반 조우 배치
+                continue;
+            }
+
+            if (hasElite)
+            {
+                plan.Add(BattleType.Elite); // 일반 데이터 없을 때 엘리트 대체
+                continue;
+            }
+
+            if (hasBoss)
+            {
+                plan.Add(BattleType.Boss); // 일반·엘리트 없을 때 보스 대체
+                continue;
+            }
+
+            break;
+        }
+
+        return plan;
+    }
+
+    private static EncounterData SelectEncounterData(
+        BattleType battleType,
+        List<EncounterData> normalData,
+        List<EncounterData> eliteData,
+        List<EncounterData> bossData,
+        List<EncounterData> fallbackData,
+        System.Random random) // 요청 등급에 맞는 조우 데이터 선택
+    {
+        List<EncounterData> sourceData;
+
+        switch (battleType)
+        {
+            case BattleType.Elite:
+                sourceData = eliteData; // 엘리트 데이터 선택
+                break;
+
+            case BattleType.Boss:
+                sourceData = bossData; // 보스 데이터 선택
+                break;
+
+            default:
+                sourceData = normalData; // 일반 데이터 선택
+                break;
+        }
+
+        if (sourceData.Count == 0)
+        {
+            sourceData = fallbackData; // 해당 등급 데이터 없을 때 전체 목록 대체
+        }
+
+        return sourceData[
+            random.Next(
+                sourceData.Count)]; // Seed 기반 조우 템플릿 반환
+    }
+
+    private static void SortEncounterData(
+        List<EncounterData> data) // Seed 재현용 조우 데이터 정렬
+    {
+        data.Sort(
+            (left, right) =>
+                string.CompareOrdinal(
+                    left.EncounterId,
+                    right.EncounterId)); // EncounterId 순서 고정
     }
 
     private void CreateEncounterObject(
         ExplorationMapCell cell,
-        EncounterData data,
-        int index) // 절차 조우 오브젝트 생성
+        EncounterData data) // 등급 기반 절차 조우 오브젝트 생성
     {
         string runtimeEncounterId =
             $"F{CurrentFloor}_" +
@@ -314,7 +460,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
 
         GameObject encounterObject =
             new GameObject(
-                $"Encounter_{runtimeEncounterId}",
+                $"Encounter_{data.BattleType}_{runtimeEncounterId}",
                 typeof(SpriteRenderer),
                 typeof(CircleCollider2D),
                 typeof(ExplorationEncounterView)); // 조우 오브젝트 생성
@@ -340,7 +486,8 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
             runtimeSquareSprite; // 조우 임시 사각형 스프라이트 지정
 
         spriteRenderer.color =
-            GetEncounterColor(index); // 조우 임시 색상 지정
+            GetEncounterColor(
+                data.BattleType); // 조우 등급별 임시 색상 지정
 
         spriteRenderer.sortingOrder = 4; // 조우 표시 순서 지정
 
@@ -358,7 +505,9 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
             runtimeEncounterId); // 조우 데이터와 런타임 ID 연결
 
         encounterObjects.Add(encounterObject); // 현재 층 조우 오브젝트 등록
-        encounterCoordinates.Add(cell.Coordinate); // 현재 층 조우 셀 등록
+
+        encounterTypes[cell.Coordinate] =
+            data.BattleType; // 현재 좌표 조우 등급 등록
     }
 
     private static void ShuffleCells(
@@ -397,7 +546,7 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
         }
 
         encounterObjects.Clear(); // 조우 오브젝트 목록 초기화
-        encounterCoordinates.Clear(); // 조우 셀 좌표 초기화
+        encounterTypes.Clear(); // 좌표별 조우 등급 초기화
     }
 
     private void TryHandleInitialPlayerPlacement() // 최초 탐사 진입 플레이어 시작 위치 처리
@@ -560,30 +709,30 @@ public sealed class ExplorationMapRuntime : MonoBehaviour // 41일차 충돌 Til
     }
 
     private static Color GetEncounterColor(
-        int index) // 절차 조우 임시 색상 조회
+        BattleType battleType) // 조우 등급별 임시 색상 조회
     {
-        switch (index % 3)
+        switch (battleType)
         {
-            case 0:
+            case BattleType.Elite:
                 return new Color(
-                    0.9f,
-                    0.2f,
-                    0.2f,
-                    1f); // 빨간 조우 색상 반환
+                    0.72f,
+                    0.22f,
+                    0.90f,
+                    1f); // 엘리트 보라색 반환
 
-            case 1:
+            case BattleType.Boss:
                 return new Color(
-                    0.85f,
-                    0.45f,
-                    0.15f,
-                    1f); // 주황 조우 색상 반환
+                    0.95f,
+                    0.12f,
+                    0.12f,
+                    1f); // 보스 붉은색 반환
 
             default:
                 return new Color(
-                    0.75f,
-                    0.2f,
-                    0.65f,
-                    1f); // 보라 조우 색상 반환
+                    0.90f,
+                    0.45f,
+                    0.15f,
+                    1f); // 일반 주황색 반환
         }
     }
 

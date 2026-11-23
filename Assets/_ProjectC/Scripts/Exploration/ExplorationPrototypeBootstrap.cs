@@ -166,11 +166,11 @@ public sealed class ExplorationPrototypeBootstrap : MonoBehaviour // 탐사 프�
             new Vector2(24f, -24f); // 안내 위치 설정
 
         instructionText.text =
-            "42일차 층 난이도 상승 테스트\n" +
-            "1F 기준 · 층마다 적 HP +12% · 공격 +8% · 보상 +5%\n" +
-            "계단으로 다음 층 진입 시 난이도 자동 상승\n" +
-            "F9는 Seed만 변경하며 현재 층 난이도는 유지\n" +
-            "미니맵 P는 현재 플레이어 위치를 계속 추적\n" +
+            "43일차 일반·엘리트·보스 조우 테스트\n" +
+            "N 일반 · E 엘리트 · B 보스 · P 플레이어\n" +
+            "Elite: HP x1.50 / ATK x1.20 / Reward x1.50\n" +
+            "Boss: HP x2.50 / ATK x1.35 / Reward x2.50\n" +
+            "보스층 테스트 규칙: 5F 간격 · F9는 같은 층 새 Seed\n" +
             "F8: 탐사 성공 호감도 +1"; // 탐사 안내 문구 지정
     }
 
