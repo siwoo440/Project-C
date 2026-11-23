@@ -116,6 +116,10 @@ public sealed class BattleCardTooltipView : MonoBehaviour // 카드 상세 툴�
         } // 덱 순서 정리 이름 종료
         if (cardInstance.EffectType == CardEffectType.GainBlock) // 방어도 획득 효과 확인
         { // 방어도 문구 시작
+            if (cardInstance.SourceData.GrantsBlockToEachAlly) // 생존자마다 같은 방어도를 받는 카드 확인
+            { // 개별 방어 문구 시작
+                return "생존 아군마다 방어도 획득"; // 아군 한 명당 적용하는 수치 안내
+            } // 개별 방어 문구 종료
             return cardInstance.TargetType == CardTargetType.AllAllies ? "전체 방어도 배분" : "방어도 획득"; // 대상별 방어도 문구 반환
         } // 방어도 문구 종료
         if (cardInstance.EffectType == CardEffectType.Heal) // 회복 효과 확인

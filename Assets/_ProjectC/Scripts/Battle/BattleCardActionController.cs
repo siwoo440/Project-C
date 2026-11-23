@@ -235,7 +235,7 @@ public sealed class BattleCardActionController : IDisposable // 카드 선택과
             } // 적별 방어도 제거 종료
         } // 전체 적 방어도 제거 종료
         int totalAppliedAmount = 0; // 전체 실제 적용량 초기화
-        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies) // 전체 아군 방어도 배분 확인
+        if (cardInstance.EffectType == CardEffectType.GainBlock && cardInstance.TargetType == CardTargetType.AllAllies && !cardInstance.SourceData.GrantsBlockToEachAlly) // 전체 합계를 나누는 방어 카드 확인
         { // 효과 적용 시작
             totalAppliedAmount = BattleBlockDistribution.Apply(targetUnits, cardInstance.EffectValue); // 고정 방어도를 생존 아군에게 배분
         } // 효과 적용 종료

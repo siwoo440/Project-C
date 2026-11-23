@@ -24,6 +24,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     [SerializeField] private int damageHitCount = 1; // 같은 대상에 대한 공격 횟수
     [SerializeField] private int secondaryEffectValue; // 보조 효과 수치
     [SerializeField] private CardFollowUpEffect followUpEffect; // 기본 효과 뒤에 이어지는 효과 종류
+    [SerializeField] private bool grantsBlockToEachAlly; // 아군 전원에게 표시된 방어도를 각각 지급할지 선택
 
     [Header("정신력 규칙")]
     [Range(-100, 100)]
@@ -51,6 +52,7 @@ public sealed class CardData : ScriptableObject // 카드 원본 데이터
     public int DamageHitCount => effectType == CardEffectType.Damage ? Mathf.Max(1, damageHitCount) : 1; // 이전 원본을 포함한 실제 타격 수
     public int SecondaryEffectValue => secondaryEffectValue; // 보조 효과 수치 조회
     public CardFollowUpEffect FollowUpEffect => followUpEffect; // 카드의 후속 효과 조회
+    public bool GrantsBlockToEachAlly => grantsBlockToEachAlly; // 아군별 방어도 지급 여부 조회
     public int MentalChangeValue => mentalChangeValue; // 정신력 변화값 조회
     public BattleStatusEffectType StatusEffectType => statusEffectType; // 상태 이상 종류 조회
     public BattleStatusEffectType StatusRemovedByHealing => statusRemovedByHealing; // 회복과 함께 제거할 상태 조회
