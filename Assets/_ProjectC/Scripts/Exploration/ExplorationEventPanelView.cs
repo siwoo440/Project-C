@@ -195,6 +195,11 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
                 string[] effects = { "다음 일반 전투 40% 회피 · 1회", "정신력 +2 · 나사 +1", "변화 없음" }; // 선택 전 확인할 실제 효과
                 label += "   " + effects[index]; // 기획 행동과 결과 요약 표시
             } // 지도 조각 효과 표시 종료
+            else if (currentEventData.EventId == AshWandererCryEvent.Id) // 방랑자의 다음 전투 조건과 기도 확률 안내
+            { // 방랑자 선택 안내 시작
+                string[] effects = { "정신력 -5 · 적 선제 15% · 승리 카드 1장", "아군 명중 -10%p · 1턴", "정신력 +2 · 회복 물약 30%" }; // 선택 전에 확인할 비용과 후속 결과
+                label += "   " + effects[index]; // 선택지 옆 실제 효과 표시
+            } // 방랑자 선택 안내 종료
             else if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 비용과 다음 전투 효과 안내
             { // 들판 선택 안내 시작
                 string[] effects = { "체력 -6 · 희귀 또는 저주 각 50%", "아군 회피 +10%p · 2턴", "아군 명중 -15%p · 1턴" }; // 행동별 비용과 적용 기간
@@ -234,6 +239,12 @@ public sealed class ExplorationEventPanelView : MonoBehaviour // 탐사 이벤�
             return; // 잘못된 클릭 또는 중복 선택 차단
         }
 
+        if (currentEventData.EventId == AshWandererCryEvent.Id) // 잿빛 방랑자의 울음 확인
+        { // 방랑자 선택 시작
+            string hint = choiceIndex == AshWandererCryEvent.Follow ? "목소리를 따라가며 정신력 5를 잃을 생존자를 선택하세요." : choiceIndex == AshWandererCryEvent.Pray ? "기도하고 정신력 2를 회복할 생존자를 선택하세요." : null; // 원문 행동별 생존자 선택 안내
+            SelectActorEventChoice(choiceIndex, hint, AshWandererCryEvent.TryResolve); // 선택 대상과 실제 효과 한 번 확정
+            return; // 다른 방 처리 제외
+        } // 방랑자 선택 종료
         if (currentEventData.EventId == GlassFieldEvent.Id) // 유리화된 들판의 원문 선택 확인
         { // 들판 선택 시작
             string hint = choiceIndex == GlassFieldEvent.BreakGlass ? "체력 6을 잃고 희귀 또는 저주 카드를 직접 받을 생존자를 선택하세요." : null; // 유리 깨기 행동자 안내

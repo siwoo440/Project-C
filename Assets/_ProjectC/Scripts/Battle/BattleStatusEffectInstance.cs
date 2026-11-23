@@ -102,6 +102,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "실명"; // 실명 이름 반환
             case BattleStatusEffectType.Evasion: // 회피 종류
                 return "회피"; // 회피 이름 반환
+            case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
+                return "방향 감각 상실"; // 방향 감각 상실 이름 반환
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재생"; // 재생 이름 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격력 증가 종류
@@ -136,7 +138,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse; // 감소 상태와 붕괴 디버프 결과 반환
+        return effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.Collapse; // 감소 상태와 붕괴 디버프 결과 반환
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -150,6 +152,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "암"; // 실명 아이콘 반환
             case BattleStatusEffectType.Evasion: // 회피 종류
                 return "회"; // 회피 아이콘 문구
+            case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
+                return "혼"; // 방향 감각 상실 아이콘 문구
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return "재"; // 재생 아이콘 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류
@@ -198,6 +202,8 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"공격 명중률 {effectiveValue}%p 감소"; // 실명 설명 반환
             case BattleStatusEffectType.Evasion: // 회피 종류
                 return $"적 공격 회피율 {effectiveValue}%p 증가 · 적 턴 종료에 지속 감소"; // 회피 설명 반환
+            case BattleStatusEffectType.Disorientation: // 방향 감각 상실 종류
+                return $"첫 아군 턴 공격 명중률 {effectiveValue}%p 감소"; // 귀를 막은 효과 설명
             case BattleStatusEffectType.Regeneration: // 재생 종류
                 return $"진영 턴 시작에 체력 회복 {effectiveValue}"; // 재생 설명 반환
             case BattleStatusEffectType.AttackPowerUp: // 공격 증가 종류

@@ -18,5 +18,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     Blind, // 한 턴 공격 명중률 감소
     Awakening, // 정신력 최대 각성 상태
     Collapse, // 정신력 최소 붕괴 상태
-    Evasion // 적 공격 회피율 증가
+    Evasion, // 적 공격 회피율 증가
+    Disorientation // 아군 첫 턴의 방향 감각 상실
 } // 열거형 종료

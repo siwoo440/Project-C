@@ -8,6 +8,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly IReadOnlyList<BattleUnitRuntime> enemyUnits; // 적 런타임 목록
     private readonly List<BattleUnitRuntime> registeredUnits = new List<BattleUnitRuntime>(); // 사망 이벤트 등록 유닛 목록
     private readonly int cardsPerPlayerTurn; // 플레이어 턴당 드로우 수
+    private int openingHandAfterAmbush = -1; // 적 선제 직후 첫 아군에게 줄 시작 손패 수
     private bool disposed; // 연결 해제 여부
     public int CurrentRound { get; private set; } // 현재 라운드
     public int LastDrawnCardCount { get; private set; } // 최근 드로우 수
@@ -48,13 +49,23 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         RegisterUnitEvents(allyUnits); // 아군 사망 이벤트 등록
         RegisterUnitEvents(enemyUnits); // 적 사망 이벤트 등록
     } // 생성자 종료
-    public bool StartBattle(int initialHandSize) // 전투 시작
+    public bool StartBattle(int initialHandSize, bool enemyFirst = false, Action openingEffects = null) // 먼저 행동할 진영과 탐사 효과를 반영한 시작
     { // 전투 시작 처리 시작
         if (disposed || CurrentPhase != BattleTurnPhase.NotStarted || initialHandSize < 0) // 시작 가능 상태 확인
         { // 시작 불가 처리 시작
             return false; // 전투 시작 실패 반환
         } // 시작 불가 처리 종료
         CurrentRound = 1; // 첫 라운드 설정
+        openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
+        if (enemyFirst) // 방랑자의 고정 선제 판정 확인
+        { // 적의 첫 행동 시작
+            openingHandAfterAmbush = initialHandSize; // 첫 아군 턴의 정상 시작 손패 보관
+            sharedActionPoints.Spend(sharedActionPoints.CurrentActionPoints); // 적 선제 중 아군 행동력 소모 방지용 비활성화
+            CurrentPhase = BattleTurnPhase.EnemyTurn; // 아군 턴을 건너뛰지 않고 적부터 시작
+            PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 적 진영 첫 턴 알림
+            StateChanged?.Invoke(); // 실제 적 행동 실행
+            return true; // 선제 전투 시작 완료
+        } // 적의 첫 행동 종료
         sharedActionPoints.Restore(); // 시작 공용 행동력 회복
         LastDrawnCardCount = runtimeDeck.DrawCards(initialHandSize); // 시작 손패 드로우
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
@@ -142,13 +153,22 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 종료된 전투 처리 종료
         ClearRoundBlock(allyUnits); // 라운드 전환 시 아군 방어도 정리
         ClearRoundBlock(enemyUnits); // 라운드 전환 시 적 방어도 정리
-        CurrentRound++; // 다음 라운드 증가
+        int drawCount = cardsPerPlayerTurn; // 보통 다음 라운드의 드로우 수
+        if (openingHandAfterAmbush >= 0) // 첫 적 선제가 끝났는지 확인
+        { // 첫 아군 턴 준비 시작
+            drawCount = openingHandAfterAmbush; // 정상 시작 손패 수 복원
+            openingHandAfterAmbush = -1; // 다음 적 턴부터 정상 라운드 진행
+        } // 첫 아군 턴 준비 종료
+        else // 일반 적 턴 종료
+        { // 새 라운드 준비 시작
+            CurrentRound++; // 일반 적 턴이 끝나면 다음 라운드로 이동
+        } // 새 라운드 준비 종료
         CurrentPhase = BattleTurnPhase.PlayerTurn; // 플레이어 턴 설정
         PhaseStarted?.Invoke(CurrentPhase, CurrentRound); // 플레이어 턴 시작 알림
         if (!IsBattleEnded) // 상태 이상 처리 후 전투 지속 확인
         { // 전투 지속 처리 시작
             sharedActionPoints.Restore(); // 공용 행동력 최대 회복
-            LastDrawnCardCount = runtimeDeck.DrawCards(cardsPerPlayerTurn); // 턴 시작 카드 드로우
+            LastDrawnCardCount = runtimeDeck.DrawCards(drawCount); // 선제 뒤 시작 손패 또는 새 라운드 손패 지급
             StateChanged?.Invoke(); // 턴 상태 변경 알림
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
