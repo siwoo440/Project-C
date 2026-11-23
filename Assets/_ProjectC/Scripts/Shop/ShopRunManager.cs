@@ -140,7 +140,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         } // 빈 상품 처리 종료
         if (offer.OfferType != ShopOfferType.Relic || offer.Relic == null || string.IsNullOrWhiteSpace(activeRoomRuntimeId)) // 시트 유물 가격 적용 조건 확인
         { // 기존 가격 처리 시작
-            return offer.Price; // 기존 상품 가격 반환
+            return ApplyShopDiscount(offer.Price); // 기존 상품의 할인 적용 가격 반환
         } // 기존 가격 처리 종료
         if (relicSheetCatalog == null) // 시트 가격 목록 미로드 확인
         { // 시트 목록 로드 시작
@@ -149,10 +149,33 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         RelicSheetEntry entry = relicSheetCatalog?.FindByName(offer.Relic.DisplayName); // 유물 이름에 맞는 가격 조회
         if (entry == null || entry.BuyMin < 0 || entry.BuyMax < entry.BuyMin || (long)entry.BuyMax - entry.BuyMin >= int.MaxValue) // 시트 가격 유효성 확인
         { // 시트 가격 없음 처리 시작
-            return offer.Price; // 기존 상품 가격 반환
+            return ApplyShopDiscount(offer.Price); // 대체 상품의 할인 적용 가격 반환
         } // 시트 가격 없음 처리 종료
-        return RelicShopPricing.Calculate(entry, activeRoomRuntimeId, offer.OfferId); // 상점별 시트 범위 가격 반환
+        return ApplyShopDiscount(RelicShopPricing.Calculate(entry, activeRoomRuntimeId, offer.OfferId)); // 시트 범위 가격에 보유 할인 적용
     } // 상품 가격 조회 종료
+
+    public int GetCardRemovalPrice() // 현재 카드 제거 비용 조회
+    { // 카드 제거 비용 조회 시작
+        return catalog != null ? ApplyShopDiscount(catalog.CardRemovalPrice) : 0; // 상점 준비 상태의 할인 적용 비용 반환
+    } // 카드 제거 비용 조회 종료
+
+    private static int ApplyShopDiscount(int price) // 보유 유물의 상점 할인 계산
+    { // 상점 할인 계산 시작
+        RelicInventoryRuntime inventory = RelicRunManager.Instance != null ? RelicRunManager.Instance.Inventory : null; // 현재 유물 보관함 조회
+        if (inventory == null) // 유물 보관함 존재 확인
+        { // 보관함 없음 처리 시작
+            return price; // 원래 가격 반환
+        } // 보관함 없음 처리 종료
+        foreach (RelicData relic in inventory.OwnedRelics) // 보유 유물 순회
+        { // 할인 유물 확인 시작
+            if (relic != null && relic.EffectType == RelicEffectType.ShopDiscount) // 상점 할인 효과 확인
+            { // 상점 할인 적용 시작
+                int percent = Mathf.Clamp(relic.EffectValue, 0, 100); // 유효 할인율 설정
+                return price - (int)((long)price * percent / 100); // 할인액 소수점 버림 후 가격 반환
+            } // 상점 할인 적용 종료
+        } // 할인 유물 확인 종료
+        return price; // 할인 유물 미보유 가격 반환
+    } // 상점 할인 계산 종료
 
     public int GetRelicSellPrice(RelicData relic) // 현재 상점의 유물 판매 가격 조회
     { // 유물 판매 가격 조회 시작
@@ -205,7 +228,7 @@ public sealed class ShopRunManager : MonoBehaviour // 탐사 회차 상점 관�
         } // 상점 미준비 처리 종료
 
         string cardName = cardIndex >= 0 && cardIndex < runDeckManager.CardCount ? runDeckManager.Cards[cardIndex].Card.DisplayName : "카드"; // 제거 대상 카드 이름 결정
-        ShopPurchaseResult result = transactionService.TryCardRemoval(catalog.CardRemovalPrice, () => runDeckManager.CanRemoveAt(cardIndex), () => runDeckManager.TryRemoveAt(cardIndex)); // 카드 제거 원자 거래 실행
+        ShopPurchaseResult result = transactionService.TryCardRemoval(GetCardRemovalPrice(), () => runDeckManager.CanRemoveAt(cardIndex), () => runDeckManager.TryRemoveAt(cardIndex)); // 표시된 할인 비용으로 카드 제거 거래 실행
         string message = result == ShopPurchaseResult.Success ? $"{cardName} 제거 완료" : BuildPurchaseMessage(result, cardName); // 카드 제거 결과 문구 생성
         return CompleteTransaction(result, message); // 카드 제거 결과 알림과 반환
     } // 카드 제거 종료

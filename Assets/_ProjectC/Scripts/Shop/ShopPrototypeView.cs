@@ -155,12 +155,13 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             bool sold = manager.IsPurchased(capturedOffer); // 현재 상품 판매 완료 조회
             string typeLabel = GetOfferTypeLabel(capturedOffer.OfferType); // 상품 종류 한글 문구 생성
             Color cardColor = sold ? new Color(0.12f, 0.12f, 0.13f, 1f) : ButtonColor; // 판매 상태별 카드 색상 결정
-            Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, $"{manager.GetOfferPrice(capturedOffer)} Gold", typeLabel, sold, cardColor); // 실제 구매 가격 포함 상품 카드 생성
+            string priceLabel = sold ? "판매 완료" : $"{manager.GetOfferPrice(capturedOffer)} Gold"; // 판매 완료 또는 실제 구매 가격 지정
+            Button offerButton = CreateProductCard($"Offer_{capturedOffer.OfferId}", capturedOffer.Icon, typeLabel, capturedOffer.DisplayName, priceLabel, typeLabel, sold, cardColor); // 판매 상태와 실제 가격을 반영한 카드 생성
             offerButton.interactable = !sold; // 판매 완료 상품 비활성화
             offerButton.onClick.AddListener(() => SelectOffer(capturedOffer)); // 상품 선택 동작 연결
         }
 
-        Button removalButton = CreateProductCard("CardRemovalService", null, "서비스", "보유 카드 1장 제거", $"{manager.Catalog.CardRemovalPrice} Gold", "카드\n제거", false, new Color(0.30f, 0.18f, 0.20f, 1f)); // 카드 제거 서비스 카드 생성
+        Button removalButton = CreateProductCard("CardRemovalService", null, "서비스", "보유 카드 1장 제거", $"{manager.GetCardRemovalPrice()} Gold", "카드\n제거", false, new Color(0.30f, 0.18f, 0.20f, 1f)); // 할인 적용 카드 제거 서비스 카드 생성
         removalButton.onClick.AddListener(ShowCardRemovalList); // 카드 제거 목록 열기 연결
         Button sellButton = CreateProductCard("RelicSellService", null, "서비스", "보유 유물 판매", "판매할 유물 선택", "유물\n판매", false, new Color(0.18f, 0.30f, 0.28f, 1f)); // 유물 판매 서비스 생성
         sellButton.onClick.AddListener(ShowRelicSaleList); // 유물 판매 목록 열기 연결
@@ -233,7 +234,7 @@ public sealed class ShopPrototypeView : MonoBehaviour // 54일차 코드 기반 
             int capturedIndex = index; // 버튼용 카드 위치 보관
             RunDeckCardEntry entry = manager.RunDeck.Cards[capturedIndex]; // 현재 카드 항목 조회
             string ownerName = entry.Owner != null ? entry.Owner.DisplayName : "소유자 미지정"; // 카드 소유자 이름 결정
-            Button cardButton = CreateProductCard($"RemoveCard_{capturedIndex}", entry.Card.Artwork, "카드 제거", $"{entry.Card.DisplayName}\n{ownerName}", $"{manager.Catalog.CardRemovalPrice} Gold", "카드", false, ButtonColor); // 이미지 포함 카드 제거 카드 생성
+            Button cardButton = CreateProductCard($"RemoveCard_{capturedIndex}", entry.Card.Artwork, "카드 제거", $"{entry.Card.DisplayName}\n{ownerName}", $"{manager.GetCardRemovalPrice()} Gold", "카드", false, ButtonColor); // 할인 비용과 이미지 포함 카드 제거 카드 생성
             cardButton.interactable = manager.RunDeck.CanRemoveAt(capturedIndex); // 최소 한 장 유지 조건 적용
             cardButton.onClick.AddListener(() => RemoveCard(capturedIndex)); // 지정 카드 제거 연결
         }
