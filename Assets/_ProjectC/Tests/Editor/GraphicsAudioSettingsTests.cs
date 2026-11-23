@@ -15,6 +15,29 @@ public sealed class GraphicsAudioSettingsTests // 화면과 음량 설정 검증
         GraphicsAudioSettings restored = new GraphicsAudioSettings(store, new RecordingApplier()); // 저장된 설정 복원
         Assert.AreEqual("끄기", restored.GetLabel(2, 1)); // 안내 설정 저장 확인
     } // 튜토리얼 설정 검사 종료
+    [Test] // 새 언어 설정과 기기 저장 복원 검사 등록
+    public void LanguageSetting_DefaultsToKoreanAndPersistsBothDirections() // 한국어 기본값과 영어 전환 및 저장 확인
+    { // 언어 설정 검사 시작
+        MemoryStore store = new MemoryStore(); // 기존 기기 설정과 분리된 시험 저장소
+        RecordingApplier applier = new RecordingApplier(); // 변경 순서와 적용 요청 기록기
+        GraphicsAudioSettings settings = new GraphicsAudioSettings(store, applier); // 언어 기본 설정 조회
+        Assert.IsTrue(settings.Supports(4, 0)); // 설정 언어 탭의 첫 행 변경 지원 확인
+        Assert.AreEqual("한국어", settings.GetLabel(4, 0)); // 처음 실행의 한국어 기본값 확인
+        Assert.IsTrue(settings.Change(4, 0, 1)); // 다음 언어인 영어로 전환
+        Assert.AreEqual("English", settings.GetLabel(4, 0)); // 전환 직후 실제 영어 값 확인
+        Assert.AreEqual(1, store.Values["language"]); // 영어 선택의 기기 저장 확인
+        CollectionAssert.AreEqual(new[] { "language:1" }, applier.Applied); // 영어 변경 즉시 적용 요청 확인
+
+        RecordingApplier startup = new RecordingApplier(); // 다음 시작의 적용 요청 기록기
+        GraphicsAudioSettings restored = new GraphicsAudioSettings(store, startup); // 이전 언어 선택을 사용한 새 설정 생성
+        restored.ApplyAll(); // 다음 시작의 저장 설정 적용
+        Assert.AreEqual("English", restored.GetLabel(4, 0)); // 다시 시작한 화면의 영어 선택 복원 확인
+        Assert.AreEqual("language:1", startup.Applied[0]); // 첫 화면보다 먼저 저장 언어 적용 확인
+        Assert.IsTrue(restored.Change(4, 0, -1)); // 이전 언어인 한국어로 전환
+        Assert.AreEqual("한국어", restored.GetLabel(4, 0)); // 한국어 다시 표시 확인
+        Assert.AreEqual(0, store.Values["language"]); // 한국어 선택의 기기 저장 확인
+        Assert.AreEqual("language:0", startup.Applied[startup.Applied.Count - 1]); // 한국어 변경의 즉시 적용 요청 확인
+    } // 언어 설정 검사 종료
     private sealed class MemoryStore : ISettingsStore // 테스트용 독립 설정 저장소
     { // 독립 저장소 시작
         public readonly Dictionary<string, int> Values = new Dictionary<string, int>(); // 저장된 설정 값 목록
@@ -66,12 +89,14 @@ public sealed class GraphicsAudioSettingsTests // 화면과 음량 설정 검증
         MemoryStore store = new MemoryStore(); // 독립 저장소 생성
         store.Values["mode"] = -1; // 잘못된 화면 모드 저장
         store.Values["master"] = 101; // 잘못된 마스터 음량 저장
+        store.Values["language"] = 2; // 두 언어 범위를 벗어난 저장값 설정
         RecordingApplier applier = new RecordingApplier(); // 적용 기록기 생성
         GraphicsAudioSettings settings = new GraphicsAudioSettings(store, applier); // 저장 설정 관리자 생성
         Assert.AreEqual("무테창", settings.GetLabel(0, 0)); // 손상 화면 모드 기본 복원 확인
         Assert.AreEqual("80", settings.GetLabel(1, 0)); // 손상 음량 기본 복원 확인
+        Assert.AreEqual("한국어", settings.GetLabel(4, 0)); // 손상 언어 값의 한국어 기본 복원 확인
         settings.ApplyAll(); // 저장 설정 전체 적용
-        CollectionAssert.AreEqual(new[] { "quality:2", "mode:2", "frame:1", "vsync:1", "master:80" }, applier.Applied); // 품질 다음 동기화 적용 순서 확인
+        CollectionAssert.AreEqual(new[] { "language:0", "quality:2", "mode:2", "frame:1", "vsync:1", "master:80" }, applier.Applied); // 언어 선적용과 품질 다음 동기화의 호출 순서 확인
     } // 손상 설정 검사 종료
     [Test] // 음량 범위 검사 지정
     public void MasterVolume_StopsAtMinimumAndMaximum() // 음량 범위 제한 확인

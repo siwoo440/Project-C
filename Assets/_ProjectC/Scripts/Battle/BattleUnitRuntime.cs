@@ -67,6 +67,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
     public event Action<BattleUnitRuntime, BattleUnitRuntime, int> HealingResolved; // 발생자 포함 회복 완료 이벤트
     public event Action<BattleUnitRuntime, BattleUnitRuntime, BattleStatusEffectType, BattleStatusEffectApplyResult> StatusEffectResolved; // 발생자 포함 상태 적용 이벤트
     public event Action<BattleUnitRuntime, BattleUnitRuntime> Defeated; // 발생자 포함 처치 완료 이벤트
+    internal event Action<BattleUnitRuntime, BattleUnitRuntime> EnemyAttackEvaded; // 실명 실패와 구분한 적 공격 실제 회피 사건
+    internal void NotifyEnemyAttackEvaded(BattleUnitRuntime source) // 실제 피한 아군과 원래 공격 적의 사건 전달
+    { // 적 공격 회피 전달 시작
+        EnemyAttackEvaded?.Invoke(source, this); // 전투에 등록된 현재 회피 구독자 통지
+    } // 적 공격 회피 전달 종료
     private BattleUnitRuntime(string unitId, string displayName, BattleTeam team, Sprite portrait, int maxHealth, int physicalDefense, int magicalResistance, int initialMental, int awakeningDamageRate, int awakeningHealingRate, int collapseDamageRate, int collapseHealingRate, CharacterData characterSource, EnemyData enemySource) // 런타임 상태 생성자
     { // 생성자 시작
         UnitId = unitId; // 유닛 ID 저장
@@ -559,7 +564,8 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         long totalBonus = ExplorationAttackPowerBattle?.PermanentAttackPower ?? 0; // 탐사 중인 실제 아군의 기존 영구 공격력과 일반 강화 합산 준비
         foreach (BattleStatusEffectInstance statusEffect in statusEffects) // 상태 이상 목록 순회
         { // 공격력 상태 확인 시작
-            if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark) // 일반 강화와 맥박줄 및 종복 계약의 독립 공격력 증가 확인
+            if (statusEffect.EffectType is BattleStatusEffectType.AttackPowerUp or BattleStatusEffectType.PulseCordAttackPowerUp or BattleStatusEffectType.ServantContractMark || // 일반 강화와 맥박줄 및 종복 계약의 기존 가산
+                statusEffect.EffectType == BattleStatusEffectType.LordFinalOrderAttack && !statusEffect.IsExpired) // 실제 남은 명령서의 독립 공격력 증가 확인
             { // 공격력 증가 누적 시작
                 totalBonus += statusEffect.EffectiveValue; // 전체 공격력 증가 누적
             } // 공격력 증가 누적 종료
@@ -575,9 +581,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int charge = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? GetStatusEffectValue(BattleStatusEffectType.ChargeDefenseDown) : 0; // 돌진의 물리 방어 감소량 확인
         var crystal = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? FindStatusEffect(BattleStatusEffectType.CrystalMarkDefenseDown) : null; // 일반 물리 방어 약화와 독립인 결정눈 상태 조회
         int crystalLoss = crystal is { IsExpired: false } ? crystal.EffectiveValue : 0; // 아직 활성인 표식 연계 방어 감소량
+        var order = decreaseType == BattleStatusEffectType.PhysicalDefenseDown ? FindStatusEffect(BattleStatusEffectType.LordFinalOrderWeakenedDefense) : null; // 물리 방어에만 현재 적 턴의 명령서 약화 확인
+        int orderLoss = order is { IsExpired: false } ? order.EffectiveValue : 0; // 실제로 지속 중인 명령서의 물리 방어 감소량
         var ward = increaseType == BattleStatusEffectType.MagicalResistanceUp ? FindStatusEffect(BattleStatusEffectType.ArcaneWard) : null; // 마법 저항 계산에서만 실제 마력 보호막 상태 확인
         int wardBonus = ward is { IsExpired: false } ? ward.EffectiveValue : 0; // 활성 중인 정수 저항 증가량
-        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss, 0L, int.MaxValue); // 기존 약화와 플랫 저항의 합을 한 번만 영 하한으로 제한
+        return (int)Math.Clamp((long)baseDefense + increasedDefense + wardBonus - decreasedDefense - charge - crystalLoss - orderLoss, 0L, int.MaxValue); // 다른 원래 약화와 명령서까지 합친 최종 방어의 영 하한
     } // 방어력 계산 종료
     private int GetStatusEffectValue(BattleStatusEffectType effectType) // 상태 이상 전체 수치 조회
     { // 상태 수치 조회 시작

@@ -167,6 +167,11 @@ public static class CodexData // 실제 게임 데이터 기반 도감
                     { // 전투불능 방지 상세 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 1); // 한 번 치명 피해를 막는 실제 카드 설명
                     } // 전투불능 방지 상세 종료
+                    else if (effect == BattleStatusEffectType.LordFinalOrderAttack || effect == BattleStatusEffectType.LordFinalOrderWeakenedDefense) // 영주 명령의 두 단계 실제 효과 표시
+                    { // 원본 수치 설명 연결 시작
+                        int amount = effect == BattleStatusEffectType.LordFinalOrderAttack ? 3 : 2; // 공격 강화 또는 물리 방어 감소 값
+                        description = BattleStatusEffectInstance.GetDescription(effect, amount); // 실제 전투와 같은 도감 툴팁
+                    } // 명령서 상태의 도감 정보 연결 종료
                     else if (effect == BattleStatusEffectType.ServantContractMark) // 신규 종복 표식 도감 정보 조회
                     { // 계약 상태 문구 생성 시작
                         description = BattleStatusEffectInstance.GetDescription(effect, 5); // 전투와 같은 공격력 증가 수치

@@ -34,7 +34,7 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 전투 상�
         EnsureVisualStructure(); // 처음 열 때 상태 상세 화면 준비
         bool resetScroll = !tooltipRoot.activeSelf || shownUnit != runtimeUnit; // 새로 연 화면 또는 다른 유닛 확인
         shownUnit = runtimeUnit; // 상세 화면에 표시할 유닛 기록
-        titleText.text = $"{runtimeUnit.DisplayName} 상태 상세"; // 유닛 이름을 포함한 고정 제목 적용
+        ProjectCLanguageDisplay.SetCaption(titleText, $"{runtimeUnit.DisplayName} 상태 상세"); // 높이 계산 전에 현재 언어의 제목 적용
         StringBuilder detailBuilder = new StringBuilder(); // 상태 효과 본문 문자열 생성
         for (int effectIndex = 0; effectIndex < runtimeUnit.StatusEffects.Count; effectIndex++) // 상태 이상 목록 순회
         { // 개별 상태 상세 생성 시작
@@ -47,7 +47,7 @@ public sealed class BattleStatusEffectTooltipView : MonoBehaviour // 전투 상�
             detailBuilder.AppendLine($"{statusEffect.Description} · {stacks} · {duration}"); // 실제 소모 조건과 함께 상태 효과 표시
         } // 개별 상태 상세 생성 종료
 
-        detailText.text = detailBuilder.ToString().TrimEnd(); // 말줄임 없는 상세 본문 적용
+        ProjectCLanguageDisplay.SetCaption(detailText, detailBuilder.ToString().TrimEnd()); // 말줄임 없는 현재 언어 본문의 높이 계산 준비
         tooltipRoot.SetActive(true); // 상태 상세 표시
         tooltipRoot.transform.SetAsLastSibling(); // 유닛 위에 상태 상세 배치
         LayoutBody(resetScroll); // 본문 길이에 맞춰 스크롤과 표시 범위 갱신

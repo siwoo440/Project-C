@@ -36,7 +36,7 @@ public static class PreparationUi // 탐사 준비 화면 공통 구성
         text.color = new Color(0.95f, 0.92f, 0.83f, 1f); // 밝은 문구 색상 설정
         text.alignment = TextAlignmentOptions.Center; // 문구 가운데 정렬
         text.raycastTarget = false; // 문구 입력 차단 해제
-        text.text = value; // 표시 문구 설정
+        ProjectCLanguageDisplay.SetCaption(text, value); // 새 화면 문구의 현재 언어 표시
         return text; // 생성 문구 반환
     } // 화면 문구 생성 종료
     public static Button CreateButton(string name, Transform parent, string label, Vector2 anchor, Vector2 position, Vector2 size, Action action) // 준비 화면 버튼 생성

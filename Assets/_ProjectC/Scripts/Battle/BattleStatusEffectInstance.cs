@@ -233,6 +233,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마력 보호막"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마력 증폭"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.LordFinalOrderAttack: // 영주 명령서 상태 확인
+                return "영주의 명령"; // 실제 전투와 도감 표시 문구
+            case BattleStatusEffectType.LordFinalOrderWeakenedDefense: // 영주 명령서 상태 확인
+                return "명령의 대가"; // 실제 전투와 도감 표시 문구
             case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
                 return "종복의 표식"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
@@ -295,7 +299,7 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
     } // 표시 이름 조회 종료
     public static bool IsDebuffType(BattleStatusEffectType effectType) // 디버프 종류 확인
     { // 디버프 확인 시작
-        return effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
+        return effectType == BattleStatusEffectType.LordFinalOrderWeakenedDefense || effectType == BattleStatusEffectType.ConfessionDamageMark || effectType == BattleStatusEffectType.IncomingMagicDamageUp || effectType == BattleStatusEffectType.EvasionDown || effectType == BattleStatusEffectType.Shock || effectType == BattleStatusEffectType.StethoscopeMark || effectType == BattleStatusEffectType.CorrosionResistanceDown || effectType == BattleStatusEffectType.CrystalMarkDefenseDown || effectType == BattleStatusEffectType.Vulnerable || effectType == BattleStatusEffectType.DuelMark || effectType == BattleStatusEffectType.ActionSpeedDown || effectType == BattleStatusEffectType.Fear || effectType == BattleStatusEffectType.HealingReceivedDown || effectType == BattleStatusEffectType.Poison || effectType == BattleStatusEffectType.Burn || effectType == BattleStatusEffectType.Disorientation || effectType == BattleStatusEffectType.Blind || effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.MagicalResistanceDown || effectType == BattleStatusEffectType.Disrupt || effectType == BattleStatusEffectType.ChariotMark || effectType == BattleStatusEffectType.PublicMark || effectType == BattleStatusEffectType.Collapse || effectType == BattleStatusEffectType.ChargeDefenseDown || effectType == BattleStatusEffectType.Bleed || effectType == BattleStatusEffectType.Stagger || effectType == BattleStatusEffectType.Stun || effectType == BattleStatusEffectType.NextAttackDown || effectType == BattleStatusEffectType.AttackPowerDown; // 취약과 나머지 부정 상태의 디버프 분류
     } // 디버프 확인 종료
     public static string GetIconLabel(BattleStatusEffectType effectType) // 상태 아이콘 문구 조회
     { // 아이콘 문구 조회 시작
@@ -413,6 +417,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return "마법저항+"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return "마법피해+"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.LordFinalOrderAttack: // 영주 명령서 상태 확인
+                return "명령"; // 실제 전투와 도감 표시 문구
+            case BattleStatusEffectType.LordFinalOrderWeakenedDefense: // 영주 명령서 상태 확인
+                return "대가"; // 실제 전투와 도감 표시 문구
             case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
                 return "계약"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인
@@ -593,6 +601,10 @@ public sealed class BattleStatusEffectInstance // 개별 상태 이상 런타임
                 return $"다음 적 턴까지 마법 저항력 수치 {effectiveValue} 증가"; // 게임에 표시되는 마력 보호막 문구
             case BattleStatusEffectType.MagicAttackPowerUp: // 마력 증폭 종류 확인
                 return $"마법 카드 공격력 {effectiveValue} 증가"; // 게임에 표시되는 마력 증폭 문구
+            case BattleStatusEffectType.LordFinalOrderAttack: // 영주 명령서 상태 확인
+                return $"남은 첫 아군 턴 동안 공격력 {effectiveValue} 증가"; // 실제 전투와 도감 표시 문구
+            case BattleStatusEffectType.LordFinalOrderWeakenedDefense: // 영주 명령서 상태 확인
+                return $"다가오는 적 턴 동안 물리 방어력 {effectiveValue} 감소"; // 실제 전투와 도감 표시 문구
             case BattleStatusEffectType.ServantContractMark: // 종복 공격력 표식 확인
                 return $"표식이 남는 동안 공격력 {effectiveValue} 증가"; // 실제 전투 화면과 도감에 표시
             case BattleStatusEffectType.WandOverload: // 이번 지팡이 강화 상태 종류 확인

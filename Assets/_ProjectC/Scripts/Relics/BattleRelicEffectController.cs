@@ -166,7 +166,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 반복된 전투 시작 처리 종료
             startCleanseChecked = true; // 실제 판정에서 성공과 실패 및 대상 없음 모두 기록
         } // 시작 정화 횟수 확인 종료
-        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage or RelicEffectType.SilverSnufferBurnKillHealing or RelicEffectType.OperaMaskAfraidKillMentalLoss) // 실제 체력과 부활 및 두 처치 효과를 별도 정산하는 전용 유물 확인
+        if (relicData.EffectType is RelicEffectType.GainOnHealthLoss or RelicEffectType.AbyssGrailAllyRevive or RelicEffectType.PortraitNailMarkedBleedDamage or RelicEffectType.SilverSnufferBurnKillHealing or RelicEffectType.OperaMaskAfraidKillMentalLoss or RelicEffectType.BallroomLastBeatSecondEvade) // 실제 체력과 처치 및 두 번째 회피의 전용 유물 정산 확인
         { // 공용 발동에서 전용 유물 제외 시작
             return false; // 상태 알림에서 행동력과 부활을 중복 처리하지 않는 반환
         } // 공용 발동에서 전용 유물 제외 종료
@@ -182,7 +182,7 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             } // 잘못된 정화 판정 종료
             endCleanseChecked = true; // 성공과 실패 모두 한 전투의 추첨 기회 기록
         } // 전투 종료 정화 판정 종료
-        if (relicData.EffectType is RelicEffectType.CleanseReceivedDebuff or RelicEffectType.FearGrantedEvasionLoss or RelicEffectType.BleedApplicationChanceBonus or RelicEffectType.ReflectFirstAllyDebuff or RelicEffectType.LaughMirrorDebuffReflection) // 실제 상태와 카드 확률 및 두 거울의 전용 판정 확인
+        if (relicData.EffectType is RelicEffectType.CleanseReceivedDebuff or RelicEffectType.FearGrantedEvasionLoss or RelicEffectType.BleedApplicationChanceBonus or RelicEffectType.ReflectFirstAllyDebuff or RelicEffectType.LaughMirrorDebuffReflection or RelicEffectType.MirrorDukeCrownDebuffReflection) // 실제 상태와 카드 확률 및 세 거울의 전용 판정 확인
         { // 공용 상태 유물 중복 정산 차단 시작
             return false; // 관련 없는 상태 이벤트와 별개 공용 추첨의 난수 소모 방지
         } // 공용 상태 유물 중복 정산 차단 종료
@@ -191,10 +191,18 @@ public sealed class BattleRelicEffectController : IDisposable // 전투 유물 �
             return false; // 일반 유물 실행과 성공 로그 생략
         } // 일반 실행 제외 끝
 
+        if (relicData.EffectType is RelicEffectType.LordsFinalOrderAttackThenDefenseLoss or RelicEffectType.BanquetHeartPoisonCountHealing or RelicEffectType.ChandelierThirdTurnPulse) // 실제 턴 처리기의 명령서 및 두 시작 유물 확인
+        { // 공용 시작 이벤트의 중복 발동 차단 시작
+            return false; // 별도 횟수와 난수 없이 실제 아군과 적 턴에서 처리
+        } // 공용 시작 이벤트의 중복 발동 차단 종료
         if (relicData.EffectType is RelicEffectType.LordsWaxOpeningEnemyWeakness or RelicEffectType.BanquetOilPoisonPulse or RelicEffectType.BlackCutleryBleedStackDraw) // 실제 전투 턴 처리기의 전용 효과 확인
         { // 같은 시작 또는 상태 신호의 공용 중복 처리 차단 시작
             return false; // 별도 난수와 중복 지급 없이 실제 전투 턴에서만 정산
         } // 같은 시작 또는 상태 신호의 공용 중복 처리 차단 종료
+        if (relicData.EffectType == RelicEffectType.PortraitEyeOpeningFear) // 실제 전투 진입에서 한 번만 판정하는 초상화 유물
+        { // 일반 유물 확률 경로의 중복 추첨 차단 시작
+            return false; // 개별 공용 신호에서 또 다른 난수 사용 방지
+        } // 일반 유물 확률 경로의 중복 추첨 차단 종료
         if (relicData.EffectType == RelicEffectType.JournalCardRemoval) // 승리 시 일지의 확률 판정 확인
         { // 승리 추첨 시작
             if (journalVictoryChecked || eventContext?.Result != BattleResult.Victory) // 도주와 패배 및 같은 승리의 중복 신호 확인

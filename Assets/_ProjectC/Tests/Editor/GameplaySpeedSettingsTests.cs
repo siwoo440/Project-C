@@ -37,6 +37,6 @@ public sealed class GameplaySpeedSettingsTests // 게임 플레이 속도 설정
         Assert.AreEqual("빠름", restored.GetLabel(3, 5)); // 저장된 스크롤 속도 복원 확인
         Assert.AreEqual(1.5f, GameplaySpeedSettings.BattleDuration(3f, restored), 0.001f); // 빠른 전투 대기 시간 확인
         Assert.AreEqual(54f, GameplaySpeedSettings.ScrollSensitivity(36f, restored), 0.001f); // 빠른 스크롤 속도 확인
-        Assert.IsFalse(restored.Supports(4, 0)); // 미연결 언어 설정 차단 확인
+        Assert.IsFalse(restored.Supports(4, 1)); // 별도 자막 언어 설정의 미지원 상태 확인
     } // 속도 설정 검증 종료
 } // 속도 설정 테스트 종료

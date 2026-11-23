@@ -177,4 +177,12 @@ public enum RelicEffectType // 유물 효과 종류
     OperaMaskAfraidKillMentalLoss, // 공포 적의 실제 처치 뒤 생존 적 정신력 감소
     ServantContractOpeningMark, // 시작 생존 아군 한 명의 기간제 공격력 표식
     ColdWindowBlindEnemyProtection, // 실명 적의 직접 명중으로 받는 피해 감소
+    ThroneScrewBossOpeningActionPoints, // 보스전 첫 실제 아군 턴의 행동력 추가
+    PortraitEyeOpeningFear, // 전투 시작 단일 판정 뒤 적 전체 공포
+    LordsFinalOrderAttackThenDefenseLoss, // 아군 개막 공격 강화 뒤 적 턴의 물리 방어 약화
+    MirrorDukeCrownDebuffReflection, // 실제 받은 약화의 공격자 대상 확률 반사
+    BanquetHeartPoisonCountHealing, // 아군 턴 시작의 중독 적 수에 따른 아군 회복
+    ChandelierThirdTurnPulse, // 매 세 번째 아군 턴 피해와 아군 명중률 약화
+    HiddenNamePartyDefeatWard, // 생존 아군별 첫 치명 피해에서 체력 일 생존
+    BallroomLastBeatSecondEvade, // 현재 적 턴의 두 번째 실제 회피 뒤 광역 피해
 }

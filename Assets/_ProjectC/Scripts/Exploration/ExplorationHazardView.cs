@@ -67,7 +67,7 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
                 panelRect.y + 10f,
                 panelRect.width - 28f,
                 28f),
-            title,
+            ProjectCLanguage.Translate(title), // 탐사 위험 제목의 현재 언어
             titleStyle); // 현재 위험 지역 제목 표시
 
         float exposurePercent =
@@ -80,7 +80,7 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
                 panelRect.y + 42f,
                 panelRect.width - 28f,
                 24f),
-            $"노출도 {exposurePercent:0}% · 피해는 파티 HP/정신력에 즉시 반영",
+            ProjectCLanguage.Translate($"노출도 {exposurePercent:0}% · 피해는 파티 HP/정신력에 즉시 반영"), // 파티 피해 안내와 실제 노출 수치의 번역
             bodyStyle); // 노출도와 즉시 피해 반영 안내 표시
 
         Rect barBackground =
@@ -112,9 +112,10 @@ public sealed class ExplorationHazardView : MonoBehaviour // 퇴색 위험도와
                 panelRect.y + 100f,
                 panelRect.width - 28f,
                 28f),
-            recentPulse
-                ? $"퇴색 피해 발생  HP -{hazardRuntime.LastHealthDamage} / 정신 -{hazardRuntime.LastMentalDamage}"
-                : "위험 지역을 벗어나면 노출 증가가 멈춥니다.",
+            ProjectCLanguage.Translate( // IMGUI 위험 경고의 현재 언어
+                recentPulse // 마지막 실제 피해와 이동 안내 분기
+                    ? $"퇴색 피해 발생  HP -{hazardRuntime.LastHealthDamage} / 정신 -{hazardRuntime.LastMentalDamage}" // 마지막 체력과 정신력 피해 표시
+                    : "위험 지역을 벗어나면 노출 증가가 멈춥니다."), // 안전 지역 이동 안내 표시
             recentPulse
                 ? pulseStyle
                 : bodyStyle); // 최근 피해 또는 안전 이동 안내 표시
