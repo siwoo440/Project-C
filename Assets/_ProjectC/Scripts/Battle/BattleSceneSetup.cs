@@ -207,15 +207,8 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         bool enemyFirst = exploration != null && exploration.ActiveEncounter != null && exploration.WandererCry.EnemyStartsFirst; // 이번 교전의 고정 선제 여부
         int preparedActionCount = 0; // 실제 행동 예고 수 초기화
         handView.PrepareOpeningDeal(); // 첫 손패 순차 배분 예약
-        void PrepareOpening() // 첫 진영 행동 전에 효과와 예고 준비
-        { // 초기 전투 준비 시작
-            ApplyOpeningExplorationEffects(exploration); // 탐사에서 가져온 시작 효과 적용
-            if (enemyFirst) // 선제 전투 여부 확인
-            { // 선제 예고 준비 시작
-                preparedActionCount = enemyActionRuntime.PrepareActions(); // 안테나 약화를 반영한 선제 행동 준비
-            } // 선제 예고 준비 종료
-        } // 초기 전투 준비 종료
-        if (!battleTurn.StartBattle(initialHandSize, enemyFirst, PrepareOpening)) // 준비된 양 진영과 탐사 효과로 교전 시작
+        if (!battleTurn.StartBattle(initialHandSize, enemyFirst, () => ApplyOpeningExplorationEffects(exploration), // 원래 같은 첫 직접 진영 이전의 탐사 소비
+            () => preparedActionCount = enemyActionRuntime.PrepareActions())) // 실제 선제의 올바른 비용과 방어 상태 뒤 적 행동 예고
         { // 전투 시작 실패 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 턴 시작에 실패했습니다.", this); // 전투 시작 오류 출력
             IsInitialized = false; // 초기화 실패 저장

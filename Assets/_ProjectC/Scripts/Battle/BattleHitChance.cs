@@ -43,7 +43,10 @@ public static class BattleHitChance // 공격 명중 여부 계산
             (target.HasActiveCardDamageMark || target.GetStatusEffect(BattleStatusEffectType.DuelMark) is { IsExpired: false }) // 기존 카드 표식 또는 현재 활성 결투 표식
             ? Math.Clamp(BattleSupplyRelics.Find(RelicEffectType.BrokenLensCapMarkedAccuracy)?.EffectValue ?? 0, 0, 100) : 0; // 원본 렌즈캡의 고정 명중 퍼센트포인트
         int ashPenalty = Math.Clamp(enemyBattle?.DamageRelicInventory?.FindEffect(RelicEffectType.AshDustStatueEyeEnemyAccuracyDown)?.EffectValue ?? 0, 0, 100); // 등록 적의 현재 재먼지 명중 감소 퍼센트포인트
-        return Math.Clamp(100 + mapAccuracyBonus + markedBonus - penalty - evasion - disorientation - poisonPenalty - ashPenalty, 0, 100); // 예고와 원래 실제 명중에 공용으로 적용한 최종 값
+        const int wraithMistAccuracyPenalty = 5; // 망령 안개의 등불을 들고 싸우는 아군의 고정 명중 감소 퍼센트포인트
+        int mistPenalty = attacker.Team == BattleTeam.Ally && attacker.DamageRelicBattle is { CurrentRound: > 0, IsBattleEnded: false, HasPendingBossPhaseTransition: false } allyBattle && // 실제 활성 교전에서 살아 있는 아군의 원래 공격
+            allyBattle.DamageRelicInventory?.FindEffect(RelicEffectType.WraithMistLanternMentalDamageAccuracyTrade) != null ? wraithMistAccuracyPenalty : 0; // 보유한 등불이 실명과 별개로 뺄 명중률
+        return Math.Clamp(100 + mapAccuracyBonus + markedBonus - penalty - evasion - disorientation - poisonPenalty - ashPenalty - mistPenalty, 0, 100); // 실제 명중 굴림과 예고의 공통 최종 퍼센트포인트
     } // 명중률 조회 종료
     public static bool Hits(BattleUnitRuntime attacker, int roll, BattleUnitRuntime target = null) // 공격자와 대상의 지정 난수 판정
     { // 명중 계산 시작

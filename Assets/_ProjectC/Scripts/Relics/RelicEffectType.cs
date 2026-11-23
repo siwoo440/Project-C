@@ -281,4 +281,11 @@ public enum RelicEffectType // 유물 효과 종류
     ScorchedRavineHeartBurningTargetDamage, // 화상 활성 적에게 주는 실제 피해 증가
     MountainStatueShoulderPhysicalMagicTrade, // 아군이 받는 물리와 마법 피해의 반대 보정
     LavaKingThroneShardOpeningBurn, // 적 전체와 선두 아군의 실제 개시 화상
+    EmberlessBrazierBurnDamageActionPoints, // 실제 화상 피해 뒤 확률 행동력 증가
+    RockfallProphecyStoneFourTurnDamage, // 네 번째 실제 아군 턴마다 양쪽에 고정 피해
+    SwampGuardianTreeSeedOpeningRegeneration, // 개시 생존 아군의 세 턴 재생
+    BlackSwampHeartwaterPoisonedAttackLoss, // 중독된 적의 실제 공격력 감소
+    WraithMistLanternMentalDamageAccuracyTrade, // 적이 받는 정신 피해 증가와 아군 명중률 하락
+    RottenGuardianStoneLateDamageReduction, // 다섯 턴이 지난 뒤 아군 수신 피해 감소
+    SunkenAltarRootLowPartyShield, // 낮은 체력이 된 생존 아군 전체에게 한 번 방어도 제공
 }

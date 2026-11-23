@@ -1903,6 +1903,48 @@
       "artworkKey": "90feb205c950517ca410d54fe3469899"
     },
     {
+      "category": 3,
+      "name": "불씨 없는 화로",
+      "description": "아군 또는 적이 화상으로 체력을 실제 잃으면 20% 확률로 아군 행동력 1을 얻는다. 적 턴에 발동하면 다음 아군 턴에 얻는다.",
+      "artworkKey": "829775da9a4658c8b6e7a61883fa3330"
+    },
+    {
+      "category": 3,
+      "name": "낙석의 예언석",
+      "description": "실제 아군 턴이 네 번 시작될 때마다 생존 적 전체에게 일반 피해 16, 생존 아군 전체에게 일반 피해 4를 준다.",
+      "artworkKey": "ea396ea052aa57f384201a7117d0997d"
+    },
+    {
+      "category": 3,
+      "name": "늪의 수호목 씨앗",
+      "description": "전투 시작에 생존 아군 전체에게 각자 세 아군 턴 동안 재생 2를 부여한다.",
+      "artworkKey": "ee5da2c44e4154ca90fed1f2c1f7141f"
+    },
+    {
+      "category": 3,
+      "name": "검은 늪의 심장수",
+      "description": "전투 중 중독 상태인 적의 공격력이 10% 감소한다.",
+      "artworkKey": "ec6ec4ab65f95c27898edbbe48361c07"
+    },
+    {
+      "category": 3,
+      "name": "망령 안개의 등불",
+      "description": "적이 받는 정신 피해가 20% 증가하고, 생존 아군 전체의 명중률은 5%p 감소한다.",
+      "artworkKey": "01865f76ac385347ac3019ca2ff5d67c"
+    },
+    {
+      "category": 3,
+      "name": "부패한 수호석",
+      "description": "실제 아군 턴이 다섯 번 끝나면 그 다음 아군 턴부터 생존 아군 전체가 받는 피해가 20% 감소한다.",
+      "artworkKey": "c8b6d25970fa54b69d8e317d29bb0915"
+    },
+    {
+      "category": 3,
+      "name": "가라앉은 제단의 뿌리",
+      "description": "전투당 한 번, 생존 아군 모두의 현재 체력이 각각 최대 체력의 30% 이하가 되면 생존 아군 전원에게 방어도 25를 준다.",
+      "artworkKey": "bc906751c1d35ce88425032ed8f1c3c0"
+    },
+    {
       "category": 7,
       "name": "다시 일어설 때",
       "description": "아군 하나의 체력을 8 회복. 회복 전 체력이 최대 체력의 50% 이하면 4 추가 회복. (임시 효과)",

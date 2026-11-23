@@ -33,6 +33,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private bool dryWaterskinSettled; // 실제 종료 저장 전 물주머니 회복 처리 여부
     private bool specimenPreservationSettled; // 실제 결과 저장에서 보존 캡슐의 체력과 정신력을 한 차례만 정산
     private bool emergencyRebootUsed; // 이번 교전의 한 번 실제 저체력 회복 여부
+    private bool sunkenAltarShieldUsed; // 같은 전투 중 파티 저체력 보호를 실제 지급한 한 번의 기록
     private int firstActualAllyTurnRound; // 실제 첫 아군 차례의 라운드 번호
     private BattleUnitRuntime basiliskOpeningGuardAlly; // 개막 방어를 받고 첫 아군 차례에 속도 대가를 치를 실제 수령자
     private Dictionary<BattleUnitRuntime, int> scrapMotherBlockByOwner; // 같은 교전의 실제 처치 소유자별 누적 방어도
@@ -54,6 +55,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private readonly HashSet<BattleUnitRuntime> pendingPermanentAttackDefeats; // 아직 처리를 받지 않은 실제 초기 정예·보스 개체
     private List<(BattleUnitRuntime Caster, int Amount)> nextPlayerTurnActionPointLosses; // 다음 아군 턴에 차감할 명시 요청과 실제 원본 시전자
     private int pendingEmergencyActionPoints; // 다음 실제 아군 턴에만 지급할 예비 자금의 누적 행동력
+    private bool endingAlliedTurn; // 손패와 행동력을 정리한 뒤 원래 아군 종료 상태를 처리하는 구간
+    private bool resolvingRockfallProphecy; // 한 예언석의 적과 아군 피해가 모두 끝나기 전의 승패 보류
+    private int lastRockfallProphecyRound; // 같은 실제 아군 차례의 낙석 재진입 방지
     private int pendingTimeCoinActionPointLoss; // 아직 실행하지 않은 추가 턴의 원본 행동력 대가
     private bool timeCoinBookedBeforeEnemyTurn; // 실제 적 차례가 끝나기 전 두 번째 동전 예약 방지
     private int pendingSecretVaultDrawReduction; // 다음 실제 아군 턴 기본 손패에서만 차감할 금고 사용 합계
@@ -258,7 +262,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         RegisterUnitEvents(enemyUnits); // 적 사망 이벤트 등록
         authoredBoss = battleType == BattleType.Boss && enemyUnits.Count > 0 ? enemyUnits[0] : null; // 원본 보스와 다른 배치 및 소환 적 구분
     } // 생성자 종료
-    public bool StartBattle(int initialHandSize, bool enemyFirst = false, Action openingEffects = null) // 먼저 행동할 진영과 탐사 효과를 반영한 시작
+    public bool StartBattle(int initialHandSize, bool enemyFirst = false, Action openingEffects = null, Action prepareOpeningEnemyIntents = null) // 탐사 효과와 실제 선제 예고를 별개로 연결하는 전투 시작
     { // 전투 시작 처리 시작
         if (disposed || CurrentRound != 0 || CurrentPhase != BattleTurnPhase.NotStarted || initialHandSize < 0) // 개막 효과 진행 중인 재호출과 잘못된 시작 차단
         { // 시작 불가 처리 시작
@@ -276,7 +280,13 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ResolveOpeningBottle(); // 첫 행동 준비 전에 바닥 없는 병의 전체 정신력 비용 결제
         ApplyMistFlowerOpeningBlind(); // 선제의 첫 적 행동 예고를 준비하는 탐사 콜백 전에 실명 판정
         ApplyLavaKingThroneOpeningBurn(); // 같은 첫 적 의도 준비 전에 생존 적과 선두 생존 아군의 개막 화상
+        ApplySwampGuardianOpeningRegeneration(); // 실제 첫 적 의도 콜백 전에 생존 아군의 세 차례 재생 부여
         openingEffects?.Invoke(); // 전투 시작 성공 확인 뒤 첫 행동 전에 탐사 효과 소비
+        bool delayAmbushIntents = enemyFirst && openingRelics?.FindEffect(RelicEffectType.SunkenAltarRootLowPartyShield)?.EffectValue > 0; // 파티 제한 보호가 있는 실제 선제만 개막 비용까지 기다리는 예고
+        if (enemyFirst && !delayAmbushIntents) // 가라앉은 뿌리가 없는 이전 실제 선제의 예고 순서 확인
+        { // 기존 같은 타이밍의 적 행동 준비 시작
+            prepareOpeningEnemyIntents?.Invoke(); // 원래 탐사 효과 처리 직후에 적의 첫 예고 준비
+        } // 기존 같은 타이밍의 적 행동 준비 종료
         ResolveOpeningDie(); // 실제 선제 여부가 적용되기 전에 주사위 보상 한 번 선정
         ApplyColdCoreOpeningBurn(); // 첫 행동 전에 살아 있는 양 진영에 원래 화상 부여
         ApplyDesertTrackerOpening(); // 첫 실제 진영 행동 전에 가장 낮은 현재 체력 적 표식
@@ -299,6 +309,11 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         ApplyHollowPredatorOpeningCost(); // 적 선제와 첫 아군 행동보다 먼저 비어 있는 위장의 생존 체력 비용 지불
         ApplyNamelessOathOpening(); // 전투에 입장한 생존 아군의 전투용 일반 공격력 부여
         ApplyOpeningEnemyStatus(RelicEffectType.OpeningEnemyAttackReduction); // 금 간 접시 장식이 고른 생존 적에게만 약화 시도
+        TryApplySunkenAltarShield(); // 기존 모든 개막 체력 비용 뒤 실제 첫 진영이 행동하기 전 파티 조건 판정
+        if (delayAmbushIntents) // 초기 파티 보호를 확인해야 했던 실제 적 선제 조우
+        { // 개막 방어도를 포함하는 실제 적 행동 준비 시작
+            prepareOpeningEnemyIntents?.Invoke(); // 개막 조건과 방어도가 확정된 상태에서 첫 적 행동 예고
+        } // 개막 방어도를 포함하는 실제 적 행동 준비 종료
         if (enemyFirst) // 방랑자의 고정 선제 판정 확인
         { // 적의 첫 행동 시작
             openingHandAfterAmbush = initialHandSize; // 첫 아군 턴의 정상 시작 손패 보관
@@ -596,6 +611,15 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         } // 전투 지속 처리 종료
         return true; // 적 턴 완료 성공 반환
     } // 적 턴 완료 처리 종료
+    internal int GetRottenGuardianDamageReduction() // 여섯 번째 실제 아군 차례부터의 공용 수신 피해 경감
+    { // 현 교전의 실제 첫 아군 차례와 현재 진영 확인 시작
+        if (disposed || IsBattleEnded || firstActualAllyTurnRound <= 0 || CurrentRound - firstActualAllyTurnRound < 5) // 선제 적 차례 제외 및 시간 동전의 실제 아군 시작 포함
+        { // 현재 전투에서 보호가 아직 없는 경우 시작
+            return 0; // 기존 수신 피해 수치 유지
+        } // 현재 전투에서 보호가 아직 없는 경우 종료
+        return Math.Clamp(openingRelics?.FindEffect(RelicEffectType.RottenGuardianStoneLateDamageReduction)?.EffectValue ?? 0, 0, 100); // 실제 유물 경감률의 원래 백분율 범위
+    } // 현 교전의 실제 첫 아군 차례와 현재 진영 확인 종료
+
     internal int GetHangarOpeningDamageReduction() // 실제 두 적 차례가 완료되기 전 보스조우의 저항
     { // 현재 진행 중 보스전과 적 차례 완료 횟수 확인 시작
         if (disposed || IsBattleEnded || CurrentRound <= 0 || BattleType != BattleType.Boss || completedEnemyPhases >= 2) // 종료 또는 일반 조우와 두 번 보호 완료 확인
@@ -699,6 +723,22 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         leadingAlly?.ApplyStatusEffect(BattleStatusEffectType.Burn, throne.EffectValue, 1, throne.StatusMaximumStacks); // 원래 면역에 따라 첫 살아 있는 아군에게 한 아군 턴의 대가 시도
     } // 실제 보유 개막 유물 처리 종료
 
+
+    private void ApplySwampGuardianOpeningRegeneration() // 실제 교전 개막의 늪 수호목 재생 부여
+    { // 시작 시 보유와 실제 생존 출전원 확인 시작
+        var seed = openingRelics?.FindEffect(RelicEffectType.SwampGuardianTreeSeedOpeningRegeneration); // 실제 유물의 회복 수치 및 남은 아군 차례
+        if (IsBattleEnded || seed is not { EffectValue: > 0, StatusDuration: > 0 }) // 끝난 전투거나 유효 재생 원본이 없는 경우 확인
+        { // 개막 재생 적용 제외 시작
+            return; // 원래 회차의 활성 상태 유지
+        } // 개막 재생 적용 제외 종료
+        foreach (var ally in allyUnits) // 실제 개막의 출전 아군 전체 순회
+        { // 살아 있는 치료 수신자만 확인 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false }) // 실제 살아 있는 아군 확인
+            { // 원래 재생 상태 부여 시작
+                ally.ApplyStatusEffect(BattleStatusEffectType.Regeneration, seed.EffectValue, seed.StatusDuration, seed.StatusMaximumStacks); // 자신의 세 아군 턴에 기존 연속 회복과 만료 처리
+            } // 원래 재생 상태 부여 종료
+        } // 살아 있는 치료 수신자만 확인 종료
+    } // 시작 시 보유와 실제 생존 출전원 확인 종료
 
     private void ApplyColdCoreOpeningBurn() // 흑태양 식은 핵의 실제 시작 화상
     { // 양 진영 시작 화상의 원본 확인
@@ -1394,6 +1434,29 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             target.GainBlock(block); // 선행 기존 약화 피해 뒤 실제 생존자가 받은 방어도만 증가
         } // 실제 생존 수신자의 방어도 추가 종료
     } // 감소를 부여한 진영과 실제 수신자 및 현재 보유 확인 종료
+    internal void RecordEmberlessBrazierBurnLoss(BattleUnitRuntime recipient, int amount) // 실제 화상 체력 손실마다 독립 확률 처리
+    { // 양쪽 출전 명단의 실제 지속 피해 여부 확인 시작
+        if (amount <= 0 || disposed || IsBattleEnded || HasPendingBossPhaseTransition || !registeredUnits.Contains(recipient) || // 무효 또는 외부 피해와 종료한 전투 제외
+            CurrentPhase is not (BattleTurnPhase.PlayerTurn or BattleTurnPhase.EnemyTurn)) // 실제 진행 중인 양 진영 차례 확인
+        { // 자원 없는 경우의 기존 피해만 보존 시작
+            return; // 실제 피해 없는 판정의 난수와 행동력 유지
+        } // 자원 없는 경우의 기존 피해만 보존 종료
+        var brazier = openingRelics?.FindEffect(RelicEffectType.EmberlessBrazierBurnDamageActionPoints); // 해당 조우의 실제 화상 행동력 유물 조회
+        if (brazier is not { EffectValue: > 0, TriggerChancePercent: > 0 } || // 양수 보상과 원래 확률 범위 확인
+            brazier.TriggerChancePercent < 100 && UnityEngine.Random.Range(0, 100) >= brazier.TriggerChancePercent) // 한 실제 체력 피해의 한 번 확률 확인
+        { // 확률 또는 원본 입력 실패 시작
+            return; // 추가 현재치와 다음 차례 예약 없음
+        } // 확률 또는 원본 입력 실패 종료
+        if (!IsPlayerTurn || endingAlliedTurn) // 적 차례 또는 이미 행동력을 정리한 아군 차례의 종료 틱 확인
+        { // 다음 실제 아군 차례의 지급 예약 시작
+            QueueEmergencyActionPoints(brazier.EffectValue); // 다음 아군 기본 회복 뒤에만 보상 한 건 추가
+        } // 다음 실제 아군 차례의 지급 예약 종료
+        else // 현재 실제 아군 조작의 행동력 지급
+        { // 이번 차례의 임시 행동력 지원 시작
+            sharedActionPoints.AddTurnCapacity(brazier.EffectValue); // 현재 최고치에서도 원본 한 점 사용할 수 있는 네이티브 임시 확장
+        } // 이번 차례의 임시 행동력 지원 종료
+    } // 양쪽 출전 명단의 실제 지속 피해 여부 확인 종료
+
     internal int QueueEmergencyActionPoints(int amount) // 다음 실제 아군 턴에 사용할 예비 자금 한 건 예약
     { // 원본 행동력 준비 수치 누적 시작
         int addition = Math.Clamp(amount, 0, int.MaxValue - pendingEmergencyActionPoints); // 여러 실제 사용의 정수 누적 범위 확인
@@ -1903,6 +1966,36 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         GetLowestHealthLivingAlly(woundedOnly: true)?.RestoreHealth(bottle.EffectValue); // 명단 순서로 고른 실제 부상 생존자 한 명에게 일반 치유
     } // 실제 활성 전투와 발동 간격 확인 종료
 
+    private void ApplyRockfallProphecyPulse() // 실제 네 번째 아군 시작의 양 진영 낙석 피해
+    { // 네이티브 차례와 유효 원본 검사 시작
+        var stone = openingRelics?.FindEffect(RelicEffectType.RockfallProphecyStoneFourTurnDamage); // 실제 보유한 예언석의 적 광역 기본 피해
+        int turnNumber = CurrentRound - firstActualAllyTurnRound + 1; // 적 선제를 제외하고 시간 동전을 포함하는 실제 아군 시작 횟수
+        if (disposed || IsBattleEnded || HasPendingBossPhaseTransition || !IsPlayerTurn || stone is not { EffectValue: > 0 } || // 실제 전투의 생존 진영과 참가한 아군 차례 확인
+            firstActualAllyTurnRound <= 0 || turnNumber <= 0 || turnNumber % 4 != 0 || lastRockfallProphecyRound == CurrentRound) // 네 번째 주기와 이번 실제 시작의 한 번만 적용 확인
+        { // 이번 차례의 예언석 발동 조건 제외 시작
+            return; // 원래 양 진영 체력과 승패 유지
+        } // 이번 차례의 예언석 발동 조건 제외 종료
+        lastRockfallProphecyRound = CurrentRound; // 다른 피해 알림을 보내기 전에 실제 이번 시작의 기회 기록
+        var targets = enemyUnits.Concat(allyUnits).Where(unit => unit is { IsDead: false }).ToArray(); // 처치 알림에 따른 명단 변경 이전의 실제 생존 양 진영
+        resolvingRockfallProphecy = true; // 양쪽의 실제 피해를 받은 뒤 승패 처리 예약
+        try // 반격 및 네이티브 피해의 원래 정산 범위 시작
+        { // 양 진영 동시 효과의 개별 피해 순회 시작
+            foreach (var target in targets) // 전투에 실제 등장한 적과 아군의 확정 명단
+            { // 원래 실제 참가와 지속 생존 확인 시작
+                if (!target.IsDead && registeredUnits.Contains(target)) // 다른 효과가 제거했거나 전투불능인 실제 대상 제외
+                { // 기존 무출처 피해와 방어도 반영 시작
+                    int damage = target.Team == BattleTeam.Enemy ? stone.EffectValue : 4; // 적 각각의 원본 십육 점 및 아군 각각의 네 점
+                    target.TakeDamage(damage, BattleDamageType.None); // 일반 방어도와 피해 무효를 거치는 원래 중립 피해
+                } // 기존 무출처 피해와 방어도 반영 종료
+            } // 원래 실제 참가와 지속 생존 확인 종료
+        } // 양 진영 동시 효과의 개별 피해 순회 종료
+        finally // 알림 오류 이후에도 일반 전투 판정의 보류 해제
+        { // 예언석 고유 처리 표시 해제 시작
+            resolvingRockfallProphecy = false; // 다음 일반 피해부터 원래 즉시 사망 결과 허용
+        } // 예언석 고유 처리 표시 해제 종료
+        ResolveUnitDefeatResult(); // 양쪽 피해와 네이티브 부활을 마친 뒤 기존 승패 확인
+    } // 네이티브 차례와 유효 원본 검사 종료
+
     private void NotifyPhaseStarted() // 진영 시작 효과를 반영한 턴 알림
     { // 시작 효과 적용 시작
         if (CurrentPhase == BattleTurnPhase.EnemyTurn) // 적 행동과 지속 피해 발생 전 확인
@@ -1939,8 +2032,9 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             ApplyDustClock(); // 지정 주기의 실제 아군 턴에 생존 적 정신력 감소
             ApplyBanquetOilPulse(); // 선제 이후의 실제 아군 턴 번호로 한 번의 전체 중독 판정
             ApplyBanquetHeartHealing(); // 현재 생존 중독 적 수에 맞춘 전체 아군 회복
+            ApplyRockfallProphecyPulse(); // 네 번째 실제 아군 시작의 양 진영 피해와 승패 정산
             ApplyChandelierPulse(); // 세 번째 아군 턴마다 일반 광역 피해와 한 턴의 명중률 약화
-            if (IsBattleEnded) // 샹들리에의 실제 적 전멸로 전투가 종료됐는지 확인
+            if (IsBattleEnded) // 예언석 또는 샹들리에의 실제 피해로 전투가 종료됐는지 확인
             { // 이전 아군 턴 효과 중단 시작
                 return; // 종료된 전투에 차례 시작과 추가 상태 효과 발행 방지
             } // 이전 아군 턴 효과 중단 종료
@@ -1959,7 +2053,15 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
     private void NotifyPhaseEnded() // 진영 종료와 돌진 지속 시간 정리
     { // 종료 효과 적용 시작
         bool endCharge = CurrentPhase == BattleTurnPhase.PlayerTurn; // 아군 턴 종료 여부 보관
-        PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 기존 진영 종료 효과 전달
+        endingAlliedTurn = endCharge; // 행동력을 모두 정리한 실제 아군 종료 동안의 지급 지연 표시
+        try // 실제 양 진영 종료 상태 효과 전달 범위
+        { // 정리된 차례의 네이티브 상태 처리 시작
+            PhaseEnded?.Invoke(CurrentPhase, CurrentRound); // 실제 진영의 원래 종료 효과와 지속 피해 처리
+        } // 정리된 차례의 네이티브 상태 처리 종료
+        finally // 별도 효과 오류에도 남은 차례의 지급 구분 복원
+        { // 종료 처리 호출의 임시 표시 해제 시작
+            endingAlliedTurn = false; // 다음 실제 아군 차례의 일반 행동력 지급 허용
+        } // 종료 처리 호출의 임시 표시 해제 종료
         if (endCharge) // 돌진의 한 차례 아군 공격 기회 종료 확인
         { // 돌진 효과 해제 시작
             ApplyMudGolemBlockHealing(); // 다음 차례 방어도 초기화 전에 양수 방어가 남은 실제 부상 아군 회복
@@ -2400,6 +2502,15 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             return; // 사망 판정 중단
         } // 판정 불가 처리 종료
         TryReviveWithAbyssGrail(runtimeUnit); // 실제 전투불능 처리 뒤 전멸 판정 전 첫 부활 정산
+        ResolveUnitDefeatResult(); // 보류하지 않은 실제 사망의 일반 승패 정산
+    } // 유닛 사망 알림과 개별 부활 처리 종료
+
+    private void ResolveUnitDefeatResult() // 한 피해 또는 예언석 양측 피해 뒤의 원래 전멸 판정
+    { // 양쪽 실제 전투불능 결과 확인 시작
+        if (disposed || IsBattleEnded || resolvingRockfallProphecy) // 이미 끝났거나 묶음의 반대편 피해를 아직 처리하는 경우 확인
+        { // 아직 일반 승패를 평가하지 않을 때 처리 시작
+            return; // 양측 효과를 마친 뒤 한 번만 적용할 승패 보류
+        } // 아직 일반 승패를 평가하지 않을 때 처리 종료
         bool alliesDefeated = !HasLivingUnit(allyUnits); // 부활까지 반영한 아군 전멸 여부 계산
         bool enemiesDefeated = !HasLivingUnit(enemyUnits); // 적 전멸 여부 계산
         if (!alliesDefeated && !enemiesDefeated) // 전투 지속 여부 확인
@@ -2419,7 +2530,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 승리 처리 시작
             SetBattleResult(BattleResult.Victory); // 승리 결과 확정
         } // 승리 처리 종료
-    } // 유닛 사망 처리 종료
+    } // 양쪽 실제 전투불능 결과 확인 종료
     private bool HasPendingSeedRevival() // 아직 실제 사망과 부활을 정산 중인 아군 검사
     { // 부활 대기 상태 검사 시작
         foreach (var ally in allyUnits) // 현재 전투의 전체 아군 명단 확인
@@ -2697,6 +2808,7 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
         { // 발동하지 않는 체력 손실 처리 시작
             return; // 차단된 피해와 전투 밖 변경 및 난수 미소모
         } // 발동하지 않는 체력 손실 처리 종료
+        TryApplySunkenAltarShield(); // 실제 양수 체력 손실 직후의 파티 조건을 별개 저체력 치유보다 먼저 확정
         if (!emergencyRebootUsed && !damage.WasTargetDefeated && !ally.IsDead && ally.CurrentHealth > 0 && // 현재 교전의 미사용 여부와 실제 피격 생존 확인
             (long)ally.CurrentHealth * 10L <= (long)ally.MaxHealth * 3L) // 실제 피격 이후 생존 체력의 포함 삼십 퍼센트 경계
         { // 기본 저체력 회복 확인 시작
@@ -2720,6 +2832,27 @@ public sealed class BattleTurnRuntime : IDisposable // 전투 턴 흐름 관리
             sharedActionPoints.Gain(relic.EffectValue); // 최대 행동력 변화 없는 기존 상한형 회복 사용
         } // 현재 행동력 회복 종료
     } // 공허 순환장치 확인 종료
+
+    private void TryApplySunkenAltarShield() // 생존 아군 전원의 개별 체력이 임계일 때 전투당 한 번 방어도
+    { // 새로운 파티 보호의 실제 현재 전투와 지급 여부 확인 시작
+        if (disposed || IsBattleEnded || CurrentRound <= 0 || sunkenAltarShieldUsed) // 종료 교전과 아직 시작하지 않은 전투 및 이미 쓴 보호 확인
+        { // 방어도 지급이 없는 경우 시작
+            return; // 이전 실제 파티 방어도 보존
+        } // 방어도 지급이 없는 경우 종료
+        int block = openingRelics?.FindEffect(RelicEffectType.SunkenAltarRootLowPartyShield)?.EffectValue ?? 0; // 현재 실제 보유한 뿌리의 개별 방어도
+        if (block <= 0 || !AreAllLivingAlliesAtOrBelowHealthPercent(30)) // 모든 개별 현재 체력이 정확히 서른 이하이며 생존 아군이 있는지 확인
+        { // 원래 파티에 실제 발동 조건을 충족하지 않은 경우 시작
+            return; // 지급과 이번 전투 사용 여부 변화 없음
+        } // 원래 파티에 실제 발동 조건을 충족하지 않은 경우 종료
+        sunkenAltarShieldUsed = true; // 첫 방어도 변경 이벤트보다 먼저 실제 전투의 한 번 사용 확정
+        foreach (var ally in allyUnits) // 원래 현재 교전 출전 아군을 순서대로 확인
+        { // 조건을 함께 충족한 생존 수신자에게 같은 보호 지급 시작
+            if (ally is { Team: BattleTeam.Ally, IsDead: false } && ally.DamageRelicBattle == this) // 실제 살아 있으며 아직 해당 싸움에 참가 중인 아군 확인
+            { // 실제 게임의 방어도 처리와 변경 알림 시작
+                ally.GainBlock(block); // 동료마다 기존 현재 방어도에 독립 보호 가산
+            } // 실제 게임의 방어도 처리와 변경 알림 종료
+        } // 조건을 함께 충족한 생존 수신자에게 같은 보호 지급 종료
+    } // 새로운 파티 보호의 실제 현재 전투와 지급 여부 확인 종료
 
     private void TryReviveWithAbyssGrail(BattleUnitRuntime fallen) // 첫 실제 아군 전투불능에 전투당 한 번 부활
     { // 어비스 성배 조각의 부활 확인 시작

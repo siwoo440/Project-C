@@ -4595,4 +4595,60 @@ MonoBehaviour:
     canBeReservedRelic: 1
     relic: {fileID: 11400000, guid: 6dcae63a10ab5bd18389040709cee620, type: 2}
     potion: {fileID: 0}
+  - offerId: SHOP_RLC_EMBERLESS_BRAZIER
+    offerType: 1
+    price: 333
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 141abb136c9b5d86950f8652b3760046, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_ROCKFALL_PROPHECY_STONE
+    offerType: 1
+    price: 346
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 307cb5219b10576db566ae66efe1a3e0, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SWAMP_GUARDIAN_TREE_SEED
+    offerType: 1
+    price: 217
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 462ec4698fe55cf7b499c5a96e637e92, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_BLACK_SWAMP_HEARTWATER
+    offerType: 1
+    price: 230
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: bce87583f0365edc852af75968188fa0, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_WRAITH_MIST_LANTERN
+    offerType: 1
+    price: 251
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 10b13a3f15ef58ffa572df013d364378, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_ROTTEN_GUARDIAN_STONE
+    offerType: 1
+    price: 264
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 913b86ebe4135e3db45f02d575d349e8, type: 2}
+    potion: {fileID: 0}
+  - offerId: SHOP_RLC_SUNKEN_ALTAR_ROOT
+    offerType: 1
+    price: 285
+    card: {fileID: 0}
+    cardOwner: {fileID: 0}
+    canBeReservedRelic: 1
+    relic: {fileID: 11400000, guid: 8326fa7854285582b1f08ec30201761d, type: 2}
+    potion: {fileID: 0}
   cardRemovalPrice: 150
