@@ -27,10 +27,25 @@ public sealed class ExplorationEventLayoutTests // 탐사 이벤트 패널 배�
         Assert.That(outer.size.y / canvas.rect.height, Is.EqualTo(0.848f).Within(0.004f)); // 참고 화면 패널 높이 확인
         Assert.That((outer.min.y - canvas.rect.yMin) / canvas.rect.height, Is.EqualTo(0.117f).Within(0.004f)); // 아래 파티 정보 여백 확인
         var body = RectTransformUtility.CalculateRelativeRectTransformBounds(root, root.Find("Content/BodyText")); // 본문 경계 조회
-        var art = RectTransformUtility.CalculateRelativeRectTransformBounds(root, root.Find("Content/IllustrationFrame")); // 삽화 경계 조회
+        var frame = panel.GetComponentsInChildren<Image>().Single(item => item.name == "IllustrationFrame").rectTransform; // 실제 삽화 테두리 조회
+        var art = RectTransformUtility.CalculateRelativeRectTransformBounds(root, frame); // 삽화 경계 조회
         var choices = RectTransformUtility.CalculateRelativeRectTransformBounds(root, root.Find("Choices")); // 선택 버튼 영역 조회
         Assert.Greater(body.min.x, art.max.x); // 본문과 삽화 사이 간격 확인
         Assert.Greater(Mathf.Min(body.min.y, art.min.y), choices.max.y); // 선택지와 본문 겹침 방지 확인
+        var picture = frame.Find("Illustration").GetComponent<Image>(); // 원본 삽화 이미지 조회
+        var original = RectTransformUtility.CalculateRelativeRectTransformBounds(root, picture.transform); // 세 선택지에서 삽화 위치와 크기 기록
+        panel.SendMessage("ClearChoiceButtons"); // 결과 화면의 버튼 교체 시작
+        foreach (string label in new[] { "[확인]", "[계속]" }) // 확인 한 개와 저장 재시도 두 개의 배치 검사
+        { // 결과 화면 검사 시작
+            panel.SendMessage("CreateCloseButton", label); // 실제 결과 버튼 생성 경로 실행
+            Canvas.ForceUpdateCanvases(); // 화면 좌표와 맞춤 배치 갱신
+            var resultFrame = RectTransformUtility.CalculateRelativeRectTransformBounds(root, frame); // 결과 화면의 테두리 경계 조회
+            var resultArt = RectTransformUtility.CalculateRelativeRectTransformBounds(root, picture.transform); // 결과 화면의 삽화 경계 조회
+            Assert.Less(Vector3.Distance(art.min, resultFrame.min) + Vector3.Distance(art.max, resultFrame.max), 0.1f); // 선택지 변경 전후 테두리 네 변 고정 확인
+            Assert.Less(Vector3.Distance(original.min, resultArt.min) + Vector3.Distance(original.max, resultArt.max), 0.1f); // 원본 삽화 위치와 크기 고정 확인
+            Assert.That(resultFrame.size.x, Is.EqualTo(resultFrame.size.y).Within(0.1f)); // 정사각형 테두리 비율 확인
+            Assert.IsTrue(picture.preserveAspect); // 원화 자체의 가로세로 비율 유지 확인
+        } // 결과 화면 검사 종료
         Object.Destroy(marker.gameObject); // 검사 표식 정리
         Object.Destroy(panel.gameObject); // 검사 캔버스 정리
         yield return new ExitPlayMode(); // 편집 모드 복귀
