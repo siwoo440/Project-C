@@ -162,6 +162,10 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         { // 면역 차단 처리 시작
             return BattleStatusEffectApplyResult.BlockedByImmunity; // 면역 차단 결과 반환
         } // 면역 차단 처리 종료
+        if (Team == BattleTeam.Ally && value == 2 && (effectType == BattleStatusEffectType.PhysicalDefenseDown || effectType == BattleStatusEffectType.ChargeDefenseDown) && RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.SoftenDefenseLoss) != null) // 보유 금속판과 물리 방어 두 점 감소 확인
+        { // 금속판 완화 시작
+            value = 1; // 새로 부여되는 약화 한 점으로 완화
+        } // 금속판 완화 종료
         BattleStatusEffectInstance existingEffect = FindStatusEffect(effectType); // 동일 상태 이상 조회
         if (existingEffect == null) // 신규 상태 확인
         { // 신규 상태 처리 시작
@@ -383,7 +387,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         BlockChanged?.Invoke(this); // 방어도 화면 갱신 알림
         return removed; // 실제 제거량 반환
     } // 방어도 부분 제거 종료
-    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null) // 예상 피해 계산
+    public BattleDamageResult PreviewDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, int? blockOverride = null, bool enemyDirectAttack = false) // 직접 적 공격과 방어도를 반영한 피해 예고
     { // 예상 피해 계산 시작
         if (IsDead) // 사망 상태 확인
         { // 사망 유닛 처리 시작
@@ -393,9 +397,11 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         int currentBlock = Math.Max(0, blockOverride ?? CurrentBlock); // 예상 기존 방어도 조회
         int preparedBlock = preparation == null ? 0 : (int)Math.Min((long)preparation.EffectiveValue, (long)int.MaxValue - currentBlock); // 정수 범위 내 준비 방어도 계산
         BattleDamageResult damageResult = BattleDamageCalculator.Calculate(damageAmount, damageType, PhysicalDefense, MagicalResistance); // 방어력과 저항력 기준 피해 계산
-        return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock); // 준비 방어도와 체력 포함 결과 반환
+        bool eligible = enemyDirectAttack && Team == BattleTeam.Ally && currentBlock > 0 && (damageType == BattleDamageType.Physical || damageType == BattleDamageType.Magical); // 명중 전 방어도가 남은 아군의 물리·마법 직접 피격
+        int reduction = eligible ? RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.ShieldedDamageReduction)?.EffectValue ?? 0 : 0; // 보유 코일의 고정 피해 감소량
+        return damageResult.WithBlock(currentBlock + preparedBlock, CurrentHealth, preparedBlock, reduction); // 준비 방어도와 체력 포함 결과 반환
     } // 예상 피해 계산 종료
-    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
+    public BattleDamageResult TakeDamage(int damageAmount, BattleDamageType damageType, BattleUnitRuntime sourceUnit = null, BattleUnitRuntime sharingAlly = null, Func<bool> preventHealthDamage = null, int bypassBlockPercent = 0, Func<int, int> reduceHealthDamage = null, bool enemyDirectAttack = false) // 직접 공격의 분담과 방어도 관통 및 체력 손실 방어
     { // 피해 처리 시작
         if (damageAmount <= 0 || IsDead) // 무효 피해 확인
         { // 무효 처리 시작
@@ -403,7 +409,7 @@ public sealed class BattleUnitRuntime // 전투 유닛 런타임 상태
         } // 무효 처리 종료
         bool consumePreparation = GetApplicablePreparation(damageAmount, damageType, sourceUnit) != null; // 방어 준비 발동 여부 확인
         int skippedBlock = (int)((long)CurrentBlock * Mathf.Clamp(bypassBlockPercent, 0, 100) / 100); // 현재 방어도에서 타격 한 번이 건너뛸 수량 내림
-        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock); // 방어도 관통을 반영한 피해 계산
+        BattleDamageResult damageResult = PreviewDamage(damageAmount, damageType, sourceUnit, CurrentBlock - skippedBlock, enemyDirectAttack); // 방어도 관통을 반영한 피해 계산
         int sharedDamage = 0; // 동료에게 분담할 피해 초기화
         if (sharingAlly != null && sharingAlly != this && sharingAlly.Team == BattleTeam.Ally && Team == BattleTeam.Ally && !sharingAlly.IsDead) // 생존한 다른 아군 분담자 확인
         { // 피해 분담 계산 시작

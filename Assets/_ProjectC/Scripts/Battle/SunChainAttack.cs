@@ -12,7 +12,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
     { // 기본 연속 공격 시작
         return TryAttack(card, primary, enemies, out _); // 명중 결과를 생략한 연속 공격 반환
     } // 기본 연속 공격 종료
-    public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies, out bool missed, Func<int, int> applyHitBonus = null, int preparedSwordDamage = 0) // 추가 대상과 빗나감 결과 조회
+    public static BattleUnitRuntime TryAttack(CardInstance card, BattleUnitRuntime primary, IReadOnlyList<BattleUnitRuntime> enemies, out bool missed, Func<int, int> applyHitBonus = null, int preparedSwordDamage = 0, Func<BattleUnitRuntime, int, int> applyTargetBonus = null) // 추가 대상과 빗나감 결과 조회
     { // 연속 공격 시작
         missed = false; // 빗나감 결과 초기화
         if (!IsChainCard(card) || card.OwnerUnit == null || card.OwnerUnit.IsDead || primary == null || enemies == null) // 유효한 카드와 공격자 확인
@@ -41,7 +41,7 @@ public static class SunChainAttack // 태양의 다른 적 연속 공격
         int baseDamage = (int)Math.Min(int.MaxValue, (long)card.SourceData.SecondaryEffectValue + card.OwnerUnit.AttackPowerBonus + preparedSwordDamage); // 두 번째 기본 피해와 공격력 증가 계산
         baseDamage = SwordCardCombat.ApplyAttackStances(card, target, baseDamage); // 독립적인 둘째 대상의 체력과 검 강화 적용
         int damage = card.OwnerUnit.ModifyOutgoingDamage(baseDamage); // 공격자의 현재 정신 상태 피해 보정
-        damage = applyHitBonus?.Invoke(damage) ?? damage; // 첫 타격 빗나감 뒤 연속 공격 첫 적중 보너스 적용
+        damage = applyTargetBonus?.Invoke(target, damage) ?? applyHitBonus?.Invoke(damage) ?? damage; // 첫 타격 빗나감 뒤 연속 공격 첫 적중 보너스 적용
         BattleCardDamageContext.Begin(card, new[] { target }); // 두 번째 적의 카드 약점 판정 문맥 설정
         try // 피해 판정 문맥 정리 보장
         { // 두 번째 공격 적용 시작

@@ -102,10 +102,11 @@ public readonly struct BattleDamageResult // 피해 계산 결과
             AbsorbedDamage, // 기존 흡수량 유지
             PreparedBlock); // 기존 준비 방어도 유지 결과 반환
     }
-    public BattleDamageResult WithBlock(int block, int currentHealth, int preparedBlock = 0) // 방어도와 체력 반영 결과 생성
+    public BattleDamageResult WithBlock(int block, int currentHealth, int preparedBlock = 0, int beforeBlockReduction = 0) // 보호 효과와 방어도 및 체력 적용
     { // 방어도 반영 시작
-        int absorbed = System.Math.Min(System.Math.Max(0, block), FinalDamage); // 실제 흡수량 계산
-        int applied = System.Math.Min(System.Math.Max(0, currentHealth), FinalDamage - absorbed); // 실제 체력 피해 계산
-        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, FinalDamage, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed, preparedBlock); // 흡수량과 준비 방어도 포함 결과 반환
+        int final = System.Math.Max(0, FinalDamage - System.Math.Max(0, beforeBlockReduction)); // 물리 방어와 저항 계산 뒤 코일의 고정 감소
+        int absorbed = System.Math.Min(System.Math.Max(0, block), final); // 실제 흡수량 계산
+        int applied = System.Math.Min(System.Math.Max(0, currentHealth), final - absorbed); // 실제 체력 피해 계산
+        return new BattleDamageResult(RawDamage, DefenseValue, DefenseAdjustedDamage, final, applied, DamageType, IsWeakness, WeaknessMultiplier, absorbed, preparedBlock); // 흡수량과 준비 방어도 포함 결과 반환
     } // 방어도 반영 종료
 }

@@ -26,6 +26,7 @@ public static class RestRoomRecoveryService // 57일차 위험도별 휴식 회�
         }
     }
 
+    public static int CampMentalRecovery => MentalRecoveryAmount + (RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.CampMentalBonus)?.EffectValue ?? 0); // 정수기 보유 중 실제 캠프 정신력 회복량
     public static int CampRecoveryBonus => RelicRunManager.Instance?.Inventory?.FindEffect(RelicEffectType.CampHealthRecoveryBonus)?.EffectValue ?? 0; // 실제 보유한 식량팩의 캠프 회복 보너스
     public static string HealthRecoveryLabel(int hazardLevel) // 캠프의 기본 회복률과 식량팩 보정 표시
     { // 캠프 회복 안내 시작
@@ -66,7 +67,7 @@ public static class RestRoomRecoveryService // 57일차 위험도별 휴식 회�
 
     public static int CalculateRecoveredMental(
         int currentMental,
-        bool isDead) // 정신력 회복 결과 계산
+        bool isDead, int recoveryAmount = MentalRecoveryAmount) // 캠프 정신력 회복 결과 계산
     {
         if (isDead) // 사망 상태 확인
         {
@@ -77,7 +78,7 @@ public static class RestRoomRecoveryService // 57일차 위험도별 휴식 회�
         }
 
         return Mathf.Clamp(
-            currentMental + MentalRecoveryAmount,
+            currentMental + Mathf.Max(0, recoveryAmount),
             BattleMentalRuntime.MinimumMental,
             BattleMentalRuntime.MaximumMental); // 생존자 정신력 +15 적용
     }

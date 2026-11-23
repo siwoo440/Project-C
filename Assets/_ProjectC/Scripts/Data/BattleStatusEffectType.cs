@@ -32,5 +32,6 @@ public enum BattleStatusEffectType // 전투 상태 이상 종류
     BloodOath, // 소유자의 모든 검 피해 증가
     Fear, // 공격 대상의 회피 보정 무효
     FinishingStance, // 체력이 절반 이하인 적에게 카드 피해 증가
-    HealingReceivedDown // 대상이 받는 체력 회복량 감소
+    HealingReceivedDown, // 대상이 받는 체력 회복량 감소
+    PublicMark // 첫 아군 턴이 끝날 때까지 유지하는 공명 표식
 } // 열거형 종료
