@@ -10,6 +10,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private TMP_Text deckStatusText; // 카드 영역 수량 텍스트
     private TMP_Text turnStatusText; // 라운드와 턴 상태 텍스트
     private Button endTurnButton; // 플레이어 턴 종료 버튼
+    private Button escapeButton; // 전투 도주 버튼
     private TMP_Text actionPointText; // 공용 행동력 텍스트
     private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
@@ -23,6 +24,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     public BattleActionPointRuntime SharedActionPoints => sharedActionPoints; // 연결된 공용 행동력 조회
     public BattleTurnRuntime TurnRuntime => turnRuntime; // 연결된 전투 턴 관리자 조회
     public event Action<CardInstance> CardClicked; // 손패 카드 클릭 이벤트
+    public event Action EscapeClicked; // 전투 도주 클릭 이벤트
     private void Awake() // 손패 화면 준비
     { // 화면 준비 시작
         EnsureVisualStructure(); // 손패 내부 UI 자동 생성
@@ -92,10 +94,19 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         deckStatusText = CreateText("DeckStatusText", transform, "Waiting for deck", 20f, Color.white); // 카드 수량 텍스트 생성
         RectTransform statusRect = deckStatusText.rectTransform; // 수량 텍스트 RectTransform 조회
         statusRect.anchorMin = new Vector2(0f, 1f); // 수량 텍스트 최소 앵커 설정
-        statusRect.anchorMax = new Vector2(0.42f, 1f); // 수량 텍스트 최대 앵커 설정
+        statusRect.anchorMax = new Vector2(0.28f, 1f); // 수량 텍스트 최대 앵커 설정
         statusRect.pivot = new Vector2(0.5f, 1f); // 수량 텍스트 위쪽 피벗 설정
         statusRect.anchoredPosition = new Vector2(0f, -4f); // 수량 텍스트 위치 설정
         statusRect.sizeDelta = new Vector2(0f, 34f); // 수량 텍스트 높이 설정
+        escapeButton = CreateButton("EscapeButton", transform, "도주"); // 전투 도주 버튼 생성
+        RectTransform escapeRect = escapeButton.transform as RectTransform; // 도주 RectTransform 조회
+        escapeRect.anchorMin = new Vector2(0.29f, 1f); // 도주 최소 앵커 설정
+        escapeRect.anchorMax = new Vector2(0.4f, 1f); // 도주 최대 앵커 설정
+        escapeRect.pivot = new Vector2(0.5f, 1f); // 도주 위쪽 피벗 설정
+        escapeRect.anchoredPosition = new Vector2(0f, -4f); // 도주 위치 설정
+        escapeRect.sizeDelta = new Vector2(0f, 34f); // 도주 높이 설정
+        escapeButton.image.color = new Color(0.5f, 0.2f, 0.2f, 1f); // 도주 버튼 배경색 설정
+        escapeButton.onClick.AddListener(HandleEscapeClicked); // 도주 클릭 이벤트 등록
         turnStatusText = CreateText("TurnStatusText", transform, "전투 준비", 20f, new Color(1f, 0.82f, 0.35f, 1f)); // 턴 상태 텍스트 생성
         RectTransform turnStatusRect = turnStatusText.rectTransform; // 턴 상태 RectTransform 조회
         turnStatusRect.anchorMin = new Vector2(0.42f, 1f); // 턴 상태 최소 앵커 설정
@@ -308,9 +319,17 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 미연결 처리 종료
         turnRuntime.EndPlayerTurn(); // 플레이어 턴 종료 요청
     } // 턴 종료 클릭 처리 종료
+    private void HandleEscapeClicked() // 도주 버튼 클릭 처리
+    { // 도주 클릭 처리 시작
+        if (interactionLocked || turnRuntime == null || !turnRuntime.CanEscape) // 입력 잠금과 도주 가능 여부 확인
+        { // 도주 불가 처리 시작
+            return; // 도주 클릭 처리 중단
+        } // 도주 불가 처리 종료
+        EscapeClicked?.Invoke(); // 전투 도주 요청 알림
+    } // 도주 클릭 처리 종료
     private void RefreshTurnStatus() // 라운드와 턴 상태 갱신
     { // 턴 상태 갱신 시작
-        if (turnStatusText == null || endTurnButton == null) // 턴 UI 존재 확인
+        if (turnStatusText == null || endTurnButton == null || escapeButton == null) // 턴 UI 존재 확인
         { // 턴 UI 누락 처리 시작
             return; // 턴 상태 갱신 중단
         } // 턴 UI 누락 처리 종료
@@ -318,6 +337,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         { // 미연결 처리 시작
             turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
             endTurnButton.interactable = false; // 턴 종료 버튼 비활성화
+            escapeButton.interactable = false; // 도주 버튼 비활성화
             return; // 턴 상태 갱신 중단
         } // 미연결 처리 종료
         switch (turnRuntime.CurrentPhase) // 현재 턴 단계 분기
@@ -334,11 +354,15 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             case BattleTurnPhase.Defeat: // 패배 단계
                 turnStatusText.text = "전투 패배"; // 패배 상태 표시
                 break; // 패배 분기 종료
+            case BattleTurnPhase.Escaped: // 도주 단계
+                turnStatusText.text = "전투 도주"; // 도주 상태 표시
+                break; // 도주 분기 종료
             default: // 전투 시작 전 단계
                 turnStatusText.text = "전투 준비"; // 전투 준비 상태 표시
                 break; // 기본 분기 종료
         } // 턴 단계 분기 종료
         endTurnButton.interactable = turnRuntime.IsPlayerTurn && !interactionLocked; // 플레이어 턴과 입력 잠금 버튼 상태 적용
+        escapeButton.interactable = turnRuntime.CanEscape && !interactionLocked; // 도주 규칙과 입력 잠금 버튼 상태 적용
     } // 턴 상태 갱신 종료
     private void RefreshActionPointStatus() // 공용 행동력 수량 갱신
     { // 행동력 수량 갱신 시작
@@ -398,6 +422,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (endTurnButton != null) // 턴 종료 버튼 확인
         { // 버튼 이벤트 해제 시작
             endTurnButton.onClick.RemoveListener(HandleEndTurnClicked); // 턴 종료 클릭 이벤트 해제
+        } // 버튼 이벤트 해제 종료
+        if (escapeButton != null) // 도주 버튼 확인
+        { // 버튼 이벤트 해제 시작
+            escapeButton.onClick.RemoveListener(HandleEscapeClicked); // 도주 클릭 이벤트 해제
         } // 버튼 이벤트 해제 종료
     } // 제거 처리 종료
 } // 클래스 종료

@@ -17,6 +17,28 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
         RegisterDeathEvents(enemyUnits, HandleEnemyDied); // 적 사망 이벤트 등록
         RegisterDeathEvents(allyUnits, HandleAllyDied); // 아군 사망 이벤트 등록
     } // 생성자 종료
+    public bool RegisterSummonedEnemy(BattleUnitRuntime enemyUnit) // 소환 적 행동 연결
+    { // 소환 적 연결 시작
+        if (disposed || enemyUnit == null || enemyUnit.IsDead || enemyUnit.Team != BattleTeam.Enemy || !ContainsUnit(enemyUnits, enemyUnit)) // 소환 적 연결 조건 확인
+        { // 연결 불가 처리 시작
+            return false; // 소환 적 연결 실패 반환
+        } // 연결 불가 처리 종료
+        enemyUnit.Died -= HandleEnemyDied; // 기존 중복 사망 연결 제거
+        enemyUnit.Died += HandleEnemyDied; // 소환 적 사망 이벤트 등록
+        return true; // 소환 적 연결 성공 반환
+    } // 소환 적 연결 종료
+    public bool UnregisterEnemy(BattleUnitRuntime enemyUnit) // 제거 적 행동 연결 해제
+    { // 제거 적 해제 시작
+        if (enemyUnit == null) // 제거 적 존재 확인
+        { // 적 없음 처리 시작
+            return false; // 연결 해제 실패 반환
+        } // 적 없음 처리 종료
+        enemyUnit.Died -= HandleEnemyDied; // 적 사망 이벤트 해제
+        plannedActions.RemoveAll(action => action.Actor == enemyUnit); // 제거 적 예정 행동 정리
+        ApplyActionOrderNumbers(); // 남은 행동 순번 재지정
+        StateChanged?.Invoke(); // 예정 행동 변경 알림
+        return true; // 연결 해제 성공 반환
+    } // 제거 적 해제 종료
     public int PrepareActions() // 다음 적 행동 준비
     { // 행동 준비 시작
         if (disposed) // 연결 해제 상태 확인
@@ -218,6 +240,17 @@ public sealed class BattleEnemyActionRuntime : IDisposable // 적 행동 흐름 
             } // 유닛 존재 처리 종료
         } // 유닛 해제 종료
     } // 이벤트 해제 종료
+    private static bool ContainsUnit(IReadOnlyList<BattleUnitRuntime> units, BattleUnitRuntime targetUnit) // 런타임 목록 포함 확인
+    { // 유닛 포함 검사 시작
+        foreach (BattleUnitRuntime runtimeUnit in units) // 유닛 목록 순회
+        { // 유닛 일치 확인 시작
+            if (runtimeUnit == targetUnit) // 대상 유닛 일치 확인
+            { // 일치 처리 시작
+                return true; // 포함 상태 반환
+            } // 일치 처리 종료
+        } // 유닛 일치 확인 종료
+        return false; // 미포함 상태 반환
+    } // 유닛 포함 검사 종료
     public void Dispose() // 적 행동 관리자 연결 해제
     { // 연결 해제 시작
         if (disposed) // 기존 연결 해제 확인

@@ -5,9 +5,11 @@ using UnityEngine.EventSystems; // 유니티 이벤트 시스템 사용
 using UnityEngine.InputSystem.UI; // 유니티 입력 시스템 UI 사용
 public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
 { // 클래스 시작
+    private const int MaximumEnemyCount = 4; // 최대 동시 적 수
     [Header("전투 데이터")] // 전투 데이터 구역
     [SerializeField] private BattleLoadoutData battleLoadout; // 출전 파티와 덱 데이터
     [SerializeField] private List<EnemyData> enemies = new List<EnemyData>(); // 출전 적 목록
+    [SerializeField] private BattleType battleType = BattleType.Normal; // 현재 전투 유형
     [Header("유닛 생성")] // 유닛 생성 구역
     [SerializeField] private BattleUnitView unitViewPrefab; // 공용 유닛 프리팹
     [SerializeField] private Transform allyUnitRoot; // 아군 유닛 부모
@@ -67,7 +69,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         int? shuffleSeed = useFixedShuffleSeed ? fixedShuffleSeed : (int?)null; // 적용할 셔플 시드 결정
         battleDeck = BattleDeckRuntime.Create(battleLoadout.Deck, allyUnits, maximumHandSize, shuffleSeed); // 전투용 카드 더미 생성
         sharedActionPoints = new BattleActionPointRuntime(sharedMaximumActionPoints); // 전투 공용 행동력 생성
-        battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn); // 전투 턴 관리자 생성
+        battleTurn = new BattleTurnRuntime(battleDeck, sharedActionPoints, allyUnits, enemyUnits, cardsPerPlayerTurn, battleType); // 전투 유형 포함 턴 관리자 생성
         if (!handView.Bind(battleDeck, sharedActionPoints, battleTurn)) // 손패 화면 연결 확인
         { // 손패 화면 오류 처리 시작
             Debug.LogError("[BattleSceneSetup] 전투 손패 화면 연결에 실패했습니다.", this); // 손패 화면 오류 출력
@@ -75,6 +77,7 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             battleTurn = null; // 턴 관리자 참조 제거
             return; // 초기화 중단
         } // 손패 화면 오류 처리 종료
+        handView.EscapeClicked += HandleEscapeClicked; // 손패 도주 요청 연결
         actionSequenceRunner = GetComponent<BattleActionSequenceRunner>(); // 기존 행동 연출 실행기 조회
         if (actionSequenceRunner == null) // 행동 연출 실행기 누락 확인
         { // 행동 연출 실행기 생성 시작
@@ -155,6 +158,11 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
             Debug.LogError("[BattleSceneSetup] 출전할 적이 없습니다.", this); // 적 누락 출력
             return false; // 검사 실패 반환
         } // 빈 적 목록 처리 종료
+        if (enemies.Count > MaximumEnemyCount) // 최대 적 수 초과 확인
+        { // 적 수 초과 처리 시작
+            Debug.LogError($"[BattleSceneSetup] 출전 적은 최대 {MaximumEnemyCount}명입니다.", this); // 적 수 초과 오류 출력
+            return false; // 검사 실패 반환
+        } // 적 수 초과 처리 종료
         foreach (EnemyData enemyData in enemies) // 적 목록 순회
         { // 적 검사 시작
             if (enemyData == null) // 빈 적 데이터 확인
@@ -190,14 +198,88 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     { // 적 생성 시작
         foreach (EnemyData enemyData in enemies) // 적 데이터 순회
         { // 적 생성 시작
-            BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
-            BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
-            unitView.name = $"Enemy_{runtimeUnit.UnitId}"; // 적 오브젝트 이름 적용
-            unitView.Bind(runtimeUnit); // 적 화면 연결
-            enemyUnits.Add(runtimeUnit); // 적 목록 등록
-            enemyUnitViews.Add(unitView); // 적 화면 목록 등록
+            CreateEnemyUnit(enemyData); // 초기 적 런타임과 화면 생성
         } // 적 생성 종료
     } // 적 유닛 생성 종료
+    private BattleUnitRuntime CreateEnemyUnit(EnemyData enemyData) // 적 런타임과 화면 생성
+    { // 적 유닛 생성 시작
+        BattleUnitRuntime runtimeUnit = BattleUnitRuntime.CreateEnemy(enemyData); // 적 런타임 생성
+        BattleUnitView unitView = Instantiate(unitViewPrefab, enemyUnitRoot); // 적 화면 오브젝트 생성
+        unitView.name = $"Enemy_{runtimeUnit.UnitId}_{enemyUnits.Count + 1}"; // 적 오브젝트 고유 이름 적용
+        unitView.Bind(runtimeUnit); // 적 화면 연결
+        enemyUnits.Add(runtimeUnit); // 적 목록 등록
+        enemyUnitViews.Add(unitView); // 적 화면 목록 등록
+        return runtimeUnit; // 생성 적 런타임 반환
+    } // 적 유닛 생성 종료
+    public bool TrySummonEnemy(EnemyData enemyData) // 전투 중 적 소환
+    { // 적 소환 시작
+        if (!IsInitialized || battleTurn == null || battleTurn.IsBattleEnded || enemyActionRuntime == null || enemyData == null) // 소환 기본 조건 확인
+        { // 소환 불가 처리 시작
+            return false; // 적 소환 실패 반환
+        } // 소환 불가 처리 종료
+        if (CountLivingEnemies() >= MaximumEnemyCount) // 최대 생존 적 수 확인
+        { // 적 수 제한 처리 시작
+            Debug.LogWarning($"[BattleSceneSetup] 생존 적은 최대 {MaximumEnemyCount}명입니다.", this); // 적 수 제한 안내
+            return false; // 적 소환 실패 반환
+        } // 적 수 제한 처리 종료
+        RemoveDefeatedEnemySlotIfNeeded(); // 최대 화면 수를 위한 사망 적 슬롯 정리
+        BattleUnitRuntime summonedEnemy = CreateEnemyUnit(enemyData); // 소환 적 런타임과 화면 생성
+        bool turnRegistered = battleTurn.RegisterSummonedEnemy(summonedEnemy); // 승패 판정에 소환 적 등록
+        bool actionRegistered = enemyActionRuntime.RegisterSummonedEnemy(summonedEnemy); // 적 행동 흐름에 소환 적 등록
+        if (!turnRegistered || !actionRegistered) // 소환 연결 결과 확인
+        { // 연결 실패 복구 시작
+            RemoveEnemyUnit(summonedEnemy); // 불완전 소환 적 제거
+            Debug.LogError("[BattleSceneSetup] 소환 적의 전투 연결에 실패했습니다.", this); // 소환 연결 오류 출력
+            return false; // 적 소환 실패 반환
+        } // 연결 실패 복구 종료
+        Debug.Log($"[BattleSceneSetup] 적 소환 - {summonedEnemy.DisplayName} / 현재 생존 적 {CountLivingEnemies()}명 / 다음 행동 준비부터 참여", this); // 적 소환 결과 출력
+        return true; // 적 소환 성공 반환
+    } // 적 소환 종료
+    private int CountLivingEnemies() // 생존 적 수 계산
+    { // 생존 적 계산 시작
+        int livingCount = 0; // 생존 적 수 초기화
+        foreach (BattleUnitRuntime enemyUnit in enemyUnits) // 적 런타임 목록 순회
+        { // 적 생존 확인 시작
+            if (enemyUnit != null && !enemyUnit.IsDead) // 생존 적 확인
+            { // 생존 적 처리 시작
+                livingCount++; // 생존 적 수 증가
+            } // 생존 적 처리 종료
+        } // 적 생존 확인 종료
+        return livingCount; // 생존 적 수 반환
+    } // 생존 적 계산 종료
+    private void RemoveDefeatedEnemySlotIfNeeded() // 사망 적 화면 슬롯 정리
+    { // 사망 슬롯 정리 시작
+        if (enemyUnits.Count < MaximumEnemyCount) // 전체 적 화면 수 확인
+        { // 슬롯 여유 처리 시작
+            return; // 사망 슬롯 정리 중단
+        } // 슬롯 여유 처리 종료
+        for (int enemyIndex = 0; enemyIndex < enemyUnits.Count; enemyIndex++) // 적 목록 순회
+        { // 사망 적 검색 시작
+            BattleUnitRuntime enemyUnit = enemyUnits[enemyIndex]; // 현재 적 런타임 조회
+            if (enemyUnit != null && enemyUnit.IsDead) // 사망 적 확인
+            { // 사망 적 슬롯 처리 시작
+                RemoveEnemyUnit(enemyUnit); // 사망 적 런타임과 화면 제거
+                return; // 한 개 슬롯 정리 종료
+            } // 사망 적 슬롯 처리 종료
+        } // 사망 적 검색 종료
+    } // 사망 슬롯 정리 종료
+    private void RemoveEnemyUnit(BattleUnitRuntime enemyUnit) // 적 런타임과 화면 제거
+    { // 적 제거 시작
+        if (enemyUnit == null) // 제거 적 존재 확인
+        { // 적 없음 처리 시작
+            return; // 적 제거 중단
+        } // 적 없음 처리 종료
+        battleTurn?.UnregisterEnemy(enemyUnit); // 승패 판정 사망 연결 해제
+        enemyActionRuntime?.UnregisterEnemy(enemyUnit); // 행동 흐름 사망 연결 해제
+        BattleUnitView enemyView = FindUnitView(enemyUnit, enemyUnitViews); // 제거 적 화면 조회
+        if (enemyView != null) // 제거 적 화면 존재 확인
+        { // 적 화면 제거 시작
+            enemyView.Unbind(); // 적 화면 런타임 연결 해제
+            enemyUnitViews.Remove(enemyView); // 적 화면 목록 제거
+            Destroy(enemyView.gameObject); // 적 화면 오브젝트 제거
+        } // 적 화면 제거 종료
+        enemyUnits.Remove(enemyUnit); // 적 런타임 목록 제거
+    } // 적 제거 종료
     private bool CanUseBattleDeckTest() // 카드 테스트 가능 여부 확인
     { // 카드 테스트 검사 시작
         if (!Application.isPlaying) // 플레이 모드 확인
@@ -320,6 +402,34 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         bool restored = sharedActionPoints.Restore(); // 공용 행동력 최대 회복
         Debug.Log($"[BattleSceneSetup] 공용 AP 회복 결과 - {restored} / 현재 {sharedActionPoints.CurrentActionPoints}", this); // 행동력 회복 결과 출력
     } // 행동력 회복 테스트 종료
+    [ContextMenu("테스트/첫 번째 적 데이터 소환")] // 적 소환 테스트 메뉴
+    private void SummonFirstEnemyData() // 첫 적 데이터 소환 테스트
+    { // 적 소환 테스트 시작
+        if (!Application.isPlaying) // 플레이 모드 확인
+        { // 비플레이 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 플레이 모드에서 실행해야 합니다.", this); // 플레이 모드 안내
+            return; // 적 소환 테스트 중단
+        } // 비플레이 처리 종료
+        if (enemies.Count < 1 || enemies[0] == null) // 소환 원본 데이터 확인
+        { // 소환 데이터 없음 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 소환할 테스트 적 데이터가 없습니다.", this); // 소환 데이터 없음 안내
+            return; // 적 소환 테스트 중단
+        } // 소환 데이터 없음 처리 종료
+        bool summoned = TrySummonEnemy(enemies[0]); // 첫 적 데이터 소환 시도
+        Debug.Log($"[BattleSceneSetup] 적 소환 테스트 결과 - {summoned}", this); // 적 소환 테스트 결과 출력
+    } // 적 소환 테스트 종료
+    private void HandleEscapeClicked() // 손패 도주 요청 처리
+    { // 도주 요청 처리 시작
+        if (battleTurn == null) // 턴 관리자 존재 확인
+        { // 관리자 없음 처리 시작
+            return; // 도주 요청 처리 중단
+        } // 관리자 없음 처리 종료
+        bool escaped = battleTurn.TryEscape(); // 전투 도주 결과 확정 시도
+        if (!escaped && battleTurn.BattleType == BattleType.Boss) // 보스전 도주 거부 확인
+        { // 보스전 거부 처리 시작
+            Debug.LogWarning("[BattleSceneSetup] 보스 전투에서는 도주할 수 없습니다.", this); // 보스전 도주 불가 안내
+        } // 보스전 거부 처리 종료
+    } // 도주 요청 처리 종료
     private void HandleTurnStateChanged() // 전투 턴 상태 변경 처리
     { // 턴 상태 처리 시작
         if (battleTurn == null) // 턴 관리자 존재 확인
@@ -352,6 +462,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
         { // 패배 처리 시작
             Debug.Log("[BattleSceneSetup] 전투 패배", this); // 패배 결과 출력
         } // 패배 처리 종료
+        else if (battleTurn.CurrentPhase == BattleTurnPhase.Escaped) // 도주 상태 확인
+        { // 도주 처리 시작
+            Debug.Log("[BattleSceneSetup] 전투 도주 - 보상 없음 / 현재 아군 HP 유지", this); // 도주 결과 출력
+        } // 도주 처리 종료
     } // 턴 상태 처리 종료
     private void HandleEnemyActionStateChanged() // 적 행동 변경 처리
     { // 적 행동 변경 처리 시작
@@ -425,6 +539,10 @@ public sealed class BattleSceneSetup : MonoBehaviour // 전투 씬 초기 구성
     } // 유닛 화면 조회 종료
     private void OnDestroy() // 전투 씬 제거 처리
     { // 씬 제거 처리 시작
+        if (handView != null) // 손패 화면 존재 확인
+        { // 손패 이벤트 해제 시작
+            handView.EscapeClicked -= HandleEscapeClicked; // 손패 도주 요청 연결 해제
+        } // 손패 이벤트 해제 종료
         if (enemyTurnCoroutine != null) // 실행 중인 적 턴 확인
         { // 적 턴 중단 시작
             StopCoroutine(enemyTurnCoroutine); // 적 턴 코루틴 중단
