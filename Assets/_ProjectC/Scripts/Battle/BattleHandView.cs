@@ -20,6 +20,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private static Sprite actionPointFrameSprite; // 공용 행동력 테두리 이미지
     private static Sprite actionPointFillSprite; // 공용 행동력 구체 이미지
     private BattleCardTooltipView tooltipView; // 카드 상세 툴팁 화면
+    private BattleCardPreviewView previewView; // 선택 카드 확대 화면
     private BattleDeckRuntime runtimeDeck; // 연결된 런타임 덱
     private BattleActionPointRuntime sharedActionPoints; // 연결된 공용 행동력
     private BattleTurnRuntime turnRuntime; // 연결된 전투 턴 관리자
@@ -47,6 +48,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         if (handLayoutRoot != null && !Mathf.Approximately(lastLayoutWidth, handLayoutRoot.rect.width)) // 손패 너비 변경 확인
         { // 손패 재배치 시작
             LayoutHand(); // 변경된 화면 너비 기준 카드 재배치
+            RefreshCardPreview(); // 변경된 손패 너비의 확대 카드 갱신
         } // 손패 재배치 종료
         RefreshHoveredTooltip(); // 마우스와 임시 상세 키 상태에 따른 툴팁 갱신
     } // 크기 변경 감지 종료
@@ -171,6 +173,10 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         tooltipRect.sizeDelta = new Vector2(420f, 145f); // 카드 툴팁 크기 설정
         tooltipView = tooltipObject.GetComponent<BattleCardTooltipView>(); // 카드 툴팁 화면 조회
         tooltipView.Hide(); // 카드 툴팁 시작 숨김
+        GameObject previewObject = new GameObject("CardPreview", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BattleCardPreviewView)); // 선택 카드 확대 화면 생성
+        previewObject.transform.SetParent(transform, false); // 확대 화면을 손패에 연결
+        previewView = previewObject.GetComponent<BattleCardPreviewView>(); // 확대 카드 화면 조회
+        previewView.Hide(); // 확대 카드 시작 숨김
         escapeButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 도주 버튼 우선 배치
         endTurnButton.transform.SetAsLastSibling(); // 카드 입력 영역보다 턴 종료 버튼 우선 배치
         visualStructureCreated = true; // 화면 구조 생성 완료 저장
@@ -198,6 +204,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             cardHitRegions.Add(CreateHitRegion(cardView)); // 카드별 독립 입력 영역 등록
         } // 카드 화면 생성 종료
         LayoutHand(); // 손패 장수와 화면 너비 기준 카드 배치
+        RefreshCardPreview(); // 선택 중인 카드 확대 화면 갱신
     } // 화면 갱신 종료
     private BattleCardView CreateCardView(CardInstance cardInstance) // 카드 화면 코드 생성
     { // 카드 화면 생성 시작
@@ -274,6 +281,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
             draggedCardView = null; // 꺼낸 카드 참조 제거
         } // 드래그 카드 해제 종료
         LayoutHand(); // 드래그 상태에 맞춘 손패 배치 갱신
+        RefreshCardPreview(); // 드래그 상태에 맞춘 확대 카드 갱신
     } // 카드 드래그 간격 설정 종료
     public void SetSelectedCard(CardInstance cardInstance) // 선택 카드 표시 설정
     { // 선택 카드 설정 시작
@@ -286,6 +294,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
                 cardView.SetSelected(selected); // 카드 선택 표시 적용
             } // 선택 표시 적용 종료
         } // 선택 표시 적용 종료
+        RefreshCardPreview(); // 선택 또는 선택 해제한 확대 카드 갱신
     } // 선택 카드 설정 종료
     public void RefreshCardAvailability() // 카드 사용 가능 상태 갱신
     { // 사용 가능 상태 갱신 시작
@@ -310,6 +319,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 잠금 처리 종료
         RefreshCardAvailability(); // 카드 사용 가능 상태 갱신
         RefreshTurnStatus(); // 턴 종료 버튼 상태 갱신
+        RefreshCardPreview(); // 입력 잠금 상태에 맞춘 확대 카드 갱신
     } // 입력 잠금 설정 종료
     private bool IsCardUsable(CardInstance cardInstance) // 카드 사용 가능 여부 확인
     { // 카드 사용 가능 검사 시작
@@ -366,6 +376,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
     private void ClearSpawnedCardViews() // 생성 카드 화면 제거
     { // 카드 화면 제거 시작
         draggedCardView = null; // 기존 드래그 카드 참조 제거
+        previewView?.Hide(); // 기존 카드의 확대 화면 숨김
         foreach (RectTransform hitRegion in cardHitRegions) // 기존 카드 입력 영역 순회
         { // 개별 입력 영역 제거 시작
             if (hitRegion != null) // 입력 영역 존재 확인
@@ -389,6 +400,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 카드 화면 제거 종료
         spawnedCardViews.Clear(); // 생성 카드 화면 목록 비우기
         HideTooltip(); // 카드 툴팁 숨김
+        previewView?.Hide(); // 제거된 카드의 확대 화면 최종 숨김
     } // 카드 화면 제거 종료
     private void HandleCardViewClicked(BattleCardView cardView) // 카드 화면 클릭 처리
     { // 카드 클릭 처리 시작
@@ -406,6 +418,7 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 마우스 진입 불가 처리 종료
         hoveredCardView = cardView; // 현재 마우스 진입 카드 저장
         LayoutHand(); // 가리킨 카드 주변 간격 확장
+        RefreshCardPreview(); // 가리킨 카드의 확대 화면 표시
         tooltipView.Hide(); // 이전 카드의 상세 툴팁 숨김
         RefreshHoveredTooltip(); // 현재 카드의 상세 표시 조건 적용
     } // 마우스 진입 처리 종료
@@ -433,7 +446,42 @@ public sealed class BattleHandView : MonoBehaviour // 전투 손패 화면 관�
         } // 다른 카드 처리 종료
         HideTooltip(); // 카드 상세 툴팁 숨김
         LayoutHand(); // 손패의 기본 겹침 간격 복원
+        RefreshCardPreview(); // 선택 중인 카드 또는 빈 확대 화면 갱신
     } // 마우스 이탈 처리 종료
+    private void RefreshCardPreview() // 현재 카드의 확대 화면 갱신
+    { // 확대 화면 갱신 시작
+        if (previewView == null) // 확대 화면 존재 확인
+        { // 확대 화면 누락 처리 시작
+            return; // 확대 화면 갱신 중단
+        } // 확대 화면 누락 처리 종료
+        if (interactionLocked || draggedCardView != null) // 입력 잠금과 드래그 상태 확인
+        { // 확대 화면 숨김 시작
+            previewView.Hide(); // 대상 선택을 가리지 않도록 확대 화면 숨김
+            return; // 확대 화면 갱신 종료
+        } // 확대 화면 숨김 종료
+        BattleCardView displayed = hoveredCardView; // 마우스가 가리킨 카드 우선 조회
+        if (displayed == null && selectedCard != null) // 마우스가 없고 카드가 선택된 상태 확인
+        { // 선택 카드 화면 탐색 시작
+            foreach (BattleCardView cardView in spawnedCardViews) // 실제 손패 카드 순회
+            { // 선택 카드 확인 시작
+                if (cardView != null && cardView.RuntimeCard == selectedCard) // 현재 선택 카드 확인
+                { // 선택 카드 저장 시작
+                    displayed = cardView; // 실제 선택 카드 화면 저장
+                    break; // 선택 카드 탐색 종료
+                } // 선택 카드 저장 종료
+            } // 선택 카드 확인 종료
+        } // 선택 카드 화면 탐색 종료
+        if (displayed == null || displayed.RuntimeCard == null) // 표시할 카드 존재 확인
+        { // 표시 카드 없음 처리 시작
+            previewView.Hide(); // 확대 카드 화면 숨김
+            return; // 확대 화면 갱신 종료
+        } // 표시 카드 없음 처리 종료
+        previewView.Show(displayed.RuntimeCard, displayed.transform as RectTransform, transform as RectTransform); // 실제 카드의 확대 이미지와 전체 설명 표시
+        previewView.transform.SetAsLastSibling(); // 확대 카드를 손패 위쪽에 표시
+        escapeButton.transform.SetAsLastSibling(); // 도주 버튼을 확대 카드 위에 표시
+        endTurnButton.transform.SetAsLastSibling(); // 턴 종료 버튼을 확대 카드 위에 표시
+        tooltipView.transform.SetAsLastSibling(); // 카드 상세 툴팁 최상단 표시
+    } // 확대 화면 갱신 종료
     private void HideTooltip() // 카드 툴팁 숨김
     { // 툴팁 숨김 시작
         hoveredCardView = null; // 현재 마우스 진입 카드 제거
